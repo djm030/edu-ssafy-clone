@@ -1,23 +1,35 @@
 # Worker 1 Continuation Loop Guard
 
-Date: 2026-04-24
+Date: 2026-04-25
 Worker: worker-1
-Task: 111 - Continue until all full-clone completion conditions PASS
+Task: 1, 12 - 핵심 실행 원칙 / 남은 작업 반복 루프
+
+## Core Principle Enforcement
+
+Task 1 requires execution not to end by rounds and to continue until all core features are PASS.
+
+This guard confirms the principle is actively enforced:
+
+- Task 12 was completed with explicit loop restart into 단계 3 when completion criteria were not satisfied.
+- Task 11, 44, 103 were completed to refresh backlog/worker distribution/completion checks.
+- Current team and verification state still contains unresolved work; therefore the run must continue.
 
 ## Current Loop Check
 
-Current OMX summary:
+This execution has unresolved tasks, so the process must return to Step 3 (재작업 생성/분배 루프) rather than finalize.
 
 | Metric | Value |
 |---|---:|
-| total | 136 |
-| completed | 70 |
-| pending | 63 |
-| in_progress | 3 |
+| total | 116 |
+| pending | 109 |
+| in_progress | 2 |
+| completed | 5 |
 | failed | 0 |
 
-`docs/final-verification.md` still says `NOT COMPLETE / PARTIAL` and includes non-PASS rows for auth/session/RBAC depth, attachments, material reactions, survey/support depth, browser E2E/visual fidelity, and team completion.
+`docs/final-verification.md` remains `NOT COMPLETE / PARTIAL`.
+
+`docs/remaining-work.md` and open backlog both require additional tasks (e.g., auth depth, 첨부파일 E2E, 문의 답변/첨부 workflow).
 
 ## Decision
 
-The loop must continue. This task is satisfied only as a continuation checkpoint: worker-1 updated the docs to the current team-state snapshot, confirmed final completion is not allowed, and left the remaining backlog/tasks as the next execution path.
+Loop continuation is required. The team should proceed again from step 3 (미완성 기능 점검/재할당) before any completion attempt.
