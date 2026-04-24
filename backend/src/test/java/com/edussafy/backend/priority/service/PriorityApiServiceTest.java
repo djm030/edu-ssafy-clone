@@ -1,16 +1,36 @@
 package com.edussafy.backend.priority.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class PriorityApiServiceTest {
+
+    @Test
+    void exposesLearnerRolePermissionsByDefault() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        RoleAccessResponse response = service.currentRoleAccess();
+
+        assertThat(response.role()).isEqualTo("learner");
+        assertThat(response.permissions()).contains("dashboard:read", "profile:update", "quest:submit");
+        assertThat(response.deniedRoutes()).contains("/admin");
+    }
 
     @Test
     void createsClassmateNotificationWithDefaults() {
