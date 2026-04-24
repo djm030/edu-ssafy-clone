@@ -34,3 +34,9 @@ Worker-3 records the following hard guardrails before continuing implementation 
 - Status: this anti-pattern is explicitly rejected.
 - `docs/remaining-work.md` is a blocking completion gate: if it still lists required partial/gap work, worker-3 must report the project as incomplete and continue planning/executing follow-up work instead of declaring final completion.
 - Current evidence from this run: the remaining-work guard check counted 16 partial/gap rows, so the repository can pass local verification gates while still remaining non-final.
+
+## Task 43 — Docker 설정만 있는 상태를 구현 완료로 판단
+
+- Status: this anti-pattern is explicitly rejected.
+- Docker/compose files prove runtime wiring only; they do not prove application feature behavior, authorization, persistence, UI states, or end-to-end acceptance.
+- Completion claims must pair runtime configuration with source implementation and verification evidence.
