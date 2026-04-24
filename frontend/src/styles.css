@@ -191,6 +191,7 @@ h2 {
 .panel,
 .stat-card,
 .state-message,
+.access-state,
 .simple-table,
 .board-table,
 .list-card,
@@ -377,8 +378,19 @@ h2 {
 }
 
 .stat-card,
-.panel {
+.panel,
+.access-state {
   padding: 20px;
+}
+
+.access-state {
+  display: grid;
+  gap: 12px;
+  max-width: 680px;
+}
+
+.access-state .primary-action {
+  justify-self: start;
 }
 
 .stat-card span {

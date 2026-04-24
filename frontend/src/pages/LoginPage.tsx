@@ -1,18 +1,23 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { getErrorMessage } from '../api/client';
 import { login } from '../api/app';
 import type { UserProfile } from '../types';
 
 interface LoginPageProps {
+  message?: string;
   onLogin: (user: UserProfile) => void;
 }
 
-function LoginPage({ onLogin }: LoginPageProps) {
+function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('student@ssafy.com');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState('세션이 만료되었거나 로그인이 필요한 경우 다시 로그인해 주세요.');
+  const [message, setMessage] = useState(initialMessage || '세션이 만료되었거나 로그인이 필요한 경우 다시 로그인해 주세요.');
+
+  useEffect(() => {
+    if (initialMessage) setMessage(initialMessage);
+  }, [initialMessage]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

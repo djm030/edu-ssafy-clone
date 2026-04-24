@@ -12,6 +12,9 @@ export class ApiError extends Error {
   }
 }
 
+export const AUTH_REQUIRED_EVENT = 'edussafy:auth-required';
+export const FORBIDDEN_EVENT = 'edussafy:forbidden';
+
 interface FetchJsonOptions<T> extends RequestInit {
   fallback?: () => T | Promise<T>;
 }
@@ -42,6 +45,16 @@ function shouldUseFallback(error: unknown): boolean {
     return error.status >= 500;
   }
   return true;
+}
+
+function dispatchAccessEvent(error: ApiError): void {
+  if (typeof window === 'undefined') return;
+  if (error.status === 401) {
+    window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT, { detail: { message: error.message } }));
+  }
+  if (error.status === 403) {
+    window.dispatchEvent(new CustomEvent(FORBIDDEN_EVENT, { detail: { message: error.message } }));
+  }
 }
 
 function warnFallback(url: string, error: unknown): void {
@@ -76,7 +89,9 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions<T> = {
     if (!response.ok) {
       const payload = await readJson<ApiErrorPayload>(response);
       const message = payload.error?.message || fallbackMessage(response.status);
-      throw new ApiError(response.status, message, payload.error?.code);
+      const apiError = new ApiError(response.status, message, payload.error?.code);
+      dispatchAccessEvent(apiError);
+      throw apiError;
     }
 
     return readJson<T>(response);
