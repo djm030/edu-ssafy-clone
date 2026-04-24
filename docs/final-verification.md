@@ -55,7 +55,7 @@ git diff --check
 | Local HTTP smoke | PASS | `/nginx-health`, `/actuator/health`, `/api/me`, `/api/auth/login`, `/api/auth/roles/current`, `/api/attendance/records`, `/api/learning/materials`, `/api/boards/free/posts` returned HTTP 200. |
 | PowerShell smoke harness | UNKNOWN | `pwsh`/`powershell` is not installed on this macOS verification host. |
 | Browser E2E / visual fidelity | UNKNOWN | No Playwright/Cypress/browser visual test was available or executed. |
-| OMX team completion | FAIL | summary reported total=132, completed=110, pending=18, in_progress=3, failed=1; workers were not alive. |
+| OMX team completion | FAIL | worker-1 recheck summary reported total=116, completed=4, pending=107, in_progress=5, failed=0; workers were not alive. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
@@ -97,7 +97,7 @@ git diff --check
 1. `BackendApplication` 안에 오래된 inline demo `ApiController`가 남아 실제 `BoardController` 등과 같은 API path를 중복 mapping했다. 이 때문에 Spring context startup/backend tests/Docker build가 실패했다.
 2. `frontend/src/App.tsx`에서 `useMemo`가 unused였고, `roleAccess`/`accessError` state가 선언되지 않았으며 `AppShell`에 `onLogout` 등 필수 props가 전달되지 않아 lint/build gate가 깨질 수 있었다.
 3. Nginx container는 외부 HTTP 200에도 Docker health가 처음에는 unhealthy였다. 원인은 container 내부 healthcheck가 `localhost`를 사용한 점으로 판단되어 `127.0.0.1`로 수정했고, 재기동 후 healthy를 확인했다.
-4. OMX team state는 아직 완료가 아니다: total=132, completed=110, pending=18, in_progress=3, failed=1, workers not alive.
+4. OMX team state는 아직 완료가 아니다: worker-1 recheck 기준 total=116, completed=4, pending=107, in_progress=5, failed=0, workers not alive.
 5. PowerShell 기반 smoke script는 macOS host에 `pwsh`/`powershell`이 없어 실행하지 못했다.
 6. 기능 자체는 runnable scaffold 수준이며, remaining-work의 product depth gap이 아직 다수 남아 있다.
 

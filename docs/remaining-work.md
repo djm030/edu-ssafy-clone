@@ -3,7 +3,7 @@
 ## Final Verification Recheck (2026-04-24)
 - Runnable gates improved: backend Maven tests, frontend lint/build, Docker image build, Compose startup, and basic local HTTP smoke now pass.
 - Still not complete: production auth/session/RBAC, common attachments, durable notification/support/survey/material workflows, board edit/delete/permissions, browser E2E/visual fidelity, and team task drain remain open.
-- OMX team state checked during final verification: total=132, completed=110, pending=18, in_progress=3, failed=1; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
+- OMX team state checked during worker-1 recheck: total=116, completed=4, pending=107, in_progress=5, failed=0; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
 
 
 ## Task 95 Required Work Check (worker-4, 2026-04-24)
@@ -91,8 +91,8 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 - 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 인증/세션, 권한 enforcement, 첨부파일, 설문/문의 depth, E2E/CI 검증이 남아 있다.
 
 ### FAIL 항목
-- 현재 문서 기준 명시적인 기능 FAIL 항목은 없다.
-- 단, 이 호스트의 backend Maven test 실행은 Java 25와 Mockito/Byte Buddy 호환성 문제로 FAIL한다. Java 21 환경 또는 테스트 의존성 업그레이드가 필요하다.
+- `docs/final-verification.md` 기준 명시적인 기능 FAIL 항목이 있다: 첨부파일, 학습자료 반응, 게시글 첨부파일, 문의 첨부파일.
+- Backend Maven test는 Dockerized Java 21에서 PASS했지만, host Java 25 직접 실행은 Mockito/Byte Buddy 호환성 문제로 실패할 수 있다. Java 21 또는 Dockerized Maven을 표준 검증 경로로 유지해야 한다.
 
 ### UNKNOWN 항목
 - Docker Compose live smoke 결과: 현재 워커 호스트에서 재검증하지 못했다.
@@ -110,8 +110,8 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 
 ### 위험 요소 / known issue
 - Frontend fallback은 demo UX를 보장하지만 CI/live mode에서는 반드시 비활성 상태로 검증해야 한다.
-- Backend test는 Java 25 환경에서 Mockito inline mock이 class instrumentation을 실패시키므로, Java 21 검증이 완료될 때까지 최종 PASS로 볼 수 없다.
-- `docs/final-verification.md`가 아직 없으므로 최종 완료 선언 금지.
+- Host Java 25 환경에서는 Mockito inline mock이 class instrumentation을 실패시킬 수 있으므로 Java 21/Dockerized Maven 경로로 검증해야 한다.
+- `docs/final-verification.md`는 존재하지만 PARTIAL/FAIL/UNKNOWN 항목이 남아 있으므로 최종 완료 선언 금지.
 
 ### 완료 판단
 - 이 문서에 남은 partial/gap/unknown 항목이 존재하므로 SSAFY 풀 클론은 아직 완료가 아니다.
