@@ -29,6 +29,25 @@
 | Tests/smoke | partial | Backend/frontend/smoke exist; add browser E2E and CI. |
 | README/docs | partial | Add top-level runbook/API/progress/test docs and keep tracker updated. |
 
+
+## Worker-4 Incomplete Feature Audit (2026-04-24)
+
+Repository evidence checked for Task 4: backend controllers under `backend/src/main/java/com/edussafy/backend/**`, frontend routes/pages under `frontend/src/**`, `docs/api-summary.md`, and current smoke/test notes. The app has a real Spring Boot backend and React frontend, but the clone is still **partial**, not full PASS.
+
+| Feature area | Current evidence | Completion status | Follow-up needed |
+|---|---|---|---|
+| Authentication/session/RBAC | `AuthController` exposes login/me/current-role/logout/password-check demo endpoints. | PARTIAL | Add real credential/session or token persistence, expiry, role enforcement, and frontend unauthorized/error states. |
+| Profile | `ProfileController` has read/update and frontend edit flow. | PARTIAL | Persist deeper profile fields, add authorization checks, and verify live update round-trip. |
+| Attendance | Records and appeal submission endpoints/pages exist. | PARTIAL | Add durable appeal status/history workflow and reviewer/admin path. |
+| Notifications/classmates | Notifications list plus classmate notification POST route exist. | PARTIAL | Add durable read/delete/send persistence and rebuild/live smoke verification for the new classmate route. |
+| Learning materials/replays | Curriculum, replay, materials list/detail/resources routes exist. | PARTIAL | Add attachment download/viewer fidelity, material like/bookmark/favorite/reaction endpoints, authorization, and progress state. |
+| Quest/survey | Quest list/detail/submit and survey list/detail/respond endpoints exist. | PARTIAL | Add grading/result details, file attachments, full survey question/option DTOs, and persisted responses. |
+| Board/community | Board list/detail/write/comment/reaction endpoints exist. | PARTIAL | Add edit/delete, attachments, permission checks, and owner/moderator behavior. |
+| Support/QNA | Ticket list/create and QNA page exist. | PARTIAL | Add ticket detail thread messages, answers, status transitions, attachments, and staff/admin response flows. |
+| Tests/CI/E2E | Unit/controller tests, frontend lint/build, and smoke harness exist. | PARTIAL | Add browser E2E, CI workflow, live smoke in rebuilt services, and final verification doc. |
+
+Task impact: no area above can be marked full-clone PASS yet; existing follow-up tasks 83-116 already cover final pass checks, verification, docs, and additional task creation.
+
 ## Next Rounds
 1. R7-auth-rbac: real session/token model, role guards, unauthorized UI states.
 2. R8-attachments-reactions: file upload/download, board/material/ticket attachments, material reactions.
