@@ -1,0 +1,678 @@
+// Generated from docs/revised_schema_mysql8.sql for dbdiagram.io (DBML)
+// Updated: 2026-04-24
+
+Table code_groups {
+  code_group varchar(50) [not null]
+  group_name varchar(100) [not null]
+  description varchar(500)
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+}
+
+Table codes {
+  code_group varchar(50) [not null]
+  code varchar(50) [not null]
+  code_name varchar(100) [not null]
+  description varchar(500)
+  sort_order int [not null, default: 1]
+  active_yn boolean [not null, default: true]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  CONSTRAINT fk_codes_code_group
+}
+
+Table users {
+  user_id bigint [not null, increment]
+  email varchar(255) [not null]
+  password_hash varchar(255)
+  learner_no varchar(50)
+  name varchar(100) [not null]
+  role_code_group varchar(50) [not null, default: 'user_role']
+  role_code varchar(50) [not null, default: 'student']
+  status_code_group varchar(50) [not null, default: 'user_status']
+  status_code varchar(50) [not null, default: 'active']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at datetime
+  anonymized_at datetime
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  CONSTRAINT chk_users_role_code_group
+  CONSTRAINT chk_users_status_code_group
+  CONSTRAINT fk_users_role_code
+  CONSTRAINT fk_users_status_code
+}
+
+Table user_profiles {
+  user_id bigint [not null]
+  zip_code varchar(20)
+  address_line1 varchar(255)
+  address_line2 varchar(255)
+  mobile_phone varchar(30)
+  emergency_phone varchar(30)
+  marketing_opt_in boolean [not null, default: false]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  CONSTRAINT fk_user_profiles_user
+}
+
+Table campuses {
+  campus_id bigint [not null, increment]
+  campus_name varchar(100) [not null]
+  PRIMARY key
+  UNIQUE key
+}
+
+Table cohorts {
+  cohort_id bigint [not null, increment]
+  cohort_name varchar(100) [not null]
+  start_date date
+  end_date date
+  PRIMARY key
+  UNIQUE key
+  CONSTRAINT chk_cohorts_date_range
+}
+
+Table tracks {
+  track_id bigint [not null, increment]
+  track_name varchar(100) [not null]
+  domain_type varchar(100)
+  PRIMARY key
+  UNIQUE key
+}
+
+Table class_groups {
+  class_group_id bigint [not null, increment]
+  campus_id bigint [not null]
+  cohort_id bigint [not null]
+  track_id bigint [not null]
+  class_name varchar(100) [not null]
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  KEY idx_class_groups_cohort_track
+  CONSTRAINT fk_class_groups_campus
+  CONSTRAINT fk_class_groups_cohort
+  CONSTRAINT fk_class_groups_track
+}
+
+Table user_track_enrollments {
+  user_track_enrollment_id bigint [not null, increment]
+  user_id bigint [not null]
+  track_id bigint [not null]
+  cohort_id bigint [not null]
+  enrolled_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  UNIQUE key
+  KEY idx_user_track_enrollments_track_cohort
+  CONSTRAINT fk_user_track_enrollments_user
+  CONSTRAINT fk_user_track_enrollments_track
+  CONSTRAINT fk_user_track_enrollments_cohort
+}
+
+Table user_class_enrollments {
+  user_class_enrollment_id bigint [not null, increment]
+  user_id bigint [not null]
+  class_group_id bigint [not null]
+  cohort_id bigint [not null]
+  track_id bigint [not null]
+  member_role_code_group varchar(50) [not null, default: 'class_member_role']
+  member_role_code varchar(50) [not null, default: 'student']
+  enrolled_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  UNIQUE key
+  KEY idx_user_class_enrollments_user_track_cohort
+  CONSTRAINT chk_user_class_enrollments_member_role_group
+  CONSTRAINT fk_user_class_enrollments_member_role
+  CONSTRAINT fk_user_class_enrollments_user
+  CONSTRAINT fk_user_class_enrollments_class_scope
+  CONSTRAINT fk_user_class_enrollments_user_track
+}
+
+Table attachments {
+  attachment_id bigint [not null, increment]
+  original_filename varchar(255) [not null]
+  storage_key varchar(100)
+  stored_path varchar(500)
+  mime_type varchar(100)
+  file_size bigint
+  checksum_sha256 char(64)
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  UNIQUE key
+  CONSTRAINT chk_attachments_file_size
+}
+
+Table user_profile_attachments {
+  user_id bigint [not null]
+  attachment_id bigint [not null]
+  attachment_role_code_group varchar(50) [not null, default: 'user_profile_attachment_role']
+  attachment_role_code varchar(50) [not null, default: 'profile_image']
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  CONSTRAINT chk_user_profile_attachments_role_group
+  CONSTRAINT fk_user_profile_attachments_role
+  CONSTRAINT fk_user_profile_attachments_user
+  CONSTRAINT fk_user_profile_attachments_attachment
+}
+
+Table user_level_statuses {
+  user_id bigint [not null]
+  level_name varchar(50)
+  level_no int
+  exp int [not null, default: 0]
+  scholarship_point int [not null, default: 0]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  CONSTRAINT chk_user_level_statuses_exp
+  CONSTRAINT chk_user_level_statuses_scholarship_point
+  CONSTRAINT fk_user_level_statuses_user
+}
+
+Table user_rank_snapshots {
+  user_rank_snapshot_id bigint [not null, increment]
+  snapshot_date date [not null]
+  user_id bigint [not null]
+  rank_no int [not null]
+  exp int [not null, default: 0]
+  scholarship_point int [not null, default: 0]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  CONSTRAINT chk_user_rank_snapshots_rank
+  CONSTRAINT chk_user_rank_snapshots_exp
+  CONSTRAINT chk_user_rank_snapshots_scholarship_point
+  CONSTRAINT fk_user_rank_snapshots_user
+}
+
+Table attendance_records {
+  attendance_record_id bigint [not null, increment]
+  user_id bigint [not null]
+  attendance_date date [not null]
+  check_in_at time
+  check_out_at time
+  attendance_status_code_group varchar(50) [not null, default: 'attendance_status']
+  attendance_status_code varchar(50) [not null]
+  approval_type_code_group varchar(50) [not null, default: 'attendance_approval_type']
+  approval_type_code varchar(50)
+  PRIMARY key
+  UNIQUE key
+  KEY idx_attendance_records_date_status
+  CONSTRAINT chk_attendance_records_status_group
+  CONSTRAINT chk_attendance_records_approval_type_group
+  CONSTRAINT fk_attendance_records_status
+  CONSTRAINT fk_attendance_records_approval_type
+  CONSTRAINT fk_attendance_records_user
+}
+
+Table attendance_appeals {
+  attendance_appeal_id bigint [not null, increment]
+  attendance_record_id bigint [not null]
+  appeal_type_code_group varchar(50) [not null, default: 'attendance_appeal_type']
+  appeal_type_code varchar(50) [not null]
+  reason text
+  approval_status_code_group varchar(50) [not null, default: 'approval_status']
+  approval_status_code varchar(50) [not null, default: 'requested']
+  requested_status_code_group varchar(50) [not null, default: 'attendance_status']
+  requested_status_code varchar(50)
+  resolved_status_code_group varchar(50) [not null, default: 'attendance_status']
+  resolved_status_code varchar(50)
+  requested_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  resolved_at datetime
+  resolved_by_user_id bigint
+  resolution_comment text
+  PRIMARY key
+  KEY idx_attendance_appeals_record_status
+  KEY idx_attendance_appeals_resolved_by
+  CONSTRAINT chk_attendance_appeals_appeal_type_group
+  CONSTRAINT chk_attendance_appeals_approval_status_group
+  CONSTRAINT chk_attendance_appeals_requested_status_group
+  CONSTRAINT chk_attendance_appeals_resolved_status_group
+  CONSTRAINT fk_attendance_appeals_appeal_type
+  CONSTRAINT fk_attendance_appeals_approval_status
+  CONSTRAINT fk_attendance_appeals_requested_status
+  CONSTRAINT fk_attendance_appeals_resolved_status
+  CONSTRAINT fk_attendance_appeals_attendance_record
+  CONSTRAINT fk_attendance_appeals_resolved_by
+}
+
+Table notifications {
+  notification_id bigint [not null, increment]
+  sender_user_id bigint
+  title varchar(255) [not null]
+  body text
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  KEY idx_notifications_sender_created
+  CONSTRAINT fk_notifications_sender
+}
+
+Table notification_recipients {
+  notification_recipient_id bigint [not null, increment]
+  notification_id bigint [not null]
+  recipient_user_id bigint
+  read_at datetime
+  deleted_at datetime
+  PRIMARY key
+  UNIQUE key
+  KEY idx_notification_recipients_user_read
+  CONSTRAINT fk_notification_recipients_notification
+  CONSTRAINT fk_notification_recipients_recipient
+}
+
+Table content_scopes {
+  content_scope_id bigint [not null, increment]
+  scope_type_code_group varchar(50) [not null, default: 'content_scope_type']
+  scope_type_code varchar(50) [not null]
+  campus_id bigint
+  cohort_id bigint
+  track_id bigint
+  class_group_id bigint
+  user_id bigint
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  KEY idx_content_scopes_campus
+  KEY idx_content_scopes_cohort
+  KEY idx_content_scopes_track
+  KEY idx_content_scopes_class_group
+  KEY idx_content_scopes_user
+  CONSTRAINT chk_content_scopes_scope_group
+  CONSTRAINT chk_content_scopes_target [not null]
+  CONSTRAINT fk_content_scopes_scope_type
+  CONSTRAINT fk_content_scopes_campus
+  CONSTRAINT fk_content_scopes_cohort
+  CONSTRAINT fk_content_scopes_track
+  CONSTRAINT fk_content_scopes_class_group
+  CONSTRAINT fk_content_scopes_user
+}
+
+Table terms {
+  term_id bigint [not null, increment]
+  term_name varchar(100) [not null]
+  progress_status_code_group varchar(50) [not null, default: 'progress_status']
+  progress_status_code varchar(50) [not null]
+  start_date date
+  end_date date
+  PRIMARY key
+  UNIQUE key
+  CONSTRAINT chk_terms_progress_status_group
+  CONSTRAINT chk_terms_date_range
+  CONSTRAINT fk_terms_progress_status
+}
+
+Table curriculum_schedules {
+  curriculum_schedule_id bigint [not null, increment]
+  term_id bigint [not null]
+  content_scope_id bigint [not null]
+  week_no int
+  class_date date
+  start_time time
+  end_time time
+  curriculum_type_code_group varchar(50) [not null, default: 'curriculum_type']
+  curriculum_type_code varchar(50)
+  topic varchar(255) [not null]
+  instructor_name varchar(100)
+  classroom varchar(100)
+  PRIMARY key
+  UNIQUE key
+  KEY idx_curriculum_schedules_term_week
+  KEY idx_curriculum_schedules_scope_date
+  CONSTRAINT chk_curriculum_schedules_curriculum_type_group
+  CONSTRAINT chk_curriculum_schedules_time_range
+  CONSTRAINT fk_curriculum_schedules_curriculum_type
+  CONSTRAINT fk_curriculum_schedules_term
+  CONSTRAINT fk_curriculum_schedules_scope
+}
+
+Table lecture_replays {
+  lecture_replay_id bigint [not null, increment]
+  curriculum_schedule_id bigint [not null]
+  content_external_id varchar(100)
+  replay_group_key varchar(255) [not null, default: 'default']
+  title varchar(255) [not null]
+  version_no int [not null, default: 1]
+  published_at datetime
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  KEY idx_lecture_replays_latest_lookup
+  CONSTRAINT chk_lecture_replays_version_no
+  CONSTRAINT fk_lecture_replays_schedule
+}
+
+Table learning_materials {
+  learning_material_id bigint [not null, increment]
+  curriculum_schedule_id bigint
+  content_scope_id bigint [not null]
+  content_external_id varchar(100)
+  category_parent varchar(100)
+  category_child varchar(100)
+  material_type_code_group varchar(50) [not null, default: 'material_type']
+  material_type_code varchar(50) [not null]
+  title varchar(255) [not null]
+  summary text
+  detail_url varchar(500)
+  view_count int [not null, default: 0]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  UNIQUE key
+  KEY idx_learning_materials_schedule_scope
+  KEY idx_learning_materials_scope_type
+  CONSTRAINT chk_learning_materials_material_type_group
+  CONSTRAINT chk_learning_materials_view_count
+  CONSTRAINT fk_learning_materials_material_type
+  CONSTRAINT fk_learning_materials_scope
+  CONSTRAINT fk_learning_materials_schedule_scope
+}
+
+Table learning_material_resources {
+  learning_material_resource_id bigint [not null, increment]
+  learning_material_id bigint [not null]
+  resource_type_code_group varchar(50) [not null, default: 'resource_type']
+  resource_type_code varchar(50) [not null]
+  resource_title varchar(255) [not null]
+  launch_mode_code_group varchar(50) [not null, default: 'launch_mode']
+  launch_mode_code varchar(50) [not null]
+  target_url varchar(500)
+  external_resource_id varchar(100)
+  display_order int [not null, default: 1]
+  PRIMARY key
+  UNIQUE key
+  CONSTRAINT chk_learning_material_resources_resource_type_group
+  CONSTRAINT chk_learning_material_resources_launch_mode_group
+  CONSTRAINT chk_learning_material_resources_display_order
+  CONSTRAINT fk_learning_material_resources_resource_type
+  CONSTRAINT fk_learning_material_resources_launch_mode
+  CONSTRAINT fk_learning_material_resources_material
+}
+
+Table learning_material_resource_attachments {
+  learning_material_resource_id bigint [not null]
+  attachment_id bigint [not null]
+  PRIMARY key
+  CONSTRAINT fk_learning_material_resource_attachments_resource
+  CONSTRAINT fk_learning_material_resource_attachments_attachment
+}
+
+Table learning_material_reactions {
+  learning_material_id bigint [not null]
+  user_id bigint [not null]
+  reaction_type_code_group varchar(50) [not null, default: 'reaction_type']
+  reaction_type_code varchar(50) [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  CONSTRAINT chk_learning_material_reactions_reaction_type_group
+  CONSTRAINT fk_learning_material_reactions_reaction_type
+  CONSTRAINT fk_learning_material_reactions_material
+  CONSTRAINT fk_learning_material_reactions_user
+}
+
+Table quest_evaluations {
+  quest_evaluation_id bigint [not null, increment]
+  content_scope_id bigint [not null]
+  external_task_id varchar(100) [not null]
+  quest_type_code_group varchar(50) [not null, default: 'quest_type']
+  quest_type_code varchar(50) [not null]
+  task_classification_code_group varchar(50) [not null, default: 'task_classification']
+  task_classification_code varchar(50)
+  title varchar(255) [not null]
+  start_at datetime
+  end_at datetime
+  max_exp int
+  progress_status_code_group varchar(50) [not null, default: 'progress_status']
+  progress_status_code varchar(50) [not null]
+  PRIMARY key
+  UNIQUE key
+  KEY idx_quest_evaluations_scope_period
+  CONSTRAINT chk_quest_evaluations_quest_type_group
+  CONSTRAINT chk_quest_evaluations_task_classification_group
+  CONSTRAINT chk_quest_evaluations_progress_status_group
+  CONSTRAINT chk_quest_evaluations_period
+  CONSTRAINT chk_quest_evaluations_max_exp
+  CONSTRAINT fk_quest_evaluations_scope
+  CONSTRAINT fk_quest_evaluations_quest_type
+  CONSTRAINT fk_quest_evaluations_task_classification
+  CONSTRAINT fk_quest_evaluations_progress_status
+}
+
+Table quest_submissions {
+  quest_submission_id bigint [not null, increment]
+  quest_evaluation_id bigint [not null]
+  user_id bigint [not null]
+  result_status_code_group varchar(50) [not null, default: 'quest_result_status']
+  result_status_code varchar(50)
+  score decimal(7
+  submit_status_code_group varchar(50) [not null, default: 'quest_submit_status']
+  submit_status_code varchar(50) [not null]
+  submitted_at datetime
+  graded_at datetime
+  PRIMARY key
+  UNIQUE key
+  KEY idx_quest_submissions_user_status
+  CONSTRAINT chk_quest_submissions_result_status_group
+  CONSTRAINT chk_quest_submissions_submit_status_group
+  CONSTRAINT chk_quest_submissions_score
+  CONSTRAINT fk_quest_submissions_result_status
+  CONSTRAINT fk_quest_submissions_submit_status
+  CONSTRAINT fk_quest_submissions_quest
+  CONSTRAINT fk_quest_submissions_user
+}
+
+Table surveys {
+  survey_id bigint [not null, increment]
+  content_scope_id bigint [not null]
+  title varchar(255) [not null]
+  survey_category_code_group varchar(50) [not null, default: 'survey_category']
+  survey_category_code varchar(50) [not null]
+  required_yn boolean [not null, default: false]
+  progress_status_code_group varchar(50) [not null, default: 'progress_status']
+  progress_status_code varchar(50) [not null]
+  start_at datetime
+  end_at datetime
+  PRIMARY key
+  KEY idx_surveys_scope_period
+  CONSTRAINT chk_surveys_category_group
+  CONSTRAINT chk_surveys_progress_status_group
+  CONSTRAINT chk_surveys_period
+  CONSTRAINT fk_surveys_scope
+  CONSTRAINT fk_surveys_category
+  CONSTRAINT fk_surveys_progress_status
+}
+
+Table survey_questions {
+  survey_question_id bigint [not null, increment]
+  survey_id bigint [not null]
+  question_type_code_group varchar(50) [not null, default: 'survey_question_type']
+  question_type_code varchar(50) [not null]
+  question_text text [not null]
+  display_order int [not null]
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  CONSTRAINT chk_survey_questions_type_group
+  CONSTRAINT chk_survey_questions_display_order
+  CONSTRAINT fk_survey_questions_type
+  CONSTRAINT fk_survey_questions_survey
+}
+
+Table survey_options {
+  survey_option_id bigint [not null, increment]
+  survey_question_id bigint [not null]
+  option_text varchar(255) [not null]
+  display_order int [not null]
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  CONSTRAINT chk_survey_options_display_order
+  CONSTRAINT fk_survey_options_question
+}
+
+Table survey_responses {
+  survey_response_id bigint [not null, increment]
+  survey_id bigint [not null]
+  user_id bigint [not null]
+  completed_yn boolean [not null, default: false]
+  responded_at datetime
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  KEY idx_survey_responses_user_responded
+  CONSTRAINT fk_survey_responses_survey
+  CONSTRAINT fk_survey_responses_user
+}
+
+Table survey_response_answers {
+  survey_response_answer_id bigint [not null, increment]
+  survey_response_id bigint [not null]
+  survey_id bigint [not null]
+  survey_question_id bigint [not null]
+  answer_text text
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  KEY idx_survey_response_answers_question
+  CONSTRAINT fk_survey_response_answers_response_survey
+  CONSTRAINT fk_survey_response_answers_question_survey
+}
+
+Table survey_response_answer_options {
+  survey_response_answer_id bigint [not null]
+  survey_question_id bigint [not null]
+  survey_option_id bigint [not null]
+  PRIMARY key
+  KEY idx_survey_response_answer_options_option
+  CONSTRAINT fk_survey_response_answer_options_answer_question
+  CONSTRAINT fk_survey_response_answer_options_option_question
+}
+
+Table boards {
+  board_id bigint [not null, increment]
+  board_code varchar(50) [not null]
+  board_name varchar(100) [not null]
+  board_group_code_group varchar(50) [not null, default: 'board_group']
+  board_group_code varchar(50) [not null]
+  access_scope_code_group varchar(50) [not null, default: 'access_scope']
+  access_scope_code varchar(50) [not null, default: 'authenticated']
+  PRIMARY key
+  UNIQUE key
+  CONSTRAINT chk_boards_group_code_group
+  CONSTRAINT chk_boards_access_scope_group
+  CONSTRAINT fk_boards_group_code
+  CONSTRAINT fk_boards_access_scope
+}
+
+Table board_categories {
+  board_category_id bigint [not null, increment]
+  board_id bigint [not null]
+  category_name varchar(100) [not null]
+  sort_order int [not null, default: 1]
+  PRIMARY key
+  UNIQUE key
+  UNIQUE key
+  CONSTRAINT chk_board_categories_sort_order
+  CONSTRAINT fk_board_categories_board
+}
+
+Table board_posts {
+  board_post_id bigint [not null, increment]
+  board_id bigint [not null]
+  board_category_id bigint
+  author_user_id bigint
+  title varchar(255) [not null]
+  content text
+  notice_yn boolean [not null, default: false]
+  view_count int [not null, default: 0]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  KEY idx_board_posts_board_created
+  KEY idx_board_posts_author_created
+  CONSTRAINT chk_board_posts_view_count
+  CONSTRAINT fk_board_posts_board
+  CONSTRAINT fk_board_posts_category_board
+  CONSTRAINT fk_board_posts_author
+}
+
+Table board_post_attachments {
+  board_post_id bigint [not null]
+  attachment_id bigint [not null]
+  PRIMARY key
+  CONSTRAINT fk_board_post_attachments_post
+  CONSTRAINT fk_board_post_attachments_attachment
+}
+
+Table board_comments {
+  board_comment_id bigint [not null, increment]
+  board_post_id bigint [not null]
+  author_user_id bigint
+  parent_comment_id bigint
+  content text [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  KEY idx_board_comments_post_created
+  KEY idx_board_comments_parent
+  CONSTRAINT fk_board_comments_post
+  CONSTRAINT fk_board_comments_author
+  CONSTRAINT fk_board_comments_parent
+}
+
+Table board_post_reactions {
+  board_post_id bigint [not null]
+  user_id bigint [not null]
+  reaction_type_code_group varchar(50) [not null, default: 'reaction_type']
+  reaction_type_code varchar(50) [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  CONSTRAINT chk_board_post_reactions_reaction_type_group
+  CONSTRAINT fk_board_post_reactions_reaction_type
+  CONSTRAINT fk_board_post_reactions_post
+  CONSTRAINT fk_board_post_reactions_user
+}
+
+Table support_tickets {
+  support_ticket_id bigint [not null, increment]
+  requester_user_id bigint
+  title varchar(255) [not null]
+  status_code_group varchar(50) [not null, default: 'support_ticket_status']
+  status_code varchar(50) [not null, default: 'open']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  closed_at datetime
+  PRIMARY key
+  KEY idx_support_tickets_requester_status
+  CONSTRAINT chk_support_tickets_status_group
+  CONSTRAINT fk_support_tickets_status
+  CONSTRAINT fk_support_tickets_requester
+}
+
+Table support_ticket_messages {
+  support_ticket_message_id bigint [not null, increment]
+  support_ticket_id bigint [not null]
+  sender_user_id bigint
+  message_type_code_group varchar(50) [not null, default: 'support_message_type']
+  message_type_code varchar(50) [not null]
+  content text [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  PRIMARY key
+  KEY idx_support_ticket_messages_ticket_created
+  KEY idx_support_ticket_messages_sender_created
+  CONSTRAINT chk_support_ticket_messages_type_group
+  CONSTRAINT fk_support_ticket_messages_type
+  CONSTRAINT fk_support_ticket_messages_ticket
+  CONSTRAINT fk_support_ticket_messages_sender
+}
+
+Table support_ticket_message_attachments {
+  support_ticket_message_id bigint [not null]
+  attachment_id bigint [not null]
+  PRIMARY key
+  CONSTRAINT fk_support_ticket_message_attachments_message
+  CONSTRAINT fk_support_ticket_message_attachments_attachment
+}

@@ -1,0 +1,15 @@
+ssafy_pages.*
+ssafy_pages
+
+# Share only stable OMX collaboration artifacts.
+# Runtime state/logs include local paths, session IDs, and transient hook data.
+.omx/*
+!.omx/README.md
+!.omx/context/
+!.omx/context/**
+!.omx/plans/
+!.omx/plans/**
+!.omx/wiki/
+!.omx/wiki/**
+!.omx/notepad.md
+!.omx/project-memory.json

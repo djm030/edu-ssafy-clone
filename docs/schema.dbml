@@ -1,0 +1,466 @@
+// Generated from docs/schema.sql for dbdiagram.io (DBML)
+// Updated: 2026-04-23
+
+Table users {
+  user_id bigint [pk, not null, increment]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255)
+  learner_no varchar(50) [unique]
+  name varchar(100) [not null]
+  role_code varchar(30) [not null, default: 'student']
+  status_code varchar(30) [not null, default: 'active']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table user_profiles {
+  user_id bigint [pk, not null]
+  zip_code varchar(20)
+  address_line1 varchar(255)
+  address_line2 varchar(255)
+  mobile_phone varchar(30)
+  emergency_phone varchar(30)
+  marketing_opt_in boolean [not null, default: false]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table campuses {
+  campus_id bigint [pk, not null, increment]
+  campus_name varchar(100) [not null, unique]
+}
+
+Table cohorts {
+  cohort_id bigint [pk, not null, increment]
+  cohort_name varchar(100) [not null, unique]
+  start_date date
+  end_date date
+}
+
+Table tracks {
+  track_id bigint [pk, not null, increment]
+  track_name varchar(100) [not null, unique]
+  domain_type varchar(100)
+}
+
+Table class_groups {
+  class_group_id bigint [pk, not null, increment]
+  campus_id bigint [not null]
+  cohort_id bigint [not null]
+  class_name varchar(100) [not null]
+
+  indexes {
+    (campus_id, cohort_id, class_name) [unique, name: 'uk_class_groups_scope']
+  }
+}
+
+Table user_class_enrollments {
+  user_class_enrollment_id bigint [pk, not null, increment]
+  user_id bigint [not null]
+  class_group_id bigint [not null]
+  member_role_code varchar(30) [not null, default: 'student']
+  enrolled_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (user_id, class_group_id) [unique, name: 'uk_user_class_enrollments_user_class']
+  }
+}
+
+Table user_track_enrollments {
+  user_track_enrollment_id bigint [pk, not null, increment]
+  user_id bigint [not null]
+  track_id bigint [not null]
+  cohort_id bigint [not null]
+  enrolled_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (user_id, track_id, cohort_id) [unique, name: 'uk_user_track_enrollments_user_track_cohort']
+  }
+}
+
+Table attachments {
+  attachment_id bigint [pk, not null, increment]
+  original_filename varchar(255) [not null]
+  storage_key varchar(100)
+  stored_path varchar(500)
+  mime_type varchar(100)
+  file_size bigint
+  checksum_sha256 char(64)
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table user_profile_attachments {
+  user_id bigint [not null]
+  attachment_id bigint [not null, unique]
+  attachment_role_code varchar(30) [not null, default: 'profile_image']
+
+  indexes {
+    (user_id, attachment_id) [pk]
+    (user_id, attachment_role_code) [unique, name: 'uk_user_profile_attachments_user_role']
+  }
+}
+
+Table user_level_statuses {
+  user_id bigint [pk, not null]
+  level_name varchar(50)
+  level_no int
+  exp int [not null, default: 0]
+  scholarship_point int [not null, default: 0]
+  rank_no int
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table attendance_records {
+  attendance_record_id bigint [pk, not null, increment]
+  user_id bigint [not null]
+  attendance_date date [not null]
+  check_in_at time
+  check_out_at time
+  attendance_status_code varchar(30) [not null]
+  approval_type_code varchar(30)
+
+  indexes {
+    (user_id, attendance_date) [unique, name: 'uk_attendance_records_user_date']
+  }
+}
+
+Table attendance_appeals {
+  attendance_appeal_id bigint [pk, not null, increment]
+  attendance_record_id bigint [not null]
+  appeal_type_code varchar(30) [not null]
+  reason text
+  approval_status_code varchar(30) [not null, default: 'requested']
+  requested_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  resolved_at datetime
+}
+
+Table notifications {
+  notification_id bigint [pk, not null, increment]
+  sender_user_id bigint
+  title varchar(255) [not null]
+  body text
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table notification_recipients {
+  notification_recipient_id bigint [pk, not null, increment]
+  notification_id bigint [not null]
+  recipient_user_id bigint [not null]
+  read_at datetime
+  deleted_at datetime
+
+  indexes {
+    (notification_id, recipient_user_id) [unique, name: 'uk_notification_recipients_notification_user']
+  }
+}
+
+Table terms {
+  term_id bigint [pk, not null, increment]
+  term_name varchar(100) [not null, unique]
+  progress_status_code varchar(30) [not null]
+  start_date date
+  end_date date
+}
+
+Table curriculum_schedules {
+  curriculum_schedule_id bigint [pk, not null, increment]
+  term_id bigint [not null]
+  track_id bigint
+  week_no int
+  class_date date
+  start_time time
+  end_time time
+  curriculum_type_code varchar(50)
+  topic varchar(255) [not null]
+  instructor_name varchar(100)
+  classroom varchar(100)
+}
+
+Table lecture_replays {
+  lecture_replay_id bigint [pk, not null, increment]
+  curriculum_schedule_id bigint
+  content_external_id varchar(100) [unique]
+  group_name varchar(255)
+  title varchar(255) [not null]
+  is_latest boolean [not null, default: false]
+}
+
+Table learning_materials {
+  learning_material_id bigint [pk, not null, increment]
+  curriculum_schedule_id bigint
+  track_id bigint
+  content_external_id varchar(100) [unique]
+  category_parent varchar(100)
+  category_child varchar(100)
+  material_type_code varchar(50) [not null]
+  title varchar(255) [not null]
+  summary text
+  detail_url varchar(500)
+  view_count int [not null, default: 0]
+}
+
+Table learning_material_resources {
+  learning_material_resource_id bigint [pk, not null, increment]
+  learning_material_id bigint [not null]
+  resource_type_code varchar(50) [not null]
+  resource_title varchar(255) [not null]
+  launch_mode_code varchar(30) [not null]
+  target_url varchar(500)
+  external_resource_id varchar(100)
+  display_order int [not null, default: 1]
+
+  indexes {
+    (learning_material_id, display_order) [unique, name: 'uk_learning_material_resources_material_order']
+  }
+}
+
+Table learning_material_resource_attachments {
+  learning_material_resource_id bigint [not null]
+  attachment_id bigint [not null]
+
+  indexes {
+    (learning_material_resource_id, attachment_id) [pk]
+  }
+}
+
+Table learning_material_reactions {
+  learning_material_id bigint [not null]
+  user_id bigint [not null]
+  reaction_type_code varchar(30) [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (learning_material_id, user_id, reaction_type_code) [pk]
+  }
+}
+
+Table quest_evaluations {
+  quest_evaluation_id bigint [pk, not null, increment]
+  track_id bigint
+  task_seq varchar(100) [not null, unique]
+  quest_type_code varchar(30) [not null]
+  tp_clfc_cd varchar(30)
+  title varchar(255) [not null]
+  start_at datetime
+  end_at datetime
+  max_exp int
+  progress_status_code varchar(30) [not null]
+}
+
+Table quest_submissions {
+  quest_submission_id bigint [pk, not null, increment]
+  quest_evaluation_id bigint [not null]
+  user_id bigint [not null]
+  result_status_code varchar(30)
+  score decimal(7
+  submit_status_code varchar(30) [not null]
+  submitted_at datetime
+  graded_at datetime
+
+  indexes {
+    (quest_evaluation_id, user_id) [unique, name: 'uk_quest_submissions_quest_user']
+  }
+}
+
+Table surveys {
+  survey_id bigint [pk, not null, increment]
+  track_id bigint
+  title varchar(255) [not null]
+  survey_category_code varchar(50) [not null]
+  required_yn boolean [not null, default: false]
+  progress_status_code varchar(30) [not null]
+  start_at datetime
+  end_at datetime
+}
+
+Table survey_questions {
+  survey_question_id bigint [pk, not null, increment]
+  survey_id bigint [not null]
+  question_type_code varchar(30) [not null]
+  question_text text [not null]
+  display_order int [not null]
+
+  indexes {
+    (survey_id, display_order) [unique, name: 'uk_survey_questions_survey_order']
+  }
+}
+
+Table survey_options {
+  survey_option_id bigint [pk, not null, increment]
+  survey_question_id bigint [not null]
+  option_text varchar(255) [not null]
+  display_order int [not null]
+
+  indexes {
+    (survey_question_id, display_order) [unique, name: 'uk_survey_options_question_order']
+    (survey_option_id, survey_question_id) [unique, name: 'uk_survey_options_option_question']
+  }
+}
+
+Table survey_responses {
+  survey_response_id bigint [pk, not null, increment]
+  survey_id bigint [not null]
+  user_id bigint [not null]
+  completed_yn boolean [not null, default: false]
+  responded_at datetime
+
+  indexes {
+    (survey_id, user_id) [unique, name: 'uk_survey_responses_survey_user']
+  }
+}
+
+Table survey_response_answers {
+  survey_response_answer_id bigint [pk, not null, increment]
+  survey_response_id bigint [not null]
+  survey_question_id bigint [not null]
+  survey_option_id bigint
+  answer_text text
+
+  indexes {
+    (survey_response_id, survey_question_id) [unique, name: 'uk_survey_response_answers_response_question']
+  }
+}
+
+Table boards {
+  board_id bigint [pk, not null, increment]
+  board_code varchar(50) [not null, unique]
+  board_name varchar(100) [not null]
+  board_group_code varchar(50) [not null]
+  access_scope_code varchar(30) [not null, default: 'authenticated']
+}
+
+Table board_categories {
+  board_category_id bigint [pk, not null, increment]
+  board_id bigint [not null]
+  category_name varchar(100) [not null]
+  sort_order int [not null, default: 1]
+
+  indexes {
+    (board_id, category_name) [unique, name: 'uk_board_categories_board_name']
+    (board_category_id, board_id) [unique, name: 'uk_board_categories_id_board']
+  }
+}
+
+Table board_posts {
+  board_post_id bigint [pk, not null, increment]
+  board_id bigint [not null]
+  board_category_id bigint
+  author_user_id bigint
+  title varchar(255) [not null]
+  content text
+  notice_yn boolean [not null, default: false]
+  view_count int [not null, default: 0]
+  has_prev_next_nav boolean [not null, default: false]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table board_post_attachments {
+  board_post_id bigint [not null]
+  attachment_id bigint [not null]
+
+  indexes {
+    (board_post_id, attachment_id) [pk]
+  }
+}
+
+Table board_comments {
+  board_comment_id bigint [pk, not null, increment]
+  board_post_id bigint [not null]
+  author_user_id bigint
+  parent_comment_id bigint
+  content text [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table board_post_reactions {
+  board_post_id bigint [not null]
+  user_id bigint [not null]
+  reaction_type_code varchar(30) [not null]
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (board_post_id, user_id, reaction_type_code) [pk]
+  }
+}
+
+Table support_tickets {
+  support_ticket_id bigint [pk, not null, increment]
+  requester_user_id bigint [not null]
+  title varchar(255) [not null]
+  content text
+  status_code varchar(30) [not null, default: 'open']
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table support_ticket_answers {
+  support_ticket_answer_id bigint [pk, not null, increment]
+  support_ticket_id bigint [not null, unique]
+  responder_user_id bigint
+  content text [not null]
+  answered_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table support_ticket_attachments {
+  support_ticket_id bigint [not null]
+  attachment_id bigint [not null]
+
+  indexes {
+    (support_ticket_id, attachment_id) [pk]
+  }
+}
+
+Ref: user_profiles.(user_id) > users.(user_id) [delete: cascade]
+Ref: class_groups.(campus_id) > campuses.(campus_id)
+Ref: class_groups.(cohort_id) > cohorts.(cohort_id)
+Ref: user_class_enrollments.(user_id) > users.(user_id) [delete: cascade]
+Ref: user_class_enrollments.(class_group_id) > class_groups.(class_group_id) [delete: cascade]
+Ref: user_track_enrollments.(user_id) > users.(user_id) [delete: cascade]
+Ref: user_track_enrollments.(track_id) > tracks.(track_id)
+Ref: user_track_enrollments.(cohort_id) > cohorts.(cohort_id)
+Ref: user_profile_attachments.(user_id) > user_profiles.(user_id) [delete: cascade]
+Ref: user_profile_attachments.(attachment_id) > attachments.(attachment_id) [delete: cascade]
+Ref: user_level_statuses.(user_id) > users.(user_id) [delete: cascade]
+Ref: attendance_records.(user_id) > users.(user_id) [delete: cascade]
+Ref: attendance_appeals.(attendance_record_id) > attendance_records.(attendance_record_id) [delete: cascade]
+Ref: notifications.(sender_user_id) > users.(user_id) [delete: set_null]
+Ref: notification_recipients.(notification_id) > notifications.(notification_id) [delete: cascade]
+Ref: notification_recipients.(recipient_user_id) > users.(user_id) [delete: cascade]
+Ref: curriculum_schedules.(term_id) > terms.(term_id)
+Ref: curriculum_schedules.(track_id) > tracks.(track_id)
+Ref: lecture_replays.(curriculum_schedule_id) > curriculum_schedules.(curriculum_schedule_id) [delete: set_null]
+Ref: learning_materials.(curriculum_schedule_id) > curriculum_schedules.(curriculum_schedule_id) [delete: set_null]
+Ref: learning_materials.(track_id) > tracks.(track_id) [delete: set_null]
+Ref: learning_material_resources.(learning_material_id) > learning_materials.(learning_material_id) [delete: cascade]
+Ref: learning_material_resource_attachments.(learning_material_resource_id) > learning_material_resources.(learning_material_resource_id) [delete: cascade]
+Ref: learning_material_resource_attachments.(attachment_id) > attachments.(attachment_id) [delete: cascade]
+Ref: learning_material_reactions.(learning_material_id) > learning_materials.(learning_material_id) [delete: cascade]
+Ref: learning_material_reactions.(user_id) > users.(user_id) [delete: cascade]
+Ref: quest_evaluations.(track_id) > tracks.(track_id) [delete: set_null]
+Ref: quest_submissions.(quest_evaluation_id) > quest_evaluations.(quest_evaluation_id) [delete: cascade]
+Ref: quest_submissions.(user_id) > users.(user_id) [delete: cascade]
+Ref: surveys.(track_id) > tracks.(track_id) [delete: set_null]
+Ref: survey_questions.(survey_id) > surveys.(survey_id) [delete: cascade]
+Ref: survey_options.(survey_question_id) > survey_questions.(survey_question_id) [delete: cascade]
+Ref: survey_responses.(survey_id) > surveys.(survey_id) [delete: cascade]
+Ref: survey_responses.(user_id) > users.(user_id) [delete: cascade]
+Ref: survey_response_answers.(survey_response_id) > survey_responses.(survey_response_id) [delete: cascade]
+Ref: survey_response_answers.(survey_question_id) > survey_questions.(survey_question_id) [delete: cascade]
+Ref: survey_response_answers.(survey_option_id, survey_question_id) > survey_options.(survey_option_id, survey_question_id) [delete: restrict]
+Ref: board_categories.(board_id) > boards.(board_id) [delete: cascade]
+Ref: board_posts.(board_id) > boards.(board_id) [delete: cascade]
+Ref: board_posts.(board_category_id, board_id) > board_categories.(board_category_id, board_id) [delete: restrict]
+Ref: board_posts.(author_user_id) > users.(user_id) [delete: set_null]
+Ref: board_post_attachments.(board_post_id) > board_posts.(board_post_id) [delete: cascade]
+Ref: board_post_attachments.(attachment_id) > attachments.(attachment_id) [delete: cascade]
+Ref: board_comments.(board_post_id) > board_posts.(board_post_id) [delete: cascade]
+Ref: board_comments.(author_user_id) > users.(user_id) [delete: set_null]
+Ref: board_comments.(parent_comment_id) > board_comments.(board_comment_id) [delete: cascade]
+Ref: board_post_reactions.(board_post_id) > board_posts.(board_post_id) [delete: cascade]
+Ref: board_post_reactions.(user_id) > users.(user_id) [delete: cascade]
+Ref: support_tickets.(requester_user_id) > users.(user_id) [delete: cascade]
+Ref: support_ticket_answers.(support_ticket_id) > support_tickets.(support_ticket_id) [delete: cascade]
+Ref: support_ticket_answers.(responder_user_id) > users.(user_id) [delete: set_null]
+Ref: support_ticket_attachments.(support_ticket_id) > support_tickets.(support_ticket_id) [delete: cascade]
+Ref: support_ticket_attachments.(attachment_id) > attachments.(attachment_id) [delete: cascade]
