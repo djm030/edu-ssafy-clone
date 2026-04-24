@@ -1,5 +1,9 @@
 # Full Clone Progress
 
+## Worker-4 Guardrail Task Disposition (Tasks 26/30/34/40, 2026-04-25)
+- 이 4개 항목은 실행해야 할 deliverable이 아니라 금지 패턴(조기 종료/무검증 완료 선언) 경고 성격으로 판정했다.
+- 실제 수행은 guardrail 위반이므로 task status를 FAIL로 전환하고, 대신 검증/문서/추가 task 생성을 계속 수행했다.
+
 ## Worker-4 Gate Check Batch (Tasks 17/83/87/89/95/102/105/115, 2026-04-25)
 - Task 17 (Docker naming/port/network/volume guard): PASS. worker-4 변경 파일에 compose/infra 서비스 정의 변경 없음.
 - Task 83 (모든 핵심 기능 PASS 여부): FAIL. `docs/final-verification.md` 기준 PARTIAL/FAIL/UNKNOWN 항목이 남아 있어 전체 PASS 아님.
