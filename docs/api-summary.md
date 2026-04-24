@@ -1,5 +1,46 @@
 # API Summary
 
+## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
+
+> Auth note: current implementation uses demo/current-user semantics. `POST /api/auth/login` is public; most other learner-facing APIs should be treated as auth-required for product completion, but production RBAC/session enforcement is still tracked as remaining work.
+
+| API endpoint | HTTP method | Request parameters/body | Response summary | Auth needed | Frontend connected screen |
+|---|---|---|---|---|---|
+| `/api/auth/login` | POST | body `{ email, password }` | `{ user }` demo login profile | No | `/login` |
+| `/api/me` | GET | none | `{ user }` current learner profile | Yes (demo) | app shell/session bootstrap, `/` |
+| `/api/auth/roles/current` | GET | none | current role and permission summary | Yes (demo) | role/authorization future UI |
+| `/api/auth/logout` | POST | none | `{ success, message }` | Yes (demo) | app shell/logout action |
+| `/api/profile/password-check` | POST | body `{ password }` | `{ valid }` | Yes (demo) | `/profile/check` |
+| `/api/profile` | GET | none | `{ profile }` | Yes (demo) | `/profile/edit` |
+| `/api/profile` | PUT | body profile draft fields | `{ profile }` updated profile wrapper | Yes (demo) | `/profile/edit` |
+| `/api/dashboard/summary` | GET | none | dashboard summary/cards for learner | Yes (demo) | `/` |
+| `/api/attendance/records` | GET | optional page/filter params in adapter | `{ summary, items }` attendance records | Yes (demo) | `/mycampus/attendance` |
+| `/api/attendance/appeals` | POST | body `{ type, reason, requestedStatus }` | created appeal `{ item/status }` | Yes (demo) | `/mycampus/attendance/appeals/new` |
+| `/api/notifications` | GET | `page`, `size` optional | `{ items, page }` notifications | Yes (demo) | `/mycampus/notifications` |
+| `/api/community/classmates` | GET | none | `{ items }` classmates | Yes (demo) | `/community/classmates` |
+| `/api/community/classmates/{userId}/notifications` | POST | path `userId`, body `{ message }` | created classmate notification `{ item }` | Yes (demo) | `/community/classmates` |
+| `/api/learning/curriculum` | GET | none | `{ items }` curriculum weeks | Yes (demo) | `/learning/curriculum` |
+| `/api/learning/replays` | GET | `keyword` optional | `{ items }` replay lectures | Yes (demo) | `/learning/replays` |
+| `/api/learning/materials` | GET | `keyword`, `type`, `page`, `size` optional | `{ items, page }` materials | Yes (demo) | `/learning/materials` |
+| `/api/learning/materials/{id}` | GET | path `id` | `{ item/material }` material detail | Yes (demo) | `/learning/materials/:id` |
+| `/api/learning/materials/{id}/resources` | GET | path `id` | `{ items }` material resources | Yes (demo) | `/learning/materials/:id`, `/learning/materials/:id/viewer` |
+| `/api/quests` | GET | `page`, `size` optional | `{ items, page }` quest list | Yes (demo) | `/quest` |
+| `/api/quests/{id}` | GET | path `id` | `{ item/quest }` quest detail | Yes (demo) | `/quest/:id`, `/quest/:id/submit` |
+| `/api/quests/{id}/submissions` | POST | path `id`, body `{ content, attachmentUrl? }` | created submission `{ item }` | Yes (demo) | `/quest/:id/submit` |
+| `/api/surveys` | GET | `page`, `size` optional | `{ items, page }` survey list | Yes (demo) | `/survey` |
+| `/api/surveys/{id}` | GET | path `id` | `{ item/survey }` survey detail | Yes (demo) | `/survey/:id`, `/survey/:id/respond` |
+| `/api/surveys/{id}/responses` | POST | path `id`, body `{ answers: [{ questionId, answerText, optionIds }] }` | created survey response `{ item }` | Yes (demo) | `/survey/:id/respond` |
+| `/api/boards/{boardCode}/categories` | GET | path `boardCode` | `{ items }` board categories | Yes (demo) | `/community/free`, `/help/notice`, `/help/faq`, `/help/qna` |
+| `/api/boards/{boardCode}/posts` | GET | path `boardCode`; `categoryId`, `keyword`, `page`, `size`, `sort` optional | `{ items, page }` board posts | Yes (demo) | board list screens |
+| `/api/boards/{boardCode}/posts/{postId}` | GET | path `boardCode`, `postId` | `{ post }` detail wrapper | Yes (demo) | board detail screens |
+| `/api/boards/{boardCode}/posts` | POST | path `boardCode`, body post draft | created `{ item }` | Yes (demo) | `/community/free/write`, `/help/qna/new` |
+| `/api/boards/{boardCode}/posts/{postId}/comments` | POST | path `boardCode`, `postId`, body `{ content }` | created comment `{ item }` | Yes (demo) | board detail screens |
+| `/api/boards/{boardCode}/posts/{postId}/reactions` | POST | path `boardCode`, `postId`, body reaction type | created reaction `{ item }` | Yes (demo) | board detail screens |
+| `/api/support/tickets` | GET | `page`, `size`, status filters optional | `{ items, page }` support tickets | Yes (demo) | `/help/qna` |
+| `/api/support/tickets` | POST | body `{ title, content, category }` | created support ticket `{ item }` | Yes (demo) | `/help/qna/new` |
+| `/api/health` | GET | none | `{ status: "UP" }` | No | smoke/ops only |
+| `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
+
 ## Task 66 API Documentation Status (2026-04-24)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
 - Most learner-facing endpoints currently use demo-session semantics; final auth requirement is **not complete** until RBAC/session/token enforcement is implemented and documented per endpoint.
