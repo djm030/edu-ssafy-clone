@@ -1,7 +1,7 @@
 # Remaining Work
 
 ## Worker-4 Remaining Work Sync (2026-04-25)
-- Task 4/109 후속으로 미완성 영역을 task 125-130으로 재동기화했다.
+- Task 4/109 후속으로 미완성 영역을 task 117-124로 재동기화했다.
 - 필수 구현 잔여분(인증/인가, 첨부파일, 학습자료 반응, 설문/문의 depth, E2E+CI)은 여전히 남아 있으며 완료 선언 금지 상태를 유지한다.
 
 
@@ -77,7 +77,7 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 
 ## Task-backed Continuation Map (worker-5, 2026-04-25)
 The partial/gap checklist above is represented by concrete OMX follow-up tasks so the team can continue without treating the project as complete.
-Note: prior 문서에 기록된 `117-130` 묶음은 현재 팀 상태에서 조회되지 않았고, 2026-04-25 기준으로 아래 task를 재생성했다.
+Note: prior 문서에 기록된 `117-130` 묶음은 이 라운드에서 `117-124`로 정리/재발급되었고, 현재 팀 state에서 활성 상태로 존재한다.
 
 | Task IDs | Area | Purpose |
 |---|---|---|
