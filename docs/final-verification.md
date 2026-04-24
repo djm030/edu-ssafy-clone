@@ -26,6 +26,27 @@ The project must not be declared full-clone complete yet. Worker-4 verified that
 | Backend tests | BLOCKED | `mvn` is not installed and `backend/mvnw` is absent in this worker environment. |
 | Live rebuilt smoke | BLOCKED | Requires host/CI environment with Docker/PowerShell availability. |
 
+## Core Feature PASS Check (Task 83, worker-4, 2026-04-24)
+
+Question: are all core features PASS? **No.** Current evidence supports **PARTIAL / NOT READY**, not full PASS.
+
+| Core feature group | Status | Evidence / blocker |
+|---|---|---|
+| Login/session/auth | PARTIAL | Demo login/current-user endpoints exist, but real credential verification, token/session persistence, expiry, and password recovery remain open. |
+| RBAC/access control | FAIL/GAP | Role summary exists, but endpoint-level role enforcement and frontend 401/403 states remain open. |
+| Profile | PARTIAL | Read/update flow exists; authorization and persistence depth remain open. |
+| Attendance | PARTIAL | Records and appeal submit exist; durable appeal status/history/reviewer workflow remains open. |
+| Notifications/classmates | PARTIAL | List and classmate send source exist; durable send/read/delete persistence and rebuilt live smoke remain open. |
+| Curriculum/replays | PARTIAL | Lists exist; richer filters, progress state, and authorization remain open. |
+| Materials/resources | PARTIAL | List/detail/resources exist; attachment download/viewer fidelity and like/bookmark/favorite remain open. |
+| Quest/evaluation | PARTIAL | List/detail/submit exists; result detail, file attachments, and grading status remain open. |
+| Survey | PARTIAL | List/detail/respond exists; full question/option DTOs and persisted response policy remain open. |
+| Board/community | PARTIAL | List/detail/write/comment/reaction exists; attachments, edit/delete, and permissions remain open. |
+| Support/QNA | PARTIAL | Ticket list/create exists; thread messages, answers, status transitions, and attachments remain open. |
+| QA/E2E/CI | PARTIAL/BLOCKED | Frontend lint/build pass; backend Maven is unavailable in this worker; live rebuilt smoke and browser E2E/CI remain open. |
+
+Decision: do not declare final completion. Continue implementation rounds and keep `docs/remaining-work.md` as the source of required non-PASS work.
+
 ## Final PASS Gate
 
 Final completion can only be declared when all of the following are true:
