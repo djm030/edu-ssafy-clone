@@ -1,5 +1,31 @@
 # Test Report
 
+## Team Recovery State (worker-5, 2026-04-24)
+
+### Summary
+The OMX team pipeline is still active in `team-exec`, but worker-5 has no remaining claimable original assignments. Pending work is owned by non-reporting/dead workers, and direct claim attempts on another worker's assigned task return `claim_conflict`.
+
+### Current Team State
+- Team: `ssafy-full-clone-omx-continuou`
+- Task totals from `omx team api get-summary`: total=132, completed=105, pending=22, in_progress=4, failed=1.
+- Dead/non-alive workers reported by summary: worker-1, worker-2, worker-3, worker-4, worker-5.
+- Failed task requiring continuation: task 50 (`인증/인가가 필요한 기능은 권한 검사가 있다.`) failed truthfully because backend authorization enforcement is incomplete.
+- Stale/in-progress continuation risk: task 118 remains in progress under worker-3 while worker-3 is non-alive.
+
+### Recovery Recommendation
+Do not declare terminal success yet. Reassign or clean up stale ownership, then continue tasks 117-128 and 131 until `docs/final-verification.md` can move every core row to PASS. Suggested commands for the leader/host lane:
+
+```bash
+omx team status ssafy-full-clone-omx-continuou
+omx team api cleanup --input '{"team_name":"ssafy-full-clone-omx-continuou","force":true,"confirm_issues":true}' --json
+git worktree prune
+find . -name ".DS_Store" -delete
+git status --short
+```
+
+### Worker-5 Boundary
+Worker-5 documented the recovery state and reported upward instead of force-cleaning the team runtime, matching the worker dead/zombie prevention rule.
+
 ## R10 CI Smoke Workflow (worker-5, 2026-04-24)
 
 ### Summary
