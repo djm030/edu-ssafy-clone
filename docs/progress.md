@@ -1,61 +1,10 @@
 # Full Clone Progress
 
-## Task 67 Progress Criteria Snapshot (worker-4, 2026-04-24)
-
-### 현재 실행 목표
-- Full-clone completion gate를 거짓 PASS로 닫지 않도록, 구현/문서/검증 상태를 `docs/progress.md` 한 곳에서 추적한다.
-- 현재 제품 상태는 **NOT READY / PARTIAL**이다. 필수 문서는 존재하지만 auth/RBAC, durable workflows, attachments, browser E2E, CI/live smoke, backend Maven 검증이 남아 있다.
-
-### 생성된 task 목록
-- Team state 기준 총 task 수: 130개.
-- Worker-4가 앞서 생성/확인한 확장 task: 49-64, R7 auth/RBAC, frontend fallback/unauthorized states, R8 attachments/material reactions, R9 survey/support depth, R10 E2E/CI/docs를 포함한다.
-- 최근 추가된 follow-up task: 117-130. 주요 항목은 auth credential/session, RBAC/401/403 UI, profile depth, admin cohort/class/track, attendance appeal workflow, notifications durability, curriculum/replay authorization/progress, material attachment/reaction, quest grading/files, survey questions/options persistence, board edit/delete/permission, support ticket thread/status/attachment, browser E2E/CI, final docs sync이다.
-
-### worker별 담당 작업
-| Worker | Assigned task count | Current focus summary |
-|---|---:|---|
-| worker-1 | 25 | planning/status tables, admin flow, final completion loop checks |
-| worker-2 | 29 | backend-heavy implementation, final verification document/final declaration gates |
-| worker-3 | 26 | analysis/recheck, RBAC/frontend states, survey/curriculum depth, retest |
-| worker-4 | 26 | progress/docs/API criteria, feature-gap tasks, verification/additional-task creation |
-| worker-5 | 24 | smoke/CI/docs/commit and task redistribution gates |
-
-### 완료된 작업
-- Task 95 remaining-work check: **NO**, `docs/remaining-work.md` still contains required work; final completion must remain blocked until those items are implemented and verified.
-- Task 89 README freshness check: README updated with current NOT READY/PARTIAL status, passing checks, blocked backend/live-smoke checks, and readiness source-of-truth docs.
-- Task 87 test-result documentation check: PASS for documentation presence; test evidence is recorded in `docs/test-report.md`, with backend/live smoke blockers still open.
-- Task 83 core feature PASS check: **NOT PASS**; all core groups are not fully complete, with PARTIAL/GAP items mirrored in `docs/final-verification.md` and `docs/remaining-work.md`.
-- Team state snapshot: completed 55, failed 1, in_progress 5, pending 69.
-- Worker-4 completed: 4, 9, 17, 23, 26, 30, 34, 40, 47, 51, 54, 59, 66.
-- Worker-4 completed outcomes: incomplete feature audit, required docs refresh, final-verification doc creation, compose/service/port/network/volume invariance check, backend/response/loading/TODO-only evidence checks.
-
-### 진행 중 작업
-- Worker-4 current task: 67 (`docs/progress.md` criteria coverage).
-- Other in-progress tasks at snapshot time: 5 total across team state; worker-1 task 120 is visible as in-progress for admin cohort/class/track management flow.
-
-### 남은 작업
-- Worker-4 pending after Task 67 snapshot: 69, 83, 87, 89, 95, 102, 105, 109, 115, 121, 124, 127.
-- Product blockers still tracked in `docs/remaining-work.md`: production auth/RBAC, durable notification/support/survey/material workflows, attachments, permission/edit-delete depth, browser E2E, CI, rebuilt live smoke, backend Maven/CI verification.
-
-### 커밋 목록
-- `6f2d42e` — incomplete feature audit recorded in progress/remaining-work docs.
-- `d4ccd39` — architecture/test-report audit evidence recorded.
-- `d76873b` — required docs gate made explicit and `docs/final-verification.md` created.
-- Task 67 adds this progress-criteria snapshot as the next worker-4 documentation commit.
-
-### 변경 파일 요약
-- `docs/progress.md` — current execution goal, task inventory, worker assignments, completed/in-progress/remaining work, commit list, changed-file summary.
-- `docs/final-verification.md` — final gate exists and currently says NOT READY.
-- `docs/remaining-work.md` — product blockers remain authoritative for non-PASS items.
-- `README.md`, `docs/architecture.md`, `docs/api-summary.md`, `docs/test-report.md` — required documentation set was refreshed in Task 66.
-
-## Worker-4 Required Documentation Refresh (Task 66, 2026-04-24)
-- Goal: ensure required documentation set exists and reflects the current partial full-clone status.
-- Required docs checked/updated: `docs/progress.md`, `docs/architecture.md`, `docs/api-summary.md`, `docs/test-report.md`, `docs/remaining-work.md`, `docs/final-verification.md`, `README.md`.
-- Created missing document: `docs/final-verification.md`.
-- Current result: documentation set is present, but final clone completion remains **NOT READY** because auth/RBAC, durable workflows, attachments, E2E/CI, live smoke, and backend Maven verification are still incomplete or blocked.
-- Commits in this worker lane: `6f2d42e`, `d4ccd39`; Task 66 documentation refresh is a follow-up commit.
-
+## Worker-5 Task Expansion + Documentation Round (2026-04-24)
+- Goal: turn the current `docs/remaining-work.md` partial/gap items into concrete executable follow-up tasks and record the continuation state.
+- Completed: worker-5 created 14 additional OMX tasks with explicit domain, expected files, completion condition, verification method, and intended commit message.
+- Created task ids: 117-130, covering R7 real credential/session auth, RBAC and unauthorized UI, profile persistence, admin cohort/class/track management, attendance appeal workflow, notification lifecycle persistence, curriculum/replay access and progress, material attachments/reactions, quest results/grading, survey question/option persistence, board edit/delete/attachments/permissions, support ticket threads/answers/status, browser E2E/CI, and final verification documentation.
+- Verification: `omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json` reported 130 total tasks after creation, with task ids 117-130 present and assigned across workers 1-5.
 
 ## Worker-4 Task Expansion Round (2026-04-24)
 - Goal: ensure the team does not stop at analysis/planning and that follow-up work is represented as executable tasks.
