@@ -45,6 +45,8 @@
   - replays: `publishedAt/versionNo` -> date/category.
   - materials: `summary/detailUrl/resources` -> description/fileName and UI material type.
 
+- `GET /api/admin/campus-structure`, `POST /api/admin/campus-structure/classes` (demo admin campus/cohort/track/class management flow)
+
 ## Still Needed For Full Clone
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.

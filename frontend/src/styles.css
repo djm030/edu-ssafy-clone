@@ -459,3 +459,7 @@ h2 {
 .unauthorized-page .state-message {
   border-color: rgba(239, 68, 68, 0.28);
 }
+
+.admin-campus-grid .panel {
+  min-height: 180px;
+}

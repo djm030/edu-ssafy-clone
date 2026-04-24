@@ -13,6 +13,7 @@ interface AppShellProps {
 
 const navSections = [
   { title: '홈', items: [{ path: '/', label: '대시보드' }] },
+  { title: '관리', items: [{ path: '/admin/campus', label: '캠퍼스 관리' }] },
   {
     title: '마이캠퍼스',
     items: [
