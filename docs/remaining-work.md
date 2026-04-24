@@ -14,7 +14,7 @@
 |---|---|---|
 | Login/session | partial | Demo login works; add real credential verification, sessions/tokens, expiry, password recovery. |
 | Profile | partial | Read/update exists and frontend payload is aligned; add authorization checks and persistence depth. |
-| Campus/cohort/class/track | partial | Seeded/read through user/classmate views; add management/admin flows if required. |
+| Campus/cohort/class/track | partial | Admin campus/cohort/track/class demo management API and screen exist; add persisted CRUD, edit/delete, and server RBAC enforcement. |
 | Attendance | partial | Records and appeal submit exist; add durable appeal workflow/status/history. |
 | Notifications | partial | List exists and R6 source adds classmate send API; add durable send/read/delete persistence and live rebuild verification. |
 | Curriculum/replays | partial | Lists exist and frontend adapters now map backend DTOs; add richer filters, replay authorization and progress state. |
@@ -59,6 +59,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 ### 다음에 생성해야 할 task
 1. Java 21 CI/runtime 고정 또는 Mockito/Byte Buddy 테스트 도구 업그레이드로 backend test unblock.
 2. Server-side RBAC guard를 controller/service 레벨에 적용하고 learner/operator/admin 권한 test 추가.
+3. Admin campus/cohort/track/class demo flow를 persisted CRUD/edit/delete로 확장.
 3. 첨부파일 업로드/다운로드 API와 board/material/ticket/submission 연결.
 4. 설문 질문/선택지/응답 저장 depth 구현.
 5. 지원 티켓 thread/answer/status transition 구현.

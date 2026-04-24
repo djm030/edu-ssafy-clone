@@ -4,6 +4,7 @@ import BoardListPage from './components/BoardListPage';
 import { getCurrentRoleAccess, logout } from './api/app';
 import { getErrorMessage } from './api/client';
 import { mockUser } from './data/mockData';
+import AdminCampusPage from './pages/AdminCampusPage';
 import AttendanceAppealPage from './pages/AttendanceAppealPage';
 import AttendancePage from './pages/AttendancePage';
 import BoardDetailPage from './pages/BoardDetailPage';
@@ -157,6 +158,7 @@ function renderPage(path: string) {
   const surveyMatch = match(/^\/survey\/(\d+)$/);
 
   if (path === '/') return <DashboardPage />;
+  if (path === '/admin/campus') return <AdminCampusPage />;
   if (path === '/mycampus/attendance') return <AttendancePage />;
   if (path === '/mycampus/attendance/appeals/new') return <AttendanceAppealPage />;
   if (path === '/mycampus/level') return <LevelPage />;

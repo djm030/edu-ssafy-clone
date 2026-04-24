@@ -254,3 +254,16 @@ export interface SupportTicketDraft {
   title: string;
   content: string;
 }
+
+export interface AdminCampusStructure {
+  campuses: AdminCampusItem[];
+  cohorts: AdminCohortItem[];
+  tracks: AdminTrackItem[];
+  classes: AdminClassGroupItem[];
+}
+
+export interface AdminCampusItem { id: number; name: string; active: boolean; }
+export interface AdminCohortItem { id: number; name: string; year: number; active: boolean; }
+export interface AdminTrackItem { id: number; name: string; description?: string; active: boolean; }
+export interface AdminClassGroupItem { id: number; campusId: number; cohortId: number; trackId: number; name: string; classroom?: string; capacity: number; active: boolean; }
+export type AdminClassGroupDraft = Omit<AdminClassGroupItem, 'id' | 'active'>;
