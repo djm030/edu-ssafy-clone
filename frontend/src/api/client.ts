@@ -33,9 +33,14 @@ function ciEnvEnabled(): boolean {
 function apiFallbackDisabled(): boolean {
   const env = (import.meta as ImportMeta & { env?: ViteEnv }).env || {};
   const fallbackMode = env.VITE_API_FALLBACK;
+  const fallbackModeEnabled = fallbackMode === 'enabled' || fallbackMode === 'on' || isTruthyEnv(fallbackMode);
+  const fallbackModeDisabled = fallbackMode === 'disabled' || fallbackMode === 'off';
 
-  return isTruthyEnv(env.VITE_DISABLE_API_FALLBACK) || fallbackMode === 'disabled' || fallbackMode === 'off' ||
-    isTruthyEnv(env.CI) || ciEnvEnabled() || env.PROD === true || env.MODE === 'production';
+  if (isTruthyEnv(env.VITE_DISABLE_API_FALLBACK) || fallbackModeDisabled) return true;
+  if (isTruthyEnv(env.CI) || ciEnvEnabled() || env.PROD === true || env.MODE === 'production') return true;
+
+  // Dev 기본값은 실제 API 호출 우선. 데모 fallback은 명시적으로 켠 경우에만 허용한다.
+  return !fallbackModeEnabled;
 }
 
 function shouldUseFallback(error: unknown): boolean {
