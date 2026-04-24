@@ -1,6 +1,7 @@
 package com.edussafy.backend.priority.repository;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
@@ -40,9 +41,68 @@ public class PriorityP3Repository {
                         rs.getString("detail_url"),
                         rs.getInt("view_count"),
                         toOffset(rs.getTimestamp("created_at")),
+                        0L,
+                        0L,
+                        0L,
+                        false,
+                        false,
+                        false,
                         List.of()
                 ))
                 .optional();
+    }
+
+    public Optional<MaterialReactionSummary> findMaterialReactionSummary(long materialId, long userId) {
+        return jdbcClient.sql("""
+                SELECT lmr.learning_material_id,
+                       SUM(CASE WHEN lmr.reaction_type_code = 'like' THEN 1 ELSE 0 END) AS like_count,
+                       SUM(CASE WHEN lmr.reaction_type_code = 'bookmark' THEN 1 ELSE 0 END) AS bookmark_count,
+                       SUM(CASE WHEN lmr.reaction_type_code = 'helpful' THEN 1 ELSE 0 END) AS favorite_count,
+                       MAX(CASE WHEN lmr.reaction_type_code = 'like' AND lmr.user_id = :userId THEN 1 ELSE 0 END) AS liked,
+                       MAX(CASE WHEN lmr.reaction_type_code = 'bookmark' AND lmr.user_id = :userId THEN 1 ELSE 0 END) AS bookmarked,
+                       MAX(CASE WHEN lmr.reaction_type_code = 'helpful' AND lmr.user_id = :userId THEN 1 ELSE 0 END) AS favorited
+                FROM learning_material_reactions lmr
+                WHERE lmr.learning_material_id = :materialId
+                GROUP BY lmr.learning_material_id
+                """)
+                .param("materialId", materialId)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new MaterialReactionSummary(
+                        rs.getLong("learning_material_id"),
+                        rs.getLong("like_count"),
+                        rs.getLong("bookmark_count"),
+                        rs.getLong("favorite_count"),
+                        rs.getInt("liked") == 1,
+                        rs.getInt("bookmarked") == 1,
+                        rs.getInt("favorited") == 1
+                ))
+                .optional();
+    }
+
+    public boolean toggleMaterialReaction(long materialId, long userId, String reactionTypeCode) {
+        int deleted = jdbcClient.sql("""
+                DELETE FROM learning_material_reactions
+                WHERE learning_material_id = :materialId
+                  AND user_id = :userId
+                  AND reaction_type_code = :reactionTypeCode
+                """)
+                .param("materialId", materialId)
+                .param("userId", userId)
+                .param("reactionTypeCode", reactionTypeCode)
+                .update();
+        if (deleted > 0) {
+            return false;
+        }
+        jdbcClient.sql("""
+                INSERT INTO learning_material_reactions
+                    (learning_material_id, user_id, reaction_type_code_group, reaction_type_code)
+                VALUES (:materialId, :userId, 'REACTION_TYPE', :reactionTypeCode)
+                """)
+                .param("materialId", materialId)
+                .param("userId", userId)
+                .param("reactionTypeCode", reactionTypeCode)
+                .update();
+        return true;
     }
 
     public List<MaterialResourceItem> findMaterialResources(long materialId) {

@@ -146,6 +146,34 @@ public final class PriorityDtos {
     public record MaterialResourcesResponse(List<MaterialResourceItem> items) {
     }
 
+    public record MaterialReactionRequest(@NotBlank @Size(max = 50) String type) {
+    }
+
+    public record MaterialReactionResponse(MaterialReactionItem item) {
+    }
+
+    public record MaterialReactionItem(
+            long materialId,
+            String type,
+            boolean active,
+            boolean demo
+    ) {
+    }
+
+    public record MaterialReactionSummary(
+            long materialId,
+            long likeCount,
+            long bookmarkCount,
+            long favoriteCount,
+            boolean liked,
+            boolean bookmarked,
+            boolean favorited
+    ) {
+        public static MaterialReactionSummary empty(long materialId) {
+            return new MaterialReactionSummary(materialId, 0, 0, 0, false, false, false);
+        }
+    }
+
     public record MaterialItem(
             long id,
             String title,
@@ -154,10 +182,50 @@ public final class PriorityDtos {
             String detailUrl,
             int viewCount,
             OffsetDateTime createdAt,
+            long likeCount,
+            long bookmarkCount,
+            long favoriteCount,
+            boolean liked,
+            boolean bookmarked,
+            boolean favorited,
             List<MaterialResourceItem> resources
     ) {
         public MaterialItem withResources(List<MaterialResourceItem> resources) {
-            return new MaterialItem(id, title, type, summary, detailUrl, viewCount, createdAt, resources);
+            return new MaterialItem(
+                    id,
+                    title,
+                    type,
+                    summary,
+                    detailUrl,
+                    viewCount,
+                    createdAt,
+                    likeCount,
+                    bookmarkCount,
+                    favoriteCount,
+                    liked,
+                    bookmarked,
+                    favorited,
+                    resources
+            );
+        }
+
+        public MaterialItem withReactions(MaterialReactionSummary reactions) {
+            return new MaterialItem(
+                    id,
+                    title,
+                    type,
+                    summary,
+                    detailUrl,
+                    viewCount,
+                    createdAt,
+                    reactions.likeCount(),
+                    reactions.bookmarkCount(),
+                    reactions.favoriteCount(),
+                    reactions.liked(),
+                    reactions.bookmarked(),
+                    reactions.favorited(),
+                    resources
+            );
         }
     }
 

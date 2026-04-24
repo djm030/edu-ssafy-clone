@@ -17,6 +17,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
@@ -79,6 +83,10 @@ public class PriorityApiService {
     private static final TodaySummary EMPTY_TODAY = new TodaySummary(null, null, null);
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_TYPE = "contact_request";
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
+    private static final String REACTION_LIKE = "like";
+    private static final String REACTION_BOOKMARK = "bookmark";
+    private static final String REACTION_FAVORITE_ALIAS = "favorite";
+    private static final String REACTION_FAVORITE_DB = "helpful";
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "learner", List.of(
                     "dashboard:read",
@@ -207,20 +215,34 @@ public class PriorityApiService {
         long total = safe(() -> repository.countMaterials(user.id(), keyword, type), 0L);
         List<MaterialItem> items = total == 0
                 ? List.of()
-                : safe(() -> attachResources(repository.findMaterials(user.id(), keyword, type, size, offset(page, size))),
+                : safe(() -> attachMaterialMeta(
+                                repository.findMaterials(user.id(), keyword, type, size, offset(page, size)),
+                                user.id()),
                         List.of());
         return new MaterialsResponse(items, pageMeta(page, size, total));
     }
 
     public MaterialDetailResponse material(long id) {
+        UserProfile user = currentUser();
         MaterialItem item = safe(() -> p3Repository.findMaterial(id)
-                .map(material -> material.withResources(safe(() -> p3Repository.findMaterialResources(id), List.of())))
+                .map(material -> material
+                        .withResources(safe(() -> p3Repository.findMaterialResources(id), List.of()))
+                        .withReactions(safe(() -> p3Repository.findMaterialReactionSummary(id, user.id())
+                                .orElse(MaterialReactionSummary.empty(id)), MaterialReactionSummary.empty(id))))
                 .orElse(fallbackMaterial(id)), fallbackMaterial(id));
         return new MaterialDetailResponse(item);
     }
 
     public MaterialResourcesResponse materialResources(long id) {
         return new MaterialResourcesResponse(safe(() -> p3Repository.findMaterialResources(id), List.of()));
+    }
+
+    public MaterialReactionResponse toggleMaterialReaction(long materialId, MaterialReactionRequest request) {
+        UserProfile user = currentUser();
+        String normalizedType = normalizeMaterialReactionType(request.type());
+        String dbType = toMaterialReactionDbType(normalizedType);
+        boolean active = safe(() -> p3Repository.toggleMaterialReaction(materialId, user.id(), dbType), true);
+        return new MaterialReactionResponse(new MaterialReactionItem(materialId, normalizedType, active, false));
     }
 
     public QuestsResponse quests(int page, int size) {
@@ -409,15 +431,19 @@ public class PriorityApiService {
         );
     }
 
-    private List<MaterialItem> attachResources(List<MaterialItem> materials) {
+    private List<MaterialItem> attachMaterialMeta(List<MaterialItem> materials, long userId) {
         if (materials.isEmpty()) {
             return materials;
         }
         List<Long> materialIds = materials.stream().map(MaterialItem::id).toList();
         Map<Long, List<MaterialResourceItem>> resources = repository.findMaterialResources(materialIds).stream()
                 .collect(Collectors.groupingBy(MaterialResourceItem::materialId));
+        Map<Long, MaterialReactionSummary> reactions = safe(() -> repository.findMaterialReactionSummaries(materialIds, userId).stream()
+                .collect(Collectors.toMap(MaterialReactionSummary::materialId, summary -> summary)), Map.of());
         return materials.stream()
-                .map(material -> material.withResources(resources.getOrDefault(material.id(), List.of())))
+                .map(material -> material
+                        .withResources(resources.getOrDefault(material.id(), List.of()))
+                        .withReactions(reactions.getOrDefault(material.id(), MaterialReactionSummary.empty(material.id()))))
                 .toList();
     }
 
@@ -430,8 +456,29 @@ public class PriorityApiService {
                 null,
                 0,
                 null,
+                0L,
+                0L,
+                0L,
+                false,
+                false,
+                false,
                 List.of()
         );
+    }
+
+    private String normalizeMaterialReactionType(String type) {
+        if (type == null || type.isBlank()) {
+            return REACTION_LIKE;
+        }
+        String normalized = type.trim().toLowerCase(Locale.ROOT);
+        if (REACTION_BOOKMARK.equals(normalized) || REACTION_LIKE.equals(normalized) || REACTION_FAVORITE_ALIAS.equals(normalized)) {
+            return normalized;
+        }
+        return REACTION_LIKE;
+    }
+
+    private String toMaterialReactionDbType(String normalizedType) {
+        return REACTION_FAVORITE_ALIAS.equals(normalizedType) ? REACTION_FAVORITE_DB : normalizedType;
     }
 
     private QuestItem fallbackQuest(long id) {

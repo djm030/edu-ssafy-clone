@@ -80,6 +80,7 @@ function MaterialList({ items }: { items: LearningMaterial[] }) {
         <span role="columnheader">유형</span>
         <span role="columnheader">등록자</span>
         <span role="columnheader">조회</span>
+        <span role="columnheader">반응</span>
         <span role="columnheader">열기</span>
       </div>
       {items.map((item) => (
@@ -90,6 +91,7 @@ function MaterialList({ items }: { items: LearningMaterial[] }) {
           </span>
           <span role="cell">{item.authorName}</span>
           <span role="cell">{item.viewCount.toLocaleString('ko-KR')}</span>
+          <span role="cell">좋아요 {item.likeCount || 0} · 북마크 {item.bookmarkCount || 0} · 즐겨찾기 {item.favoriteCount || 0}</span>
           <span role="cell">
             <a className="ghost-button" href={`/learning/materials/${item.id}`}>
               열기

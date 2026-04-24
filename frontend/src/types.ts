@@ -173,6 +173,12 @@ export interface LearningMaterial {
   authorName: string;
   createdAt: string;
   viewCount: number;
+  likeCount?: number;
+  bookmarkCount?: number;
+  favoriteCount?: number;
+  liked?: boolean;
+  bookmarked?: boolean;
+  favorited?: boolean;
   description?: string;
   fileName?: string;
 }
