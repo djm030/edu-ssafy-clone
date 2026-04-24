@@ -1,28 +1,27 @@
 # Test Report
 
-## R7.0 Contract/Fallback Guardrail Verification (2026-04-24)
+## R7.0 DevOps/QA Smoke Shape Guardrail (worker-5, 2026-04-24)
 
-### Changed Verification Surface
-- Added backend controller assertions for board detail `{ post }` fields and board create `{ item }` fields.
-- Added live smoke JSON shape assertions for auth login, `/api/me`, profile, board detail, and board create responses.
-- Added maintained OpenAPI marker verification through `scripts/dev/verify-openapi.ps1`.
+### Summary
+Added live JSON shape assertions to `scripts/dev/smoke.ps1` for critical auth/profile/board contracts. This closes part of the R7.0 smoke requirement: the harness now fails when required wrappers/fields are absent, even if the endpoint returns HTTP 200.
 
-### Results From This Worker Pass
-- `npm ci` -> PASS; dependency install completed with a non-fatal local Node v23.6.0 engine warning for `eslint-visitor-keys`.
-- `cd frontend && npm run lint` -> PASS.
-- `cd frontend && npm run build` -> PASS; Vite built 65 modules.
-- `git diff --check` -> PASS.
-- Python marker check equivalent for `docs/openapi.yaml` -> PASS.
+### Commands Run
+- `docker compose -f compose.yml config` -> PASS.
+- `wc -l scripts/dev/smoke.ps1` -> PASS, 373 lines and below the script's 500-line guardrail.
+- `command -v pwsh || command -v powershell` -> BLOCKED, no PowerShell runtime installed in this worker environment.
+- `ls frontend/node_modules` -> BLOCKED, dependencies absent; frontend lint/build were not runnable without installing packages.
 
-### Blocked Commands
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1 -SkipHttp` -> BLOCKED: `powershell`/`pwsh` is not installed in this execution environment.
-- `cd backend && mvn -B test` -> BLOCKED: `mvn` is not installed and this repo has no Maven wrapper.
+### Coverage Added
+- Login/current-user smoke asserts required `user` fields.
+- Profile smoke asserts required `profile` fields.
+- Board smoke asserts list pagination, detail `{ post }` wrapper, and create `{ item }` wrapper.
 
-### Host/CI Retest
-1. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1 -SkipHttp`
-2. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1` after app profile is running
-3. `cd backend && mvn -B test`
-4. `cd frontend && npm run lint && npm run build`
+### Retest Commands For Host/CI
+1. Install/enable PowerShell (`pwsh`) for script execution.
+2. `pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1 -SkipHttp`
+3. `docker compose -f compose.yml --profile app up -d --build`
+4. `pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1`
+5. `cd frontend && npm ci && npm run lint && npm run build`
 
 ## R6 Round 1 QA Harness Update (2026-04-24)
 

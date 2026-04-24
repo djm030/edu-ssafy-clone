@@ -1,11 +1,14 @@
 # API Summary
 
-## R7.0 Contract Notes
-- Board detail contract is canonical as `GET /api/boards/{boardCode}/posts/{postId}` -> `{ post: { id, boardCode, title, content, engagement, ... } }`.
-- Board create contract is canonical as `POST /api/boards/{boardCode}/posts` -> HTTP 201 with `{ item: { id, boardCode, title, content, demo, ... } }`.
-- Frontend free/QNA creation adapters unwrap `{ item }`; board detail adapter unwraps `{ post }`.
-- Error/fallback policy: `401 Unauthorized` and `403 Forbidden` must propagate to UI state and must not be hidden by mock fallback. Production/live, CI, and `VITE_DISABLE_API_FALLBACK=true` disable all frontend fallback.
-- API contract artifact: `docs/openapi.yaml`; drift marker command: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/verify-openapi.ps1`.
+## R7.0 Contract Guardrails Added (2026-04-24)
+- Smoke now treats the following wrappers as required contract shapes:
+  - `POST /api/auth/login` -> `{ user: { id, email, name, role } }`.
+  - `GET /api/me` -> `{ user: { id, email, name, campusName, cohortName, trackName } }`.
+  - `GET /api/profile` -> `{ profile: { id, email, name, campusName, cohortName, trackName } }`.
+  - `GET /api/boards/{boardCode}/posts` -> `{ items, page: { page, size, totalItems, totalPages } }`.
+  - `GET /api/boards/{boardCode}/posts/{postId}` -> `{ post: { id, boardCode, title, content, engagement } }`.
+  - `POST /api/boards/{boardCode}/posts` -> `{ item: { id, boardCode, title, content, authorName, createdAt } }`.
+- These assertions are an R7.0 prerequisite for Auth/RBAC work because later auth failures must not be hidden by weak smoke checks or frontend fallback behavior.
 
 ## Implemented API Surface
 - `POST /api/auth/login`, `GET /api/me`

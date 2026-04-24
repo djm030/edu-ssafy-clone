@@ -69,6 +69,73 @@ function Invoke-SmokeRequest {
   }
 }
 
+
+function Assert-JsonProperty {
+  param(
+    [Parameter(Mandatory = $true)]$Json,
+    [Parameter(Mandatory = $true)][string]$Path,
+    [string]$Label = "response"
+  )
+
+  $current = $Json
+  foreach ($segment in $Path.Split('.')) {
+    if ($null -eq $current) {
+      throw "$Label JSON shape is missing '$Path'."
+    }
+
+    if ($current -is [System.Collections.IEnumerable] -and -not ($current -is [string]) -and -not ($current -is [pscustomobject])) {
+      $current = @($current)
+      if ($current.Count -lt 1) {
+        throw "$Label JSON shape has an empty array before '$Path'."
+      }
+      $current = $current[0]
+    }
+
+    if (-not ($current.PSObject.Properties.Name -contains $segment)) {
+      throw "$Label JSON shape is missing '$Path'."
+    }
+    $current = $current.$segment
+  }
+
+  if ($null -eq $current) {
+    throw "$Label JSON shape has null '$Path'."
+  }
+
+  return $current
+}
+
+function Assert-JsonArray {
+  param(
+    [Parameter(Mandatory = $true)]$Json,
+    [Parameter(Mandatory = $true)][string]$Path,
+    [string]$Label = "response",
+    [switch]$AllowEmpty
+  )
+
+  $value = Assert-JsonProperty -Json $Json -Path $Path -Label $Label
+  $items = @($value)
+  if (-not $AllowEmpty -and $items.Count -lt 1) {
+    throw "$Label JSON shape has empty '$Path'."
+  }
+  return $items
+}
+
+function Invoke-SmokeJson {
+  param(
+    [string]$Url,
+    [string]$Method = "GET",
+    [string]$Body = $null
+  )
+
+  $response = Invoke-SmokeRequest -Url $Url -Method $Method -Body $Body
+  try {
+    return $response.Content | ConvertFrom-Json
+  }
+  catch {
+    throw "$Method $Url did not return valid JSON ($($_.Exception.Message))"
+  }
+}
+
 function Test-HttpEndpoint {
   param(
     [string]$Url,
@@ -119,12 +186,57 @@ function Get-FirstItemId {
     [string]$Url,
     [string]$Label
   )
-  $response = Invoke-SmokeRequest -Url $Url
-  $json = $response.Content | ConvertFrom-Json
-  if (-not $json.items -or $json.items.Count -lt 1 -or -not $json.items[0].id) {
-    throw "No seeded $Label id returned from $Url."
+  $json = Invoke-SmokeJson -Url $Url
+  $items = Assert-JsonArray -Json $json -Path "items" -Label "$Label list"
+  [void](Assert-JsonProperty -Json $items[0] -Path "id" -Label "$Label item")
+  return $items[0].id
+}
+
+function Test-AuthJsonShape {
+  param([string]$BackendUrl)
+
+  $login = Invoke-SmokeJson -Url "$BackendUrl/api/auth/login" -Method "POST" -Body '{"email":"student@ssafy.com","password":"password"}'
+  foreach ($path in @("user.id", "user.email", "user.name", "user.role")) {
+    [void](Assert-JsonProperty -Json $login -Path $path -Label "login")
   }
-  return $json.items[0].id
+
+  $me = Invoke-SmokeJson -Url "$BackendUrl/api/me"
+  foreach ($path in @("user.id", "user.email", "user.name", "user.campusName", "user.cohortName", "user.trackName")) {
+    [void](Assert-JsonProperty -Json $me -Path $path -Label "me")
+  }
+}
+
+function Test-ProfileJsonShape {
+  param([string]$BackendUrl)
+
+  $profile = Invoke-SmokeJson -Url "$BackendUrl/api/profile"
+  foreach ($path in @("profile.id", "profile.email", "profile.name", "profile.campusName", "profile.cohortName", "profile.trackName")) {
+    [void](Assert-JsonProperty -Json $profile -Path $path -Label "profile")
+  }
+}
+
+function Test-BoardJsonShape {
+  param([string]$BackendUrl)
+
+  $list = Invoke-SmokeJson -Url "$BackendUrl/api/boards/free/posts?keyword=REST%20API&page=1&size=1"
+  $items = Assert-JsonArray -Json $list -Path "items" -Label "board list"
+  foreach ($path in @("id", "boardCode", "title", "authorName", "createdAt")) {
+    [void](Assert-JsonProperty -Json $items[0] -Path $path -Label "board list item")
+  }
+  foreach ($path in @("page.page", "page.size", "page.totalItems", "page.totalPages")) {
+    [void](Assert-JsonProperty -Json $list -Path $path -Label "board list")
+  }
+
+  $postId = $items[0].id
+  $detail = Invoke-SmokeJson -Url "$BackendUrl/api/boards/free/posts/$postId"
+  foreach ($path in @("post.id", "post.boardCode", "post.title", "post.content", "post.engagement.commentCount", "post.engagement.reactionCount")) {
+    [void](Assert-JsonProperty -Json $detail -Path $path -Label "board detail")
+  }
+
+  $created = Invoke-SmokeJson -Url "$BackendUrl/api/boards/free/posts" -Method "POST" -Body '{"title":"Smoke free board post","content":"Created by smoke check."}'
+  foreach ($path in @("item.id", "item.boardCode", "item.title", "item.content", "item.authorName", "item.createdAt")) {
+    [void](Assert-JsonProperty -Json $created -Path $path -Label "board create")
+  }
 }
 
 function Test-OptionalHttpEndpoint {
@@ -251,9 +363,8 @@ try {
   Test-HttpEndpoint "$BaseUrl/nginx-health"
   Test-HttpEndpoint "$BackendUrl/actuator/health"
   Test-HttpEndpoint "$BackendUrl/api/health"
-  Test-JsonShape "auth login" "$BackendUrl/api/auth/login" @("user.id", "user.email") "POST" '{"email":"student@ssafy.com","password":"password"}'
-  Test-JsonShape "current user" "$BackendUrl/api/me" @("user.id", "user.email")
-  Test-JsonShape "profile" "$BackendUrl/api/profile" @("profile.id", "profile.email", "profile.name")
+  Test-AuthJsonShape $BackendUrl
+  Test-ProfileJsonShape $BackendUrl
   Test-HttpEndpoint "$BackendUrl/api/profile/password-check" "POST" '{"password":"password"}'
   Test-HttpEndpoint "$BackendUrl/api/dashboard/summary"
   Test-HttpEndpoint "$BackendUrl/api/attendance/records"
@@ -276,6 +387,7 @@ try {
   Test-JsonShape "notice board detail" "$BackendUrl/api/boards/notice/posts/$noticePostId" @("post.id", "post.title", "post.engagement")
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts?page=1&size=5"
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts?keyword=REST%20API&page=1&size=5"
+  Test-BoardJsonShape $BackendUrl
   $freePostId = Get-FirstItemId "$BackendUrl/api/boards/free/posts?keyword=REST%20API&page=1&size=1" "free post"
   Test-JsonShape "free board detail" "$BackendUrl/api/boards/free/posts/$freePostId" @("post.id", "post.title", "post.engagement")
   Test-HttpEndpoint "$BackendUrl/api/boards/faq/categories"
@@ -286,8 +398,7 @@ try {
   Test-HttpEndpoint "$BackendUrl/api/support/tickets" "POST" '{"title":"Smoke support ticket","content":"Created by smoke check."}'
   Test-HttpEndpoint "$BackendUrl/api/attendance/appeals" "POST" '{"type":"status_change","requestedStatus":"present","reason":"Smoke attendance appeal."}'
   Test-HttpEndpoint "$BackendUrl/api/profile" "PUT" '{"name":"Demo Learner","mobilePhone":"010-1234-5678","addressLine1":"Smoke address"}'
-  Test-JsonShape "free board create" "$BackendUrl/api/boards/free/posts" @("item.id", "item.title", "item.demo") "POST" '{"title":"Smoke free board post","content":"Created by smoke check."}'
-  Test-JsonShape "qna board create" "$BackendUrl/api/boards/qna/posts" @("item.id", "item.title", "item.demo") "POST" '{"title":"Smoke QNA board post","content":"Created by smoke check."}'
+  Test-HttpEndpoint "$BackendUrl/api/boards/qna/posts" "POST" '{"title":"Smoke QNA board post","content":"Created by smoke check."}'
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts/$freePostId/comments" "POST" '{"content":"Smoke board comment."}'
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts/$freePostId/reactions" "POST" '{"type":"like"}'
   Test-HttpEndpoint "$BackendUrl/api/quests/1/submissions" "POST" '{"content":"Smoke quest submission."}'

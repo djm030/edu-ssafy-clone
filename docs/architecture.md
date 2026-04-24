@@ -1,9 +1,9 @@
 # Architecture Summary
 
-## R7.0 Contract and Fallback Guardrail
-- Frontend API fallback is now an explicit local-demo safety net, not a blanket catch-all. `fetchJson` rethrows `401/403`, disables fallback when `VITE_DISABLE_API_FALLBACK=true`, CI mode is detected, or the Vite build is production/live, and logs a visible warning when local fallback is used for network/5xx failures.
-- Board detail and board creation use backend response wrappers as the canonical contract: detail returns `{ post }`; create returns `{ item }`. Frontend adapters unwrap those contracts at the API boundary before page code receives data.
-- A maintained `docs/openapi.yaml` is the current R7.0 API contract artifact. `scripts/dev/verify-openapi.ps1` performs a lightweight drift-marker check for critical auth/profile/board paths and schemas until generated springdoc output is added in a later backend round.
+## R7.0 Smoke Contract Boundary (2026-04-24)
+- The DevOps/QA smoke harness now has explicit JSON contract assertions for auth/profile/board paths. This makes the smoke layer a contract boundary rather than a simple availability check.
+- Critical wrappers are enforced in live smoke: auth/current-user use `{ user }`, profile uses `{ profile }`, board detail uses `{ post }`, board create uses `{ item }`, and board list requires `{ items, page }`.
+- This is intentionally separate from frontend fallback behavior: R7.0 still must update `frontend/src/api/client.ts` so 401/403 and CI/live failures are not masked by local demo fallbacks.
 
 ## Stack
 - Backend: Spring Boot 3.3.5, Java 21, Spring Web/Validation/JDBC/Actuator, MySQL connector, Redis/RabbitMQ dependencies for runtime parity.
