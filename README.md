@@ -2,6 +2,14 @@
 
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.
 
+## Current project status (2026-04-24)
+
+- Overall readiness: **NOT READY / PARTIAL**. The repository is a runnable full-stack clone scaffold, but it is not final full-clone complete.
+- Passing local worker checks: frontend `npm run lint`, frontend `npm run build`, and `git diff --check`.
+- Blocked local worker checks: backend `mvn test` because `mvn` is not installed and `backend/mvnw` is absent; rebuilt live smoke requires a host/CI environment with Docker/PowerShell access.
+- Major remaining product gaps: production auth/session/RBAC, durable notification/support/survey/material workflows, attachments, board edit/delete/permissions, browser E2E, CI, and final all-PASS verification.
+- Source of truth for readiness: `docs/final-verification.md` and `docs/remaining-work.md`.
+
 ## Quick Start: localhost 전체 확인
 
 PowerShell에서 저장소 루트로 이동한 뒤 실행합니다.
