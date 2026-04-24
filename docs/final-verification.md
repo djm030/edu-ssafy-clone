@@ -12,6 +12,20 @@ Decision: **NOT COMPLETE / PARTIAL**
 - 부분/차단: backend 재빌드/재테스트, docker compose live up/ps/build, localhost HTTP smoke는 현재 실행 환경 제약으로 재검증 불가.
 - 결론: SSAFY 풀 클론은 여전히 **완료 아님(PARTIAL)**. 기능 깊이(인증/RBAC/첨부/문의·설문 워크플로우/E2E)가 남아 있고, 핵심 런타임 검증도 이번 환경에서 완료되지 않았다.
 
+### 팀 상태(2026-04-25 재확인)
+
+`omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json`
+
+| 항목 | 값 |
+|---|---:|
+| total tasks | 116 |
+| pending | 114 |
+| in_progress | 2 |
+| completed | 0 |
+| failed | 0 |
+
+판정: 팀 태스크가 대량 pending 상태이므로 완료 선언 조건을 충족하지 않는다.
+
 ## 2. 실행한 명령어
 
 ```bash
