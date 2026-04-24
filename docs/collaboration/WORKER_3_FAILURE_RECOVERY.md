@@ -22,3 +22,10 @@ Implement R7 RBAC/session work in a scoped task: backend session/token validatio
 - Status: Task 50 failure log was read from the team task state.
 - Failure summary: backend authorization enforcement is absent; frontend has 401/403 fallback protection, but backend lacks Spring Security configuration, `@PreAuthorize`, or equivalent controller/method guards.
 - Acceptance impact: `docs/remaining-work.md` still lists access control as a gap, so Task 50 remains failed until R7 RBAC/session implementation is completed and verified.
+
+## Task 77 — 다시 검증한다
+
+- Status: focused re-verification executed after reading the Task 50 failure log.
+- Backend authorization marker count: 0 matches for , , , , or  under .
+- Remaining-work partial/gap count: 16 rows.
+- Result: Task 50 remains a valid failure; backend authorization enforcement still needs implementation.
