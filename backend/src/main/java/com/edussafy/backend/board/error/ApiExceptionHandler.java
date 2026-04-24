@@ -25,6 +25,12 @@ public class ApiExceptionHandler {
                 .body(ErrorResponse.of("BOARD_POST_NOT_FOUND", "Board post not found."));
     }
 
+    @ExceptionHandler(ForbiddenBoardOperationException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenBoardOperation(ForbiddenBoardOperationException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("FORBIDDEN", "Board operation is not allowed."));
+    }
+
     @ExceptionHandler(InvalidBoardQueryException.class)
     public ResponseEntity<ErrorResponse> handleInvalidBoardQuery(InvalidBoardQueryException exception) {
         return ResponseEntity.badRequest()

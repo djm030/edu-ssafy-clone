@@ -4,8 +4,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,9 +16,12 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
@@ -145,6 +150,35 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.item.boardCode").value("free"))
                 .andExpect(jsonPath("$.item.title").value("Hello"))
                 .andExpect(jsonPath("$.item.demo").value(true));
+    }
+
+    @Test
+    void adminCanUpdateDeleteAndAttachPost() throws Exception {
+        given(boardService.updatePost(eq("free"), eq(10L), any(), eq("admin"))).willReturn(new BoardPostUpdateResponse(
+                new BoardPostCreatedItem(10L, "free", null, "Updated", "Body", "Demo Learner", null, false)
+        ));
+        given(boardService.attachFile(eq("free"), eq(10L), any(), eq("admin"))).willReturn(new BoardAttachmentCreateResponse(
+                new BoardAttachmentItem(3L, 10L, "guide.pdf", "application/pdf", 1200L, "/files/guide.pdf", false)
+        ));
+
+        mockMvc.perform(put("/api/boards/free/posts/10")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Updated\",\"content\":\"Body\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(10))
+                .andExpect(jsonPath("$.item.title").value("Updated"));
+
+        mockMvc.perform(post("/api/boards/free/posts/10/attachments")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fileName\":\"guide.pdf\",\"mimeType\":\"application/pdf\",\"fileSize\":1200,\"url\":\"/files/guide.pdf\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.fileName").value("guide.pdf"));
+
+        mockMvc.perform(delete("/api/boards/free/posts/10")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isNoContent());
     }
 
     @Test

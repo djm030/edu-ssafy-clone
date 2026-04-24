@@ -266,4 +266,7 @@ export interface AdminCampusItem { id: number; name: string; active: boolean; }
 export interface AdminCohortItem { id: number; name: string; year: number; active: boolean; }
 export interface AdminTrackItem { id: number; name: string; description?: string; active: boolean; }
 export interface AdminClassGroupItem { id: number; campusId: number; cohortId: number; trackId: number; name: string; classroom?: string; capacity: number; active: boolean; }
+export type AdminCampusDraft = Omit<AdminCampusItem, 'id' | 'active'>;
+export type AdminCohortDraft = Omit<AdminCohortItem, 'id' | 'active'>;
+export type AdminTrackDraft = Omit<AdminTrackItem, 'id' | 'active'>;
 export type AdminClassGroupDraft = Omit<AdminClassGroupItem, 'id' | 'active'>;

@@ -5,6 +5,14 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.CategoryItem;
 import com.edussafy.backend.board.dto.CategorySummary;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
 import com.edussafy.backend.board.service.BoardQuery;
 import com.edussafy.backend.board.service.BoardSort;
 import java.sql.ResultSet;
@@ -161,6 +169,101 @@ public class BoardRepository {
                 .param("postId", postId)
                 .query(this::mapPostDetail)
                 .optional();
+    }
+
+    public BoardPostCreatedItem createPost(long boardId, String boardCode, BoardPostCreateRequest request) {
+        jdbcClient.sql("""
+                INSERT INTO board_posts (board_id, board_category_id, author_user_id, title, content)
+                VALUES (:boardId, :categoryId, NULL, :title, :content)
+                """)
+                .param("boardId", boardId)
+                .param("categoryId", request.categoryId())
+                .param("title", request.title().trim())
+                .param("content", request.content().trim())
+                .update();
+        long id = lastInsertId();
+        return new BoardPostCreatedItem(id, boardCode, request.categoryId(), request.title().trim(), request.content().trim(), "Demo Learner", OffsetDateTime.now(SEOUL_ZONE), false);
+    }
+
+    public BoardPostCreatedItem updatePost(long postId, String boardCode, BoardPostUpdateRequest request) {
+        jdbcClient.sql("""
+                UPDATE board_posts
+                SET board_category_id = :categoryId, title = :title, content = :content
+                WHERE board_post_id = :postId
+                """)
+                .param("categoryId", request.categoryId())
+                .param("title", request.title().trim())
+                .param("content", request.content().trim())
+                .param("postId", postId)
+                .update();
+        return new BoardPostCreatedItem(postId, boardCode, request.categoryId(), request.title().trim(), request.content().trim(), "Demo Learner", OffsetDateTime.now(SEOUL_ZONE), false);
+    }
+
+    public void deletePost(long postId) {
+        jdbcClient.sql("DELETE FROM board_posts WHERE board_post_id = :postId")
+                .param("postId", postId)
+                .update();
+    }
+
+    public BoardCommentCreatedItem createComment(long postId, BoardCommentCreateRequest request) {
+        jdbcClient.sql("""
+                INSERT INTO board_comments (board_post_id, author_user_id, content)
+                VALUES (:postId, NULL, :content)
+                """)
+                .param("postId", postId)
+                .param("content", request.content().trim())
+                .update();
+        long id = lastInsertId();
+        return new BoardCommentCreatedItem(id, postId, request.content().trim(), "Demo Learner", OffsetDateTime.now(SEOUL_ZONE), false);
+    }
+
+    public BoardReactionCreatedItem toggleReaction(long postId, String type) {
+        long demoUserId = 1L;
+        int deleted = jdbcClient.sql("""
+                DELETE FROM board_post_reactions
+                WHERE board_post_id = :postId AND user_id = :userId AND reaction_type_code = :type
+                """)
+                .param("postId", postId)
+                .param("userId", demoUserId)
+                .param("type", type)
+                .update();
+        if (deleted > 0) {
+            return new BoardReactionCreatedItem(postId, type, false, false);
+        }
+        jdbcClient.sql("""
+                INSERT INTO board_post_reactions (board_post_id, user_id, reaction_type_code)
+                VALUES (:postId, :userId, :type)
+                """)
+                .param("postId", postId)
+                .param("userId", demoUserId)
+                .param("type", type)
+                .update();
+        return new BoardReactionCreatedItem(postId, type, true, false);
+    }
+
+    public BoardAttachmentItem attachFile(long postId, BoardAttachmentCreateRequest request) {
+        jdbcClient.sql("""
+                INSERT INTO attachments (original_filename, storage_key, stored_path, mime_type, file_size)
+                VALUES (:fileName, :storageKey, :storedPath, :mimeType, :fileSize)
+                """)
+                .param("fileName", request.fileName().trim())
+                .param("storageKey", "board/" + postId + "/" + request.fileName().trim())
+                .param("storedPath", request.url())
+                .param("mimeType", request.mimeType())
+                .param("fileSize", request.fileSize())
+                .update();
+        long attachmentId = lastInsertId();
+        jdbcClient.sql("INSERT INTO board_post_attachments (board_post_id, attachment_id) VALUES (:postId, :attachmentId)")
+                .param("postId", postId)
+                .param("attachmentId", attachmentId)
+                .update();
+        return new BoardAttachmentItem(attachmentId, postId, request.fileName().trim(), request.mimeType(), request.fileSize(), request.url(), false);
+    }
+
+    private long lastInsertId() {
+        return jdbcClient.sql("SELECT LAST_INSERT_ID()")
+                .query(Long.class)
+                .single();
     }
 
     private SqlParts buildWhereClause(long boardId, BoardQuery query) {

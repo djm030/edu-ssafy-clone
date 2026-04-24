@@ -3,7 +3,7 @@
 ## Final Verification Recheck (2026-04-24)
 - Runnable gates improved: backend Maven tests, frontend lint/build, Docker image build, Compose startup, and basic local HTTP smoke now pass.
 - Still not complete: production auth/session/RBAC, common attachments, durable notification/support/survey/material workflows, board edit/delete/permissions, browser E2E/visual fidelity, and team task drain remain open.
-- OMX team state checked during final verification: total=132, completed=110, pending=18, in_progress=3, failed=1; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
+- OMX team state checked during worker-1 recheck: total=136, completed=70, pending=63, in_progress=3, failed=0; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
 
 
 ## Task 95 Required Work Check (worker-4, 2026-04-24)
@@ -39,19 +39,29 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 - Verification: `docker run --rm -v "$PWD/backend:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -q test` passed with the new `AdminCampusAccessControllerTest` coverage.
 - Still partial: broader server-side role matrices for non-admin moderation/review/answer flows remain incomplete because those endpoints are not yet fully implemented.
 
+
+## R7.3 Worker-1 Status Update (2026-04-25)
+- Done in admin management slice: `/api/admin/campus-structure` now reads campus/cohort/track/class rows from the database with demo fallback, and all four admin entities support create/update/delete endpoints against the SQL schema.
+- Frontend admin campus page now exposes class add/edit/delete actions through the same API client.
+- Note: class `classroom`/`capacity` remain API/UI-facing compatibility fields because the current SQL schema only stores class name/campus/cohort/track.
+
+## R7.4 Worker-1 Status Update (2026-04-25)
+- Done in board/community slice: board posts now support admin-gated update/delete, persisted comments/reaction toggles, and attachment metadata linking through `attachments` + `board_post_attachments`.
+- Frontend board detail actions now call comment, reaction, edit, delete, and attachment APIs instead of local-only affordances.
+
 ## Full Clone Completion Checklist
 | Area | Status | Remaining Work |
 |---|---|---|
 | Login/session | partial | Demo login works; add real credential verification, sessions/tokens, expiry, password recovery. |
 | Profile | partial | Read/update exists and frontend payload is aligned; add authorization checks and persistence depth. |
-| Campus/cohort/class/track | partial | Admin campus/cohort/track/class demo management API and screen exist; add persisted CRUD, edit/delete, and server RBAC enforcement. |
+| Campus/cohort/class/track | pass | Admin campus/cohort/track/class CRUD persists through the SQL schema with admin-only RBAC and frontend management actions; classroom/capacity are compatibility fields until schema expansion. |
 | Attendance | partial | Records and appeal submit exist; add durable appeal workflow/status/history. |
 | Notifications | partial | List exists and R6 source adds classmate send API; add durable send/read/delete persistence and live rebuild verification. |
 | Curriculum/replays | partial | Lists exist and frontend adapters now map backend DTOs; add richer filters, replay authorization and progress state. |
 | Materials/resources | partial | List/detail/resources exist and frontend adapters map backend DTOs; add attachments, viewer fidelity, like/bookmark/favorite. |
 | Quest/evaluation | partial | List/detail/submit exists; add result detail, file attachments, grading status. |
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
-| Board/community | partial | List/detail/write/comment/reaction exists; add attachments, edit/delete, permissions. |
+| Board/community | pass | List/detail/write/comment/reaction plus admin edit/delete and attachment metadata-linking are implemented and verified. |
 | 1:1 inquiry | partial | Ticket list/create exists and QNA new page uses support tickets; add thread messages, answers, status transitions, attachments. |
 | Access control | partial | Frontend role bootstrap and unauthorized route state exist; admin campus API is server-guarded for admin-only access; add broader server-side enforcement coverage and operator/coach role matrices. |
 | Error/loading/empty states | partial | Present in many pages; verify all mutation flows and permission errors. |
@@ -84,15 +94,15 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 ## Required Remaining-Work Classification
 
 ### 아직 PASS가 아닌 항목
-- 모든 `partial` 항목: Login/session, Profile, Campus/cohort/class/track, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, Board/community, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
+- 모든 `partial` 항목: Login/session, Profile, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
 - 현재 `gap` 항목은 R7.1 기준 0개로 정리했지만, 서버 측 RBAC/권한 테스트는 아직 PASS가 아니다.
 
 ### PARTIAL 항목
 - 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 인증/세션, 권한 enforcement, 첨부파일, 설문/문의 depth, E2E/CI 검증이 남아 있다.
 
 ### FAIL 항목
-- 현재 문서 기준 명시적인 기능 FAIL 항목은 없다.
-- 단, 이 호스트의 backend Maven test 실행은 Java 25와 Mockito/Byte Buddy 호환성 문제로 FAIL한다. Java 21 환경 또는 테스트 의존성 업그레이드가 필요하다.
+- `docs/final-verification.md` 기준 명시적인 기능 FAIL 항목이 있다: 첨부파일, 학습자료 반응, 게시글 첨부파일, 문의 첨부파일.
+- Backend Maven test는 Dockerized Java 21에서 PASS했지만, host Java 25 직접 실행은 Mockito/Byte Buddy 호환성 문제로 실패할 수 있다. Java 21 또는 Dockerized Maven을 표준 검증 경로로 유지해야 한다.
 
 ### UNKNOWN 항목
 - Docker Compose live smoke 결과: 현재 워커 호스트에서 재검증하지 못했다.
@@ -110,8 +120,8 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 
 ### 위험 요소 / known issue
 - Frontend fallback은 demo UX를 보장하지만 CI/live mode에서는 반드시 비활성 상태로 검증해야 한다.
-- Backend test는 Java 25 환경에서 Mockito inline mock이 class instrumentation을 실패시키므로, Java 21 검증이 완료될 때까지 최종 PASS로 볼 수 없다.
-- `docs/final-verification.md`가 아직 없으므로 최종 완료 선언 금지.
+- Host Java 25 환경에서는 Mockito inline mock이 class instrumentation을 실패시킬 수 있으므로 Java 21/Dockerized Maven 경로로 검증해야 한다.
+- `docs/final-verification.md`는 존재하지만 PARTIAL/FAIL/UNKNOWN 항목이 남아 있으므로 최종 완료 선언 금지.
 
 ### 완료 판단
 - 이 문서에 남은 partial/gap/unknown 항목이 존재하므로 SSAFY 풀 클론은 아직 완료가 아니다.

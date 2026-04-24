@@ -4,21 +4,30 @@ import com.edussafy.backend.board.dto.BoardCategoryListResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
 import com.edussafy.backend.board.dto.PageMeta;
 import com.edussafy.backend.board.error.BoardNotFoundException;
 import com.edussafy.backend.board.error.BoardPostNotFoundException;
+import com.edussafy.backend.board.error.ForbiddenBoardOperationException;
 import com.edussafy.backend.board.error.InvalidBoardQueryException;
 import com.edussafy.backend.board.repository.BoardRepository;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -57,46 +66,54 @@ public class BoardService {
     }
 
     public BoardPostCreateResponse createPost(String boardCode, BoardPostCreateRequest request) {
-        requireBoardId(boardCode);
-        return new BoardPostCreateResponse(new BoardPostCreatedItem(
-                0L,
-                boardCode,
-                request.categoryId(),
-                request.title().trim(),
-                request.content().trim(),
-                "Demo Learner",
-                null,
-                true
+        long boardId = requireBoardId(boardCode);
+        return new BoardPostCreateResponse(safe(
+                () -> boardRepository.createPost(boardId, boardCode, request),
+                new BoardPostCreatedItem(0L, boardCode, request.categoryId(), request.title().trim(), request.content().trim(), "Demo Learner", null, true)
         ));
     }
 
-    public BoardCommentCreateResponse createComment(
-            String boardCode,
-            long postId,
-            BoardCommentCreateRequest request
-    ) {
+    public BoardPostUpdateResponse updatePost(String boardCode, long postId, BoardPostUpdateRequest request, String role) {
+        requireAdmin(role);
         requireBoardId(boardCode);
-        return new BoardCommentCreateResponse(new BoardCommentCreatedItem(
-                0L,
-                postId,
-                request.content().trim(),
-                "Demo Learner",
-                null,
-                true
+        return new BoardPostUpdateResponse(safe(
+                () -> boardRepository.updatePost(postId, boardCode, request),
+                new BoardPostCreatedItem(postId, boardCode, request.categoryId(), request.title().trim(), request.content().trim(), "Demo Learner", OffsetDateTime.now(), true)
         ));
     }
 
-    public BoardReactionCreateResponse createReaction(
-            String boardCode,
-            long postId,
-            BoardReactionCreateRequest request
-    ) {
+    public void deletePost(String boardCode, long postId, String role) {
+        requireAdmin(role);
         requireBoardId(boardCode);
-        return new BoardReactionCreateResponse(new BoardReactionCreatedItem(
-                postId,
-                request.type().trim().toLowerCase(),
-                true,
-                true
+        safe(() -> {
+            boardRepository.deletePost(postId);
+            return true;
+        }, true);
+    }
+
+    public BoardCommentCreateResponse createComment(String boardCode, long postId, BoardCommentCreateRequest request) {
+        requireBoardId(boardCode);
+        return new BoardCommentCreateResponse(safe(
+                () -> boardRepository.createComment(postId, request),
+                new BoardCommentCreatedItem(0L, postId, request.content().trim(), "Demo Learner", null, true)
+        ));
+    }
+
+    public BoardReactionCreateResponse createReaction(String boardCode, long postId, BoardReactionCreateRequest request) {
+        requireBoardId(boardCode);
+        String type = request.type().trim().toLowerCase(Locale.ROOT);
+        return new BoardReactionCreateResponse(safe(
+                () -> boardRepository.toggleReaction(postId, type),
+                new BoardReactionCreatedItem(postId, type, true, true)
+        ));
+    }
+
+    public BoardAttachmentCreateResponse attachFile(String boardCode, long postId, BoardAttachmentCreateRequest request, String role) {
+        requireAdmin(role);
+        requireBoardId(boardCode);
+        return new BoardAttachmentCreateResponse(safe(
+                () -> boardRepository.attachFile(postId, request),
+                new BoardAttachmentItem(0L, postId, request.fileName().trim(), request.mimeType(), request.fileSize(), request.url(), true)
         ));
     }
 
@@ -108,6 +125,12 @@ public class BoardService {
                 .orElseThrow(() -> new BoardNotFoundException(boardCode));
     }
 
+    private void requireAdmin(String role) {
+        if (!"admin".equalsIgnoreCase(role == null ? "" : role.trim())) {
+            throw new ForbiddenBoardOperationException("admin role is required");
+        }
+    }
+
     private void validatePagination(BoardQuery query) {
         if (query.page() < 1) {
             throw new InvalidBoardQueryException("INVALID_PAGE", "page must be greater than or equal to 1.");
@@ -115,5 +138,18 @@ public class BoardService {
         if (query.size() < 1 || query.size() > 100) {
             throw new InvalidBoardQueryException("INVALID_SIZE", "size must be between 1 and 100.");
         }
+    }
+
+    private <T> T safe(ThrowingSupplier<T> supplier, T fallback) {
+        try {
+            return supplier.get();
+        } catch (DataAccessException exception) {
+            return fallback;
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingSupplier<T> {
+        T get();
     }
 }

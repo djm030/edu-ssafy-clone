@@ -55,7 +55,7 @@ git diff --check
 | Local HTTP smoke | PASS | `/nginx-health`, `/actuator/health`, `/api/me`, `/api/auth/login`, `/api/auth/roles/current`, `/api/attendance/records`, `/api/learning/materials`, `/api/boards/free/posts` returned HTTP 200. |
 | PowerShell smoke harness | UNKNOWN | `pwsh`/`powershell` is not installed on this macOS verification host. |
 | Browser E2E / visual fidelity | UNKNOWN | No Playwright/Cypress/browser visual test was available or executed. |
-| OMX team completion | FAIL | summary reported total=132, completed=110, pending=18, in_progress=3, failed=1; workers were not alive. |
+| OMX team completion | FAIL | worker-1 recheck summary reported total=136, completed=70, pending=63, in_progress=3, failed=0; workers were not alive. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
@@ -63,7 +63,7 @@ git diff --check
 |---|---:|---|
 | 인증/인가 | PARTIAL | demo login/current user/role API and frontend unauthorized state exist; real credential verification, session/token expiry, and server-side RBAC are incomplete. |
 | 사용자 프로필 | PARTIAL | profile read/update and password-check surfaces exist; authorization/persistence depth is not fully verified. |
-| 캠퍼스/기수/반/트랙 | PARTIAL | schema/seed/admin UI/API surfaces exist; complete persisted CRUD/edit/delete and RBAC are not proven. |
+| 캠퍼스/기수/반/트랙 | PASS | admin-only campus/cohort/track/class create/read/update/delete endpoints now persist through SQL, frontend management actions call them, and MVC tests cover RBAC-protected read/create/update/delete paths. |
 | 출석 조회 | PARTIAL | `/api/attendance/records` smoke returned 200 and UI exists; full history/filter/permission coverage is not proven. |
 | 출석 이의신청 | PARTIAL | submit endpoint/UI exists; durable status/history/approval workflow remains. |
 | 알림 발송/수신/읽음 | PARTIAL | list and classmate send route exist; durable send/read/delete lifecycle is incomplete. |
@@ -78,15 +78,15 @@ git diff --check
 | 설문 생성/조회 | PARTIAL | list/detail/respond surfaces exist; survey creation/admin flow is not fully implemented. |
 | 설문 문항/선택지 | PARTIAL | question/option DTO depth and persistence are incomplete. |
 | 설문 응답 저장 | PARTIAL | response endpoint exists; duplicate policy and durable response persistence need verification. |
-| 게시판 | PARTIAL | board/category/list/detail/write routes exist; full moderation/permissions remain. |
-| 게시글 | PARTIAL | list/detail/create smoke path exists; edit/delete/owner rules remain. |
+| 게시판 | PASS | board/category/list/detail/write plus admin update/delete, comments, reactions, and attachment-link endpoints exist with MVC coverage. |
+| 게시글 | PASS | list/detail/create/update/delete smoke paths exist; update/delete are admin-gated in backend and wired in the detail UI. |
 | 댓글/대댓글 | PARTIAL | comment create exists; nested reply/thread behavior is not complete. |
-| 게시글 첨부파일 | FAIL | metadata may exist, but upload/download/linking is not implemented end-to-end. |
-| 게시글 반응 | PARTIAL | reaction route exists; permission/idempotency/deletion coverage remains. |
+| 게시글 첨부파일 | PASS | board attachment metadata/linking endpoint writes `attachments` plus `board_post_attachments` and is exposed from the detail UI. |
+| 게시글 반응 | PASS | reaction route toggles persisted user reaction rows with frontend like/bookmark actions and controller tests. |
 | 1:1 문의 | PARTIAL | ticket list/create UI/API exists; full thread workflow remains. |
 | 문의 답변 | PARTIAL | answer/status transition depth is not fully implemented. |
 | 문의 첨부파일 | FAIL | ticket attachment upload/download is not implemented end-to-end. |
-| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; `/api/admin/campus-structure/**` now has admin-only server enforcement with MVC tests, but broader role matrix coverage is still incomplete. |
+| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; `/api/admin/campus-structure/**` has admin-only server enforcement with MVC tests covering read/create/update/delete, but broader role matrix coverage is still incomplete. |
 | 에러 처리 | PARTIAL | DataState/client error handling exists; all mutation/permission edge cases are not exhaustively verified. |
 | 로컬 실행 | PASS | Compose app profile started successfully and core HTTP smoke returned 200. |
 | 테스트 | PARTIAL | backend tests and frontend lint/build pass; PowerShell smoke, browser E2E, visual fidelity, and CI run evidence remain missing. |
@@ -97,7 +97,7 @@ git diff --check
 1. `BackendApplication` 안에 오래된 inline demo `ApiController`가 남아 실제 `BoardController` 등과 같은 API path를 중복 mapping했다. 이 때문에 Spring context startup/backend tests/Docker build가 실패했다.
 2. `frontend/src/App.tsx`에서 `useMemo`가 unused였고, `roleAccess`/`accessError` state가 선언되지 않았으며 `AppShell`에 `onLogout` 등 필수 props가 전달되지 않아 lint/build gate가 깨질 수 있었다.
 3. Nginx container는 외부 HTTP 200에도 Docker health가 처음에는 unhealthy였다. 원인은 container 내부 healthcheck가 `localhost`를 사용한 점으로 판단되어 `127.0.0.1`로 수정했고, 재기동 후 healthy를 확인했다.
-4. OMX team state는 아직 완료가 아니다: total=132, completed=110, pending=18, in_progress=3, failed=1, workers not alive.
+4. OMX team state는 아직 완료가 아니다: worker-1 recheck 기준 total=136, completed=70, pending=63, in_progress=3, failed=0, workers not alive.
 5. PowerShell 기반 smoke script는 macOS host에 `pwsh`/`powershell`이 없어 실행하지 못했다.
 6. 기능 자체는 runnable scaffold 수준이며, remaining-work의 product depth gap이 아직 다수 남아 있다.
 
@@ -116,7 +116,7 @@ git diff --check
 ## 7. 남은 작업
 
 1. 실서비스 수준 인증/세션/token expiry/password recovery 구현.
-2. 서버 측 RBAC enforcement 확대와 learner/coach/admin role matrix 테스트 추가 (`/api/admin/campus-structure/**` admin-only guard는 완료).
+2. 서버 측 RBAC enforcement 확대와 learner/coach/admin role matrix 테스트 추가 (`/api/admin/campus-structure/**` admin-only read/create/update/delete guard는 완료).
 3. 공통 첨부파일 업로드/다운로드/권한/저장소 연동 구현.
 4. 출석 이의신청 status/history/approval workflow 구현.
 5. 알림 send/read/delete durable lifecycle 구현.
