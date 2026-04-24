@@ -390,14 +390,14 @@ export function getClassmates(): Promise<{ items: Classmate[] }> {
 }
 
 export function createQna(draft: QnaDraft): Promise<{ id: number; title: string }> {
-  return fetchJson<{ id: number; title: string }>('/api/boards/qna/posts', {
+  return fetchJson<ItemResponse<{ id: number; title: string }>>('/api/boards/qna/posts', {
     body: JSON.stringify(draft),
-    fallback: () => ({ id: Date.now(), title: draft.title }),
+    fallback: () => ({ item: { id: Date.now(), title: draft.title } }),
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
-  });
+  }).then((response) => response.item);
 }
 
 export function createSupportTicket(draft: SupportTicketDraft): Promise<{ id: number; title: string; status: string }> {
@@ -412,12 +412,12 @@ export function createSupportTicket(draft: SupportTicketDraft): Promise<{ id: nu
 }
 
 export function createFreePost(draft: BoardPostDraft): Promise<{ id: number; title: string }> {
-  return fetchJson<{ id: number; title: string }>('/api/boards/free/posts', {
+  return fetchJson<ItemResponse<{ id: number; title: string }>>('/api/boards/free/posts', {
     body: JSON.stringify(draft),
-    fallback: () => ({ id: Date.now(), title: draft.title }),
+    fallback: () => ({ item: { id: Date.now(), title: draft.title } }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
-  });
+  }).then((response) => response.item);
 }
 
 export function submitAttendanceAppeal(draft: AttendanceAppealDraft): Promise<{ id: number; status: string }> {

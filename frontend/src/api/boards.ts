@@ -4,6 +4,8 @@ import type { BoardCategory, BoardCode, BoardPostListItem, BoardPostListResponse
 
 const PAGE_SIZE = 20;
 
+type BoardPostDetailResponse = { post?: BoardPostListItem };
+
 interface PostQuery {
   categoryId?: number;
   keyword?: string;
@@ -59,7 +61,7 @@ export function getPosts(boardCode: BoardCode, query: PostQuery): Promise<BoardP
 }
 
 export function getPost(boardCode: BoardCode, postId: number): Promise<BoardPostListItem | undefined> {
-  return fetchJson<BoardPostListItem | undefined>(`/api/boards/${boardCode}/posts/${postId}`, {
-    fallback: () => mockPosts.find((post) => post.boardCode === boardCode && post.id === postId),
-  });
+  return fetchJson<BoardPostDetailResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
+    fallback: () => ({ post: mockPosts.find((item) => item.boardCode === boardCode && item.id === postId) }),
+  }).then((response) => response.post);
 }

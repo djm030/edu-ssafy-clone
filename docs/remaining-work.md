@@ -1,4 +1,10 @@
-﻿# Remaining Work
+# Remaining Work
+
+## R7.0 Remaining Guardrail Work
+- Run the updated PowerShell smoke harness on a host/CI image that has PowerShell installed; this worker could only perform static OpenAPI marker verification locally.
+- Run `cd backend && mvn -B test` or add a Maven wrapper/CI image; local Maven is unavailable in this worker environment.
+- Consider replacing the maintained `docs/openapi.yaml` with generated springdoc output in R7 once backend dependency policy is finalized.
+- R7 Auth/RBAC can start only after the R7.0 smoke/backend test blockers above are resolved or explicitly accepted by the PM as environment blockers.
 
 ## Full Clone Completion Checklist
 | Area | Status | Remaining Work |

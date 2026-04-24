@@ -96,6 +96,8 @@ class BoardControllerTest {
         mockMvc.perform(get("/api/boards/notice/posts/10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.post.id").value(10))
+                .andExpect(jsonPath("$.post.title").value("Notice title"))
+                .andExpect(jsonPath("$.post.content").value("Notice content"))
                 .andExpect(jsonPath("$.post.category.name").value("General"))
                 .andExpect(jsonPath("$.post.engagement.commentCount").value(2))
                 .andExpect(jsonPath("$.post.hasAttachment").value(true));
@@ -139,7 +141,9 @@ class BoardControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Hello\",\"content\":\"Body\"}"))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(0))
                 .andExpect(jsonPath("$.item.boardCode").value("free"))
+                .andExpect(jsonPath("$.item.title").value("Hello"))
                 .andExpect(jsonPath("$.item.demo").value(true));
     }
 

@@ -16,6 +16,28 @@ interface FetchJsonOptions<T> extends RequestInit {
   fallback?: () => T | Promise<T>;
 }
 
+type ViteEnv = Record<string, string | boolean | undefined>;
+
+function apiFallbackDisabled(): boolean {
+  const env = (import.meta as ImportMeta & { env?: ViteEnv }).env || {};
+  return env.VITE_DISABLE_API_FALLBACK === 'true' || env.VITE_DISABLE_API_FALLBACK === true || env.CI === 'true' ||
+    env.CI === true || env.PROD === true || env.MODE === 'production';
+}
+
+function shouldUseFallback(error: unknown): boolean {
+  if (apiFallbackDisabled()) return false;
+  if (error instanceof ApiError) {
+    if (error.status === 401 || error.status === 403) return false;
+    return error.status >= 500;
+  }
+  return true;
+}
+
+function warnFallback(url: string, error: unknown): void {
+  const reason = error instanceof Error ? error.message : 'unknown error';
+  console.warn(`[api:fallback] Using local demo data for ${url}: ${reason}`);
+}
+
 async function readJson<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) return {} as T;
@@ -48,7 +70,10 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions<T> = {
 
     return readJson<T>(response);
   } catch (error) {
-    if (fallback) return fallback();
+    if (fallback && shouldUseFallback(error)) {
+      warnFallback(url, error);
+      return fallback();
+    }
     throw error;
   }
 }

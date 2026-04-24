@@ -78,6 +78,42 @@ function Test-HttpEndpoint {
   [void](Invoke-SmokeRequest -Url $Url -Method $Method -Body $Body)
 }
 
+
+function Assert-JsonPropertyPath {
+  param(
+    [object]$Json,
+    [string]$Path
+  )
+  $current = $Json
+  foreach ($segment in $Path.Split('.')) {
+    if ($null -eq $current) {
+      throw "JSON path '$Path' is missing at '$segment'."
+    }
+    $property = $current.PSObject.Properties[$segment]
+    if ($null -eq $property) {
+      throw "JSON path '$Path' is missing at '$segment'."
+    }
+    $current = $property.Value
+  }
+}
+
+function Test-JsonShape {
+  param(
+    [string]$Label,
+    [string]$Url,
+    [string[]]$RequiredPaths,
+    [string]$Method = "GET",
+    [string]$Body = $null
+  )
+  $response = Invoke-SmokeRequest -Url $Url -Method $Method -Body $Body
+  $json = $response.Content | ConvertFrom-Json
+  foreach ($path in $RequiredPaths) {
+    Assert-JsonPropertyPath -Json $json -Path $path
+  }
+  Write-Host "JSON shape $Label -> $($RequiredPaths -join ', ')"
+  return $json
+}
+
 function Get-FirstItemId {
   param(
     [string]$Url,
@@ -123,6 +159,7 @@ try {
     "scripts/dev/localhost.ps1",
     "scripts/dev/verify-compose.ps1",
     "scripts/dev/smoke.ps1",
+    "scripts/dev/verify-openapi.ps1",
     "scripts/mysql/20-board-list-seed.sql",
     "scripts/mysql/verify-schema.sql",
     "scripts/mysql/verify-schema.ps1",
@@ -204,6 +241,7 @@ try {
   Assert-FileContains "backend/src/main/java/com/edussafy/backend/priority/api/CommunityController.java" "/classmates/{userId}/notifications"
 
   & (Join-Path $PSScriptRoot "verify-compose.ps1")
+  & (Join-Path $PSScriptRoot "verify-openapi.ps1")
 
   if ($SkipHttp) {
     Write-Host "HTTP smoke checks skipped."
@@ -213,9 +251,9 @@ try {
   Test-HttpEndpoint "$BaseUrl/nginx-health"
   Test-HttpEndpoint "$BackendUrl/actuator/health"
   Test-HttpEndpoint "$BackendUrl/api/health"
-  Test-HttpEndpoint "$BackendUrl/api/auth/login" "POST" '{"email":"student@ssafy.com","password":"password"}'
-  Test-HttpEndpoint "$BackendUrl/api/me"
-  Test-HttpEndpoint "$BackendUrl/api/profile"
+  Test-JsonShape "auth login" "$BackendUrl/api/auth/login" @("user.id", "user.email") "POST" '{"email":"student@ssafy.com","password":"password"}'
+  Test-JsonShape "current user" "$BackendUrl/api/me" @("user.id", "user.email")
+  Test-JsonShape "profile" "$BackendUrl/api/profile" @("profile.id", "profile.email", "profile.name")
   Test-HttpEndpoint "$BackendUrl/api/profile/password-check" "POST" '{"password":"password"}'
   Test-HttpEndpoint "$BackendUrl/api/dashboard/summary"
   Test-HttpEndpoint "$BackendUrl/api/attendance/records"
@@ -235,11 +273,11 @@ try {
   Test-HttpEndpoint "$BackendUrl/api/boards/notice/categories"
   Test-HttpEndpoint "$BackendUrl/api/boards/notice/posts?keyword=Welcome&page=1&size=5"
   $noticePostId = Get-FirstItemId "$BackendUrl/api/boards/notice/posts?keyword=Welcome&page=1&size=1" "notice post"
-  Test-HttpEndpoint "$BackendUrl/api/boards/notice/posts/$noticePostId"
+  Test-JsonShape "notice board detail" "$BackendUrl/api/boards/notice/posts/$noticePostId" @("post.id", "post.title", "post.engagement")
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts?page=1&size=5"
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts?keyword=REST%20API&page=1&size=5"
   $freePostId = Get-FirstItemId "$BackendUrl/api/boards/free/posts?keyword=REST%20API&page=1&size=1" "free post"
-  Test-HttpEndpoint "$BackendUrl/api/boards/free/posts/$freePostId"
+  Test-JsonShape "free board detail" "$BackendUrl/api/boards/free/posts/$freePostId" @("post.id", "post.title", "post.engagement")
   Test-HttpEndpoint "$BackendUrl/api/boards/faq/categories"
   Test-HttpEndpoint "$BackendUrl/api/boards/faq/posts?page=1&size=5"
   Test-HttpEndpoint "$BackendUrl/api/boards/qna/categories"
@@ -248,8 +286,8 @@ try {
   Test-HttpEndpoint "$BackendUrl/api/support/tickets" "POST" '{"title":"Smoke support ticket","content":"Created by smoke check."}'
   Test-HttpEndpoint "$BackendUrl/api/attendance/appeals" "POST" '{"type":"status_change","requestedStatus":"present","reason":"Smoke attendance appeal."}'
   Test-HttpEndpoint "$BackendUrl/api/profile" "PUT" '{"name":"Demo Learner","mobilePhone":"010-1234-5678","addressLine1":"Smoke address"}'
-  Test-HttpEndpoint "$BackendUrl/api/boards/free/posts" "POST" '{"title":"Smoke free board post","content":"Created by smoke check."}'
-  Test-HttpEndpoint "$BackendUrl/api/boards/qna/posts" "POST" '{"title":"Smoke QNA board post","content":"Created by smoke check."}'
+  Test-JsonShape "free board create" "$BackendUrl/api/boards/free/posts" @("item.id", "item.title", "item.demo") "POST" '{"title":"Smoke free board post","content":"Created by smoke check."}'
+  Test-JsonShape "qna board create" "$BackendUrl/api/boards/qna/posts" @("item.id", "item.title", "item.demo") "POST" '{"title":"Smoke QNA board post","content":"Created by smoke check."}'
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts/$freePostId/comments" "POST" '{"content":"Smoke board comment."}'
   Test-HttpEndpoint "$BackendUrl/api/boards/free/posts/$freePostId/reactions" "POST" '{"type":"like"}'
   Test-HttpEndpoint "$BackendUrl/api/quests/1/submissions" "POST" '{"content":"Smoke quest submission."}'

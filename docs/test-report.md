@@ -1,4 +1,28 @@
-﻿# Test Report
+# Test Report
+
+## R7.0 Contract/Fallback Guardrail Verification (2026-04-24)
+
+### Changed Verification Surface
+- Added backend controller assertions for board detail `{ post }` fields and board create `{ item }` fields.
+- Added live smoke JSON shape assertions for auth login, `/api/me`, profile, board detail, and board create responses.
+- Added maintained OpenAPI marker verification through `scripts/dev/verify-openapi.ps1`.
+
+### Results From This Worker Pass
+- `npm ci` -> PASS; dependency install completed with a non-fatal local Node v23.6.0 engine warning for `eslint-visitor-keys`.
+- `cd frontend && npm run lint` -> PASS.
+- `cd frontend && npm run build` -> PASS; Vite built 65 modules.
+- `git diff --check` -> PASS.
+- Python marker check equivalent for `docs/openapi.yaml` -> PASS.
+
+### Blocked Commands
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1 -SkipHttp` -> BLOCKED: `powershell`/`pwsh` is not installed in this execution environment.
+- `cd backend && mvn -B test` -> BLOCKED: `mvn` is not installed and this repo has no Maven wrapper.
+
+### Host/CI Retest
+1. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1 -SkipHttp`
+2. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1` after app profile is running
+3. `cd backend && mvn -B test`
+4. `cd frontend && npm run lint && npm run build`
 
 ## R6 Round 1 QA Harness Update (2026-04-24)
 

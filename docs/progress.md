@@ -1,4 +1,24 @@
-﻿# Full Clone Progress
+# Full Clone Progress
+
+## R7.0 Contract/Fallback Guardrail Progress (2026-04-24)
+- Goal: close the pre-auth board contract seam, stop frontend fallback from hiding auth/permission failures, and bootstrap a machine-readable API contract artifact before R7 Auth/RBAC.
+- Completed work:
+  - `frontend/src/api/client.ts` now rethrows `401/403`, disables fallback in production/CI/`VITE_DISABLE_API_FALLBACK=true`, and only permits visible local fallback for network or 5xx demo scenarios.
+  - `frontend/src/api/boards.ts` now normalizes board detail from the backend `{ post }` wrapper.
+  - `frontend/src/api/app.ts` now normalizes board create responses from the backend `{ item }` wrapper for free/QNA post creation.
+  - `backend/src/test/java/com/edussafy/backend/board/api/BoardControllerTest.java` now asserts board detail/create wrapper fields that frontend adapters depend on.
+  - `scripts/dev/smoke.ps1` now includes JSON shape assertions for auth/me/profile and board detail/create paths.
+  - `docs/openapi.yaml` and `scripts/dev/verify-openapi.ps1` bootstrap the maintained API contract/drift marker check until springdoc generation is introduced.
+- Verification evidence in this session:
+  - `npm ci` -> PASS; installed frontend dependencies with a non-fatal Node engine warning from `eslint-visitor-keys` because local Node is v23.6.0.
+  - `cd frontend && npm run lint` -> PASS.
+  - `cd frontend && npm run build` -> PASS.
+  - `git diff --check` -> PASS.
+  - Python OpenAPI marker check for required R7.0 paths/schemas -> PASS.
+- Blocked verification:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/smoke.ps1 -SkipHttp` -> BLOCKED because neither `powershell` nor `pwsh` is installed in this environment.
+  - Backend `mvn test` -> BLOCKED because Maven is not installed and no Maven wrapper is present.
+- Commit status: not committed in this worker pass; repository already had prior ahead-of-origin commits and team worker task state for `worker-1` is missing task files, so this pass leaves changes staged only for leader review/merge.
 
 ## Current PM Round
 - Round: R6-contract-closure

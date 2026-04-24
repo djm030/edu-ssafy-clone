@@ -1,4 +1,11 @@
-﻿# API Summary
+# API Summary
+
+## R7.0 Contract Notes
+- Board detail contract is canonical as `GET /api/boards/{boardCode}/posts/{postId}` -> `{ post: { id, boardCode, title, content, engagement, ... } }`.
+- Board create contract is canonical as `POST /api/boards/{boardCode}/posts` -> HTTP 201 with `{ item: { id, boardCode, title, content, demo, ... } }`.
+- Frontend free/QNA creation adapters unwrap `{ item }`; board detail adapter unwraps `{ post }`.
+- Error/fallback policy: `401 Unauthorized` and `403 Forbidden` must propagate to UI state and must not be hidden by mock fallback. Production/live, CI, and `VITE_DISABLE_API_FALLBACK=true` disable all frontend fallback.
+- API contract artifact: `docs/openapi.yaml`; drift marker command: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/verify-openapi.ps1`.
 
 ## Implemented API Surface
 - `POST /api/auth/login`, `GET /api/me`
