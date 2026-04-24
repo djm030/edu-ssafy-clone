@@ -1,5 +1,18 @@
 # Remaining Work
 
+## Task 95 Required Work Check (worker-4, 2026-04-24)
+
+Question: does `docs/remaining-work.md` have no required work left? **No.** Required work remains and must stay tracked.
+
+Required non-PASS work still present:
+- Production auth/session/RBAC: real credential verification, token/session persistence, expiry, role enforcement, 401/403 UI.
+- Durable workflows: attendance appeal status/history, notifications send/read/delete, support ticket threads/answers/status, survey question/options and response persistence.
+- Attachments/reactions: materials, boards, tickets, submissions, material like/bookmark/favorite.
+- Permissions and management: board edit/delete/owner/moderator behavior, admin campus/cohort/class/track flows as needed.
+- QA/release: backend Maven or Dockerized Maven in host/CI, rebuilt live smoke, browser E2E, CI workflow, final all-PASS verification.
+
+Decision: keep this file non-empty and continue implementation tasks. Do not delete remaining work or declare final completion until these items are implemented and verified.
+
 ## Task 66 Required Documentation Recheck (2026-04-24)
 - Required documents now exist, including newly created `docs/final-verification.md`.
 - Documentation itself is no longer the blocker for Task 66.
