@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AUTH_REQUIRED_EVENT, FORBIDDEN_EVENT } from './api/client';
 import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
 import { getCurrentRoleAccess, logout } from './api/app';
@@ -91,14 +92,37 @@ function getCurrentPath(): string {
 function App() {
   const [path, setPath] = useState(getCurrentPath);
   const [user, setUser] = useState<UserProfile>(mockUser);
-  const [roleAccess, setRoleAccess] = useState<RoleAccess | undefined>();
-  const [accessError, setAccessError] = useState<string | undefined>();
+  const [accessMessage, setAccessMessage] = useState('');
 
   useEffect(() => {
     const onPopState = () => setPath(getCurrentPath());
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
+  useEffect(() => {
+    const onAuthRequired = (event: Event) => {
+      const message = event instanceof CustomEvent && typeof event.detail?.message === 'string'
+        ? event.detail.message
+        : '로그인이 필요한 화면입니다.';
+      setAccessMessage(message);
+      navigate('/login');
+    };
+    const onForbidden = (event: Event) => {
+      const message = event instanceof CustomEvent && typeof event.detail?.message === 'string'
+        ? event.detail.message
+        : '접근 권한이 없습니다.';
+      setAccessMessage(message);
+      navigate('/forbidden');
+    };
+
+    window.addEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
+    window.addEventListener(FORBIDDEN_EVENT, onForbidden);
+    return () => {
+      window.removeEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
+      window.removeEventListener(FORBIDDEN_EVENT, onForbidden);
+    };
+  });
 
   const navigate = (nextPath: string) => {
     if (nextPath === path) return;
@@ -130,12 +154,12 @@ function App() {
   const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path);
 
   if (path === '/login') {
-    return <LoginPage onLogin={(nextUser) => { setUser(nextUser); navigate('/'); }} />;
+    return <LoginPage message={accessMessage} onLogin={(nextUser) => { setUser(nextUser); setAccessMessage(''); navigate('/'); }} />;
   }
 
   return (
-    <AppShell accessError={accessError} currentPath={path} onLogout={handleLogout} onNavigate={navigate} roleAccess={roleAccess} user={user}>
-      {page}
+    <AppShell currentPath={path} onNavigate={navigate} user={user}>
+      {path === '/forbidden' ? <ForbiddenPage message={accessMessage} onNavigateHome={() => { setAccessMessage(''); navigate('/'); }} /> : page}
     </AppShell>
   );
 }
@@ -188,3 +212,23 @@ function renderPage(path: string) {
 }
 
 export default App;
+
+interface ForbiddenPageProps {
+  message: string;
+  onNavigateHome: () => void;
+}
+
+function ForbiddenPage({ message, onNavigateHome }: ForbiddenPageProps) {
+  return (
+    <main className="page">
+      <section className="access-state" aria-labelledby="forbidden-title">
+        <p className="eyebrow">ACCESS DENIED</p>
+        <h1 id="forbidden-title">접근 권한이 없습니다.</h1>
+        <p>{message || '현재 계정으로는 이 화면을 볼 수 없습니다. 권한을 확인하거나 관리자에게 문의해 주세요.'}</p>
+        <button className="primary-action" onClick={onNavigateHome} type="button">
+          대시보드로 돌아가기
+        </button>
+      </section>
+    </main>
+  );
+}
