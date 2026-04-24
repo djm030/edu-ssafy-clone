@@ -22,3 +22,9 @@ Worker-3 records the following hard guardrails before continuing implementation 
 - Status: this anti-pattern is explicitly rejected.
 - Worker-3 must not stop at a plan-only artifact when assigned implementation, verification, or guardrail work.
 - Evidence from this run: worker-3 created committed verification/guardrail artifacts and completed lifecycle transitions before moving to the next feasible task.
+
+## Task 33 — mock-only 구현을 완료로 처리
+
+- Status: this anti-pattern is explicitly rejected.
+- Mock/demo data may support local UX continuity, but a feature cannot be marked complete unless the relevant backend contract, persistence/authorization requirements, and verification evidence are present or the remaining gap is documented.
+- Current evidence: `docs/remaining-work.md` still contains partial/gap rows; therefore mock-only or fallback-only flows must remain partial.
