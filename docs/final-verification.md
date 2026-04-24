@@ -4,6 +4,20 @@ Date: 2026-04-25
 Role: final verification owner
 Decision: **NOT COMPLETE / PARTIAL**
 
+## 0. 2026-04-25 worker-2 추가 재검증 업데이트
+
+이 문서의 기존 내용 중 환경 차단(UNKNOWN)으로 기록된 일부 항목을 worker-2에서 추가 재검증했다.
+
+- `python3 scripts/dev/smoke-lite.py --http --with-frontend` 실행 결과: **FAIL 0 / PASS 19 / SKIP 0**
+- `curl http://localhost/nginx-health` → 200
+- `curl http://localhost/api/health` → 200 (`{"status":"UP"}`)
+- `curl http://localhost:8080/actuator/health` → 200 (`{"status":"UP"}`)
+- `docker compose --profile app build backend` 성공 (Dockerized Maven test/build 경로 통과)
+- `npm --prefix frontend run lint`, `npm --prefix frontend run build` 통과
+
+즉, 현재 호스트 기준으로는 live smoke와 frontend 검증, backend docker build/test 경로의 핵심 게이트가 실행 가능하며 PASS 근거가 확보되었다.
+다만 제품 완성도(첨부파일/문의답변/권한 depth/E2E 등) 기준은 여전히 PARTIAL이다.
+
 ## 1. 최종 검증 요약
 
 이번 검증은 "문서 존재"가 아니라 실제 실행/빌드/정합성 근거 중심으로 재수행했다.
