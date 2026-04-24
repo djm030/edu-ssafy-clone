@@ -29,3 +29,10 @@ Implement R7 RBAC/session work in a scoped task: backend session/token validatio
 - Backend authorization marker count: 0 matches for , , , , or  under .
 - Remaining-work partial/gap count: 16 rows.
 - Result: Task 50 remains a valid failure; backend authorization enforcement still needs implementation.
+
+## Task 77 — 다시 검증한다
+
+- Status: focused re-verification executed after reading the Task 50 failure log.
+- Backend authorization marker count: 0 matches for `@PreAuthorize`, `SecurityFilterChain`, `EnableMethodSecurity`, `OncePerRequestFilter`, or `Authentication` under `backend/src/main/java`.
+- Remaining-work partial/gap count: 16 rows.
+- Result: Task 50 remains a valid failure; backend authorization enforcement still needs implementation.
