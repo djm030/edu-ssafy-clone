@@ -11,14 +11,14 @@
 
 | Area | Current implemented evidence | Status |
 |---|---|---|
-| Backend API surface | 38 mapped HTTP methods were found across auth/profile/dashboard/admin/attendance/notifications/community/learning/quest/survey/support/board controllers. | Partial clone implementation present |
+| Backend API surface | 49 mapped HTTP methods were found across auth/profile/dashboard/admin/attendance/notifications/community/learning/quest/survey/support/board controllers. | Partial clone implementation present |
 | Frontend screen surface | `frontend/src/App.tsx` dispatches dashboard, login, admin campus, mycampus, learning, profile, community, quest, survey, board detail/write, unauthorized, and help/QNA screens. | Partial clone implementation present |
 | Backend persistence | JDBC repositories exist for board and priority APIs, MySQL schema/seed scripts are present, and board plus priority controller/service tests exist. | Partial; several features still have demo/fallback depth |
 | Access control | Backend `RoleAccessInterceptor`/web config and frontend role bootstrap/unauthorized routing exist. | Partial; server-side coverage and full role matrix are still required |
 | Frontend backend contract | API adapters normalize backend wrappers, rethrow 401/403, and disable demo fallback for CI/production modes. | Partial; live/CI verification still needed |
 | Runtime setup | Existing `compose.yml`, `compose.mysql.yml`, `compose.observability.yml`, backend/frontend Dockerfiles, and dev scripts are present. | Runtime assets present, not completion proof |
 | Tests/harness | Spring controller/service tests, frontend lint/build scripts, smoke/OpenAPI PowerShell scripts, CI workflow, and test report docs exist. | Test assets present; some gates remain host/CI-dependent |
-| Remaining work | `docs/remaining-work.md` still lists all major product areas as `partial` plus `UNKNOWN` live smoke/PowerShell/original-fidelity checks. | Completion blocked |
+| Remaining work | `docs/remaining-work.md` still contains 14 `partial` rows and 3 `UNKNOWN` references (live smoke/PowerShell/original-fidelity checks). | Completion blocked |
 
 ## Completed or partially implemented feature paths observed
 
@@ -36,7 +36,7 @@ This audit confirms there is real implementation beyond mock-only screens, but i
 
 ## Verification evidence captured for this audit
 
-- Backend endpoint map: `python3` scan of `backend/src/main/java/**/*.java` counted 38 `@(Get|Post|Put|Patch|Delete)Mapping` annotations.
+- Backend endpoint map: `python3` scan of `backend/src/main/java/**/*.java` counted 49 `@(Get|Post|Put|Patch|Delete)Mapping` annotations (2026-04-25 rescan).
 - Frontend route map: `rg` over `frontend/src/App.tsx`, `frontend/src/pages`, and `frontend/src/components` found the implemented route dispatch and page components listed above.
 - Mock/fallback guardrail: `rg "TODO|FIXME|mock|fallback|demo|partial|UNKNOWN"` confirmed demo/fallback code remains in backend/frontend and partial/UNKNOWN rows remain in `docs/remaining-work.md`.
 - This file intentionally records Task 3 as an audit artifact only; it is not a final acceptance or shutdown signal.
