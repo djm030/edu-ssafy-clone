@@ -37,3 +37,38 @@
 
 ## PM Rule
 At the end of every round, re-check this file against `docs/collaboration/API_CATALOG.md`, `docs/collaboration/SCREEN_CATALOG.md`, current controllers, frontend routes, and smoke coverage. If any completion criterion is still partial/gap, plan another round.
+
+## Required Remaining-Work Classification
+
+### 아직 PASS가 아닌 항목
+- 모든 `partial` 항목: Login/session, Profile, Campus/cohort/class/track, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, Board/community, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
+- 현재 `gap` 항목은 R7.1 기준 0개로 정리했지만, 서버 측 RBAC/권한 테스트는 아직 PASS가 아니다.
+
+### PARTIAL 항목
+- 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 인증/세션, 권한 enforcement, 첨부파일, 설문/문의 depth, E2E/CI 검증이 남아 있다.
+
+### FAIL 항목
+- 현재 문서 기준 명시적인 기능 FAIL 항목은 없다.
+- 단, 이 호스트의 backend Maven test 실행은 Java 25와 Mockito/Byte Buddy 호환성 문제로 FAIL한다. Java 21 환경 또는 테스트 의존성 업그레이드가 필요하다.
+
+### UNKNOWN 항목
+- Docker Compose live smoke 결과: 현재 워커 호스트에서 재검증하지 못했다.
+- PowerShell 기반 `scripts/dev/verify-openapi.ps1` 결과: 현재 워커 호스트에서 재검증하지 못했다.
+- 실제 SSAFY 원본 대비 pixel/interaction fidelity: browser E2E 및 visual capture 기준이 아직 부족하다.
+
+### 다음에 생성해야 할 task
+1. Java 21 CI/runtime 고정 또는 Mockito/Byte Buddy 테스트 도구 업그레이드로 backend test unblock.
+2. Server-side RBAC guard를 controller/service 레벨에 적용하고 learner/operator/admin 권한 test 추가.
+3. 첨부파일 업로드/다운로드 API와 board/material/ticket/submission 연결.
+4. 설문 질문/선택지/응답 저장 depth 구현.
+5. 지원 티켓 thread/answer/status transition 구현.
+6. Browser E2E smoke와 GitHub Actions CI 추가.
+
+### 위험 요소 / known issue
+- Frontend fallback은 demo UX를 보장하지만 CI/live mode에서는 반드시 비활성 상태로 검증해야 한다.
+- Backend test는 Java 25 환경에서 Mockito inline mock이 class instrumentation을 실패시키므로, Java 21 검증이 완료될 때까지 최종 PASS로 볼 수 없다.
+- `docs/final-verification.md`가 아직 없으므로 최종 완료 선언 금지.
+
+### 완료 판단
+- 이 문서에 남은 partial/gap/unknown 항목이 존재하므로 SSAFY 풀 클론은 아직 완료가 아니다.
+- 다음 실행은 위 task backlog를 이어서 처리해야 한다.
