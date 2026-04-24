@@ -14,6 +14,20 @@
 - PASS: incomplete feature backlog가 실행 가능한 task id 117-124로 정리됨.
 - PASS: `docs/progress.md`, `docs/remaining-work.md`가 현재 팀 상태와 일치하도록 갱신됨.
 
+## Compose Duplicate Guard Verification (worker-5, 2026-04-25)
+
+### Summary
+`compose*.yml`를 점검해 같은 목적의 compose 파일을 새로 중복 생성하지 않았는지 확인했다. 신규 compose 파일 추가는 없었고, 기존 파일 구조만 유지된다.
+
+### Commands Run
+- `ls -1 compose*.yml` -> PASS (`compose.yml`, `compose.mysql.yml`, `compose.observability.yml`).
+- service key 추출/중복 집계 스크립트 -> PASS; 중복 서비스명은 `mysql` 1건이며 `compose.yml`(통합 app profile)과 `compose.mysql.yml`(mysql 단독 실행 용도) 사이의 기존 분리 구성임.
+- `docker compose -f compose.yml config` -> PASS.
+
+### Result
+- PASS: 동일 목적의 신규 compose 파일 중복 생성 없음.
+- Note: 기존 `mysql` 서비스명 중복은 의도된 실행 모드 분리로 판단되며, 이번 작업에서 compose 파일 구조 변경은 없다.
+
 ## Final Verification Recheck (2026-04-24)
 - `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, Tests run: 34, Failures: 0, Errors: 0, Skipped: 0.
 - `npm --prefix frontend run lint` -> PASS after App shell prop/state fix.
