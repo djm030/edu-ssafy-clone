@@ -1,5 +1,11 @@
 # Remaining Work
 
+## Task 66 Required Documentation Recheck (2026-04-24)
+- Required documents now exist, including newly created `docs/final-verification.md`.
+- Documentation itself is no longer the blocker for Task 66.
+- Product completion remains blocked by non-documentation gaps: production auth/RBAC, durable notification/support/survey/material workflows, attachments, permissions/edit-delete depth, browser E2E, CI, live rebuilt smoke, and backend Maven/CI verification.
+
+
 ## R7.0 Status Update (2026-04-24)
 - Done in DevOps/QA slice: smoke JSON shape assertions for auth/profile/board critical paths, plus maintained `docs/openapi.yaml` bootstrap and `scripts/dev/verify-openapi.ps1` drift-marker check.
 - Still needed before leaving R7.0: frontend `fetchJson` fallback policy must rethrow 401/403 and disable fallback in CI/live mode; frontend board adapters must normalize the backend `{ post }` / `{ item }` wrappers; live smoke and verify-openapi must be rerun in a host/CI environment with PowerShell and rebuilt services.

@@ -1,5 +1,13 @@
 # Full Clone Progress
 
+## Worker-4 Required Documentation Refresh (Task 66, 2026-04-24)
+- Goal: ensure required documentation set exists and reflects the current partial full-clone status.
+- Required docs checked/updated: `docs/progress.md`, `docs/architecture.md`, `docs/api-summary.md`, `docs/test-report.md`, `docs/remaining-work.md`, `docs/final-verification.md`, `README.md`.
+- Created missing document: `docs/final-verification.md`.
+- Current result: documentation set is present, but final clone completion remains **NOT READY** because auth/RBAC, durable workflows, attachments, E2E/CI, live smoke, and backend Maven verification are still incomplete or blocked.
+- Commits in this worker lane: `6f2d42e`, `d4ccd39`; Task 66 documentation refresh is a follow-up commit.
+
+
 ## Worker-4 Task Expansion Round (2026-04-24)
 - Goal: ensure the team does not stop at analysis/planning and that follow-up work is represented as executable tasks.
 - Completed: worker-4 acknowledged the no-analysis-only guardrail, inspected the repository state, and created 16 additional implementation/QA/documentation tasks through the OMX task API.

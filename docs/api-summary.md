@@ -1,5 +1,12 @@
 # API Summary
 
+## Task 66 API Documentation Status (2026-04-24)
+- Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
+- Most learner-facing endpoints currently use demo-session semantics; final auth requirement is **not complete** until RBAC/session/token enforcement is implemented and documented per endpoint.
+- Frontend connection screens are mapped in `frontend/src/App.tsx` and page components; high-level coverage is: dashboard `/`, attendance `/mycampus/attendance`, learning `/learning/**`, quest `/quest/**`, survey `/survey/**`, board/community `/community/**`, help/QNA `/help/**`, and profile `/profile/**`.
+- Keep `docs/openapi.yaml` and `scripts/dev/verify-openapi.ps1` aligned with this summary whenever request/response wrappers change.
+
+
 ## R7.0 Contract Guardrails Added (2026-04-24)
 - Smoke now treats the following wrappers as required contract shapes:
   - `POST /api/auth/login` -> `{ user: { id, email, name, role } }`.
