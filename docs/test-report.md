@@ -1,5 +1,23 @@
 # Test Report
 
+## R10 CI Smoke Workflow (worker-5, 2026-04-24)
+
+### Summary
+Added `.github/workflows/ci.yml` as a repository-level CI smoke gate. It validates Docker Compose rendering, checks maintained OpenAPI/smoke marker coverage, runs backend Maven tests in a Java 21 environment, and runs frontend `npm ci`, lint, and build in Node 22. This provides CI coverage without adding new project dependencies.
+
+### Local Verification
+- `git diff --check` -> PASS.
+- `docker compose -f compose.yml config` -> PASS.
+- `docker compose -f compose.yml --profile app config` -> PASS.
+- `docker compose -f compose.observability.yml config` -> PASS.
+- `grep` for CI workflow commands and OpenAPI/smoke markers -> PASS.
+- `npm --prefix frontend run lint` -> PASS.
+- `npm --prefix frontend run build` -> PASS.
+
+### Not Verified Locally
+- GitHub Actions execution itself was not run from this worker.
+- Backend Maven tests still cannot run locally because `backend/mvnw` is absent and local `mvn` is unavailable; CI uses hosted Maven/Java instead.
+
 ## Worker-5 Continuation Verification (2026-04-24)
 
 ### Summary
