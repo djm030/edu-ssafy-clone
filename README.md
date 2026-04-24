@@ -5,9 +5,9 @@ SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 
 ## Current project status (2026-04-24)
 
 - Overall readiness: **NOT READY / PARTIAL**. The repository is a runnable full-stack clone scaffold, but it is not final full-clone complete.
-- Passing local worker checks: frontend `npm run lint`, frontend `npm run build`, and `git diff --check`.
-- Blocked local worker checks: backend `mvn test` because `mvn` is not installed and `backend/mvnw` is absent; rebuilt live smoke requires a host/CI environment with Docker/PowerShell access.
-- Major remaining product gaps: production auth/session/RBAC, durable notification/support/survey/material workflows, attachments, board edit/delete/permissions, browser E2E, CI, and final all-PASS verification.
+- Passing verification checks: Dockerized backend `mvn -B test` on Java 21, frontend `npm run lint`, frontend `npm run build`, Docker Compose config render/build, app-profile startup with healthy containers, and basic local HTTP smoke.
+- Blocked/unknown checks: PowerShell smoke because `pwsh`/`powershell` is unavailable on this macOS verification host; browser E2E/visual fidelity and live CI run evidence are still missing.
+- Major remaining product gaps: production auth/session/RBAC, durable notification/support/survey/material workflows, attachments, board edit/delete/permissions, browser E2E/visual verification, and final all-PASS verification.
 - Source of truth for readiness: `docs/final-verification.md` and `docs/remaining-work.md`.
 
 ## Quick Start: localhost 전체 확인

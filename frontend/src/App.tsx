@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AUTH_REQUIRED_EVENT, FORBIDDEN_EVENT } from './api/client';
 import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
@@ -92,6 +92,8 @@ function getCurrentPath(): string {
 function App() {
   const [path, setPath] = useState(getCurrentPath);
   const [user, setUser] = useState<UserProfile>(mockUser);
+  const [roleAccess, setRoleAccess] = useState<RoleAccess>();
+  const [accessError, setAccessError] = useState<string>();
   const [accessMessage, setAccessMessage] = useState('');
 
   useEffect(() => {
@@ -158,7 +160,14 @@ function App() {
   }
 
   return (
-    <AppShell currentPath={path} onNavigate={navigate} user={user}>
+    <AppShell
+      accessError={accessError}
+      currentPath={path}
+      onLogout={handleLogout}
+      onNavigate={navigate}
+      roleAccess={roleAccess}
+      user={user}
+    >
       {path === '/forbidden' ? <ForbiddenPage message={accessMessage} onNavigateHome={() => { setAccessMessage(''); navigate('/'); }} /> : page}
     </AppShell>
   );

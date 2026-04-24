@@ -1,55 +1,136 @@
 # Final Verification
 
 Date: 2026-04-24
-Worker: worker-5
-Scope: interim full-clone verification snapshot. This is **not** a final completion declaration because PARTIAL/GAP rows remain in `docs/remaining-work.md` and task-backed follow-up work is still pending.
+Role: final verification owner
+Decision: **NOT COMPLETE / PARTIAL**
 
-## Overall Decision
+## 1. 최종 검증 요약
 
-| Criterion | Status | Evidence | Next Action |
-|---|---|---|---|
-| All core features PASS | PARTIAL | `docs/remaining-work.md` still lists partial/gap rows for auth, profile, admin, attendance, notifications, learning, materials, quest, survey, board, support, access control, runtime, tests, and docs. | Complete tasks 117-130 and re-run this file. |
-| PARTIAL count is 0 | FAIL | `docs/remaining-work.md` contains 18 lowercase `partial` occurrences, including 15 checklist rows. | Reduce each partial row to PASS through implementation + verification. |
-| Smoke test exists | PASS | `scripts/dev/smoke.ps1` exists with JSON assertion helpers and static route/API markers. | Run live smoke in host/CI with PowerShell and running compose stack. |
-| CI smoke exists | PASS | `.github/workflows/ci.yml` validates compose config, OpenAPI/smoke markers, backend Maven tests in hosted Java 21, and frontend npm ci/lint/build. | Observe first GitHub Actions run after push/PR. |
-| Frontend lint/build | PASS | `npm --prefix frontend run lint` and `npm --prefix frontend run build` passed locally; Vite transformed 65 modules. | Keep in CI. |
-| Docker compose config | PASS | `docker compose -f compose.yml config`, `docker compose -f compose.yml --profile app config`, and `docker compose -f compose.observability.yml config` passed locally. | Run live app/observability stacks in host/CI. |
-| Backend tests | UNKNOWN | Local worker lacks `backend/mvnw` and local `mvn`; CI workflow now runs `mvn -B test` on hosted runner. | Check CI result or add Maven wrapper. |
-| Live Nginx/ELK | UNKNOWN | Config files exist and render through compose, but no services are running in this worker. | Verify with host/CI compose startup and smoke/log checks. |
-| API docs current | PASS | `docs/api-summary.md` and `docs/openapi.yaml` include current auth role/logout endpoints and R7 wrapper guardrails. | Keep updated as tasks 117-130 change APIs. |
+SSAFY 풀 클론 프로젝트는 이제 로컬 Docker Compose app profile로 **backend, frontend, MySQL, Redis, RabbitMQ, Nginx가 기동되고 기본 HTTP smoke가 통과**한다. 또한 backend Maven test, frontend lint/build, Docker image build가 현재 검증 환경에서 통과했다.
 
-## Domain Verification Table
+그러나 기능 완성도 기준으로는 아직 최종 완료가 아니다. 핵심 화면과 API 골격은 다수 존재하지만, 실서비스 수준의 인증/세션/RBAC, 첨부파일 업로드/다운로드, 알림/문의/설문/출석 이의신청의 durable workflow, 권한별 서버 enforcement, 브라우저 E2E/visual 검증이 부족하다. OMX 팀 런타임도 아직 pending/in-progress/failed task가 남아 있어 종료 조건을 만족하지 못했다.
 
-| Domain | Status | Evidence Files | Verification Result | Remaining Work / Task IDs |
-|---|---|---|---|---|
-| Login/session | PARTIAL | `backend/src/main/java/com/edussafy/backend/priority/api/AuthController.java`, `frontend/src/pages/LoginPage.tsx`, `docs/api-summary.md` | Login/current-user route and docs exist; real credential/session expiry/password recovery remain incomplete. | 117 |
-| Profile | PARTIAL | `ProfileController.java`, `frontend/src/pages/ProfileEditPage.tsx`, `docs/remaining-work.md` | Read/update and frontend payload are aligned; authorization/persistence depth remains. | 119 |
-| Access control/RBAC | GAP | `docs/ROLE_MATRIX.md`, `frontend/src/api/client.ts`, `docs/remaining-work.md` | Client rethrows 401/403, but role enforcement/unauthorized UI is not complete. | 118 |
-| Campus/cohort/class/track | PARTIAL | `docs/revised_schema_mysql8.sql`, `frontend/src/pages/ClassmatesPage.tsx` | Seeded/read paths exist; admin management flows remain. | 120 |
-| Attendance | PARTIAL | `AttendanceController.java`, `frontend/src/pages/AttendancePage.tsx`, `AttendanceAppealPage.tsx` | Records and appeal submit exist; status/history workflow remains. | 121 |
-| Notifications | PARTIAL | `NotificationController.java`, `CommunityController.java`, `NotificationsPage.tsx` | List and classmate notification source route exist; durable lifecycle/rebuild verification remains. | 122 |
-| Curriculum/replays | PARTIAL | `LearningController.java`, `CurriculumPage.tsx`, `ReplaysPage.tsx` | Lists/adapters exist; richer filters/access/progress remain. | 123 |
-| Materials/resources | PARTIAL | `LearningController.java`, `MaterialsPage.tsx`, `MaterialDetailPage.tsx`, `MaterialViewerPage.tsx` | List/detail/resources/viewer exist; attachments and reactions remain. | 124 |
-| Quest/evaluation | PARTIAL | `QuestSurveyController.java`, `QuestPage.tsx`, `QuestDetailPage.tsx`, `QuestSubmitPage.tsx` | List/detail/submit exist; results, attachments, grading status remain. | 125 |
-| Survey | PARTIAL | `QuestSurveyController.java`, `SurveyPage.tsx`, `SurveyDetailPage.tsx`, `SurveyRespondPage.tsx` | List/detail/respond exist; full question/option DTOs, persistence, duplicate policy remain. | 126 |
-| Board/community | PARTIAL | `BoardController.java`, `BoardListPage.tsx`, `BoardDetailPage.tsx`, `BoardPostWritePage.tsx` | List/detail/write/comment/reaction exist; edit/delete/attachments/permissions remain. | 127 |
-| 1:1 inquiry/support | PARTIAL | `SupportController.java`, `QnaNewPage.tsx`, `docs/api-summary.md` | List/create exist; thread messages, answers, status transitions, attachments remain. | 128 |
-| Error/loading/empty states | PARTIAL | `frontend/src/api/client.ts`, `frontend/src/pages/**` | 52 `getErrorMessage` usages and DataState/StatusPill paths exist; all mutation/permission flows still need exhaustive verification. | 118, 130 follow-up |
-| Tests/smoke/CI | PARTIAL | `scripts/dev/smoke.ps1`, `.github/workflows/ci.yml`, `docs/test-report.md` | Static/local frontend/compose gates pass; live smoke/backend CI result remains. | 129 |
-| Docs/runbook | PARTIAL | `docs/progress.md`, `docs/remaining-work.md`, `docs/test-report.md`, `docs/final-verification.md` | Current snapshot is documented; must stay synchronized after tasks 117-130. | 130 |
+## 2. 실행한 명령어
 
-## Commands Used In This Snapshot
+```bash
+git status --short
+git log --oneline -10
+find . -maxdepth 2 -type f
+find backend/src -type f
+find frontend/src -type f
+sed -n '1,220p' docs/final-verification.md
+sed -n '1,180p' docs/test-report.md
+sed -n '1,160p' docs/remaining-work.md
+omx team api mailbox-list --input '{"team_name":"ssafy-full-clone-omx-continuou","worker":"leader"}' --json
+omx team api get-summary --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json
+omx team api read-monitor-snapshot --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json
+docker compose -f compose.yml config
+docker compose -f compose.yml --profile app config
+docker compose -f compose.observability.yml config
+npm --prefix frontend ci
+npm --prefix frontend run lint
+npm --prefix frontend run build
+docker run --rm -v /Users/baeggwan-yeol/Desktop/edu-ssafy-clone-coding/backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test
+docker compose -f compose.yml --profile app build backend frontend
+docker compose -f compose.yml --profile app up -d
+docker compose -f compose.yml --profile app ps
+python3 local HTTP smoke against http://localhost and http://localhost:8080
+git diff --check
+```
 
-- `omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json`
-- `git diff --check`
-- `docker compose -f compose.yml config`
-- `docker compose -f compose.yml --profile app config`
-- `docker compose -f compose.observability.yml config`
-- `npm --prefix frontend ci`
-- `npm --prefix frontend run lint`
-- `npm --prefix frontend run build`
-- `grep` / `sed` inspection of controllers, frontend routes/API adapters, OpenAPI, and smoke harness markers
+## 3. 테스트 결과
 
-## Completion Rule
+| Gate | Result | Evidence |
+|---|---:|---|
+| Repository structure inspection | PASS | backend/frontend/docs/scripts/compose files inspected. |
+| Recent commits inspection | PASS | recent commits include team merge, CI smoke gate, and previous verification snapshots. |
+| Required docs existence | PASS | README plus `docs/progress.md`, `architecture.md`, `api-summary.md`, `test-report.md`, `remaining-work.md`, `final-verification.md` exist. |
+| Compose config render | PASS | `compose.yml`, `compose.yml --profile app`, `compose.observability.yml` all rendered successfully. |
+| Frontend dependency install | PASS with warning | `npm --prefix frontend ci` passed; Node engine warning only for current Node 23 vs dependency supported ranges. |
+| Frontend lint | PASS | `npm --prefix frontend run lint` passed after App shell wiring fix. |
+| Frontend production build | PASS | `npm --prefix frontend run build` passed; Vite transformed 67 modules. |
+| Backend Maven tests | PASS | Dockerized Maven Java 21: Tests run 34, Failures 0, Errors 0, Skipped 0. |
+| Docker image build | PASS | `docker compose -f compose.yml --profile app build backend frontend` completed for both services. |
+| Local Compose startup | PASS | mysql/redis/rabbitmq/backend/frontend/nginx became healthy after correcting the nginx healthcheck host to 127.0.0.1. |
+| Local HTTP smoke | PASS | `/nginx-health`, `/actuator/health`, `/api/me`, `/api/auth/login`, `/api/auth/roles/current`, `/api/attendance/records`, `/api/learning/materials`, `/api/boards/free/posts` returned HTTP 200. |
+| PowerShell smoke harness | UNKNOWN | `pwsh`/`powershell` is not installed on this macOS verification host. |
+| Browser E2E / visual fidelity | UNKNOWN | No Playwright/Cypress/browser visual test was available or executed. |
+| OMX team completion | FAIL | summary reported total=132, completed=110, pending=18, in_progress=3, failed=1; workers were not alive. |
 
-Do not declare the SSAFY full clone complete until every row above is PASS, backend tests have a fresh PASS from CI/host, live Nginx and ELK checks have evidence, and `docs/remaining-work.md` no longer contains partial/gap completion blockers.
+## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
+
+| 핵심 기능 | 판정 | 근거 |
+|---|---:|---|
+| 인증/인가 | PARTIAL | demo login/current user/role API and frontend unauthorized state exist; real credential verification, session/token expiry, and server-side RBAC are incomplete. |
+| 사용자 프로필 | PARTIAL | profile read/update and password-check surfaces exist; authorization/persistence depth is not fully verified. |
+| 캠퍼스/기수/반/트랙 | PARTIAL | schema/seed/admin UI/API surfaces exist; complete persisted CRUD/edit/delete and RBAC are not proven. |
+| 출석 조회 | PARTIAL | `/api/attendance/records` smoke returned 200 and UI exists; full history/filter/permission coverage is not proven. |
+| 출석 이의신청 | PARTIAL | submit endpoint/UI exists; durable status/history/approval workflow remains. |
+| 알림 발송/수신/읽음 | PARTIAL | list and classmate send route exist; durable send/read/delete lifecycle is incomplete. |
+| 커리큘럼 일정 | PARTIAL | list API/UI exists; richer filters/progress/access checks remain. |
+| 강의 다시보기 | PARTIAL | list API/UI exists; replay authorization/progress state remains. |
+| 학습자료 | PARTIAL | list/detail/viewer/resource surfaces exist; live smoke showed HTTP 200 but page payload needs deeper data-shape verification. |
+| 학습자료 리소스 | PARTIAL | resource endpoint/UI exists; attachment download fidelity and permissions are not complete. |
+| 첨부파일 | FAIL | common upload/store/download flow across board/material/ticket/submission is not implemented end-to-end. |
+| 학습자료 반응 | FAIL | like/bookmark/favorite/reaction workflow remains future work. |
+| 퀘스트/평가 | PARTIAL | list/detail/submit surfaces exist; result detail/grading/attachments remain. |
+| 퀘스트 제출 상태 | PARTIAL | submit status fields exist; full lifecycle/grading verification remains. |
+| 설문 생성/조회 | PARTIAL | list/detail/respond surfaces exist; survey creation/admin flow is not fully implemented. |
+| 설문 문항/선택지 | PARTIAL | question/option DTO depth and persistence are incomplete. |
+| 설문 응답 저장 | PARTIAL | response endpoint exists; duplicate policy and durable response persistence need verification. |
+| 게시판 | PARTIAL | board/category/list/detail/write routes exist; full moderation/permissions remain. |
+| 게시글 | PARTIAL | list/detail/create smoke path exists; edit/delete/owner rules remain. |
+| 댓글/대댓글 | PARTIAL | comment create exists; nested reply/thread behavior is not complete. |
+| 게시글 첨부파일 | FAIL | metadata may exist, but upload/download/linking is not implemented end-to-end. |
+| 게시글 반응 | PARTIAL | reaction route exists; permission/idempotency/deletion coverage remains. |
+| 1:1 문의 | PARTIAL | ticket list/create UI/API exists; full thread workflow remains. |
+| 문의 답변 | PARTIAL | answer/status transition depth is not fully implemented. |
+| 문의 첨부파일 | FAIL | ticket attachment upload/download is not implemented end-to-end. |
+| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; server-side enforcement tests are insufficient. |
+| 에러 처리 | PARTIAL | DataState/client error handling exists; all mutation/permission edge cases are not exhaustively verified. |
+| 로컬 실행 | PASS | Compose app profile started successfully and core HTTP smoke returned 200. |
+| 테스트 | PARTIAL | backend tests and frontend lint/build pass; PowerShell smoke, browser E2E, visual fidelity, and CI run evidence remain missing. |
+| 문서 최신화 | PASS | this final verification snapshot and related status docs now reflect the current partial state and recent fixes. |
+
+## 5. 발견한 문제
+
+1. `BackendApplication` 안에 오래된 inline demo `ApiController`가 남아 실제 `BoardController` 등과 같은 API path를 중복 mapping했다. 이 때문에 Spring context startup/backend tests/Docker build가 실패했다.
+2. `frontend/src/App.tsx`에서 `useMemo`가 unused였고, `roleAccess`/`accessError` state가 선언되지 않았으며 `AppShell`에 `onLogout` 등 필수 props가 전달되지 않아 lint/build gate가 깨질 수 있었다.
+3. Nginx container는 외부 HTTP 200에도 Docker health가 처음에는 unhealthy였다. 원인은 container 내부 healthcheck가 `localhost`를 사용한 점으로 판단되어 `127.0.0.1`로 수정했고, 재기동 후 healthy를 확인했다.
+4. OMX team state는 아직 완료가 아니다: total=132, completed=110, pending=18, in_progress=3, failed=1, workers not alive.
+5. PowerShell 기반 smoke script는 macOS host에 `pwsh`/`powershell`이 없어 실행하지 못했다.
+6. 기능 자체는 runnable scaffold 수준이며, remaining-work의 product depth gap이 아직 다수 남아 있다.
+
+## 6. 즉시 수정한 내용
+
+- `backend/src/main/java/com/edussafy/backend/BackendApplication.java`
+  - 중복 API mapping을 만들던 nested demo controller와 demo seed helper를 제거했다.
+  - `@SpringBootApplication`을 실제 controller/service/repository wiring entrypoint로 복원했다.
+- `frontend/src/App.tsx`
+  - unused `useMemo` import를 제거했다.
+  - `roleAccess`/`accessError` state를 추가했다.
+  - `AppShell`에 `accessError`, `roleAccess`, `user`, `currentPath`, `onNavigate`, `onLogout` props를 명시적으로 전달했다.
+- `compose.yml`
+  - Nginx healthcheck를 `localhost`에서 `127.0.0.1`로 바꿔 container-internal IPv4 health probe가 안정적으로 통과하도록 했다.
+
+## 7. 남은 작업
+
+1. 실서비스 수준 인증/세션/token expiry/password recovery 구현.
+2. 서버 측 RBAC enforcement와 learner/operator/admin role matrix 테스트 추가.
+3. 공통 첨부파일 업로드/다운로드/권한/저장소 연동 구현.
+4. 출석 이의신청 status/history/approval workflow 구현.
+5. 알림 send/read/delete durable lifecycle 구현.
+6. 학습자료 reaction/bookmark/favorite 및 viewer/download fidelity 구현.
+7. 퀘스트 result/grading/submission attachment 구현.
+8. 설문 question/option/response persistence 및 duplicate policy 구현.
+9. 게시글 edit/delete/owner/moderator permission 및 attachment 구현.
+10. 1:1 문의 thread/answer/status/attachment 구현.
+11. PowerShell smoke 또는 cross-platform smoke를 CI/host에서 실행.
+12. Browser E2E/visual fidelity 검증 추가.
+13. OMX team pending/in-progress/failed tasks 정리 후 재검증.
+
+## 8. 최종 판단
+
+**완료로 판정할 수 없다.**
+
+실행 가능성은 크게 개선되어 backend/frontend build/test 및 Docker Compose smoke는 통과했다. 하지만 clone completion 기준인 기능 완성도, 권한/첨부/워크플로우 depth, E2E/visual/CI evidence, team task drain 조건이 충족되지 않았다. 따라서 현재 상태는 **runnable partial clone**이며, 위 남은 작업을 완료하고 모든 핵심 기능 row가 PASS가 될 때까지 최종 완료 선언을 금지한다.
