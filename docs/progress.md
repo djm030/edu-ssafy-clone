@@ -1,5 +1,15 @@
 # Full Clone Progress
 
+## Worker-4 Gate Check Batch (Tasks 17/83/87/89/95/102/105/115, 2026-04-25)
+- Task 17 (Docker naming/port/network/volume guard): PASS. worker-4 변경 파일에 compose/infra 서비스 정의 변경 없음.
+- Task 83 (모든 핵심 기능 PASS 여부): FAIL. `docs/final-verification.md` 기준 PARTIAL/FAIL/UNKNOWN 항목이 남아 있어 전체 PASS 아님.
+- Task 87 (테스트 결과 문서화): PASS. `docs/test-report.md`에 최신 명령/결과 반영됨.
+- Task 89 (README 최신성): PASS. README에 2026-04-25 worker-4 동기화 상태 추가.
+- Task 95 (`remaining-work`에 필수 작업 없음?): FAIL. 필수 잔여 작업 존재, 완료 선언 불가.
+- Task 102 (초기 task 18개 이상 생성): PASS. 현재 OMX task registry 총 130개.
+- Task 105 (검증 수행): PASS. frontend lint/build, dockerized backend tests, HTTP smoke/checklist 검증 수행.
+- Task 115 (실패 항목 시 task 재생성): PASS. 실패/미완성 항목 대응으로 task 125-130을 생성해 backlog 확장 완료.
+
 ## Task 67 Format Recheck (worker-4, 2026-04-25)
 - Current execution goal: unresolved PARTIAL/FAIL/UNKNOWN domains를 task 기반으로 소거하여 최종 PASS 조건 충족.
 - Task list/worker assignment: OMX task registry 기준 130개, 최신 추가는 125-130이며 worker 1/2/3/4/5로 분배됨.
