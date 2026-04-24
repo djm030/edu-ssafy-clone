@@ -1,5 +1,12 @@
 # Architecture Summary
 
+## Worker-4 Repository Analysis Snapshot (2026-04-24)
+- Source layout: backend Java sources are split between `backend/src/main/java/com/edussafy/backend/board/**` for board/category/post APIs and `backend/src/main/java/com/edussafy/backend/priority/**` for auth/profile/dashboard/attendance/learning/quest/survey/community/support APIs.
+- Backend tests currently cover board controllers plus priority controller/service paths under `backend/src/test/java/com/edussafy/backend/**`; Maven execution still depends on a host with Maven or Docker access.
+- Frontend layout: `frontend/src/App.tsx` owns path dispatch, `frontend/src/api/client.ts` owns fetch/error/fallback policy, `frontend/src/api/app.ts` and `frontend/src/api/boards.ts` own backend DTO normalization, and feature screens live under `frontend/src/pages/**`.
+- Dev/runtime layout: `compose.yml` orchestrates the application profile, `infra/nginx/conf.d/default.conf` fronts browser/API traffic, `scripts/mysql/**` seeds/verifies MySQL, and `scripts/dev/**` provides localhost, smoke, compose, Git, Docker, and OpenAPI verification helpers.
+- Analysis outcome: the repository is a partial but runnable full-stack clone scaffold; the highest-risk gaps remain production auth/RBAC, attachment storage, material reactions, survey/support depth, browser E2E, and CI automation.
+
 ## R7.0 Smoke Contract Boundary (2026-04-24)
 - The DevOps/QA smoke harness now has explicit JSON contract assertions for auth/profile/board paths. This makes the smoke layer a contract boundary rather than a simple availability check.
 - Critical wrappers are enforced in live smoke: auth/current-user use `{ user }`, profile uses `{ profile }`, board detail uses `{ post }`, board create uses `{ item }`, and board list requires `{ items, page }`.
