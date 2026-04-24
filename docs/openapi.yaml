@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: eduSSAFY Clone API
   version: 0.7.0
-  description: Maintained R7.0 contract artifact until generated springdoc output is enabled.
+  description: Maintained API contract bootstrap for R7.0 guardrail work. Update this file with endpoint and wrapper changes before moving to Auth/RBAC rounds.
 servers:
   - url: http://localhost:8080
 paths:
@@ -10,8 +10,7 @@ paths:
     get:
       summary: Backend health probe
       responses:
-        '200':
-          description: Backend is up
+        '200': { description: Health status }
   /api/auth/login:
     post:
       summary: Demo login
@@ -19,287 +18,272 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
+            schema: { $ref: '#/components/schemas/LoginRequest' }
       responses:
         '200':
-          description: Login accepted
+          description: Login user wrapper
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { $ref: '#/components/schemas/UserResponse' }
   /api/me:
     get:
       summary: Current user bootstrap
       responses:
         '200':
-          description: Current user
+          description: Current user wrapper
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /api/profile:
-    get:
-      summary: Get current profile
-      responses:
-        '200':
-          description: Current profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProfileResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    put:
-      summary: Update current profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfileUpdateRequest'
-      responses:
-        '200':
-          description: Updated profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProfileResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { $ref: '#/components/schemas/UserResponse' }
   /api/profile/password-check:
     post:
       summary: Check current user's password
       responses:
+        '200': { description: Password validity wrapper }
+  /api/profile:
+    get:
+      summary: Read editable profile details
+      responses:
         '200':
-          description: Password check result
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Profile wrapper
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
+    put:
+      summary: Update editable profile details
+      responses:
+        '200':
+          description: Updated profile wrapper
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfileResponse' }
+  /api/dashboard/summary:
+    get:
+      summary: Dashboard summary
+      responses:
+        '200': { description: Dashboard summary }
+  /api/attendance/records:
+    get:
+      summary: Attendance records and summary
+      responses:
+        '200': { description: Attendance record list }
+  /api/attendance/appeals:
+    post:
+      summary: Submit attendance appeal
+      responses:
+        '201': { description: Created appeal item wrapper }
+  /api/notifications:
+    get:
+      summary: Notification list
+      responses:
+        '200': { description: Notification list with pagination }
+  /api/learning/curriculum:
+    get:
+      summary: Curriculum schedule list
+      responses:
+        '200': { description: Curriculum item list }
+  /api/learning/replays:
+    get:
+      summary: Lecture replay list
+      responses:
+        '200': { description: Replay item list }
+  /api/learning/materials:
+    get:
+      summary: Learning material list
+      responses:
+        '200': { description: Learning material list with pagination }
+  /api/learning/materials/{id}:
+    get:
+      summary: Learning material detail
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Learning material detail wrapper }
+  /api/learning/materials/{id}/resources:
+    get:
+      summary: Learning material resources
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Material resource list }
+  /api/quests:
+    get:
+      summary: Quest list
+      responses:
+        '200': { description: Quest list with pagination }
+  /api/quests/{id}:
+    get:
+      summary: Quest detail
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Quest detail wrapper }
+  /api/quests/{id}/submissions:
+    post:
+      summary: Submit quest answer
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '201': { description: Created submission item wrapper }
+  /api/surveys:
+    get:
+      summary: Survey list
+      responses:
+        '200': { description: Survey list with pagination }
+  /api/surveys/{id}:
+    get:
+      summary: Survey detail
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Survey detail wrapper }
+  /api/surveys/{id}/responses:
+    post:
+      summary: Submit survey response
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '201': { description: Created response item wrapper }
   /api/boards/{boardCode}/categories:
     get:
-      summary: List board categories
+      summary: Board category list
       parameters:
         - $ref: '#/components/parameters/BoardCode'
       responses:
-        '200':
-          description: Board categories
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BoardCategoryListResponse'
+        '200': { description: Category list wrapper }
   /api/boards/{boardCode}/posts:
     get:
-      summary: List board posts
+      summary: Board post list
       parameters:
         - $ref: '#/components/parameters/BoardCode'
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: size
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: keyword
-          in: query
-          schema:
-            type: string
       responses:
         '200':
-          description: Board post page
+          description: Board post list wrapper
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/BoardPostListResponse'
+              schema: { $ref: '#/components/schemas/BoardPostListResponse' }
     post:
       summary: Create board post
       parameters:
         - $ref: '#/components/parameters/BoardCode'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BoardPostCreateRequest'
       responses:
         '201':
-          description: Created board post wrapper
+          description: Created board post item wrapper
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/BoardPostCreateResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+              schema: { $ref: '#/components/schemas/BoardPostCreateResponse' }
   /api/boards/{boardCode}/posts/{postId}:
     get:
-      summary: Get board post detail
+      summary: Board post detail
       parameters:
         - $ref: '#/components/parameters/BoardCode'
-        - name: postId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/PostId'
       responses:
         '200':
           description: Board post detail wrapper
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/BoardPostDetailResponse'
-        '404':
-          description: Board or post not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiErrorResponse'
+              schema: { $ref: '#/components/schemas/BoardPostDetailResponse' }
   /api/boards/{boardCode}/posts/{postId}/comments:
     post:
       summary: Create board comment
+      parameters:
+        - $ref: '#/components/parameters/BoardCode'
+        - $ref: '#/components/parameters/PostId'
       responses:
-        '201':
-          description: Created comment wrapper
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '201': { description: Created comment item wrapper }
   /api/boards/{boardCode}/posts/{postId}/reactions:
     post:
       summary: Toggle board reaction
+      parameters:
+        - $ref: '#/components/parameters/BoardCode'
+        - $ref: '#/components/parameters/PostId'
       responses:
-        '201':
-          description: Reaction state wrapper
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '201': { description: Reaction item wrapper }
+  /api/support/tickets:
+    get:
+      summary: Support ticket list
+      responses:
+        '200': { description: Support ticket list with pagination }
+    post:
+      summary: Create support ticket
+      responses:
+        '201': { description: Created support ticket item wrapper }
+  /api/community/classmates:
+    get:
+      summary: Classmate list
+      responses:
+        '200': { description: Classmate list wrapper }
+  /api/community/classmates/{userId}/notifications:
+    post:
+      summary: Send classmate notification
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '201': { description: Notification send item wrapper }
 components:
   parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    PostId:
+      name: postId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
     BoardCode:
       name: boardCode
       in: path
       required: true
-      schema:
-        type: string
-        enum: [notice, free, faq, qna]
-  responses:
-    Unauthorized:
-      description: Authentication is required
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiErrorResponse'
-    Forbidden:
-      description: Authenticated user lacks permission
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiErrorResponse'
+      schema: { type: string, enum: [notice, free, faq, qna] }
   schemas:
-    ApiErrorResponse:
-      type: object
-      required: [error]
-      properties:
-        error:
-          type: object
-          required: [code, message]
-          properties:
-            code:
-              type: string
-            message:
-              type: string
     LoginRequest:
       type: object
       required: [email, password]
       properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-    LoginResponse:
+        email: { type: string, format: email }
+        password: { type: string }
+    UserResponse:
       type: object
       required: [user]
       properties:
         user:
-          $ref: '#/components/schemas/UserSummary'
-    UserSummary:
-      type: object
-      required: [id, email, name]
-      properties:
-        id:
-          type: integer
-          format: int64
-        email:
-          type: string
-        name:
-          type: string
-        role:
-          type: string
+          type: object
+          required: [id, name, email, role, campusName, cohortName, trackName]
+          properties:
+            id: { type: integer, format: int64 }
+            name: { type: string }
+            email: { type: string }
+            role: { type: string }
+            campusName: { type: string }
+            cohortName: { type: string }
+            trackName: { type: string }
     ProfileResponse:
       type: object
       required: [profile]
       properties:
         profile:
           type: object
-          required: [id, email, name]
+          required: [id, name, email, campusName, cohortName, trackName]
           properties:
-            id:
-              type: integer
-              format: int64
-            email:
-              type: string
-            name:
-              type: string
-            mobilePhone:
-              type: string
-              nullable: true
-    ProfileUpdateRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        mobilePhone:
-          type: string
-        addressLine1:
-          type: string
-    PageMeta:
+            id: { type: integer, format: int64 }
+            name: { type: string }
+            email: { type: string }
+            campusName: { type: string }
+            cohortName: { type: string }
+            trackName: { type: string }
+    Page:
       type: object
       required: [page, size, totalItems, totalPages]
       properties:
-        page:
-          type: integer
-        size:
-          type: integer
-        totalItems:
-          type: integer
-        totalPages:
-          type: integer
-    BoardCategoryListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            required: [id, name]
-            properties:
-              id:
-                type: integer
-                format: int64
-              name:
-                type: string
-              sortOrder:
-                type: integer
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer }
+        totalPages: { type: integer }
     BoardPostListResponse:
       type: object
       required: [items, page]
@@ -307,26 +291,9 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/BoardPostListItem'
-        page:
-          $ref: '#/components/schemas/PageMeta'
-    BoardPostListItem:
-      type: object
-      required: [id, boardCode, title]
-      properties:
-        id:
-          type: integer
-          format: int64
-        boardCode:
-          type: string
-        title:
-          type: string
-        authorName:
-          type: string
-        commentCount:
-          type: integer
-        reactionCount:
-          type: integer
+            type: object
+            required: [id, boardCode, title, authorName, createdAt]
+        page: { $ref: '#/components/schemas/Page' }
     BoardPostDetailResponse:
       type: object
       required: [post]
@@ -335,58 +302,17 @@ components:
           type: object
           required: [id, boardCode, title, content, engagement]
           properties:
-            id:
-              type: integer
-              format: int64
-            boardCode:
-              type: string
-            title:
-              type: string
-            content:
-              type: string
+            id: { type: integer, format: int64 }
+            boardCode: { type: string }
+            title: { type: string }
+            content: { type: string }
             engagement:
               type: object
-              required: [commentCount, reactionCount, bookmarkCount]
-              properties:
-                commentCount:
-                  type: integer
-                reactionCount:
-                  type: integer
-                bookmarkCount:
-                  type: integer
-    BoardPostCreateRequest:
-      type: object
-      required: [title, content]
-      properties:
-        categoryId:
-          type: integer
-          format: int64
-        title:
-          type: string
-          maxLength: 255
-        content:
-          type: string
-          maxLength: 4000
+              required: [commentCount, reactionCount]
     BoardPostCreateResponse:
       type: object
       required: [item]
       properties:
         item:
           type: object
-          required: [id, boardCode, title, content, demo]
-          properties:
-            id:
-              type: integer
-              format: int64
-            boardCode:
-              type: string
-            categoryId:
-              type: integer
-              format: int64
-              nullable: true
-            title:
-              type: string
-            content:
-              type: string
-            demo:
-              type: boolean
+          required: [id, boardCode, title, content, authorName, createdAt]

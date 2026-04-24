@@ -3,7 +3,7 @@
 ## R7.0 Contract/Fallback Guardrail - DevOps/QA slice (worker-5, 2026-04-24)
 - Goal: strengthen smoke verification so critical auth/profile/board paths validate JSON response contracts, not only HTTP 200.
 - Completed: added PowerShell smoke JSON helpers and live shape assertions for `POST /api/auth/login`, `GET /api/me`, `GET /api/profile`, board list pagination, board detail wrapper `{ post }`, and board create wrapper `{ item }`.
-- Changed files: `scripts/dev/smoke.ps1`, `docs/progress.md`, `docs/api-summary.md`, `docs/test-report.md`, `docs/remaining-work.md`.
+- Changed files: `scripts/dev/smoke.ps1`, `scripts/dev/verify-openapi.ps1`, `docs/openapi.yaml`, `docs/progress.md`, `docs/architecture.md`, `docs/api-summary.md`, `docs/test-report.md`, `docs/remaining-work.md`.
 - Verification: `docker compose -f compose.yml config` passed; script-level static checks confirmed `smoke.ps1` remains under the 500-line guardrail (373 lines). PowerShell execution is blocked in this macOS worker because neither `pwsh` nor `powershell` is installed, and frontend lint/build are blocked because `frontend/node_modules` is absent.
 - Team-state note: task files/inbox were missing for worker-5, so this worker proceeded with the assigned DevOps/QA R7.0 smoke-shape scope from the approved consensus plan.
 

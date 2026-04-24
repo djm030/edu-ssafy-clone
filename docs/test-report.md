@@ -7,6 +7,7 @@ Added live JSON shape assertions to `scripts/dev/smoke.ps1` for critical auth/pr
 
 ### Commands Run
 - `docker compose -f compose.yml config` -> PASS.
+- `python3` static marker check for `scripts/dev/smoke.ps1`, `docs/openapi.yaml`, and `scripts/dev/verify-openapi.ps1` -> PASS.
 - `wc -l scripts/dev/smoke.ps1` -> PASS, 373 lines and below the script's 500-line guardrail.
 - `command -v pwsh || command -v powershell` -> BLOCKED, no PowerShell runtime installed in this worker environment.
 - `ls frontend/node_modules` -> BLOCKED, dependencies absent; frontend lint/build were not runnable without installing packages.

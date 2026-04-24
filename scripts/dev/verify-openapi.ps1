@@ -1,19 +1,22 @@
 [CmdletBinding()]
-param(
-  [string]$SpecPath = "docs/openapi.yaml"
-)
+param()
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$fullPath = Join-Path $repoRoot $SpecPath
+$specPath = Join-Path $repoRoot "docs/openapi.yaml"
+$smokePath = Join-Path $repoRoot "scripts/dev/smoke.ps1"
 
-if (-not (Test-Path $fullPath)) {
-  throw "OpenAPI contract artifact is missing: $SpecPath"
+function Assert-FileContains {
+  param(
+    [string]$Path,
+    [string]$Needle
+  )
+  if (-not (Select-String -Path $Path -SimpleMatch $Needle -Quiet)) {
+    throw "Expected contract marker is missing in ${Path}: $Needle"
+  }
 }
 
-$content = Get-Content $fullPath -Raw
-foreach ($needle in @(
-  "openapi: 3.0.3",
+foreach ($path in @(
   "/api/auth/login:",
   "/api/me:",
   "/api/profile:",
@@ -21,11 +24,22 @@ foreach ($needle in @(
   "/api/boards/{boardCode}/posts/{postId}:",
   "BoardPostDetailResponse:",
   "BoardPostCreateResponse:",
-  "ApiErrorResponse:"
+  "required: [user]",
+  "required: [profile]",
+  "required: [post]",
+  "required: [item]"
 )) {
-  if (-not $content.Contains($needle)) {
-    throw "OpenAPI contract artifact is missing required marker: $needle"
-  }
+  Assert-FileContains $specPath $path
 }
 
-Write-Host "OpenAPI contract artifact verified: $SpecPath"
+foreach ($shape in @(
+  "Test-AuthJsonShape",
+  "Test-ProfileJsonShape",
+  "Test-BoardJsonShape",
+  "post.engagement.commentCount",
+  "item.createdAt"
+)) {
+  Assert-FileContains $smokePath $shape
+}
+
+Write-Host "OpenAPI bootstrap/drift markers verified."

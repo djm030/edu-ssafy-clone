@@ -9,6 +9,7 @@
   - `GET /api/boards/{boardCode}/posts/{postId}` -> `{ post: { id, boardCode, title, content, engagement } }`.
   - `POST /api/boards/{boardCode}/posts` -> `{ item: { id, boardCode, title, content, authorName, createdAt } }`.
 - These assertions are an R7.0 prerequisite for Auth/RBAC work because later auth failures must not be hidden by weak smoke checks or frontend fallback behavior.
+- Added maintained contract bootstrap `docs/openapi.yaml` and drift-marker command `scripts/dev/verify-openapi.ps1`; keep both updated as endpoints/wrappers change.
 
 ## Implemented API Surface
 - `POST /api/auth/login`, `GET /api/me`
