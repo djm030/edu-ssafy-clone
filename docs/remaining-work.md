@@ -70,17 +70,20 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | README/docs | partial | Add top-level runbook/API/progress/test docs and keep tracker updated. |
 
 
-## Task-backed Continuation Map (worker-5, 2026-04-24)
-The partial/gap checklist above is now represented by concrete OMX follow-up tasks so the team can continue without treating the project as complete:
+## Task-backed Continuation Map (worker-1 recheck, 2026-04-25)
+Current OMX team state (`omx team api list-tasks`) contains task ids **1-116 only**.  
+Therefore, the previously documented follow-up ids `117-130` are not present in this run and must be recreated before claiming closure of the same scope.
 
-| Task IDs | Area | Purpose |
-|---|---|---|
-| 117-119 | Auth/RBAC/Profile | Real credential/session behavior, role guards, unauthorized UI, profile authorization/persistence. |
-| 120-123 | Admin/Attendance/Notifications/Curriculum | Admin management, attendance appeal workflow/history, persisted notification lifecycle, replay access/progress. |
-| 124-128 | Attachments/Domain Depth | Material reactions/attachments, quest result/grading, survey questions/options/responses, board permissions/attachments, support ticket threads/answers/status. |
-| 129-130 | QA/Docs | Browser E2E or CI smoke coverage and final verification/remaining-work synchronization. |
+Required continuation themes that still need concrete active tasks in this run:
 
-Completion remains blocked until these task-backed areas move from partial/gap to PASS with fresh verification evidence.
+| Area | Required Work |
+|---|---|
+| Auth/RBAC/Profile | Real credential/session behavior, role guards, unauthorized UI, profile authorization/persistence. |
+| Admin/Attendance/Notifications/Curriculum | Admin management depth, attendance appeal workflow/history, persisted notification lifecycle, replay access/progress. |
+| Attachments/Domain Depth | Material reactions/attachments, quest result/grading, survey questions/options/responses, board permissions/attachments, support ticket threads/answers/status. |
+| QA/Docs | Browser E2E or CI smoke coverage and final verification/remaining-work synchronization. |
+
+Completion remains blocked until these areas are represented by active tasks in the current team state and verified as PASS.
 
 ## Next Rounds
 1. R7-auth-rbac: real session/token model, role guards, unauthorized UI states.
