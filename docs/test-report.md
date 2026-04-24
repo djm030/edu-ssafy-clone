@@ -17,6 +17,15 @@ Verified that the documented API/screen coverage is represented in the frontend 
 ### Reverification Result
 Frontend lint/build are passing after dependency installation. No Docker execution failure logs were present because no compose services are running in this worker. The project is still not complete while `docs/remaining-work.md` contains partial/gap rows and follow-up tasks 117-130 remain pending.
 
+### Failure/Blocker Cause Classification
+| Item | Classification | Evidence |
+|---|---|---|
+| Initial frontend lint/build failure before `npm ci` | 의존성 문제 | `eslint` and `tsc` binaries were missing because `frontend/node_modules` had not been installed in this worker. |
+| Backend Maven tests not executed | 테스트 하네스 부족 / 의존성 문제 | `backend/mvnw` is absent and local `mvn` is unavailable. |
+| Live Nginx reverse-proxy smoke not executed | worker/runtime 문제 | Compose services are not running in this worker; host/CI compose startup is required. |
+| Live ELK ingestion/log confirmation not executed | worker/runtime 문제 | Observability compose config renders, but live containers/log ingestion require host/CI compose startup. |
+| Remaining full-clone partial/gap rows | 코드 오류 아님 / 문서 불일치 방지 대상 | Missing product depth is tracked in `docs/remaining-work.md` and task ids 117-130 instead of being declared complete. |
+
 ### Report Criteria Coverage
 - 실행한 검증 명령: recorded above under Commands Run.
 - 성공/실패 결과: PASS/BLOCKED status is listed per command.
