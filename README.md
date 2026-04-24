@@ -33,12 +33,12 @@ net localgroup docker-users "DESKTOP-KPGHMRC\CodexSandboxUsers" /add
 
 ## Main URLs
 
-- App via Nginx: http://localhost
-- Login: http://localhost/login
-- Backend health: http://localhost:8080/actuator/health
-- Backend API through Nginx: http://localhost/api/me
-- Nginx health: http://localhost/nginx-health
-- RabbitMQ management: http://localhost:15672
+- App via Nginx: http://localhost:18000
+- Login: http://localhost:18000/login
+- Backend health: http://localhost:18080/actuator/health
+- Backend API through Nginx: http://localhost:18000/api/me
+- Nginx health: http://localhost:18000/nginx-health
+- RabbitMQ management: http://localhost:25673
   - user: `ssafy`
   - password: `ssafy_dev_password`
 
@@ -49,35 +49,35 @@ Demo login:
 
 ## Browser screen checklist
 
-- http://localhost/
-- http://localhost/login
-- http://localhost/mycampus/attendance
-- http://localhost/mycampus/attendance/appeals/new
-- http://localhost/mycampus/level
-- http://localhost/mycampus/notifications
-- http://localhost/learning/curriculum
-- http://localhost/learning/replays
-- http://localhost/learning/materials
-- http://localhost/learning/materials/1
-- http://localhost/learning/materials/1/viewer
-- http://localhost/quest
-- http://localhost/quest/1
-- http://localhost/quest/1/submit
-- http://localhost/survey
-- http://localhost/survey/1
-- http://localhost/survey/1/respond
-- http://localhost/community/free
-- http://localhost/community/free/1
-- http://localhost/community/free/write
-- http://localhost/community/classmates
-- http://localhost/help/notice
-- http://localhost/help/notice/1
-- http://localhost/help/faq
-- http://localhost/help/faq/1
-- http://localhost/help/qna
-- http://localhost/help/qna/new
-- http://localhost/profile/check
-- http://localhost/profile/edit
+- http://localhost:18000/
+- http://localhost:18000/login
+- http://localhost:18000/mycampus/attendance
+- http://localhost:18000/mycampus/attendance/appeals/new
+- http://localhost:18000/mycampus/level
+- http://localhost:18000/mycampus/notifications
+- http://localhost:18000/learning/curriculum
+- http://localhost:18000/learning/replays
+- http://localhost:18000/learning/materials
+- http://localhost:18000/learning/materials/1
+- http://localhost:18000/learning/materials/1/viewer
+- http://localhost:18000/quest
+- http://localhost:18000/quest/1
+- http://localhost:18000/quest/1/submit
+- http://localhost:18000/survey
+- http://localhost:18000/survey/1
+- http://localhost:18000/survey/1/respond
+- http://localhost:18000/community/free
+- http://localhost:18000/community/free/1
+- http://localhost:18000/community/free/write
+- http://localhost:18000/community/classmates
+- http://localhost:18000/help/notice
+- http://localhost:18000/help/notice/1
+- http://localhost:18000/help/faq
+- http://localhost:18000/help/faq/1
+- http://localhost:18000/help/qna
+- http://localhost:18000/help/qna/new
+- http://localhost:18000/profile/check
+- http://localhost:18000/profile/edit
 
 ## Verification commands
 

@@ -28,6 +28,30 @@
 - PASS: 동일 목적의 신규 compose 파일 중복 생성 없음.
 - Note: 기존 `mysql` 서비스명 중복은 의도된 실행 모드 분리로 판단되며, 이번 작업에서 compose 파일 구조 변경은 없다.
 
+## Runtime Failure Fix via Compose Logs/Output (worker-5, 2026-04-25)
+
+### Failure Observed
+- `docker compose -f compose.yml --profile app up -d` 실행 중 실패:
+  - 1차: 고정 `container_name` 충돌 (`ssafy-clone-*` already in use)
+  - 2차: host port 충돌 (`5672`, `6379`, `8080` already allocated)
+
+### Minimal Fix Applied
+- `compose.yml`, `compose.mysql.yml`, `compose.observability.yml`에서 `container_name` 제거 (프로젝트별 자동 네이밍 사용).
+- `compose.yml` 기본 host port fallback을 충돌-완화 값으로 조정:
+  - MySQL `13306`, Redis `16379`, RabbitMQ `25672/25673`, Backend `18080`, Nginx `18000`.
+- `.env.example`를 동일 기본값으로 동기화.
+
+### Reverification
+- `docker compose -f compose.yml config` -> PASS
+- `docker compose -f compose.mysql.yml config` -> PASS
+- `docker compose -f compose.observability.yml config` -> PASS
+- `docker compose -f compose.yml --profile app up -d` -> PASS
+- `curl -fsS http://localhost:18000/nginx-health` -> PASS (`ok`)
+
+### Cause Classification
+- `container_name` 충돌: Docker 설정 불일치 (동시 실행 환경에서 이름 강제 고정)
+- port bind 충돌: 환경 포트 충돌 (동일 호스트 다중 스택 실행)
+
 ## Final Verification Recheck (2026-04-24)
 - `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, Tests run: 34, Failures: 0, Errors: 0, Skipped: 0.
 - `npm --prefix frontend run lint` -> PASS after App shell prop/state fix.

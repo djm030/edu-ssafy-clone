@@ -4,7 +4,7 @@ info:
   version: 0.7.0
   description: Maintained API contract bootstrap for R7.0 guardrail work. Update this file with endpoint and wrapper changes before moving to Auth/RBAC rounds.
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:18080
 paths:
   /api/health:
     get:

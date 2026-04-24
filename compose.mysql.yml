@@ -1,7 +1,6 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: ssafy-clone-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ssafy_dev_root_password}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-ssafy_clone}
