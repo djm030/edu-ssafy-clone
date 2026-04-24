@@ -1,5 +1,15 @@
 # Full Clone Progress
 
+## Task 67 Format Recheck (worker-4, 2026-04-25)
+- Current execution goal: unresolved PARTIAL/FAIL/UNKNOWN domains를 task 기반으로 소거하여 최종 PASS 조건 충족.
+- Task list/worker assignment: OMX task registry 기준 130개, 최신 추가는 125-130이며 worker 1/2/3/4/5로 분배됨.
+- Completed work (this worker): tasks 4, 23, 47, 51, 54, 59, 109 completed with command evidence.
+- In-progress work: tasks 66, 67, 69 문서 기준 충족 점검/동기화.
+- Remaining work: auth/session/RBAC, attachments/reactions, survey/support depth, browser E2E+CI, final PASS synchronization.
+- Commit list (this worker recent): `4263f17`, `0623375`, `ecb9833`, `3ea8b1a` (+ current batch commit pending).
+- Changed-file summary (this worker): `docs/progress.md`, `docs/architecture.md`, `docs/test-report.md` updated for evidence and backlog continuity.
+
+
 ## Worker-4 Checklist Verification Batch (Tasks 47/51/54/59, 2026-04-25)
 - Backend 구현 존재 (Task 47): `backend/src/main/java` 기준 Java 소스 40개, 컨트롤러 11개 확인.
 - 정상 응답 처리 존재 (Task 51): `curl` 검증에서 `http://localhost/nginx-health`, `/api/health`, `/api/me` 모두 HTTP 200 및 유효 JSON/본문 응답 확인.

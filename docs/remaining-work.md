@@ -1,5 +1,10 @@
 # Remaining Work
 
+## Worker-4 Remaining Work Sync (2026-04-25)
+- Task 4/109 후속으로 미완성 영역을 task 125-130으로 재동기화했다.
+- 필수 구현 잔여분(인증/인가, 첨부파일, 학습자료 반응, 설문/문의 depth, E2E+CI)은 여전히 남아 있으며 완료 선언 금지 상태를 유지한다.
+
+
 ## Final Verification Recheck (2026-04-24)
 - Runnable gates improved: backend Maven tests, frontend lint/build, Docker image build, Compose startup, and basic local HTTP smoke now pass.
 - Still not complete: production auth/session/RBAC, common attachments, durable notification/support/survey/material workflows, board edit/delete/permissions, browser E2E/visual fidelity, and team task drain remain open.

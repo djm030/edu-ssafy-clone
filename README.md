@@ -1,5 +1,10 @@
 # eduSSAFY Clone Coding
 
+## Worker-4 status sync (2026-04-25)
+- Team backlog has been re-synced with explicit follow-up tasks 125-130 for unresolved auth, attachment/reaction, survey/support depth, and E2E/CI closure.
+- Project remains **NOT READY** until those tasks and remaining-work gates are closed with fresh verification evidence.
+
+
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.
 
 ## Current project status (2026-04-24)
