@@ -3,6 +3,7 @@ package com.edussafy.backend.priority.api;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import jakarta.validation.Valid;
@@ -30,6 +31,11 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponse me() {
         return priorityApiService.me();
+    }
+
+    @GetMapping("/auth/roles/current")
+    public RoleAccessResponse currentRoleAccess() {
+        return priorityApiService.currentRoleAccess();
     }
 
     @PostMapping("/profile/password-check")

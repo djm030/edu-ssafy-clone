@@ -31,6 +31,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
@@ -104,6 +105,21 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.name").value("Demo Learner"));
+    }
+
+    @Test
+    void currentRoleAccessReturnsPermissions() throws Exception {
+        given(priorityApiService.currentRoleAccess()).willReturn(new RoleAccessResponse(
+                "learner",
+                List.of("dashboard:read", "profile:update"),
+                List.of("/admin")
+        ));
+
+        mockMvc.perform(get("/api/auth/roles/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("learner"))
+                .andExpect(jsonPath("$.permissions[0]").value("dashboard:read"))
+                .andExpect(jsonPath("$.deniedRoutes[0]").value("/admin"));
     }
 
     @Test

@@ -28,6 +28,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
@@ -77,6 +78,33 @@ public class PriorityApiService {
     private static final TodaySummary EMPTY_TODAY = new TodaySummary(null, null, null);
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_TYPE = "contact_request";
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
+    private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
+            "learner", List.of(
+                    "dashboard:read",
+                    "attendance:read",
+                    "attendance:appeal",
+                    "notifications:read",
+                    "learning:read",
+                    "quest:submit",
+                    "survey:respond",
+                    "board:write",
+                    "support:write",
+                    "profile:update"
+            ),
+            "coach", List.of(
+                    "dashboard:read",
+                    "attendance:read",
+                    "notifications:send",
+                    "learning:manage",
+                    "quest:review",
+                    "survey:manage",
+                    "board:moderate",
+                    "support:answer",
+                    "profile:update"
+            ),
+            "admin", List.of("*")
+    );
+    private static final List<String> LEARNER_DENIED_ROUTES = List.of("/admin", "/coach/reviews", "/management");
 
     private final PriorityApiRepository repository;
     private final PriorityP2Repository p2Repository;
@@ -104,6 +132,16 @@ public class PriorityApiService {
 
     public PasswordCheckResponse passwordCheck(PasswordCheckRequest request) {
         return new PasswordCheckResponse(!request.password().isBlank());
+    }
+
+    public RoleAccessResponse currentRoleAccess() {
+        UserProfile user = currentUser();
+        String role = normalizeAccessRole(user.role());
+        return new RoleAccessResponse(
+                role,
+                ROLE_PERMISSIONS.getOrDefault(role, ROLE_PERMISSIONS.get("learner")),
+                "learner".equals(role) ? LEARNER_DENIED_ROUTES : List.of()
+        );
     }
 
     public DashboardSummary dashboardSummary() {
@@ -327,6 +365,20 @@ public class PriorityApiService {
 
     private UserProfile currentUser() {
         return safe(() -> repository.findDefaultUser().orElse(DEMO_USER), DEMO_USER);
+    }
+
+    private String normalizeAccessRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "learner";
+        }
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        if ("student".equals(normalized)) {
+            return "learner";
+        }
+        if (ROLE_PERMISSIONS.containsKey(normalized)) {
+            return normalized;
+        }
+        return "learner";
     }
 
     private ProfileDetails profileFromUser(UserProfile user) {

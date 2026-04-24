@@ -24,6 +24,9 @@ public final class PriorityDtos {
     public record PasswordCheckResponse(boolean valid) {
     }
 
+    public record RoleAccessResponse(String role, List<String> permissions, List<String> deniedRoutes) {
+    }
+
     public record UserResponse(UserProfile user) {
     }
 
