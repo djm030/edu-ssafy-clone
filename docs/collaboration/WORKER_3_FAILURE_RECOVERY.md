@@ -16,3 +16,9 @@
 ## Recommended follow-up
 
 Implement R7 RBAC/session work in a scoped task: backend session/token validation, role guards for protected endpoints, frontend 401/403 states, and API/smoke tests for unauthorized/forbidden/success cases.
+
+## Task 74 — 실패 로그를 읽는다
+
+- Status: Task 50 failure log was read from the team task state.
+- Failure summary: backend authorization enforcement is absent; frontend has 401/403 fallback protection, but backend lacks Spring Security configuration, `@PreAuthorize`, or equivalent controller/method guards.
+- Acceptance impact: `docs/remaining-work.md` still lists access control as a gap, so Task 50 remains failed until R7 RBAC/session implementation is completed and verified.
