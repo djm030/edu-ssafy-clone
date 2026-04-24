@@ -41,6 +41,12 @@ export interface LoginResponse {
   user: UserProfile;
 }
 
+export interface RoleAccess {
+  role: string;
+  permissions: string[];
+  deniedRoutes: string[];
+}
+
 export interface DashboardSummary {
   user: Omit<UserProfile, 'id' | 'email' | 'role'>;
   level: {

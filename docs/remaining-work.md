@@ -4,6 +4,11 @@
 - Done in DevOps/QA slice: smoke JSON shape assertions for auth/profile/board critical paths, plus maintained `docs/openapi.yaml` bootstrap and `scripts/dev/verify-openapi.ps1` drift-marker check.
 - Still needed before leaving R7.0: frontend `fetchJson` fallback policy must rethrow 401/403 and disable fallback in CI/live mode; frontend board adapters must normalize the backend `{ post }` / `{ item }` wrappers; live smoke and verify-openapi must be rerun in a host/CI environment with PowerShell and rebuilt services.
 
+
+## R7.1 Worker-1 Status Update (2026-04-24)
+- Done in frontend Auth/RBAC slice: App bootstrap now calls `GET /api/auth/roles/current`, displays current role/permission count in the shell, routes denied paths (for example `/admin`) to an explicit unauthorized state, and calls `POST /api/auth/logout` before returning to login.
+- Verification: `npm run lint` and `npm run build` pass in `frontend/`. Backend Maven tests remain blocked in this host because only Java 25 is installed and the current Mockito/Byte Buddy stack reports Java 25 class instrumentation incompatibility; rerun under Java 21 or upgrade test tooling.
+
 ## Full Clone Completion Checklist
 | Area | Status | Remaining Work |
 |---|---|---|
@@ -18,7 +23,7 @@
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
 | Board/community | partial | List/detail/write/comment/reaction exists; add attachments, edit/delete, permissions. |
 | 1:1 inquiry | partial | Ticket list/create exists and QNA new page uses support tickets; add thread messages, answers, status transitions, attachments. |
-| Access control | gap | Add role matrix enforcement and frontend unauthorized states. |
+| Access control | partial | Frontend role bootstrap and unauthorized route state exist; add server-side enforcement coverage and admin/operator role matrices. |
 | Error/loading/empty states | partial | Present in many pages; verify all mutation flows and permission errors. |
 | Local one-command run | partial | Compose profile works in prior live verification; current sandbox cannot rebuild due Docker ACL. |
 | Tests/smoke | partial | Backend/frontend/smoke exist; add browser E2E and CI. |
