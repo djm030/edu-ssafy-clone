@@ -228,8 +228,8 @@ function toQuestItem(item: BackendQuestItem): QuestItem {
     startsAt: item.startsAt || toDateText(item.startAt),
     endsAt: item.endsAt || toDateText(item.endAt),
     status: toQuestStatus(item),
-    description: item.description || [item.type, item.classification].filter(Boolean).join(' 쨌 ') || undefined,
-    tasks: item.tasks || (item.maxExp ? [`理쒕? EXP ${item.maxExp}`] : []),
+    description: item.description || [item.type, item.classification].filter(Boolean).join(' · ') || undefined,
+    tasks: item.tasks || (item.maxExp ? [`최대 EXP ${item.maxExp}`] : []),
   };
 }
 
@@ -239,7 +239,7 @@ function toSurveyQuestions(item: BackendSurveyItem): SurveyItem['questions'] {
   const questionCount = item.questionCount && item.questionCount > 0 ? item.questionCount : 1;
   return Array.from({ length: questionCount }, (_, index) => ({
     id: index + 1,
-    text: `臾명빆 ${index + 1}`,
+    text: `문항 ${index + 1}`,
   }));
 }
 
@@ -248,7 +248,7 @@ function toSurveyItem(item: BackendSurveyItem): SurveyItem {
 
   return {
     id: Number(item.id),
-    title: item.title || '?ㅻЦ',
+    title: item.title || '설문',
     required: Boolean(item.required),
     startsAt: item.startsAt || toDateText(item.startAt),
     endsAt: item.endsAt || toDateText(item.endAt),

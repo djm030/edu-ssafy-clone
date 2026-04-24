@@ -4,7 +4,7 @@ import type { BoardCategory, BoardCode, BoardPostListItem, BoardPostListResponse
 
 const PAGE_SIZE = 20;
 
-type BoardPostDetailResponse = { post?: BoardPostListItem };
+type BoardPostDetailResponse = { post?: BoardPostListItem; item?: BoardPostListItem };
 
 interface PostQuery {
   categoryId?: number;
@@ -63,5 +63,5 @@ export function getPosts(boardCode: BoardCode, query: PostQuery): Promise<BoardP
 export function getPost(boardCode: BoardCode, postId: number): Promise<BoardPostListItem | undefined> {
   return fetchJson<BoardPostDetailResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
     fallback: () => ({ post: mockPosts.find((item) => item.boardCode === boardCode && item.id === postId) }),
-  }).then((response) => response.post);
+  }).then((response) => response.post ?? response.item);
 }
