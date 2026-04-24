@@ -1,5 +1,11 @@
 # Full Clone Progress
 
+## Worker-4 Task Expansion Round (2026-04-24)
+- Goal: ensure the team does not stop at analysis/planning and that follow-up work is represented as executable tasks.
+- Completed: worker-4 acknowledged the no-analysis-only guardrail, inspected the repository state, and created 16 additional implementation/QA/documentation tasks through the OMX task API.
+- Created task ids: 49-64, covering R7 auth/RBAC, frontend fallback and unauthorized states, R8 attachments/material reactions, R9 survey/support depth, R10 E2E/CI, and documentation tracker upkeep.
+- Verification: `omx team api list-tasks` reported 64 total tasks after creation, with the 16 new tasks present and assigned across workers 1, 2, 4, and 5.
+
 ## R7.0 Contract/Fallback Guardrail - DevOps/QA slice (worker-5, 2026-04-24)
 - Goal: strengthen smoke verification so critical auth/profile/board paths validate JSON response contracts, not only HTTP 200.
 - Completed: added PowerShell smoke JSON helpers and live shape assertions for `POST /api/auth/login`, `GET /api/me`, `GET /api/profile`, board list pagination, board detail wrapper `{ post }`, and board create wrapper `{ item }`.
