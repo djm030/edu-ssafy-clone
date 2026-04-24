@@ -2,7 +2,17 @@
 
 Date: 2026-04-25
 Worker: worker-1
-Task: 12 - 남은 작업이 있으면 다음 반복으로 돌아감
+Task: 1, 12 - 핵심 실행 원칙 / 남은 작업 반복 루프
+
+## Core Principle Enforcement
+
+Task 1 requires execution not to end by rounds and to continue until all core features are PASS.
+
+This guard confirms the principle is actively enforced:
+
+- Task 12 was completed with explicit loop restart into 단계 3 when completion criteria were not satisfied.
+- Task 11, 44, 103 were completed to refresh backlog/worker distribution/completion checks.
+- Current team and verification state still contains unresolved work; therefore the run must continue.
 
 ## Current Loop Check
 
