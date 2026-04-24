@@ -1,5 +1,24 @@
 # Test Report
 
+## Worker-4 Test Result Documentation Check (Task 87, 2026-04-24)
+
+### Summary
+Test results are documented. `docs/test-report.md` contains command-level PASS/BLOCKED evidence for required documentation checks, frontend lint/build, smoke harness coverage, and backend/live-smoke blockers. The project still cannot be marked final PASS because backend Maven and rebuilt live smoke remain blocked in this worker environment.
+
+### Documented Result Inventory
+| Check group | Documented status | Evidence location |
+|---|---|---|
+| Required docs existence | PASS | Task 66 section in this file and `docs/final-verification.md`. |
+| Diff hygiene | PASS | Worker-4 sections record `git diff --check` PASS. |
+| Frontend lint | PASS | Worker-4 sections and R6 PM verification record `npm run lint` PASS. |
+| Frontend build | PASS | Worker-4 sections and R6 PM verification record `npm run build` PASS with Vite output. |
+| Smoke harness/static contract checks | PASS/PARTIAL | R7.0 and R6 sections record smoke JSON shape/static checks and optional route warnings. |
+| Backend Maven tests | BLOCKED | Multiple sections record missing local `mvn` / absent `backend/mvnw` and Docker ACL blocker. |
+| Live rebuilt smoke | BLOCKED/PARTIAL | R6/R7 sections record host/CI retest commands and Docker/PowerShell blockers. |
+
+### Task 87 Decision
+Yes, test results are documented; however, documentation includes blockers rather than full success. Continue implementation/CI work before final completion.
+
 ## Worker-4 Required Docs Verification (Task 66, 2026-04-24)
 
 ### Summary
