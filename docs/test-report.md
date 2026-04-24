@@ -52,6 +52,20 @@
 - `container_name` 충돌: Docker 설정 불일치 (동시 실행 환경에서 이름 강제 고정)
 - port bind 충돌: 환경 포트 충돌 (동일 호스트 다중 스택 실행)
 
+## Repository Scope Check (Task 99, worker-5, 2026-04-25)
+
+### Question
+저장소가 Docker 설정만으로 구성되어 있는가?
+
+### Verification
+- 루트 확인: `ls -1` -> `backend/`, `frontend/`, `docs/`, `scripts/`, `infra/` 존재.
+- 소스 확인:
+  - `ls backend/src/main/java/com/edussafy/backend` -> `BackendApplication.java`, `board/`, `priority/` 확인.
+  - `ls frontend/src` -> `App.tsx`, `api/`, `pages/`, `types.ts` 등 확인.
+
+### Conclusion
+- FAIL (for the proposition "Docker 설정만 있다"): 저장소는 Docker 설정 전용이 아니라 backend/frontend 코드, 문서, 스크립트를 함께 포함한다.
+
 ## Final Verification Recheck (2026-04-24)
 - `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, Tests run: 34, Failures: 0, Errors: 0, Skipped: 0.
 - `npm --prefix frontend run lint` -> PASS after App shell prop/state fix.
