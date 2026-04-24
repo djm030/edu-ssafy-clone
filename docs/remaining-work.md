@@ -3,7 +3,7 @@
 ## Final Verification Recheck (2026-04-24)
 - Runnable gates improved: backend Maven tests, frontend lint/build, Docker image build, Compose startup, and basic local HTTP smoke now pass.
 - Still not complete: production auth/session/RBAC, common attachments, durable notification/support/survey/material workflows, board edit/delete/permissions, browser E2E/visual fidelity, and team task drain remain open.
-- OMX team state checked during worker-1 recheck: total=136, completed=48, pending=85, in_progress=3, failed=0; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
+- OMX team state checked during worker-1 recheck: total=136, completed=68, pending=66, in_progress=2, failed=0; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
 
 
 ## Task 95 Required Work Check (worker-4, 2026-04-24)
