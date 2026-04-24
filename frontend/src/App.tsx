@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
+import { getCurrentRoleAccess, logout } from './api/app';
+import { getErrorMessage } from './api/client';
 import { mockUser } from './data/mockData';
+import AdminCampusPage from './pages/AdminCampusPage';
 import AttendanceAppealPage from './pages/AttendanceAppealPage';
 import AttendancePage from './pages/AttendancePage';
 import BoardDetailPage from './pages/BoardDetailPage';
@@ -25,7 +28,8 @@ import ReplaysPage from './pages/ReplaysPage';
 import SurveyDetailPage from './pages/SurveyDetailPage';
 import SurveyPage from './pages/SurveyPage';
 import SurveyRespondPage from './pages/SurveyRespondPage';
-import type { BoardScreenConfig, UserProfile } from './types';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import type { BoardScreenConfig, RoleAccess, UserProfile } from './types';
 
 const boardScreens: Record<string, BoardScreenConfig> = {
   '/community/free': {
@@ -87,6 +91,8 @@ function getCurrentPath(): string {
 function App() {
   const [path, setPath] = useState(getCurrentPath);
   const [user, setUser] = useState<UserProfile>(mockUser);
+  const [roleAccess, setRoleAccess] = useState<RoleAccess | undefined>();
+  const [accessError, setAccessError] = useState<string | undefined>();
 
   useEffect(() => {
     const onPopState = () => setPath(getCurrentPath());
@@ -100,17 +106,43 @@ function App() {
     setPath(nextPath);
   };
 
-  const page = useMemo(() => renderPage(path), [path]);
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentRoleAccess()
+      .then((access) => {
+        if (!cancelled) {
+          setRoleAccess(access);
+          setAccessError(undefined);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setAccessError(getErrorMessage(error));
+      });
+    return () => { cancelled = true; };
+  }, [user.email]);
+
+  const handleLogout = () => {
+    logout().catch((error) => console.warn(`[auth] logout fallback navigation: ${getErrorMessage(error)}`));
+    navigate('/login');
+  };
+
+  const accessDenied = isDeniedPath(path, roleAccess);
+  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path);
 
   if (path === '/login') {
     return <LoginPage onLogin={(nextUser) => { setUser(nextUser); navigate('/'); }} />;
   }
 
   return (
-    <AppShell currentPath={path} onNavigate={navigate} user={user}>
+    <AppShell accessError={accessError} currentPath={path} onLogout={handleLogout} onNavigate={navigate} roleAccess={roleAccess} user={user}>
       {page}
     </AppShell>
   );
+}
+
+
+function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
+  return Boolean(roleAccess?.deniedRoutes.some((route) => path === route || path.startsWith(`${route}/`)));
 }
 
 function renderPage(path: string) {
@@ -126,6 +158,7 @@ function renderPage(path: string) {
   const surveyMatch = match(/^\/survey\/(\d+)$/);
 
   if (path === '/') return <DashboardPage />;
+  if (path === '/admin/campus') return <AdminCampusPage />;
   if (path === '/mycampus/attendance') return <AttendancePage />;
   if (path === '/mycampus/attendance/appeals/new') return <AttendanceAppealPage />;
   if (path === '/mycampus/level') return <LevelPage />;

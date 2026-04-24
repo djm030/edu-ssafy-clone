@@ -12,6 +12,9 @@ import {
   mockUser,
 } from '../data/mockData';
 import type {
+  AdminCampusStructure,
+  AdminClassGroupDraft,
+  AdminClassGroupItem,
   AttendanceRecord,
   AttendanceAppealDraft,
   BoardPostDraft,
@@ -20,6 +23,7 @@ import type {
   DashboardSummary,
   LearningMaterial,
   LoginResponse,
+  RoleAccess,
   NotificationItem,
   QnaDraft,
   QuestItem,
@@ -286,6 +290,23 @@ export function login(email: string, password: string): Promise<LoginResponse> {
   });
 }
 
+export function getCurrentRoleAccess(): Promise<RoleAccess> {
+  return fetchJson<RoleAccess>('/api/auth/roles/current', {
+    fallback: () => ({
+      role: mockUser.role || 'learner',
+      permissions: ['dashboard:read', 'profile:update', 'quest:submit'],
+      deniedRoutes: ['/admin'],
+    }),
+  });
+}
+
+export function logout(): Promise<{ success: boolean; message: string }> {
+  return fetchJson<{ success: boolean; message: string }>('/api/auth/logout', {
+    fallback: () => ({ success: true, message: 'logged out locally' }),
+    method: 'POST',
+  });
+}
+
 export function getDashboardSummary(): Promise<DashboardSummary> {
   return fetchJson<BackendDashboardSummary>('/api/dashboard/summary', {
     fallback: () => mockDashboard,
@@ -476,4 +497,25 @@ export function sendClassmateNotification(userId: number): Promise<{ status: str
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   }).then((response) => ({ status: response.status || response.item?.status || 'sent' }));
+}
+
+
+export function getAdminCampusStructure(): Promise<AdminCampusStructure> {
+  return fetchJson<AdminCampusStructure>('/api/admin/campus-structure', {
+    fallback: () => ({
+      campuses: [{ id: 1, name: '서울', active: true }],
+      cohorts: [{ id: 12, name: '12기', year: 2026, active: true }],
+      tracks: [{ id: 21, name: 'Java', description: '전공자 Java 트랙', active: true }],
+      classes: [{ id: 101, campusId: 1, cohortId: 12, trackId: 21, name: '서울 1반', classroom: 'A101', capacity: 28, active: true }],
+    }),
+  });
+}
+
+export function createAdminClassGroup(draft: AdminClassGroupDraft): Promise<AdminClassGroupItem> {
+  return fetchJson<{ item: AdminClassGroupItem }>('/api/admin/campus-structure/classes', {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: Date.now(), active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
 }

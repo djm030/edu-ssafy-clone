@@ -1,15 +1,19 @@
 import type { ReactNode } from 'react';
-import type { UserProfile } from '../types';
+import type { RoleAccess, UserProfile } from '../types';
 
 interface AppShellProps {
   children: ReactNode;
   currentPath: string;
   user: UserProfile;
+  roleAccess?: RoleAccess;
+  accessError?: string;
   onNavigate: (path: string) => void;
+  onLogout: () => void;
 }
 
 const navSections = [
   { title: '홈', items: [{ path: '/', label: '대시보드' }] },
+  { title: '관리', items: [{ path: '/admin/campus', label: '캠퍼스 관리' }] },
   {
     title: '마이캠퍼스',
     items: [
@@ -45,7 +49,7 @@ const navSections = [
   },
 ];
 
-function AppShell({ children, currentPath, user, onNavigate }: AppShellProps) {
+function AppShell({ accessError, children, currentPath, onLogout, onNavigate, roleAccess, user }: AppShellProps) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -78,12 +82,16 @@ function AppShell({ children, currentPath, user, onNavigate }: AppShellProps) {
             <span>
               {user.campusName} 캠퍼스 · {user.cohortName} · {user.trackName}
             </span>
+            <span className="role-access">
+              {roleAccess ? `역할 ${roleAccess.role} · 권한 ${roleAccess.permissions.length}개` : '권한 확인 중'}
+              {accessError ? ` · ${accessError}` : ''}
+            </span>
           </div>
           <div className="topbar-actions">
             <button className="ghost-button" onClick={() => onNavigate('/profile/edit')} type="button">
               회원정보
             </button>
-            <button className="ghost-button" onClick={() => onNavigate('/login')} type="button">
+            <button className="ghost-button" onClick={onLogout} type="button">
               로그아웃
             </button>
           </div>
