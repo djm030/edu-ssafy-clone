@@ -24,6 +24,9 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
             "/api/health",
             "/api/auth/login"
     );
+    private static final List<AccessRule> PATH_RULES = List.of(
+            new AccessRule("/api/admin/", Set.of("admin"))
+    );
     private static final Map<String, List<AccessRule>> METHOD_RULES = Map.of(
             "POST", List.of(
                     new AccessRule("/api/community/classmates/", Set.of("coach", "admin"))
@@ -49,7 +52,9 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         }
 
         String role = normalizeRole(request.getHeader(ROLE_HEADER));
-        boolean denied = METHOD_RULES.getOrDefault(request.getMethod(), List.of()).stream()
+        boolean denied = PATH_RULES.stream()
+                .anyMatch(rule -> rule.matches(path) && !rule.allowedRoles().contains(role))
+                || METHOD_RULES.getOrDefault(request.getMethod(), List.of()).stream()
                 .anyMatch(rule -> rule.matches(path) && !rule.allowedRoles().contains(role));
         if (denied) {
             writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다.");
@@ -83,7 +88,10 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
 
     private record AccessRule(String pathPrefix, Set<String> allowedRoles) {
         boolean matches(String path) {
-            return path.startsWith(pathPrefix) && path.endsWith("/notifications");
+            if (pathPrefix.equals("/api/community/classmates/")) {
+                return path.startsWith(pathPrefix) && path.endsWith("/notifications");
+            }
+            return path.startsWith(pathPrefix);
         }
     }
 }

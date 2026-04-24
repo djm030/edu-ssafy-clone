@@ -86,7 +86,7 @@ git diff --check
 | 1:1 문의 | PARTIAL | ticket list/create UI/API exists; full thread workflow remains. |
 | 문의 답변 | PARTIAL | answer/status transition depth is not fully implemented. |
 | 문의 첨부파일 | FAIL | ticket attachment upload/download is not implemented end-to-end. |
-| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; server-side enforcement tests are insufficient. |
+| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; `/api/admin/campus-structure/**` now has admin-only server enforcement with MVC tests, but broader role matrix coverage is still incomplete. |
 | 에러 처리 | PARTIAL | DataState/client error handling exists; all mutation/permission edge cases are not exhaustively verified. |
 | 로컬 실행 | PASS | Compose app profile started successfully and core HTTP smoke returned 200. |
 | 테스트 | PARTIAL | backend tests and frontend lint/build pass; PowerShell smoke, browser E2E, visual fidelity, and CI run evidence remain missing. |
@@ -116,7 +116,7 @@ git diff --check
 ## 7. 남은 작업
 
 1. 실서비스 수준 인증/세션/token expiry/password recovery 구현.
-2. 서버 측 RBAC enforcement와 learner/operator/admin role matrix 테스트 추가.
+2. 서버 측 RBAC enforcement 확대와 learner/coach/admin role matrix 테스트 추가 (`/api/admin/campus-structure/**` admin-only guard는 완료).
 3. 공통 첨부파일 업로드/다운로드/권한/저장소 연동 구현.
 4. 출석 이의신청 status/history/approval workflow 구현.
 5. 알림 send/read/delete durable lifecycle 구현.
