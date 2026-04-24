@@ -19,6 +19,7 @@ import MaterialDetailPage from './pages/MaterialDetailPage';
 import MaterialViewerPage from './pages/MaterialViewerPage';
 import MaterialsPage from './pages/MaterialsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import NotFoundPage from './pages/NotFoundPage';
 import ProfileCheckPage from './pages/ProfileCheckPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import QnaNewPage from './pages/QnaNewPage';
@@ -153,7 +154,7 @@ function App() {
   };
 
   const accessDenied = isDeniedPath(path, roleAccess);
-  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path);
+  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path, navigate);
 
   if (path === '/login') {
     return <LoginPage message={accessMessage} onLogin={(nextUser) => { setUser(nextUser); setAccessMessage(''); navigate('/'); }} />;
@@ -178,7 +179,7 @@ function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
   return Boolean(roleAccess?.deniedRoutes.some((route) => path === route || path.startsWith(`${route}/`)));
 }
 
-function renderPage(path: string) {
+function renderPage(path: string, navigate: (nextPath: string) => void) {
   const match = (pattern: RegExp) => path.match(pattern);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
@@ -217,7 +218,7 @@ function renderPage(path: string) {
   if (surveyMatch) return <SurveyDetailPage surveyId={Number(surveyMatch[1])} />;
   if (boardScreens[path]) return <BoardListPage config={boardScreens[path]} key={path} />;
 
-  return <DashboardPage />;
+  return <NotFoundPage onGoHome={() => navigate('/')} path={path} />;
 }
 
 export default App;
