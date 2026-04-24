@@ -17,6 +17,17 @@ Verified that the documented API/screen coverage is represented in the frontend 
 ### Reverification Result
 Frontend lint/build are passing after dependency installation. No Docker execution failure logs were present because no compose services are running in this worker. The project is still not complete while `docs/remaining-work.md` contains partial/gap rows and follow-up tasks 117-130 remain pending.
 
+### Report Criteria Coverage
+- 실행한 검증 명령: recorded above under Commands Run.
+- 성공/실패 결과: PASS/BLOCKED status is listed per command.
+- 실패 로그 요약: frontend tool-missing state was resolved by `npm ci`; backend Maven is blocked because no wrapper/local Maven exists.
+- Docker compose 검증 결과: `docker compose -f compose.yml config` and `docker compose -f compose.yml --profile app config` pass; compose logs had no failure output because services are not running in this worker.
+- Nginx 검증 결과: Nginx configuration remains part of the existing `compose.yml --profile app config` rendering and `infra/nginx/conf.d/default.conf`; live reverse-proxy smoke still requires host/CI compose startup.
+- ELK 로그 확인 결과: `compose.observability.yml` service configuration is present for Elasticsearch/Logstash/Filebeat/Kibana; live ELK log ingestion still requires host/CI compose startup.
+- 수정 내용: task-backed docs were updated in `docs/progress.md`, `docs/remaining-work.md`, and this report.
+- 재검증 결과: frontend lint/build and compose config pass after docs updates.
+- 검증하지 못한 항목과 이유: backend Maven, live Nginx reverse proxy, and live ELK ingestion are blocked in this worker by missing Maven wrapper/local Maven and absence of running Docker services.
+
 ## R7.0 DevOps/QA Smoke Shape Guardrail (worker-5, 2026-04-24)
 
 ### Summary
