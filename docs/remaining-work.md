@@ -75,11 +75,17 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | README/docs | partial | Add top-level runbook/API/progress/test docs and keep tracker updated. |
 
 
-## Task-backed Continuation Map (worker-1 recheck, 2026-04-25)
-Current OMX team state (`omx team api list-tasks`) contains task ids **1-116 only**.  
-Therefore, the previously documented follow-up ids `117-130` are not present in this run and must be recreated before claiming closure of the same scope.
+## Task-backed Continuation Map (worker-5, 2026-04-25)
+The partial/gap checklist above is represented by concrete OMX follow-up tasks so the team can continue without treating the project as complete.
+Note: prior 문서에 기록된 `117-130` 묶음은 현재 팀 상태에서 조회되지 않았고, 2026-04-25 기준으로 아래 task를 재생성했다.
 
-Required continuation themes that still need concrete active tasks in this run:
+| Task IDs | Area | Purpose |
+|---|---|---|
+| 117 | Build/Test Runtime | Java 21 기반 backend 검증 경로 고정 및 CI 재현. |
+| 118 | Auth/RBAC | 서버 측 RBAC guard 확대 및 role matrix 테스트 추가. |
+| 119-120 | Attachments/Materials | 공통 첨부파일 흐름 + 학습자료 반응 영속화. |
+| 121-122 | Survey/Support | 설문 질문·선택지·응답 depth + 문의 thread/answer/status 전이. |
+| 123-124 | QA/Docs | 브라우저 E2E smoke/CI 강화 + 최종 검증 문서 동기화. |
 
 | Area | Required Work |
 |---|---|
