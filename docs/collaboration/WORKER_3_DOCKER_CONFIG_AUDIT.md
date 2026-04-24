@@ -2,7 +2,7 @@
 
 ## Task 15 — 기존 Docker 설정 파일을 먼저 확인한다
 
-- Status: existing Docker/runtime files inspected before any Docker-related implementation changes.
+- Status: existing Docker/runtime files inspected before any Docker-related implementation changes (2026-04-25 recheck).
 - Scope inspected: `compose.yml`, `compose.mysql.yml`, `compose.observability.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, and `frontend/.dockerignore`.
 - No Docker configuration files were modified for this task.
 
@@ -20,10 +20,10 @@
 
 ## Service inventory verified
 
-- `docker compose -f compose.yml config --services` -> `mysql`, `rabbitmq`, `redis`.
-- `docker compose -f compose.yml --profile app config --services` -> `mysql`, `rabbitmq`, `redis`, `backend`, `frontend`, `nginx`.
-- `docker compose -f compose.mysql.yml config --services` -> `mysql`.
-- `docker compose -f compose.observability.yml config --services` -> `elasticsearch`, `logstash`, `filebeat`, `kibana`.
+- `docker compose -f compose.yml config --services` -> `mysql`, `rabbitmq`, `redis` (rechecked 2026-04-25).
+- `docker compose -f compose.yml --profile app config --services` -> `mysql`, `rabbitmq`, `redis`, `backend`, `frontend`, `nginx` (rechecked 2026-04-25).
+- `docker compose -f compose.mysql.yml config --services` -> `mysql` (rechecked 2026-04-25).
+- `docker compose -f compose.observability.yml config --services` -> `elasticsearch`, `logstash`, `filebeat`, `kibana` (rechecked 2026-04-25).
 
 ## Guardrail for future Docker work
 
