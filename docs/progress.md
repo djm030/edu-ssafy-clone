@@ -1,5 +1,11 @@
 # Full Clone Progress
 
+## Worker-4 Incomplete Feature Task Creation (Task 109, 2026-04-25)
+- Trigger: Task 4 recheck confirmed unresolved PARTIAL/FAIL/UNKNOWN domains.
+- Action: created immediate continuation tasks via OMX API so work does not stop at documentation status.
+- New task ids: `125` (backend auth/session), `126` (frontend unauthorized/fallback), `127` (common attachments), `128` (material reactions), `129` (survey/support workflow depth), `130` (browser E2E + CI + final docs sync).
+- Verification: `omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json` confirms tasks `125-130` are present and pending with assigned owners.
+
 ## Worker-4 Incomplete Feature Recheck (Task 4, 2026-04-25)
 - Goal: re-validate whether the repository can be treated as full clone complete before continuing implementation.
 - Evidence rechecked: `docs/remaining-work.md`, `docs/final-verification.md`, current backend/frontend placeholder scan, and OMX task state via `omx team api list-tasks`.
