@@ -27,3 +27,13 @@ rg -n "완료 판단" docs/remaining-work.md
 ## Decision
 
 Completion criteria are **not met**. Continue implementation/verification rounds and do not declare final completion.
+
+## PM 완료 착각 방지 체크리스트 점검
+
+| 기준 | 판정 | 근거 |
+|---|---|---|
+| PASS만 존재하는가 | 아니오 | PARTIAL/FAIL 항목이 `docs/final-verification.md`에 명시됨 |
+| PARTIAL=0 인가 | 아니오 | 인증/인가 포함 다수 PARTIAL 존재 |
+| FAIL=0 인가 | 아니오 | 첨부파일/학습자료 반응/문의 답변/문의 첨부파일 FAIL |
+| UNKNOWN=0 인가 | 아니오 | 실행환경 제약 항목 UNKNOWN 존재 |
+| 최종 완료 선언 가능 | 불가 | `docs/remaining-work.md` non-empty + team pending/in_progress 잔존 |
