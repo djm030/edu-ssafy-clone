@@ -26,3 +26,4 @@ backend/target/
 !.omx/wiki/**
 !.omx/notepad.md
 !.omx/project-memory.json
+.DS_Store
