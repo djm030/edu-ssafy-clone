@@ -1,5 +1,11 @@
 # Full Clone Progress
 
+## Worker-4 Incomplete Feature Recheck (Task 4, 2026-04-25)
+- Goal: re-validate whether the repository can be treated as full clone complete before continuing implementation.
+- Evidence rechecked: `docs/remaining-work.md`, `docs/final-verification.md`, current backend/frontend placeholder scan, and OMX task state via `omx team api list-tasks`.
+- Result: **still incomplete**. `docs/final-verification.md` still includes FAIL rows (attachments/material reaction/support depth), and `docs/remaining-work.md` still tracks multiple PARTIAL/UNKNOWN rows.
+- Task-state finding: OMX task registry currently stops at `task-116`; the prior note claiming follow-up `117-130` does not match current team state. Additional continuation tasks are still required before final PASS closure.
+
 ## Final Verification Recheck (2026-04-24)
 - Backend duplicate API mapping was fixed by removing the obsolete inline demo controller from `BackendApplication`.
 - Frontend shell wiring was fixed in `frontend/src/App.tsx` so role/access/logout props are present and lint/build pass.
