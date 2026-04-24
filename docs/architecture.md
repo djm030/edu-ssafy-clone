@@ -76,6 +76,13 @@
 - Dev/runtime layout: `compose.yml` orchestrates the application profile, `infra/nginx/conf.d/default.conf` fronts browser/API traffic, `scripts/mysql/**` seeds/verifies MySQL, and `scripts/dev/**` provides localhost, smoke, compose, Git, Docker, and OpenAPI verification helpers.
 - Analysis outcome: the repository is a partial but runnable full-stack clone scaffold; the highest-risk gaps remain production auth/RBAC, attachment storage, material reactions, survey/support depth, browser E2E, and CI automation.
 
+
+## Worker-4 Audit Documentation Boundary (Task 23, 2026-04-24)
+- Task 4/23 changes are documentation-only and do not alter runtime architecture, API behavior, service names, exposed ports, Docker networks, or volumes.
+- The audit classifies the current implementation as a partial full-stack clone: Spring controllers and React routes exist for the main SSAFY surfaces, while production-grade durability/authorization depth is intentionally tracked as remaining architecture work.
+- Completion-critical gaps are now mirrored in `docs/remaining-work.md`: auth/session/RBAC, durable notifications, material attachments/reactions, quest/survey/support depth, board permissions/edit-delete, browser E2E, CI, live smoke, and final verification.
+- The frontend fallback boundary remains architecturally important: local demo fallback is acceptable for unavailable dev backends, but CI/live modes and 401/403 responses must not be masked before final PASS.
+
 ## R7.0 Smoke Contract Boundary (2026-04-24)
 - The DevOps/QA smoke harness now has explicit JSON contract assertions for auth/profile/board paths. This makes the smoke layer a contract boundary rather than a simple availability check.
 - Critical wrappers are enforced in live smoke: auth/current-user use `{ user }`, profile uses `{ profile }`, board detail uses `{ post }`, board create uses `{ item }`, and board list requires `{ items, page }`.
