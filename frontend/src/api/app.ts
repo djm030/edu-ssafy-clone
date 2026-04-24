@@ -20,6 +20,7 @@ import type {
   DashboardSummary,
   LearningMaterial,
   LoginResponse,
+  RoleAccess,
   NotificationItem,
   QnaDraft,
   QuestItem,
@@ -282,6 +283,23 @@ export function login(email: string, password: string): Promise<LoginResponse> {
     headers: {
       'Content-Type': 'application/json',
     },
+    method: 'POST',
+  });
+}
+
+export function getCurrentRoleAccess(): Promise<RoleAccess> {
+  return fetchJson<RoleAccess>('/api/auth/roles/current', {
+    fallback: () => ({
+      role: mockUser.role || 'learner',
+      permissions: ['dashboard:read', 'profile:update', 'quest:submit'],
+      deniedRoutes: ['/admin'],
+    }),
+  });
+}
+
+export function logout(): Promise<{ success: boolean; message: string }> {
+  return fetchJson<{ success: boolean; message: string }>('/api/auth/logout', {
+    fallback: () => ({ success: true, message: 'logged out locally' }),
     method: 'POST',
   });
 }
