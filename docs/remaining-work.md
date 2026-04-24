@@ -39,12 +39,18 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 - Verification: `docker run --rm -v "$PWD/backend:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -q test` passed with the new `AdminCampusAccessControllerTest` coverage.
 - Still partial: broader server-side role matrices for non-admin moderation/review/answer flows remain incomplete because those endpoints are not yet fully implemented.
 
+
+## R7.3 Worker-1 Status Update (2026-04-25)
+- Done in admin management slice: `/api/admin/campus-structure` now reads campus/cohort/track/class rows from the database with demo fallback, and all four admin entities support create/update/delete endpoints against the SQL schema.
+- Frontend admin campus page now exposes class add/edit/delete actions through the same API client.
+- Note: class `classroom`/`capacity` remain API/UI-facing compatibility fields because the current SQL schema only stores class name/campus/cohort/track.
+
 ## Full Clone Completion Checklist
 | Area | Status | Remaining Work |
 |---|---|---|
 | Login/session | partial | Demo login works; add real credential verification, sessions/tokens, expiry, password recovery. |
 | Profile | partial | Read/update exists and frontend payload is aligned; add authorization checks and persistence depth. |
-| Campus/cohort/class/track | partial | Admin campus/cohort/track/class demo management API and screen exist; add persisted CRUD, edit/delete, and server RBAC enforcement. |
+| Campus/cohort/class/track | pass | Admin campus/cohort/track/class CRUD persists through the SQL schema with admin-only RBAC and frontend management actions; classroom/capacity are compatibility fields until schema expansion. |
 | Attendance | partial | Records and appeal submit exist; add durable appeal workflow/status/history. |
 | Notifications | partial | List exists and R6 source adds classmate send API; add durable send/read/delete persistence and live rebuild verification. |
 | Curriculum/replays | partial | Lists exist and frontend adapters now map backend DTOs; add richer filters, replay authorization and progress state. |
@@ -84,7 +90,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 ## Required Remaining-Work Classification
 
 ### 아직 PASS가 아닌 항목
-- 모든 `partial` 항목: Login/session, Profile, Campus/cohort/class/track, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, Board/community, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
+- 모든 `partial` 항목: Login/session, Profile, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, Board/community, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
 - 현재 `gap` 항목은 R7.1 기준 0개로 정리했지만, 서버 측 RBAC/권한 테스트는 아직 PASS가 아니다.
 
 ### PARTIAL 항목

@@ -13,8 +13,14 @@ import {
 } from '../data/mockData';
 import type {
   AdminCampusStructure,
+  AdminCampusDraft,
   AdminClassGroupDraft,
+  AdminCohortDraft,
   AdminClassGroupItem,
+  AdminCampusItem,
+  AdminCohortItem,
+  AdminTrackDraft,
+  AdminTrackItem,
   AttendanceRecord,
   AttendanceAppealDraft,
   BoardPostDraft,
@@ -511,6 +517,72 @@ export function getAdminCampusStructure(): Promise<AdminCampusStructure> {
   });
 }
 
+export function createAdminCampus(draft: AdminCampusDraft): Promise<AdminCampusItem> {
+  return fetchJson<ItemResponse<AdminCampusItem>>('/api/admin/campus-structure/campuses', {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: Date.now(), active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updateAdminCampus(campusId: number, draft: AdminCampusDraft): Promise<AdminCampusItem> {
+  return fetchJson<ItemResponse<AdminCampusItem>>(`/api/admin/campus-structure/campuses/${campusId}`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: campusId, active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteAdminCampus(campusId: number): Promise<void> {
+  return fetchJson<void>(`/api/admin/campus-structure/campuses/${campusId}`, { fallback: () => undefined, method: 'DELETE' });
+}
+
+export function createAdminCohort(draft: AdminCohortDraft): Promise<AdminCohortItem> {
+  return fetchJson<ItemResponse<AdminCohortItem>>('/api/admin/campus-structure/cohorts', {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: Date.now(), active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updateAdminCohort(cohortId: number, draft: AdminCohortDraft): Promise<AdminCohortItem> {
+  return fetchJson<ItemResponse<AdminCohortItem>>(`/api/admin/campus-structure/cohorts/${cohortId}`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: cohortId, active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteAdminCohort(cohortId: number): Promise<void> {
+  return fetchJson<void>(`/api/admin/campus-structure/cohorts/${cohortId}`, { fallback: () => undefined, method: 'DELETE' });
+}
+
+export function createAdminTrack(draft: AdminTrackDraft): Promise<AdminTrackItem> {
+  return fetchJson<ItemResponse<AdminTrackItem>>('/api/admin/campus-structure/tracks', {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: Date.now(), active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updateAdminTrack(trackId: number, draft: AdminTrackDraft): Promise<AdminTrackItem> {
+  return fetchJson<ItemResponse<AdminTrackItem>>(`/api/admin/campus-structure/tracks/${trackId}`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: trackId, active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteAdminTrack(trackId: number): Promise<void> {
+  return fetchJson<void>(`/api/admin/campus-structure/tracks/${trackId}`, { fallback: () => undefined, method: 'DELETE' });
+}
+
 export function createAdminClassGroup(draft: AdminClassGroupDraft): Promise<AdminClassGroupItem> {
   return fetchJson<{ item: AdminClassGroupItem }>('/api/admin/campus-structure/classes', {
     body: JSON.stringify(draft),
@@ -518,4 +590,19 @@ export function createAdminClassGroup(draft: AdminClassGroupDraft): Promise<Admi
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   }).then((response) => response.item);
+}
+export function updateAdminClassGroup(classId: number, draft: AdminClassGroupDraft): Promise<AdminClassGroupItem> {
+  return fetchJson<{ item: AdminClassGroupItem }>(`/api/admin/campus-structure/classes/${classId}`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: classId, active: true, ...draft } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteAdminClassGroup(classId: number): Promise<void> {
+  return fetchJson<void>(`/api/admin/campus-structure/classes/${classId}`, {
+    fallback: () => undefined,
+    method: 'DELETE',
+  });
 }

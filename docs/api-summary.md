@@ -93,7 +93,7 @@
   - replays: `publishedAt/versionNo` -> date/category.
   - materials: `summary/detailUrl/resources` -> description/fileName and UI material type.
 
-- `GET /api/admin/campus-structure`, `POST /api/admin/campus-structure/classes` (demo admin campus/cohort/track/class management flow)
+- `GET /api/admin/campus-structure`, `POST /api/admin/campus-structure/campuses|cohorts|tracks|classes`, `PUT /api/admin/campus-structure/campuses|cohorts|tracks|classes/{id}`, `DELETE /api/admin/campus-structure/campuses|cohorts|tracks|classes/{id}` (admin-only persisted campus/cohort/track/class CRUD flow)
 
 ## Still Needed For Full Clone
 - Password recovery/session expiry endpoints.

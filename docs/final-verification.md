@@ -63,7 +63,7 @@ git diff --check
 |---|---:|---|
 | 인증/인가 | PARTIAL | demo login/current user/role API and frontend unauthorized state exist; real credential verification, session/token expiry, and server-side RBAC are incomplete. |
 | 사용자 프로필 | PARTIAL | profile read/update and password-check surfaces exist; authorization/persistence depth is not fully verified. |
-| 캠퍼스/기수/반/트랙 | PARTIAL | schema/seed/admin UI/API surfaces exist; complete persisted CRUD/edit/delete and RBAC are not proven. |
+| 캠퍼스/기수/반/트랙 | PASS | admin-only campus/cohort/track/class create/read/update/delete endpoints now persist through SQL, frontend management actions call them, and MVC tests cover RBAC-protected read/create/update/delete paths. |
 | 출석 조회 | PARTIAL | `/api/attendance/records` smoke returned 200 and UI exists; full history/filter/permission coverage is not proven. |
 | 출석 이의신청 | PARTIAL | submit endpoint/UI exists; durable status/history/approval workflow remains. |
 | 알림 발송/수신/읽음 | PARTIAL | list and classmate send route exist; durable send/read/delete lifecycle is incomplete. |
@@ -86,7 +86,7 @@ git diff --check
 | 1:1 문의 | PARTIAL | ticket list/create UI/API exists; full thread workflow remains. |
 | 문의 답변 | PARTIAL | answer/status transition depth is not fully implemented. |
 | 문의 첨부파일 | FAIL | ticket attachment upload/download is not implemented end-to-end. |
-| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; `/api/admin/campus-structure/**` now has admin-only server enforcement with MVC tests, but broader role matrix coverage is still incomplete. |
+| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; `/api/admin/campus-structure/**` has admin-only server enforcement with MVC tests covering read/create/update/delete, but broader role matrix coverage is still incomplete. |
 | 에러 처리 | PARTIAL | DataState/client error handling exists; all mutation/permission edge cases are not exhaustively verified. |
 | 로컬 실행 | PASS | Compose app profile started successfully and core HTTP smoke returned 200. |
 | 테스트 | PARTIAL | backend tests and frontend lint/build pass; PowerShell smoke, browser E2E, visual fidelity, and CI run evidence remain missing. |
@@ -116,7 +116,7 @@ git diff --check
 ## 7. 남은 작업
 
 1. 실서비스 수준 인증/세션/token expiry/password recovery 구현.
-2. 서버 측 RBAC enforcement 확대와 learner/coach/admin role matrix 테스트 추가 (`/api/admin/campus-structure/**` admin-only guard는 완료).
+2. 서버 측 RBAC enforcement 확대와 learner/coach/admin role matrix 테스트 추가 (`/api/admin/campus-structure/**` admin-only read/create/update/delete guard는 완료).
 3. 공통 첨부파일 업로드/다운로드/권한/저장소 연동 구현.
 4. 출석 이의신청 status/history/approval workflow 구현.
 5. 알림 send/read/delete durable lifecycle 구현.
