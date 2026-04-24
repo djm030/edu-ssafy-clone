@@ -18,10 +18,21 @@ interface FetchJsonOptions<T> extends RequestInit {
 
 type ViteEnv = Record<string, string | boolean | undefined>;
 
+function isTruthyEnv(value: string | boolean | undefined): boolean {
+  return value === true || value === 'true' || value === '1' || value === 'yes';
+}
+
+function ciEnvEnabled(): boolean {
+  if (typeof process === 'undefined') return false;
+  return isTruthyEnv(process.env.CI);
+}
+
 function apiFallbackDisabled(): boolean {
   const env = (import.meta as ImportMeta & { env?: ViteEnv }).env || {};
-  return env.VITE_DISABLE_API_FALLBACK === 'true' || env.VITE_DISABLE_API_FALLBACK === true || env.CI === 'true' ||
-    env.CI === true || env.PROD === true || env.MODE === 'production';
+  const fallbackMode = env.VITE_API_FALLBACK;
+
+  return isTruthyEnv(env.VITE_DISABLE_API_FALLBACK) || fallbackMode === 'disabled' || fallbackMode === 'off' ||
+    isTruthyEnv(env.CI) || ciEnvEnabled() || env.PROD === true || env.MODE === 'production';
 }
 
 function shouldUseFallback(error: unknown): boolean {
