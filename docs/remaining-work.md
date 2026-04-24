@@ -34,6 +34,11 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 - Done in frontend Auth/RBAC slice: App bootstrap now calls `GET /api/auth/roles/current`, displays current role/permission count in the shell, routes denied paths (for example `/admin`) to an explicit unauthorized state, and calls `POST /api/auth/logout` before returning to login.
 - Verification: `npm run lint` and `npm run build` pass in `frontend/`. Backend Maven tests remain blocked in this host because only Java 25 is installed and the current Mockito/Byte Buddy stack reports Java 25 class instrumentation incompatibility; rerun under Java 21 or upgrade test tooling.
 
+## R7.2 Worker-1 Status Update (2026-04-24)
+- Done in backend RBAC slice: `/api/admin/campus-structure/**` now requires `X-User-Role: admin`; learner/default and coach requests receive the standard `FORBIDDEN` error while admin can read/create campus structure data.
+- Verification: `docker run --rm -v "$PWD/backend:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -q test` passed with the new `AdminCampusAccessControllerTest` coverage.
+- Still partial: broader server-side role matrices for non-admin moderation/review/answer flows remain incomplete because those endpoints are not yet fully implemented.
+
 ## Full Clone Completion Checklist
 | Area | Status | Remaining Work |
 |---|---|---|
@@ -48,7 +53,7 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
 | Board/community | partial | List/detail/write/comment/reaction exists; add attachments, edit/delete, permissions. |
 | 1:1 inquiry | partial | Ticket list/create exists and QNA new page uses support tickets; add thread messages, answers, status transitions, attachments. |
-| Access control | partial | Frontend role bootstrap and unauthorized route state exist; add server-side enforcement coverage and admin/operator role matrices. |
+| Access control | partial | Frontend role bootstrap and unauthorized route state exist; admin campus API is server-guarded for admin-only access; add broader server-side enforcement coverage and operator/coach role matrices. |
 | Error/loading/empty states | partial | Present in many pages; verify all mutation flows and permission errors. |
 | Local one-command run | partial | Compose profile works in prior live verification; current sandbox cannot rebuild due Docker ACL. |
 | Tests/smoke | partial | Backend/frontend/smoke exist; add browser E2E and CI. |
