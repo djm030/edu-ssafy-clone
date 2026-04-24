@@ -30,3 +30,10 @@
 - Preserve these existing files and profiles unless a later task explicitly assigns a Docker edit.
 - Prefer additive documentation or profile-specific changes over replacing the current compose structure.
 - Treat Docker syntax validation as necessary but not sufficient for full feature completion.
+
+## Task 16 — 기존 Docker 설정을 삭제하거나 대체하지 않는다
+
+- Status: guardrail verified after Task 15.
+- No existing Docker-related files were deleted, renamed, or replaced.
+- Current worker-3 Docker-related repository changes are documentation-only (`docs/collaboration/WORKER_3_DOCKER_CONFIG_AUDIT.md`).
+- Future work must preserve the existing compose/profile split unless a later task explicitly authorizes a targeted Docker change.
