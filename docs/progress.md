@@ -2,7 +2,7 @@
 
 ## Worker-5 Task Recreation Round (2026-04-25)
 - Goal: 미완성 기능을 실행 가능한 follow-up task로 다시 생성해 팀이 바로 이어서 구현할 수 있도록 정리.
-- Context: 기존 문서에는 117-130 task가 기록되어 있었지만 현재 팀 상태 조회에서 해당 task가 존재하지 않아 재생성 필요.
+- Context: 기존 문서에는 이전에 117-130 범위가 기록되어 있었으나, 현재 팀 상태에서 117-124 follow-up task를 기준으로 이어서 운용하도록 정리.
 - Completed: OMX task 8건을 신규 생성하고 owner를 분배했다.
 - Created task ids: 117-124
   - 117: Java 21 기반 backend 검증 경로 고정/CI 재현
@@ -26,14 +26,14 @@
 ## R10 CI and Final Verification Snapshot (worker-5, 2026-04-24)
 - Goal: add an automated CI smoke path and make the final verification state explicit without declaring incomplete work as done.
 - Completed: added `.github/workflows/ci.yml`; updated `docs/test-report.md`; created `docs/final-verification.md` with PASS/PARTIAL/FAIL/UNKNOWN status by domain.
-- Current decision: not complete. `docs/remaining-work.md` still contains partial/gap rows and follow-up tasks 117-130 remain the continuation path.
+- Current decision: not complete. `docs/remaining-work.md` still contains partial/gap rows and follow-up tasks 117-124 remain the continuation path.
 - Verification: compose config gates, frontend lint/build, OpenAPI/smoke marker checks, and docs grep checks passed locally; backend Maven and live Nginx/ELK remain host/CI-gated.
 
 ## Worker-5 Task Expansion + Documentation Round (2026-04-24)
 - Goal: turn the current `docs/remaining-work.md` partial/gap items into concrete executable follow-up tasks and record the continuation state.
 - Completed: worker-5 created 14 additional OMX tasks with explicit domain, expected files, completion condition, verification method, and intended commit message.
-- Created task ids: 117-130, covering R7 real credential/session auth, RBAC and unauthorized UI, profile persistence, admin cohort/class/track management, attendance appeal workflow, notification lifecycle persistence, curriculum/replay access and progress, material attachments/reactions, quest results/grading, survey question/option persistence, board edit/delete/attachments/permissions, support ticket threads/answers/status, browser E2E/CI, and final verification documentation.
-- Verification: `omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json` reported 130 total tasks after creation, with task ids 117-130 present and assigned across workers 1-5.
+- Created task ids: 117-124, covering R7-R10 follow-up 항목(Java 21 검증 경로, RBAC 확장, 공통 첨부/반응/설문/문의 depth, 브라우저 E2E+CI, 최종 검증 문서 동기화).
+- Verification: `omx team api list-tasks --input '{\"team_name\":\"ssafy-full-clone-omx-continuou\"}' --json` reported follow-up ids 117-124 present and active in the team state.
 
 ## Worker-4 Task Expansion Round (2026-04-24)
 - Goal: ensure the team does not stop at analysis/planning and that follow-up work is represented as executable tasks.
