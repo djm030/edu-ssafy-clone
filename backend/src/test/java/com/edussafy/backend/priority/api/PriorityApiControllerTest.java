@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
@@ -242,6 +244,17 @@ class PriorityApiControllerTest {
     @Test
     void communityAndProfileReturnP2Shapes() throws Exception {
         given(priorityApiService.classmates()).willReturn(new ClassmatesResponse(List.of()));
+        given(priorityApiService.createClassmateNotification(eq(7L), any()))
+                .willReturn(new ClassmateNotificationResponse(new ClassmateNotificationItem(
+                        900_007L,
+                        7L,
+                        "contact_request",
+                        "Let's study together?",
+                        "sent",
+                        null,
+                        null,
+                        true
+                )));
         given(priorityApiService.profile()).willReturn(new ProfileResponse(new ProfileDetails(
                 1L, "Demo Learner", "student@ssafy.com", "learner", null,
                 "Seoul", "12", "Java", null, null, null, null, null, null, false
@@ -250,6 +263,13 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/community/classmates"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
+        mockMvc.perform(post("/api/community/classmates/7/notifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"contact_request\",\"message\":\"Let's study together?\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(900007))
+                .andExpect(jsonPath("$.item.recipientUserId").value(7))
+                .andExpect(jsonPath("$.item.status").value("sent"));
         mockMvc.perform(get("/api/profile"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.email").value("student@ssafy.com"))

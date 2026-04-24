@@ -285,6 +285,27 @@ public final class PriorityDtos {
     public record ClassmatesResponse(List<ClassmateItem> items) {
     }
 
+    public record ClassmateNotificationRequest(
+            @Size(max = 50) String type,
+            @Size(max = 1000) String message
+    ) {
+    }
+
+    public record ClassmateNotificationResponse(ClassmateNotificationItem item) {
+    }
+
+    public record ClassmateNotificationItem(
+            long id,
+            long recipientUserId,
+            String type,
+            String message,
+            String status,
+            OffsetDateTime createdAt,
+            NotificationItem notification,
+            boolean demo
+    ) {
+    }
+
     public record ClassmateItem(
             long id,
             String name,

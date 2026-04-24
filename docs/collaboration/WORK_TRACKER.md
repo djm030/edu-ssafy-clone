@@ -159,3 +159,59 @@ Before marking any round complete:
 - Commit after a round reaches stable gates or after a coherent partial milestone.
 - Commit message follows Lore protocol.
 - If `.git` permission remains blocked, PM records exact command failure and leaves worktree ready.
+
+## R6-contract-closure PM Update (2026-04-24)
+Goal:
+- Close the remaining API catalog gap for classmate notifications.
+- Align frontend mutation/read adapters with backend DTO wrappers.
+- Expand smoke harness and create top-level progress/API/test/remaining-work docs.
+
+Status:
+| Area | Status | Evidence |
+|---|---|---|
+| Backend R6 API | source done, executable test blocked | `CommunityController` route, DTOs, service, MockMvc/service tests added; `mvn` unavailable and Docker engine ACL blocks Dockerized Maven. |
+| Frontend contract alignment | done | `npm run lint` and `npm run build` passed after adapter normalization. |
+| DevOps-QA R6 gates | done with optional warnings | `scripts/dev/smoke.ps1 -SkipHttp` passed; full smoke passed required endpoints, optional classmate notification warning due stale live backend image. |
+| Docs | done | `docs/progress.md`, `docs/architecture.md`, `docs/api-summary.md`, `docs/test-report.md`, `docs/remaining-work.md`. |
+| Git commits | blocked in sandbox | `.git/index.lock` creation denied; `icacls .git` grant attempts returned `Access is denied.` Worktree ready for host-shell commit. |
+
+Failure Log:
+```text
+Round: R6-contract-closure
+Gate: Git commit
+Command: git add ...; git commit -F <message>
+Result: cannot create .git/index.lock
+Failure owner: Environment
+Root cause: current sandbox user lacks write permission to .git metadata
+Fix: grant .git modify permission to CodexSandboxOffline SID or run commit from a host shell with repository ownership
+Retest: git add <R6 files>; git commit
+Status: blocked in sandbox
+```
+
+```text
+Round: R6-contract-closure
+Gate: Backend rebuild and Maven tests
+Command: docker compose -f compose.yml --profile app up -d --build; cd backend; mvn -B test
+Result: Docker engine pipe access denied; local Maven unavailable on PATH
+Failure owner: Environment
+Root cause: current sandbox user cannot access Docker engine and has no local Maven binary
+Fix: run from Docker-authorized host shell or CI with Maven/Docker access
+Retest: docker compose -f compose.yml --profile app up -d --build; powershell -File scripts/dev/smoke.ps1; mvn -B test
+Status: blocked in sandbox
+```
+
+Next PM round:
+- R7-auth-rbac should add real session/token enforcement, role guards, unauthorized UI states, and backend/frontend tests.
+- If environment access is fixed first, immediately rebuild backend and rerun full smoke plus `mvn -B test` to close R6 executable-test gap.
+
+## Harness Recovery Notes Update (2026-04-24)
+- Recorded previous successful Git path in `scripts/dev/README.md`: `git -c safe.directory=... add/commit/push`, with evidence commit `c63fec7` on `origin/main`.
+- Added `scripts/dev/diagnose-git.ps1` to check safe-directory status, `.git` metadata write access, recent commits, and optional remote reachability.
+- Recorded previous successful Docker path in `scripts/dev/README.md`: app-profile rebuild, live smoke, Dockerized Maven backend tests, frontend lint/build.
+- Recorded ACL recovery commands for Docker (`docker-users`) and Git (`icacls .git`) so future Codex sessions can retest R6 after host permission fixes.
+
+## Localhost Test Harness Update (2026-04-24)
+- Added root `README.md` with quick-start command and complete browser URL checklist for direct localhost testing.
+- Added `scripts/dev/localhost.ps1` to start the app profile, optionally run smoke, print all screen/API URLs, and open representative pages.
+- Added `scripts/dev/localhost.ps1` and root `README.md` to smoke line-count harness.
+- Main user entrypoint after Docker ACL is fixed: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\dev\localhost.ps1 -Smoke -Open`.

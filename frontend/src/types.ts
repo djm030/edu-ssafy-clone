@@ -26,6 +26,17 @@ export interface UserProfile {
   trackName: string;
 }
 
+export interface ProfileDetails extends UserProfile {
+  learnerNo?: string | null;
+  className?: string | null;
+  zipCode?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  mobilePhone?: string | null;
+  emergencyPhone?: string | null;
+  marketingOptIn?: boolean;
+}
+
 export interface LoginResponse {
   user: UserProfile;
 }
@@ -178,7 +189,14 @@ export interface SurveyItem {
   endsAt: string;
   answered: boolean;
   description?: string;
-  questions?: string[];
+  questionCount?: number;
+  questions: SurveyQuestion[];
+}
+
+export interface SurveyQuestion {
+  id: number;
+  text: string;
+  optionIds?: number[];
 }
 
 export interface QnaDraft {
@@ -194,9 +212,9 @@ export interface BoardPostDraft {
 }
 
 export interface AttendanceAppealDraft {
-  date: string;
+  type: string;
   reason: string;
-  detail: string;
+  requestedStatus?: string;
 }
 
 export interface QuestSubmissionDraft {
@@ -207,12 +225,26 @@ export interface QuestSubmissionDraft {
 
 export interface SurveyResponseDraft {
   surveyId: number;
-  answers: string[];
+  answers: SurveyAnswerDraft[];
+}
+
+export interface SurveyAnswerDraft {
+  questionId: number;
+  answerText: string;
+  optionIds?: number[];
 }
 
 export interface ProfileEditDraft {
   name: string;
-  email: string;
-  trackName: string;
-  statusMessage?: string;
+  zipCode?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  mobilePhone?: string;
+  emergencyPhone?: string;
+  marketingOptIn?: boolean;
+}
+
+export interface SupportTicketDraft {
+  title: string;
+  content: string;
 }

@@ -51,8 +51,8 @@ function SurveyContent({ survey }: { survey: SurveyItem }) {
       <p>{survey.startsAt} ~ {survey.endsAt}</p>
       <div className="detail-body">{survey.description || '설문 설명이 없습니다.'}</div>
       <ol className="question-list">
-        {(survey.questions || []).map((question) => (
-          <li key={question}>{question}</li>
+        {survey.questions.map((question) => (
+          <li key={question.id}>{question.text}</li>
         ))}
       </ol>
       <div className="action-row">

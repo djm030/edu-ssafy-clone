@@ -5,6 +5,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
@@ -50,7 +53,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.UserSummary;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -70,6 +75,8 @@ public class PriorityApiService {
     private static final LevelSummary DEMO_LEVEL = new LevelSummary(1, 0, 1000, 0, null);
     private static final AttendanceSummary EMPTY_ATTENDANCE = new AttendanceSummary(0, 0, 0, true);
     private static final TodaySummary EMPTY_TODAY = new TodaySummary(null, null, null);
+    private static final String DEFAULT_CLASSMATE_NOTIFICATION_TYPE = "contact_request";
+    private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
 
     private final PriorityApiRepository repository;
     private final PriorityP2Repository p2Repository;
@@ -254,6 +261,40 @@ public class PriorityApiService {
         return new ClassmatesResponse(items);
     }
 
+    public ClassmateNotificationResponse createClassmateNotification(
+            long recipientUserId,
+            ClassmateNotificationRequest request
+    ) {
+        String type = normalizeWithDefault(
+                request == null ? null : request.type(),
+                DEFAULT_CLASSMATE_NOTIFICATION_TYPE
+        ).toLowerCase(Locale.ROOT);
+        String message = normalizeWithDefault(
+                request == null ? null : request.message(),
+                DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE
+        );
+        long notificationId = 900_000L + recipientUserId;
+        OffsetDateTime createdAt = OffsetDateTime.now();
+        NotificationItem notification = new NotificationItem(
+                notificationId,
+                "Classmate contact request",
+                message,
+                createdAt,
+                false
+        );
+
+        return new ClassmateNotificationResponse(new ClassmateNotificationItem(
+                notificationId,
+                recipientUserId,
+                type,
+                message,
+                "sent",
+                createdAt,
+                notification,
+                true
+        ));
+    }
+
     public ProfileResponse profile() {
         UserProfile user = currentUser();
         ProfileDetails fallback = profileFromUser(user);
@@ -367,6 +408,11 @@ public class PriorityApiService {
 
     private String normalizeNullable(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizeWithDefault(String value, String defaultValue) {
+        String normalized = normalizeNullable(value);
+        return normalized == null ? defaultValue : normalized;
     }
 
     private <T> T safe(Supplier<T> supplier, T fallback) {

@@ -4,11 +4,11 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { LoadState, SurveyItem } from '../types';
+import type { LoadState, SurveyAnswerDraft, SurveyItem } from '../types';
 
 function SurveyRespondPage({ surveyId }: { surveyId: number }) {
   const [survey, setSurvey] = useState<SurveyItem>();
-  const [answers, setAnswers] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<SurveyAnswerDraft[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('각 문항에 대한 응답을 입력해 주세요.');
@@ -20,7 +20,7 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
       .then((response) => {
         if (ignore) return;
         setSurvey(response);
-        setAnswers((response?.questions || []).map(() => ''));
+        setAnswers((response?.questions || []).map((question) => ({ questionId: question.id, answerText: '' })));
         setLoadState(response ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -41,7 +41,7 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
     try {
       const response = await respondSurvey({ surveyId, answers });
       setResult('success');
-      setMessage(`설문 응답이 저장되었습니다. 상태: ${response.status}`);
+      setMessage(`설문 응답이 저장되었습니다. 응답 수: ${response.answerCount}`);
     } catch (error) {
       setResult('error');
       setMessage(getErrorMessage(error));
@@ -51,7 +51,7 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
   };
 
   const updateAnswer = (index: number, value: string) => {
-    setAnswers((current) => current.map((answer, answerIndex) => (answerIndex === index ? value : answer)));
+    setAnswers((current) => current.map((answer, answerIndex) => (answerIndex === index ? { ...answer, answerText: value } : answer)));
   };
 
   return (
@@ -66,7 +66,7 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
 }
 
 function SurveyForm(props: {
-  answers: string[];
+  answers: SurveyAnswerDraft[];
   message: string;
   result: 'idle' | 'success' | 'error';
   submit: (event: FormEvent<HTMLFormElement>) => void;
@@ -78,10 +78,10 @@ function SurveyForm(props: {
     <section className="panel form-panel">
       <h2>{props.survey.title}</h2>
       <form className="stack-form" onSubmit={props.submit}>
-        {(props.survey.questions || ['응답 내용을 입력해 주세요.']).map((question, index) => (
-          <label className="question-field" key={question}>
-            <span>{question}</span>
-            <textarea onChange={(event) => props.updateAnswer(index, event.target.value)} required rows={4} value={props.answers[index] || ''} />
+        {props.survey.questions.map((question, index) => (
+          <label className="question-field" key={question.id}>
+            <span>{question.text}</span>
+            <textarea onChange={(event) => props.updateAnswer(index, event.target.value)} required rows={4} value={props.answers[index]?.answerText || ''} />
           </label>
         ))}
         <button className="primary-action" disabled={props.submitting} type="submit">{props.submitting ? '제출 중' : '제출'}</button>

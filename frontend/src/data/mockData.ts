@@ -101,7 +101,7 @@ export const mockQuests: QuestItem[] = [
 ];
 
 export const mockSurveys: SurveyItem[] = [
-  { id: 1, title: '주간 만족도 조사', required: true, startsAt: '2026-04-22', endsAt: '2026-04-25', answered: false, description: '이번 주 학습 경험을 확인하는 설문입니다.', questions: ['이번 주 난이도는 적절했나요?', '추가 지원이 필요한 주제가 있나요?'] },
-  { id: 2, title: '프로젝트 팀 빌딩 설문', required: true, startsAt: '2026-04-20', endsAt: '2026-04-24', answered: true, description: '프로젝트 팀 구성 선호를 확인합니다.', questions: ['선호하는 역할은 무엇인가요?', '협업 가능 시간을 선택해 주세요.'] },
-  { id: 3, title: '특강 수요 조사', required: false, startsAt: '2026-04-18', endsAt: '2026-04-27', answered: false, description: '희망 특강 주제를 조사합니다.', questions: ['듣고 싶은 특강 주제를 입력해 주세요.'] },
+  { id: 1, title: '주간 만족도 조사', required: true, startsAt: '2026-04-22', endsAt: '2026-04-25', answered: false, description: '이번 주 학습 경험을 확인하는 설문입니다.', questionCount: 2, questions: [{ id: 1, text: '이번 주 난이도는 적절했나요?' }, { id: 2, text: '추가 지원이 필요한 주제가 있나요?' }] },
+  { id: 2, title: '프로젝트 팀 빌딩 설문', required: true, startsAt: '2026-04-20', endsAt: '2026-04-24', answered: true, description: '프로젝트 팀 구성 선호를 확인합니다.', questionCount: 2, questions: [{ id: 1, text: '선호하는 역할은 무엇인가요?' }, { id: 2, text: '협업 가능 시간을 선택해 주세요.' }] },
+  { id: 3, title: '특강 수요 조사', required: false, startsAt: '2026-04-18', endsAt: '2026-04-27', answered: false, description: '희망 특강 주제를 조사합니다.', questionCount: 1, questions: [{ id: 1, text: '듣고 싶은 특강 주제를 입력해 주세요.' }] },
 ];

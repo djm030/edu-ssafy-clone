@@ -5,12 +5,12 @@ import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
 
 function AttendanceAppealPage() {
-  const [date, setDate] = useState('2026-04-24');
+  const [type, setType] = useState('status_change');
+  const [requestedStatus, setRequestedStatus] = useState('present');
   const [reason, setReason] = useState('QR 인식 오류');
-  const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('소명 사유와 상세 내용을 입력해 주세요.');
+  const [message, setMessage] = useState('소명 유형, 요청 상태, 사유를 입력해 주세요.');
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -18,10 +18,10 @@ function AttendanceAppealPage() {
     setResult('idle');
 
     try {
-      const response = await submitAttendanceAppeal({ date, reason, detail });
+      const response = await submitAttendanceAppeal({ type, reason, requestedStatus });
       setResult('success');
       setMessage(`출결 소명이 접수되었습니다. 접수 번호: ${response.id}`);
-      setDetail('');
+      setReason('');
     } catch (error) {
       setResult('error');
       setMessage(getErrorMessage(error));
@@ -35,12 +35,19 @@ function AttendanceAppealPage() {
       <PageHeader eyebrow="MY CAMPUS" title="출결 소명 신청" description="누락되거나 정정이 필요한 출결 기록을 소명합니다." />
       <section className="panel form-panel">
         <form className="stack-form" onSubmit={submit}>
-          <label htmlFor="appeal-date">소명 날짜</label>
-          <input id="appeal-date" onChange={(event) => setDate(event.target.value)} required type="date" value={date} />
+          <label htmlFor="appeal-type">소명 유형</label>
+          <select id="appeal-type" onChange={(event) => setType(event.target.value)} required value={type}>
+            <option value="status_change">출결 상태 정정</option>
+            <option value="missing_check">입퇴실 기록 누락</option>
+          </select>
+          <label htmlFor="appeal-requested-status">요청 상태</label>
+          <select id="appeal-requested-status" onChange={(event) => setRequestedStatus(event.target.value)} required value={requestedStatus}>
+            <option value="present">출석</option>
+            <option value="late">지각</option>
+            <option value="absent">결석</option>
+          </select>
           <label htmlFor="appeal-reason">사유</label>
-          <input id="appeal-reason" onChange={(event) => setReason(event.target.value)} required value={reason} />
-          <label htmlFor="appeal-detail">상세 내용</label>
-          <textarea id="appeal-detail" onChange={(event) => setDetail(event.target.value)} required rows={8} value={detail} />
+          <textarea id="appeal-reason" onChange={(event) => setReason(event.target.value)} required rows={8} value={reason} />
           <button className="primary-action" disabled={submitting} type="submit">
             {submitting ? '신청 중' : '신청'}
           </button>

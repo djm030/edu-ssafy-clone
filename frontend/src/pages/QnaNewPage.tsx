@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { createQna } from '../api/app';
+import { createSupportTicket } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
@@ -17,9 +17,9 @@ function QnaNewPage() {
     setResult('idle');
 
     try {
-      const response = await createQna({ title, content });
+      const response = await createSupportTicket({ title, content });
       setResult('success');
-      setMessage(`문의가 등록되었습니다. 접수 번호: ${response.id}`);
+      setMessage(`문의가 등록되었습니다. 접수 번호: ${response.id} · 상태: ${response.status}`);
       setTitle('');
       setContent('');
     } catch (error) {
