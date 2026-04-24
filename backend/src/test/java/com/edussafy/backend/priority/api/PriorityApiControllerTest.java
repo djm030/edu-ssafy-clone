@@ -43,12 +43,15 @@ import com.edussafy.backend.priority.dto.PriorityDtos.TodaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserSummary;
+import com.edussafy.backend.priority.security.RoleAccessInterceptor;
+import com.edussafy.backend.priority.security.RoleAccessWebConfig;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -63,6 +66,7 @@ import org.springframework.test.web.servlet.MockMvc;
         CommunityController.class,
         ProfileController.class
 })
+@Import({RoleAccessInterceptor.class, RoleAccessWebConfig.class})
 class PriorityApiControllerTest {
 
     private static final UserProfile USER = new UserProfile(
@@ -131,6 +135,27 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Logged out."));
+    }
+
+    @Test
+    void protectedApiReturnsUnauthorizedWhenDemoAuthDisabled() throws Exception {
+        mockMvc.perform(get("/api/me")
+                        .header(RoleAccessInterceptor.AUTH_HEADER, "false"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+
+        verifyNoInteractions(priorityApiService);
+    }
+
+    @Test
+    void learnerCannotSendClassmateNotification() throws Exception {
+        mockMvc.perform(post("/api/community/classmates/7/notifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"contact_request\",\"message\":\"Let's study together?\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(priorityApiService);
     }
 
     @Test
@@ -291,6 +316,7 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
         mockMvc.perform(post("/api/community/classmates/7/notifications")
+                        .header(RoleAccessInterceptor.ROLE_HEADER, "coach")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"type\":\"contact_request\",\"message\":\"Let's study together?\"}"))
                 .andExpect(status().isCreated())
