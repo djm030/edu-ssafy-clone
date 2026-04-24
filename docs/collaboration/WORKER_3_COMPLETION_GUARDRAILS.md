@@ -28,3 +28,9 @@ Worker-3 records the following hard guardrails before continuing implementation 
 - Status: this anti-pattern is explicitly rejected.
 - Mock/demo data may support local UX continuity, but a feature cannot be marked complete unless the relevant backend contract, persistence/authorization requirements, and verification evidence are present or the remaining gap is documented.
 - Current evidence: `docs/remaining-work.md` still contains partial/gap rows; therefore mock-only or fallback-only flows must remain partial.
+
+## Task 39 — `docs/remaining-work.md`에 필수 작업이 있는데 완료 선언
+
+- Status: this anti-pattern is explicitly rejected.
+- `docs/remaining-work.md` is a blocking completion gate: if it still lists required partial/gap work, worker-3 must report the project as incomplete and continue planning/executing follow-up work instead of declaring final completion.
+- Current evidence from this run: the remaining-work guard check counted 16 partial/gap rows, so the repository can pass local verification gates while still remaining non-final.
