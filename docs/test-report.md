@@ -1,5 +1,15 @@
 # Test Report
 
+## Final Verification Recheck (2026-04-24)
+- `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, Tests run: 34, Failures: 0, Errors: 0, Skipped: 0.
+- `npm --prefix frontend run lint` -> PASS after App shell prop/state fix.
+- `npm --prefix frontend run build` -> PASS, Vite transformed 67 modules.
+- `docker compose -f compose.yml --profile app build backend frontend` -> PASS.
+- `docker compose -f compose.yml --profile app up -d` -> PASS; after correcting nginx healthcheck to `127.0.0.1`, mysql/redis/rabbitmq/backend/frontend/nginx are healthy.
+- Local HTTP smoke -> PASS for `/nginx-health`, `/actuator/health`, `/api/me`, `/api/auth/login`, `/api/auth/roles/current`, `/api/attendance/records`, `/api/learning/materials`, `/api/boards/free/posts`.
+- `pwsh`/`powershell` smoke remains UNKNOWN on this macOS host because PowerShell is not installed.
+
+
 ## Team Recovery State (worker-5, 2026-04-24)
 
 ### Summary

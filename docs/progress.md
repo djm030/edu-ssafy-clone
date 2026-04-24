@@ -1,5 +1,13 @@
 # Full Clone Progress
 
+## Final Verification Recheck (2026-04-24)
+- Backend duplicate API mapping was fixed by removing the obsolete inline demo controller from `BackendApplication`.
+- Frontend shell wiring was fixed in `frontend/src/App.tsx` so role/access/logout props are present and lint/build pass.
+- Fixed: nginx healthcheck now probes `http://127.0.0.1/nginx-health` instead of `localhost` after Docker marked the container unhealthy despite external HTTP 200.
+- Verified: Dockerized backend Maven test PASS (34 tests), frontend lint/build PASS, Docker compose config PASS, app-profile Docker build PASS, app-profile startup PASS, all app-profile containers healthy, and local HTTP smoke PASS for health/auth/role/attendance/materials/boards.
+- Decision remains NOT COMPLETE because core feature depth rows are still PARTIAL/FAIL and OMX team state still has pending/in-progress/failed tasks.
+
+
 ## R10 CI and Final Verification Snapshot (worker-5, 2026-04-24)
 - Goal: add an automated CI smoke path and make the final verification state explicit without declaring incomplete work as done.
 - Completed: added `.github/workflows/ci.yml`; updated `docs/test-report.md`; created `docs/final-verification.md` with PASS/PARTIAL/FAIL/UNKNOWN status by domain.
