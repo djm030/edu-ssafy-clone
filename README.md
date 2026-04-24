@@ -1,4 +1,4 @@
-﻿# eduSSAFY Clone Coding
+# eduSSAFY Clone Coding
 
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.
 
@@ -78,6 +78,18 @@ docker run --rm -v "${PWD}:/workspace" -w /workspace maven:3.9.9-eclipse-temurin
 ```
 
 If `mvn` is installed locally, `mvn -B test` from `backend/` is also valid.
+
+
+## Documentation status
+
+Required project documents are maintained under `docs/`:
+
+- `docs/progress.md` — current rounds, worker progress, commits, and changed-file summaries.
+- `docs/architecture.md` — stack, runtime boundaries, domain modules, and architectural gaps.
+- `docs/api-summary.md` — implemented API surface and contract guardrails.
+- `docs/test-report.md` — verification evidence, blocked checks, and retest commands.
+- `docs/remaining-work.md` — required work that prevents final PASS.
+- `docs/final-verification.md` — final readiness gate; currently **NOT READY** until remaining implementation and verification blockers close.
 
 ## Known current caveats
 
