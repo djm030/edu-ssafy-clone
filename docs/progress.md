@@ -1,5 +1,11 @@
 # Full Clone Progress
 
+## R10 CI and Final Verification Snapshot (worker-5, 2026-04-24)
+- Goal: add an automated CI smoke path and make the final verification state explicit without declaring incomplete work as done.
+- Completed: added `.github/workflows/ci.yml`; updated `docs/test-report.md`; created `docs/final-verification.md` with PASS/PARTIAL/FAIL/UNKNOWN status by domain.
+- Current decision: not complete. `docs/remaining-work.md` still contains partial/gap rows and follow-up tasks 117-130 remain the continuation path.
+- Verification: compose config gates, frontend lint/build, OpenAPI/smoke marker checks, and docs grep checks passed locally; backend Maven and live Nginx/ELK remain host/CI-gated.
+
 ## Worker-5 Task Expansion + Documentation Round (2026-04-24)
 - Goal: turn the current `docs/remaining-work.md` partial/gap items into concrete executable follow-up tasks and record the continuation state.
 - Completed: worker-5 created 14 additional OMX tasks with explicit domain, expected files, completion condition, verification method, and intended commit message.
