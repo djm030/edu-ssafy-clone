@@ -16,7 +16,17 @@ public final class BoardWriteDtos {
     ) {
     }
 
+    public record BoardPostUpdateRequest(
+            Long categoryId,
+            @NotBlank @Size(max = 255) String title,
+            @NotBlank @Size(max = 4000) String content
+    ) {
+    }
+
     public record BoardPostCreateResponse(BoardPostCreatedItem item) {
+    }
+
+    public record BoardPostUpdateResponse(BoardPostCreatedItem item) {
     }
 
     public record BoardPostCreatedItem(
@@ -54,5 +64,19 @@ public final class BoardWriteDtos {
     }
 
     public record BoardReactionCreatedItem(long postId, String type, boolean active, boolean demo) {
+    }
+
+    public record BoardAttachmentCreateRequest(
+            @NotBlank @Size(max = 255) String fileName,
+            @Size(max = 100) String mimeType,
+            Long fileSize,
+            @Size(max = 500) String url
+    ) {
+    }
+
+    public record BoardAttachmentCreateResponse(BoardAttachmentItem item) {
+    }
+
+    public record BoardAttachmentItem(long id, long postId, String fileName, String mimeType, Long fileSize, String url, boolean demo) {
     }
 }

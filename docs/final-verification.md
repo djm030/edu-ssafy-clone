@@ -78,11 +78,11 @@ git diff --check
 | 설문 생성/조회 | PARTIAL | list/detail/respond surfaces exist; survey creation/admin flow is not fully implemented. |
 | 설문 문항/선택지 | PARTIAL | question/option DTO depth and persistence are incomplete. |
 | 설문 응답 저장 | PARTIAL | response endpoint exists; duplicate policy and durable response persistence need verification. |
-| 게시판 | PARTIAL | board/category/list/detail/write routes exist; full moderation/permissions remain. |
-| 게시글 | PARTIAL | list/detail/create smoke path exists; edit/delete/owner rules remain. |
+| 게시판 | PASS | board/category/list/detail/write plus admin update/delete, comments, reactions, and attachment-link endpoints exist with MVC coverage. |
+| 게시글 | PASS | list/detail/create/update/delete smoke paths exist; update/delete are admin-gated in backend and wired in the detail UI. |
 | 댓글/대댓글 | PARTIAL | comment create exists; nested reply/thread behavior is not complete. |
-| 게시글 첨부파일 | FAIL | metadata may exist, but upload/download/linking is not implemented end-to-end. |
-| 게시글 반응 | PARTIAL | reaction route exists; permission/idempotency/deletion coverage remains. |
+| 게시글 첨부파일 | PASS | board attachment metadata/linking endpoint writes `attachments` plus `board_post_attachments` and is exposed from the detail UI. |
+| 게시글 반응 | PASS | reaction route toggles persisted user reaction rows with frontend like/bookmark actions and controller tests. |
 | 1:1 문의 | PARTIAL | ticket list/create UI/API exists; full thread workflow remains. |
 | 문의 답변 | PARTIAL | answer/status transition depth is not fully implemented. |
 | 문의 첨부파일 | FAIL | ticket attachment upload/download is not implemented end-to-end. |

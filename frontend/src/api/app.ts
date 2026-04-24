@@ -23,6 +23,7 @@ import type {
   AdminTrackItem,
   AttendanceRecord,
   AttendanceAppealDraft,
+  BoardCode,
   BoardPostDraft,
   Classmate,
   CurriculumWeek,
@@ -443,6 +444,50 @@ export function createFreePost(draft: BoardPostDraft): Promise<{ id: number; tit
     body: JSON.stringify(draft),
     fallback: () => ({ item: { id: Date.now(), title: draft.title } }),
     headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updateBoardPost(boardCode: BoardCode, postId: number, draft: BoardPostDraft): Promise<{ id: number; title: string }> {
+  return fetchJson<ItemResponse<{ id: number; title: string }>>(`/api/boards/${boardCode}/posts/${postId}`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({ item: { id: postId, title: draft.title } }),
+    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteBoardPost(boardCode: BoardCode, postId: number): Promise<void> {
+  return fetchJson<void>(`/api/boards/${boardCode}/posts/${postId}`, {
+    fallback: () => undefined,
+    headers: { 'X-User-Role': 'admin' },
+    method: 'DELETE',
+  });
+}
+
+export function createBoardComment(boardCode: BoardCode, postId: number, content: string): Promise<{ id: number; content: string }> {
+  return fetchJson<ItemResponse<{ id: number; content: string }>>(`/api/boards/${boardCode}/posts/${postId}/comments`, {
+    body: JSON.stringify({ content }),
+    fallback: () => ({ item: { id: Date.now(), content } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function createBoardReaction(boardCode: BoardCode, postId: number, type: string): Promise<{ active: boolean; type: string }> {
+  return fetchJson<ItemResponse<{ active: boolean; type: string }>>(`/api/boards/${boardCode}/posts/${postId}/reactions`, {
+    body: JSON.stringify({ type }),
+    fallback: () => ({ item: { active: true, type } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function attachBoardFile(boardCode: BoardCode, postId: number, fileName: string): Promise<{ id: number; fileName: string }> {
+  return fetchJson<ItemResponse<{ id: number; fileName: string }>>(`/api/boards/${boardCode}/posts/${postId}/attachments`, {
+    body: JSON.stringify({ fileName, mimeType: 'application/octet-stream', fileSize: 0, url: `/files/${fileName}` }),
+    fallback: () => ({ item: { id: Date.now(), fileName } }),
+    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'admin' },
     method: 'POST',
   }).then((response) => response.item);
 }

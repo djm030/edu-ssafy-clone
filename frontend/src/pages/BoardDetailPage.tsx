@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { attachBoardFile, createBoardComment, createBoardReaction, deleteBoardPost, updateBoardPost } from '../api/app';
 import { getPost } from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
@@ -86,23 +87,72 @@ function BoardActions({ post }: { post: BoardPostListItem }) {
   const [comment, setComment] = useState('');
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
-  const [message, setMessage] = useState('댓글과 반응은 UI affordance로 제공됩니다.');
+  const [deleted, setDeleted] = useState(false);
+  const [message, setMessage] = useState('댓글, 반응, 수정, 삭제, 첨부를 API로 처리합니다.');
 
-  const submitComment = (event: FormEvent<HTMLFormElement>) => {
+  const submitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage(`댓글이 등록되었습니다: ${comment}`);
-    setComment('');
+    try {
+      const item = await createBoardComment(post.boardCode, post.id, comment);
+      setMessage(`댓글이 등록되었습니다: ${item.content}`);
+      setComment('');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const toggleReaction = async (type: 'like' | 'bookmark') => {
+    try {
+      const item = await createBoardReaction(post.boardCode, post.id, type);
+      if (type === 'like') setLiked(item.active);
+      if (type === 'bookmark') setBookmarked(item.active);
+      setMessage(`${type === 'like' ? '추천' : '찜'} 상태가 변경되었습니다.`);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const editPost = async () => {
+    try {
+      const item = await updateBoardPost(post.boardCode, post.id, { categoryId: post.category?.id, title: post.title.endsWith('수정') ? post.title : `${post.title} 수정`, content: post.content || '본문' });
+      setMessage(`게시글이 수정되었습니다: ${item.title}`);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const attachFile = async () => {
+    try {
+      const item = await attachBoardFile(post.boardCode, post.id, 'board-attachment.txt');
+      setMessage(`첨부파일이 등록되었습니다: ${item.fileName}`);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const deletePost = async () => {
+    try {
+      await deleteBoardPost(post.boardCode, post.id);
+      setDeleted(true);
+      setMessage('게시글이 삭제되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
   };
 
   return (
     <section className="board-actions" aria-label="게시글 반응">
+      {deleted ? <StatusPill tone="red">삭제됨</StatusPill> : null}
       <div className="action-row">
-        <button className={liked ? 'primary-action' : 'ghost-button'} onClick={() => { setLiked((value) => !value); setMessage('추천 상태가 변경되었습니다.'); }} type="button">
+        <button className={liked ? 'primary-action' : 'ghost-button'} onClick={() => toggleReaction('like')} type="button">
           추천 {(post.reactionCount || 0) + (liked ? 1 : 0)}
         </button>
-        <button className={bookmarked ? 'primary-action' : 'ghost-button'} onClick={() => { setBookmarked((value) => !value); setMessage('찜 상태가 변경되었습니다.'); }} type="button">
+        <button className={bookmarked ? 'primary-action' : 'ghost-button'} onClick={() => toggleReaction('bookmark')} type="button">
           찜 {(post.bookmarkCount || 0) + (bookmarked ? 1 : 0)}
         </button>
+        <button className="ghost-button" onClick={editPost} type="button">수정</button>
+        <button className="ghost-button" onClick={attachFile} type="button">첨부 등록</button>
+        <button className="ghost-button" onClick={deletePost} type="button">삭제</button>
       </div>
       <form className="comment-form" onSubmit={submitComment}>
         <label className="visually-hidden" htmlFor={`comment-${post.id}`}>댓글</label>

@@ -45,6 +45,10 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 - Frontend admin campus page now exposes class add/edit/delete actions through the same API client.
 - Note: class `classroom`/`capacity` remain API/UI-facing compatibility fields because the current SQL schema only stores class name/campus/cohort/track.
 
+## R7.4 Worker-1 Status Update (2026-04-25)
+- Done in board/community slice: board posts now support admin-gated update/delete, persisted comments/reaction toggles, and attachment metadata linking through `attachments` + `board_post_attachments`.
+- Frontend board detail actions now call comment, reaction, edit, delete, and attachment APIs instead of local-only affordances.
+
 ## Full Clone Completion Checklist
 | Area | Status | Remaining Work |
 |---|---|---|
@@ -57,7 +61,7 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | Materials/resources | partial | List/detail/resources exist and frontend adapters map backend DTOs; add attachments, viewer fidelity, like/bookmark/favorite. |
 | Quest/evaluation | partial | List/detail/submit exists; add result detail, file attachments, grading status. |
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
-| Board/community | partial | List/detail/write/comment/reaction exists; add attachments, edit/delete, permissions. |
+| Board/community | pass | List/detail/write/comment/reaction plus admin edit/delete and attachment metadata-linking are implemented and verified. |
 | 1:1 inquiry | partial | Ticket list/create exists and QNA new page uses support tickets; add thread messages, answers, status transitions, attachments. |
 | Access control | partial | Frontend role bootstrap and unauthorized route state exist; admin campus API is server-guarded for admin-only access; add broader server-side enforcement coverage and operator/coach role matrices. |
 | Error/loading/empty states | partial | Present in many pages; verify all mutation flows and permission errors. |
@@ -90,7 +94,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 ## Required Remaining-Work Classification
 
 ### 아직 PASS가 아닌 항목
-- 모든 `partial` 항목: Login/session, Profile, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, Board/community, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
+- 모든 `partial` 항목: Login/session, Profile, Attendance, Notifications, Curriculum/replays, Materials/resources, Quest/evaluation, Survey, 1:1 inquiry, Access control, Error/loading/empty states, Local one-command run, Tests/smoke, README/docs.
 - 현재 `gap` 항목은 R7.1 기준 0개로 정리했지만, 서버 측 RBAC/권한 테스트는 아직 PASS가 아니다.
 
 ### PARTIAL 항목

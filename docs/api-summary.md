@@ -70,7 +70,8 @@
 - `GET /api/quests`, `GET /api/quests/{id}`, `POST /api/quests/{id}/submissions`
 - `GET /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
-- `POST /api/boards/{boardCode}/posts`, `POST /api/boards/{boardCode}/posts/{postId}/comments`, `POST /api/boards/{boardCode}/posts/{postId}/reactions`
+- `POST /api/boards/{boardCode}/posts`, `PUT /api/boards/{boardCode}/posts/{postId}`, `DELETE /api/boards/{boardCode}/posts/{postId}`
+- `POST /api/boards/{boardCode}/posts/{postId}/comments`, `POST /api/boards/{boardCode}/posts/{postId}/reactions`, `POST /api/boards/{boardCode}/posts/{postId}/attachments`
 - `GET /api/support/tickets`, `POST /api/support/tickets`
 - `GET /api/community/classmates`
 - `POST /api/community/classmates/{userId}/notifications` (R6 source implemented; live smoke requires rebuilt backend image)
