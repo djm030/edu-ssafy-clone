@@ -1,0 +1,179 @@
+package com.edussafy.backend.board.api;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.edussafy.backend.board.dto.BoardCategoryListResponse;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
+import com.edussafy.backend.board.dto.BoardPostListResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
+import com.edussafy.backend.board.dto.CategorySummary;
+import com.edussafy.backend.board.dto.CategoryItem;
+import com.edussafy.backend.board.dto.PageMeta;
+import com.edussafy.backend.board.error.BoardNotFoundException;
+import com.edussafy.backend.board.error.BoardPostNotFoundException;
+import com.edussafy.backend.board.service.BoardService;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(BoardController.class)
+class BoardControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private BoardService boardService;
+
+    @Test
+    void healthReturnsUp() throws Exception {
+        mockMvc.perform(get("/api/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void categoriesReturnItems() throws Exception {
+        given(boardService.getCategories("notice"))
+                .willReturn(new BoardCategoryListResponse(List.of(new CategoryItem(1L, "General", 1))));
+
+        mockMvc.perform(get("/api/boards/notice/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(1))
+                .andExpect(jsonPath("$.items[0].name").value("General"))
+                .andExpect(jsonPath("$.items[0].sortOrder").value(1));
+    }
+
+    @Test
+    void postsReturnEmptyPageShape() throws Exception {
+        given(boardService.getPosts(eq("free"), any()))
+                .willReturn(new BoardPostListResponse(List.of(), new PageMeta(1, 20, 0, 0)));
+
+        mockMvc.perform(get("/api/boards/free/posts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.page.page").value(1))
+                .andExpect(jsonPath("$.page.size").value(20))
+                .andExpect(jsonPath("$.page.totalItems").value(0))
+                .andExpect(jsonPath("$.page.totalPages").value(0));
+    }
+
+    @Test
+    void postDetailReturnsEngagementShape() throws Exception {
+        given(boardService.getPost("notice", 10L)).willReturn(new BoardPostDetailResponse(new BoardPostDetail(
+                10L,
+                "notice",
+                new CategorySummary(1L, "General"),
+                "Notice title",
+                "Notice content",
+                "Admin",
+                null,
+                null,
+                7,
+                new EngagementSummary(2, 3, 1),
+                true,
+                true
+        )));
+
+        mockMvc.perform(get("/api/boards/notice/posts/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.post.id").value(10))
+                .andExpect(jsonPath("$.post.category.name").value("General"))
+                .andExpect(jsonPath("$.post.engagement.commentCount").value(2))
+                .andExpect(jsonPath("$.post.hasAttachment").value(true));
+    }
+
+    @Test
+    void invalidPageReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/boards/free/posts?page=0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(boardService);
+    }
+
+    @Test
+    void missingBoardReturnsNotFound() throws Exception {
+        given(boardService.getPosts(eq("missing"), any()))
+                .willThrow(new BoardNotFoundException("missing"));
+
+        mockMvc.perform(get("/api/boards/missing/posts"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("BOARD_NOT_FOUND"));
+    }
+
+    @Test
+    void missingPostReturnsNotFound() throws Exception {
+        given(boardService.getPost("free", 999L)).willThrow(new BoardPostNotFoundException(999L));
+
+        mockMvc.perform(get("/api/boards/free/posts/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("BOARD_POST_NOT_FOUND"));
+    }
+
+    @Test
+    void createPostReturnsDemoShape() throws Exception {
+        given(boardService.createPost(eq("free"), any())).willReturn(new BoardPostCreateResponse(
+                new BoardPostCreatedItem(0L, "free", null, "Hello", "Body", "Demo Learner", null, true)
+        ));
+
+        mockMvc.perform(post("/api/boards/free/posts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Hello\",\"content\":\"Body\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.boardCode").value("free"))
+                .andExpect(jsonPath("$.item.demo").value(true));
+    }
+
+    @Test
+    void createCommentAndReactionReturnDemoShapes() throws Exception {
+        given(boardService.createComment(eq("free"), eq(10L), any())).willReturn(new BoardCommentCreateResponse(
+                new BoardCommentCreatedItem(0L, 10L, "Comment", "Demo Learner", null, true)
+        ));
+        given(boardService.createReaction(eq("free"), eq(10L), any())).willReturn(new BoardReactionCreateResponse(
+                new BoardReactionCreatedItem(10L, "like", true, true)
+        ));
+
+        mockMvc.perform(post("/api/boards/free/posts/10/comments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"Comment\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.postId").value(10))
+                .andExpect(jsonPath("$.item.demo").value(true));
+        mockMvc.perform(post("/api/boards/free/posts/10/reactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"like\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.type").value("like"))
+                .andExpect(jsonPath("$.item.active").value(true));
+    }
+
+    @Test
+    void boardWritesValidateRequiredFields() throws Exception {
+        mockMvc.perform(post("/api/boards/free/posts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"\",\"content\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(boardService);
+    }
+}

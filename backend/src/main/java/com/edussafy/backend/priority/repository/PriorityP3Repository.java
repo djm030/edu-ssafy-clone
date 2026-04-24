@@ -1,0 +1,143 @@
+package com.edussafy.backend.priority.repository;
+
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class PriorityP3Repository {
+
+    private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+
+    private final JdbcClient jdbcClient;
+
+    public PriorityP3Repository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    public Optional<MaterialItem> findMaterial(long materialId) {
+        return jdbcClient.sql("""
+                SELECT learning_material_id, title, material_type_code, summary, detail_url, view_count, created_at
+                FROM learning_materials
+                WHERE learning_material_id = :materialId
+                """)
+                .param("materialId", materialId)
+                .query((rs, rowNum) -> new MaterialItem(
+                        rs.getLong("learning_material_id"),
+                        rs.getString("title"),
+                        rs.getString("material_type_code"),
+                        rs.getString("summary"),
+                        rs.getString("detail_url"),
+                        rs.getInt("view_count"),
+                        toOffset(rs.getTimestamp("created_at")),
+                        List.of()
+                ))
+                .optional();
+    }
+
+    public List<MaterialResourceItem> findMaterialResources(long materialId) {
+        return jdbcClient.sql("""
+                SELECT learning_material_resource_id, learning_material_id, resource_type_code,
+                       resource_title, launch_mode_code, target_url, display_order
+                FROM learning_material_resources
+                WHERE learning_material_id = :materialId
+                ORDER BY display_order ASC, learning_material_resource_id ASC
+                """)
+                .param("materialId", materialId)
+                .query((rs, rowNum) -> new MaterialResourceItem(
+                        rs.getLong("learning_material_resource_id"),
+                        rs.getLong("learning_material_id"),
+                        rs.getString("resource_type_code"),
+                        rs.getString("resource_title"),
+                        rs.getString("launch_mode_code"),
+                        rs.getString("target_url"),
+                        rs.getInt("display_order")
+                ))
+                .list();
+    }
+
+    public Optional<QuestItem> findQuest(long userId, long questId) {
+        return jdbcClient.sql("""
+                SELECT qe.quest_evaluation_id, qe.title, qe.quest_type_code, qe.task_classification_code,
+                       qe.start_at, qe.end_at, qe.max_exp, qe.progress_status_code,
+                       qs.submit_status_code, qs.result_status_code
+                FROM quest_evaluations qe
+                LEFT JOIN quest_submissions qs ON qs.quest_evaluation_id = qe.quest_evaluation_id
+                    AND qs.user_id = :userId
+                WHERE qe.quest_evaluation_id = :questId
+                """)
+                .param("userId", userId)
+                .param("questId", questId)
+                .query(this::mapQuest)
+                .optional();
+    }
+
+    public Optional<SurveyDetail> findSurvey(long userId, long surveyId) {
+        return jdbcClient.sql("""
+                SELECT s.survey_id, s.title, s.survey_category_code, s.required_yn,
+                       s.start_at, s.end_at, s.progress_status_code,
+                       COALESCE(sr.completed_yn, FALSE) AS completed_yn,
+                       COALESCE(questions.question_count, 0) AS question_count
+                FROM surveys s
+                LEFT JOIN survey_responses sr ON sr.survey_id = s.survey_id AND sr.user_id = :userId
+                LEFT JOIN (
+                    SELECT survey_id, COUNT(*) AS question_count
+                    FROM survey_questions
+                    GROUP BY survey_id
+                ) questions ON questions.survey_id = s.survey_id
+                WHERE s.survey_id = :surveyId
+                """)
+                .param("userId", userId)
+                .param("surveyId", surveyId)
+                .query(this::mapSurvey)
+                .optional();
+    }
+
+    private QuestItem mapQuest(ResultSet rs, int rowNum) throws SQLException {
+        return new QuestItem(
+                rs.getLong("quest_evaluation_id"),
+                rs.getString("title"),
+                rs.getString("quest_type_code"),
+                rs.getString("task_classification_code"),
+                toOffset(rs.getTimestamp("start_at")),
+                toOffset(rs.getTimestamp("end_at")),
+                nullableInt(rs, "max_exp"),
+                rs.getString("progress_status_code"),
+                rs.getString("submit_status_code"),
+                rs.getString("result_status_code")
+        );
+    }
+
+    private SurveyDetail mapSurvey(ResultSet rs, int rowNum) throws SQLException {
+        return new SurveyDetail(
+                rs.getLong("survey_id"),
+                rs.getString("title"),
+                rs.getString("survey_category_code"),
+                rs.getBoolean("required_yn"),
+                toOffset(rs.getTimestamp("start_at")),
+                toOffset(rs.getTimestamp("end_at")),
+                rs.getString("progress_status_code"),
+                rs.getBoolean("completed_yn"),
+                rs.getLong("question_count")
+        );
+    }
+
+    private Integer nullableInt(ResultSet rs, String columnName) throws SQLException {
+        int value = rs.getInt(columnName);
+        return rs.wasNull() ? null : value;
+    }
+
+    private OffsetDateTime toOffset(Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toLocalDateTime().atZone(SEOUL_ZONE).toOffsetDateTime();
+    }
+}

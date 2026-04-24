@@ -1,0 +1,399 @@
+SET NAMES utf8mb4;
+
+INSERT INTO campuses (campus_name)
+VALUES ('Seoul')
+ON DUPLICATE KEY UPDATE campus_name = VALUES(campus_name);
+
+INSERT INTO cohorts (cohort_name, start_date, end_date)
+VALUES ('12th', '2026-01-01', '2026-12-31')
+ON DUPLICATE KEY UPDATE start_date = VALUES(start_date), end_date = VALUES(end_date);
+
+INSERT INTO tracks (track_name, domain_type)
+VALUES ('Java', 'backend')
+ON DUPLICATE KEY UPDATE domain_type = VALUES(domain_type);
+
+INSERT INTO users (email, password_hash, learner_no, name, role_code)
+VALUES
+  ('student@ssafy.com', '{noop}password', 'SSAFY-12-0001', 'Demo Student', 'student'),
+  ('manager@ssafy.com', '{noop}password', 'SSAFY-12-9001', 'Demo Manager', 'manager'),
+  ('classmate@ssafy.com', '{noop}password', 'SSAFY-12-0002', 'Demo Classmate', 'student')
+ON DUPLICATE KEY UPDATE
+  password_hash = VALUES(password_hash),
+  name = VALUES(name),
+  role_code = VALUES(role_code),
+  status_code = 'active';
+
+INSERT IGNORE INTO user_profiles (user_id, mobile_phone, marketing_opt_in)
+SELECT user_id, '010-0000-0000', FALSE
+FROM users
+WHERE email IN ('student@ssafy.com', 'manager@ssafy.com', 'classmate@ssafy.com');
+
+SET @campus_id := (SELECT campus_id FROM campuses WHERE campus_name = 'Seoul');
+SET @cohort_id := (SELECT cohort_id FROM cohorts WHERE cohort_name = '12th');
+SET @track_id := (SELECT track_id FROM tracks WHERE track_name = 'Java');
+SET @student_id := (SELECT user_id FROM users WHERE email = 'student@ssafy.com');
+SET @manager_id := (SELECT user_id FROM users WHERE email = 'manager@ssafy.com');
+SET @classmate_id := (SELECT user_id FROM users WHERE email = 'classmate@ssafy.com');
+
+INSERT INTO class_groups (campus_id, cohort_id, track_id, class_name)
+VALUES (@campus_id, @cohort_id, @track_id, 'Seoul Java 1')
+ON DUPLICATE KEY UPDATE class_name = VALUES(class_name);
+
+SET @class_group_id := (
+  SELECT class_group_id
+  FROM class_groups
+  WHERE campus_id = @campus_id
+    AND cohort_id = @cohort_id
+    AND track_id = @track_id
+    AND class_name = 'Seoul Java 1'
+);
+
+INSERT IGNORE INTO user_track_enrollments (user_id, track_id, cohort_id)
+VALUES
+  (@student_id, @track_id, @cohort_id),
+  (@manager_id, @track_id, @cohort_id),
+  (@classmate_id, @track_id, @cohort_id);
+
+INSERT IGNORE INTO user_class_enrollments (user_id, class_group_id, cohort_id, track_id, member_role_code)
+VALUES
+  (@student_id, @class_group_id, @cohort_id, @track_id, 'student'),
+  (@manager_id, @class_group_id, @cohort_id, @track_id, 'manager'),
+  (@classmate_id, @class_group_id, @cohort_id, @track_id, 'student');
+
+INSERT INTO content_scopes (scope_type_code, class_group_id)
+SELECT 'class_group', @class_group_id
+WHERE NOT EXISTS (
+  SELECT 1 FROM content_scopes
+  WHERE scope_type_code = 'class_group'
+    AND class_group_id = @class_group_id
+);
+
+SET @class_scope_id := (
+  SELECT content_scope_id
+  FROM content_scopes
+  WHERE scope_type_code = 'class_group'
+    AND class_group_id = @class_group_id
+  ORDER BY content_scope_id
+  LIMIT 1
+);
+
+INSERT INTO terms (term_name, progress_status_code, start_date, end_date)
+VALUES ('2026 Priority 1 Term', 'in_progress', '2026-04-01', '2026-04-30')
+ON DUPLICATE KEY UPDATE
+  progress_status_code = VALUES(progress_status_code),
+  start_date = VALUES(start_date),
+  end_date = VALUES(end_date);
+
+SET @term_id := (SELECT term_id FROM terms WHERE term_name = '2026 Priority 1 Term');
+
+INSERT INTO user_level_statuses (user_id, level_name, level_no, exp, scholarship_point)
+VALUES (@student_id, 'Level 5', 5, 4200, 85)
+ON DUPLICATE KEY UPDATE
+  level_name = VALUES(level_name),
+  level_no = VALUES(level_no),
+  exp = VALUES(exp),
+  scholarship_point = VALUES(scholarship_point);
+
+INSERT INTO user_rank_snapshots (snapshot_date, user_id, rank_no, exp, scholarship_point)
+VALUES ('2026-04-24', @student_id, 12, 4200, 85)
+ON DUPLICATE KEY UPDATE exp = VALUES(exp), scholarship_point = VALUES(scholarship_point);
+
+INSERT INTO attendance_records (user_id, attendance_date, check_in_at, check_out_at, attendance_status_code, approval_type_code)
+VALUES
+  (@student_id, '2026-04-22', '08:55:00', '18:01:00', 'present', 'auto'),
+  (@student_id, '2026-04-23', '09:08:00', '18:03:00', 'late', 'auto'),
+  (@student_id, '2026-04-24', '08:58:00', NULL, 'present', 'auto')
+ON DUPLICATE KEY UPDATE
+  check_in_at = VALUES(check_in_at),
+  check_out_at = VALUES(check_out_at),
+  attendance_status_code = VALUES(attendance_status_code),
+  approval_type_code = VALUES(approval_type_code);
+
+INSERT INTO attendance_appeals (attendance_record_id, appeal_type_code, reason, requested_status_code)
+SELECT attendance_record_id, 'status_change', 'Seed appeal for attendance screen smoke checks.', 'present'
+FROM attendance_records
+WHERE user_id = @student_id
+  AND attendance_date = '2026-04-23'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM attendance_appeals a
+    WHERE a.attendance_record_id = attendance_records.attendance_record_id
+  );
+
+INSERT INTO notifications (sender_user_id, title, body)
+SELECT @manager_id, seed.title, seed.body
+FROM (
+  SELECT 'Welcome to eduSSAFY' AS title, 'Dashboard notification seed.' AS body
+  UNION ALL SELECT 'Weekly survey is open', 'Survey list notification seed.'
+  UNION ALL SELECT 'Quest deadline reminder', 'Quest list notification seed.'
+) seed
+WHERE NOT EXISTS (SELECT 1 FROM notifications n WHERE n.title = seed.title);
+
+INSERT IGNORE INTO notification_recipients (notification_id, recipient_user_id, read_at)
+SELECT notification_id, @student_id, CASE WHEN title = 'Welcome to eduSSAFY' THEN CURRENT_TIMESTAMP ELSE NULL END
+FROM notifications
+WHERE title IN ('Welcome to eduSSAFY', 'Weekly survey is open', 'Quest deadline reminder');
+
+INSERT INTO curriculum_schedules (term_id, content_scope_id, week_no, class_date, start_time, end_time, curriculum_type_code, topic, instructor_name, classroom)
+SELECT @term_id, @class_scope_id, 4, '2026-04-24', '09:00:00', '18:00:00', 'lecture', 'Spring Boot REST API', 'Demo Instructor', 'Seoul 1'
+WHERE NOT EXISTS (
+  SELECT 1 FROM curriculum_schedules
+  WHERE content_scope_id = @class_scope_id
+    AND class_date = '2026-04-24'
+    AND topic = 'Spring Boot REST API'
+);
+
+INSERT INTO curriculum_schedules (term_id, content_scope_id, week_no, class_date, start_time, end_time, curriculum_type_code, topic, instructor_name, classroom)
+SELECT @term_id, @class_scope_id, 4, '2026-04-20', '09:00:00', '12:00:00', 'lecture', 'Java Collections Review', 'Demo Instructor', 'Seoul 1'
+WHERE NOT EXISTS (
+  SELECT 1 FROM curriculum_schedules
+  WHERE content_scope_id = @class_scope_id
+    AND class_date = '2026-04-20'
+    AND topic = 'Java Collections Review'
+);
+
+INSERT INTO curriculum_schedules (term_id, content_scope_id, week_no, class_date, start_time, end_time, curriculum_type_code, topic, instructor_name, classroom)
+SELECT @term_id, @class_scope_id, 4, '2026-04-22', '13:00:00', '18:00:00', 'practice', 'MySQL Schema Practice', 'Demo Instructor', 'Seoul Lab'
+WHERE NOT EXISTS (
+  SELECT 1 FROM curriculum_schedules
+  WHERE content_scope_id = @class_scope_id
+    AND class_date = '2026-04-22'
+    AND topic = 'MySQL Schema Practice'
+);
+
+SET @schedule_id := (
+  SELECT curriculum_schedule_id
+  FROM curriculum_schedules
+  WHERE content_scope_id = @class_scope_id
+    AND class_date = '2026-04-24'
+    AND topic = 'Spring Boot REST API'
+  LIMIT 1
+);
+
+INSERT INTO lecture_replays (curriculum_schedule_id, content_external_id, replay_group_key, title, version_no, published_at)
+VALUES (@schedule_id, 'replay-priority1-rest-api', 'rest-api', 'Spring Boot REST API Replay', 1, '2026-04-24 18:30:00')
+ON DUPLICATE KEY UPDATE title = VALUES(title), published_at = VALUES(published_at);
+
+SET @practice_schedule_id := (
+  SELECT curriculum_schedule_id
+  FROM curriculum_schedules
+  WHERE content_scope_id = @class_scope_id
+    AND class_date = '2026-04-22'
+    AND topic = 'MySQL Schema Practice'
+  LIMIT 1
+);
+
+INSERT INTO lecture_replays (curriculum_schedule_id, content_external_id, replay_group_key, title, version_no, published_at)
+VALUES (@practice_schedule_id, 'replay-priority2-schema-practice', 'schema-practice', 'MySQL Schema Practice Replay', 1, '2026-04-22 18:30:00')
+ON DUPLICATE KEY UPDATE title = VALUES(title), published_at = VALUES(published_at);
+
+INSERT INTO learning_materials (curriculum_schedule_id, content_scope_id, content_external_id, category_parent, category_child, material_type_code, title, summary, detail_url, view_count)
+VALUES
+  (@schedule_id, @class_scope_id, 'material-priority1-rest-api-doc', 'Backend', 'REST API', 'document', 'REST API Workbook', 'Seed document for learning materials list.', '/materials/rest-api-workbook.pdf', 12),
+  (@schedule_id, @class_scope_id, 'material-priority1-rest-api-video', 'Backend', 'REST API', 'video', 'REST API Walkthrough', 'Seed video for type filter checks.', '/materials/rest-api-video', 7),
+  (NULL, @class_scope_id, 'material-priority1-community-link', 'Community', 'Guide', 'link', 'Community Board Guide', 'Seed link for keyword checks.', '/materials/community-board-guide', 3)
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  summary = VALUES(summary),
+  detail_url = VALUES(detail_url),
+  view_count = VALUES(view_count);
+
+INSERT IGNORE INTO learning_material_resources (learning_material_id, resource_type_code, resource_title, launch_mode_code, target_url, display_order)
+SELECT learning_material_id, 'url', title, 'new_tab', detail_url, 1
+FROM learning_materials
+WHERE content_external_id IN (
+  'material-priority1-rest-api-doc',
+  'material-priority1-rest-api-video',
+  'material-priority1-community-link'
+);
+
+INSERT INTO quest_evaluations (content_scope_id, external_task_id, quest_type_code, task_classification_code, title, start_at, end_at, max_exp, progress_status_code)
+VALUES
+  (@class_scope_id, 'quest-priority1-board-api', 'assignment', 'required', 'Implement board API', '2026-04-24 09:00:00', '2026-04-25 18:00:00', 100, 'in_progress'),
+  (@class_scope_id, 'quest-priority1-dashboard-smoke', 'challenge', 'optional', 'Dashboard smoke check', '2026-04-24 09:00:00', '2026-04-24 23:59:00', 50, 'completed')
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  progress_status_code = VALUES(progress_status_code),
+  end_at = VALUES(end_at);
+
+INSERT INTO quest_submissions (quest_evaluation_id, user_id, result_status_code, score, submit_status_code, submitted_at, graded_at)
+SELECT quest_evaluation_id, @student_id, 'pending', NULL, 'submitted', '2026-04-24 17:30:00', NULL
+FROM quest_evaluations
+WHERE external_task_id = 'quest-priority1-board-api'
+ON DUPLICATE KEY UPDATE submit_status_code = VALUES(submit_status_code), submitted_at = VALUES(submitted_at);
+
+INSERT INTO surveys (content_scope_id, title, survey_category_code, required_yn, progress_status_code, start_at, end_at)
+SELECT @class_scope_id, 'Weekly satisfaction survey', 'satisfaction', TRUE, 'in_progress', '2026-04-24 09:00:00', '2026-04-26 18:00:00'
+WHERE NOT EXISTS (SELECT 1 FROM surveys WHERE title = 'Weekly satisfaction survey');
+
+SET @survey_id := (SELECT survey_id FROM surveys WHERE title = 'Weekly satisfaction survey' LIMIT 1);
+
+INSERT INTO survey_questions (survey_id, question_type_code, question_text, display_order)
+SELECT @survey_id, 'single_choice', 'How was this week?', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM survey_questions
+  WHERE survey_id = @survey_id
+    AND display_order = 1
+);
+
+SET @survey_question_id := (
+  SELECT survey_question_id
+  FROM survey_questions
+  WHERE survey_id = @survey_id
+    AND display_order = 1
+  LIMIT 1
+);
+
+INSERT INTO survey_options (survey_question_id, option_text, display_order)
+SELECT @survey_question_id, seed.option_text, seed.display_order
+FROM (
+  SELECT 'Good' AS option_text, 1 AS display_order
+  UNION ALL SELECT 'Needs support', 2
+) seed
+WHERE NOT EXISTS (
+  SELECT 1 FROM survey_options
+  WHERE survey_question_id = @survey_question_id
+    AND display_order = seed.display_order
+);
+
+SET @survey_option_id := (
+  SELECT survey_option_id
+  FROM survey_options
+  WHERE survey_question_id = @survey_question_id
+    AND display_order = 1
+  LIMIT 1
+);
+
+INSERT INTO survey_responses (survey_id, user_id, completed_yn, responded_at)
+VALUES (@survey_id, @student_id, TRUE, '2026-04-24 17:45:00')
+ON DUPLICATE KEY UPDATE
+  completed_yn = VALUES(completed_yn),
+  responded_at = VALUES(responded_at);
+
+SET @survey_response_id := (
+  SELECT survey_response_id
+  FROM survey_responses
+  WHERE survey_id = @survey_id
+    AND user_id = @student_id
+  LIMIT 1
+);
+
+INSERT INTO survey_response_answers (survey_response_id, survey_id, survey_question_id, answer_text)
+SELECT @survey_response_id, @survey_id, @survey_question_id, 'Seed survey response for submit smoke checks.'
+WHERE NOT EXISTS (
+  SELECT 1 FROM survey_response_answers
+  WHERE survey_response_id = @survey_response_id
+    AND survey_question_id = @survey_question_id
+);
+
+SET @survey_answer_id := (
+  SELECT survey_response_answer_id
+  FROM survey_response_answers
+  WHERE survey_response_id = @survey_response_id
+    AND survey_question_id = @survey_question_id
+  LIMIT 1
+);
+
+INSERT IGNORE INTO survey_response_answer_options (survey_response_answer_id, survey_question_id, survey_option_id)
+VALUES (@survey_answer_id, @survey_question_id, @survey_option_id);
+
+INSERT INTO support_tickets (requester_user_id, title, status_code)
+SELECT @student_id, 'Password check help', 'open'
+WHERE NOT EXISTS (
+  SELECT 1 FROM support_tickets
+  WHERE requester_user_id = @student_id
+    AND title = 'Password check help'
+);
+
+SET @support_ticket_id := (
+  SELECT support_ticket_id
+  FROM support_tickets
+  WHERE requester_user_id = @student_id
+    AND title = 'Password check help'
+  LIMIT 1
+);
+
+INSERT INTO support_ticket_messages (support_ticket_id, sender_user_id, message_type_code, content)
+SELECT @support_ticket_id, @student_id, 'user_message', 'Seed QNA support ticket message.'
+WHERE NOT EXISTS (
+  SELECT 1 FROM support_ticket_messages
+  WHERE support_ticket_id = @support_ticket_id
+);
+
+INSERT INTO boards (board_code, board_name, board_group_code, access_scope_code)
+VALUES
+  ('notice', 'Notice', 'notice', 'public'),
+  ('free', 'Free Board', 'community', 'authenticated'),
+  ('faq', 'FAQ', 'faq', 'public'),
+  ('qna', 'Q&A', 'qna', 'authenticated')
+ON DUPLICATE KEY UPDATE
+  board_name = VALUES(board_name),
+  board_group_code = VALUES(board_group_code),
+  access_scope_code = VALUES(access_scope_code);
+
+INSERT INTO board_categories (board_id, category_name, sort_order)
+SELECT b.board_id, seed.category_name, seed.sort_order
+FROM boards b
+JOIN (
+  SELECT 'notice' AS board_code, 'General' AS category_name, 1 AS sort_order
+  UNION ALL
+  SELECT 'free', 'General', 1
+  UNION ALL
+  SELECT 'free', 'Study', 2
+  UNION ALL
+  SELECT 'faq', 'General', 1
+  UNION ALL
+  SELECT 'qna', 'General', 1
+) seed ON seed.board_code = b.board_code
+ON DUPLICATE KEY UPDATE
+  sort_order = VALUES(sort_order);
+
+INSERT INTO board_posts (board_id, board_category_id, author_user_id, title, content, notice_yn, view_count)
+SELECT
+  b.board_id,
+  c.board_category_id,
+  @student_id,
+  seed.title,
+  seed.content,
+  seed.notice_yn,
+  seed.view_count
+FROM boards b
+JOIN (
+  SELECT 'notice' AS board_code, 'General' AS category_name, 'Welcome notice' AS title, 'Initial notice board seed post.' AS content, TRUE AS notice_yn, 10 AS view_count
+  UNION ALL
+  SELECT 'free', 'General', 'First free-board post', 'Initial free board seed post.', FALSE, 8
+  UNION ALL
+  SELECT 'free', 'Study', 'REST API study notes', 'Searchable board seed for keyword checks.', FALSE, 5
+  UNION ALL
+  SELECT 'faq', 'General', 'How do I open learning materials?', 'Use the learning materials menu.', TRUE, 3
+  UNION ALL
+  SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
+) seed ON seed.board_code = b.board_code
+JOIN board_categories c
+  ON c.board_id = b.board_id
+ AND c.category_name = seed.category_name
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM board_posts existing
+  WHERE existing.board_id = b.board_id
+    AND existing.title = seed.title
+);
+
+INSERT INTO attachments (original_filename, storage_key, stored_path, mime_type, file_size, checksum_sha256)
+VALUES ('rest-api-study.pdf', 'seed/rest-api-study.pdf', '/seed/rest-api-study.pdf', 'application/pdf', 1024, SHA2('rest-api-study.pdf', 256))
+ON DUPLICATE KEY UPDATE original_filename = VALUES(original_filename);
+
+SET @free_post_id := (SELECT board_post_id FROM board_posts WHERE title = 'REST API study notes' LIMIT 1);
+SET @attachment_id := (SELECT attachment_id FROM attachments WHERE checksum_sha256 = SHA2('rest-api-study.pdf', 256) LIMIT 1);
+
+INSERT IGNORE INTO board_post_attachments (board_post_id, attachment_id)
+VALUES (@free_post_id, @attachment_id);
+
+INSERT INTO board_comments (board_post_id, author_user_id, content)
+SELECT @free_post_id, @manager_id, 'Seed comment for board list counts.'
+WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @free_post_id);
+
+INSERT IGNORE INTO board_post_reactions (board_post_id, user_id, reaction_type_code)
+VALUES
+  (@free_post_id, @student_id, 'bookmark'),
+  (@free_post_id, @manager_id, 'like');

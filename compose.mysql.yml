@@ -1,0 +1,28 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ssafy-clone-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ssafy_dev_root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ssafy_clone}
+      TZ: ${TZ:-Asia/Seoul}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ssafy_mysql_data:/var/lib/mysql
+      - ./docs/revised_schema_mysql8.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./scripts/mysql/20-board-list-seed.sql:/docker-entrypoint-initdb.d/20-board-list-seed.sql:ro
+      - ./docs:/work/docs:ro
+      - ./scripts:/work/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$${MYSQL_ROOT_PASSWORD}\" mysql -N -uroot -e 'SELECT @@port' | grep -qx 3306"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  ssafy_mysql_data:

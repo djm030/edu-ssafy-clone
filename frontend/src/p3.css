@@ -1,0 +1,72 @@
+.detail-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.detail-meta,
+.action-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.detail-info {
+  border-bottom: 1px solid #edf1f6;
+  border-top: 1px solid #edf1f6;
+  padding: 14px 0;
+}
+
+.detail-body {
+  color: #344054;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.task-list,
+.question-list {
+  color: #344054;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.viewer-frame {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  display: grid;
+  justify-items: center;
+  min-height: 360px;
+  padding: 24px;
+  text-align: center;
+}
+
+.viewer-frame strong {
+  display: block;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.qna-form-panel {
+  display: grid;
+  gap: 18px;
+  max-width: 720px;
+}
+
+.qna-form {
+  display: grid;
+  gap: 10px;
+}
+
+.qna-form input,
+.qna-form textarea {
+  border: 1px solid #c7d0dd;
+  border-radius: 6px;
+  min-width: 0;
+  padding: 11px 12px;
+  resize: vertical;
+}

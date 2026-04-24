@@ -1,0 +1,54 @@
+.form-panel {
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+}
+
+.stack-form,
+.comment-form {
+  display: grid;
+  gap: 10px;
+}
+
+.stack-form input,
+.stack-form textarea,
+.comment-form input,
+.question-field textarea {
+  border: 1px solid #c7d0dd;
+  border-radius: 6px;
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+.stack-form textarea,
+.question-field textarea {
+  resize: vertical;
+}
+
+.question-field {
+  display: grid;
+  gap: 8px;
+}
+
+.board-actions {
+  border-bottom: 1px solid #edf1f6;
+  border-top: 1px solid #edf1f6;
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.comment-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.form-message {
+  color: #667085;
+  margin: 0;
+}
+
+@media (max-width: 680px) {
+  .comment-form {
+    grid-template-columns: 1fr;
+  }
+}

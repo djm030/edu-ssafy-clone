@@ -1,6 +1,19 @@
 ssafy_pages.*
 ssafy_pages
 
+# Local environment overrides.
+.env
+.env.*
+!.env.example
+
+# Editor and generated build artifacts.
+.vscode/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+backend/target/
+
 # Share only stable OMX collaboration artifacts.
 # Runtime state/logs include local paths, session IDs, and transient hook data.
 .omx/*

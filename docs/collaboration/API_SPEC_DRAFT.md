@@ -1,16 +1,21 @@
 # API Spec Draft
 
 ## 원칙
-- legacy SSAFY URL은 근거로만 사용한다.
-- 구현 API는 `/api` 아래의 도메인 중심 route로 둔다.
-- 공지사항과 자유게시판은 같은 게시판 API를 사용한다.
-- DB 기준은 `docs/revised_schema_mysql8.sql`이다.
+- legacy SSAFY URL은 캡처 근거로만 사용한다.
+- 구현 API는 `/api` 아래 도메인 중심 route로 둔다.
+- Runtime 데이터 기준은 MySQL 8 schema와 seed다.
+- 우선순위 1에서는 인증을 실제 보안 기능이 아니라 데모 세션 계약으로 제한한다.
+- 오류 응답은 모든 API에서 같은 형태를 쓴다.
 
-## 공통 타입
-### BoardCode
-```text
-notice
-free
+## 공통 응답
+### Error
+```json
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "요청 값을 확인해 주세요."
+  }
+}
 ```
 
 ### PageMeta
@@ -23,63 +28,124 @@ free
 }
 ```
 
-### BoardPostListItem
+## 인증과 사용자
+### POST /api/auth/login
+데모 로그인을 수행한다.
+
+Request:
 ```json
 {
-  "id": 1,
-  "boardCode": "notice",
-  "category": {
-    "id": 1,
-    "name": "학습"
-  },
-  "title": "공지 제목",
-  "authorName": "관리자",
-  "createdAt": "2026-04-24T09:00:00+09:00",
-  "viewCount": 0,
-  "commentCount": 0,
-  "reactionCount": 0,
-  "bookmarkCount": 0,
-  "hasAttachment": false,
-  "isPinned": false
+  "email": "student@ssafy.com",
+  "password": "password"
 }
 ```
 
-## GET /api/boards/{boardCode}/categories
+Response 200:
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "김싸피",
+    "email": "student@ssafy.com",
+    "role": "learner",
+    "campusName": "서울",
+    "cohortName": "12기",
+    "trackName": "Java"
+  }
+}
+```
+
+### GET /api/me
+현재 데모 사용자 정보를 조회한다.
+
+### POST /api/profile/password-check
+회원정보 수정 전 비밀번호 재확인을 수행한다. 우선순위 1에서는 성공/실패 상태만 반환한다.
+
+## 메인과 마이캠퍼스
+### GET /api/dashboard/summary
+메인 대시보드 위젯을 한 번에 조회한다.
+
+Response 200:
+```json
+{
+  "user": {
+    "name": "김싸피",
+    "campusName": "서울",
+    "cohortName": "12기",
+    "trackName": "Java"
+  },
+  "level": {
+    "level": 5,
+    "exp": 4200,
+    "nextLevelExp": 5000,
+    "scholarshipPoints": 85,
+    "rank": 12
+  },
+  "attendance": {
+    "present": 18,
+    "late": 1,
+    "absent": 0,
+    "appealAvailable": true
+  },
+  "notifications": {
+    "unreadCount": 3,
+    "latest": []
+  },
+  "today": {
+    "curriculumTitle": "Spring Boot REST API",
+    "questTitle": "게시판 API 구현",
+    "surveyTitle": "주간 만족도 조사"
+  }
+}
+```
+
+### GET /api/attendance/records
+출석 현황 목록을 조회한다.
+
+### GET /api/notifications
+알림함 목록을 조회한다.
+
+## 강의실과 학습
+### GET /api/learning/curriculum
+주차별 커리큘럼을 조회한다.
+
+### GET /api/learning/replays
+강의 다시보기 목록을 조회한다.
+
+### GET /api/learning/materials
+학습자료 목록을 조회한다.
+
+Query:
+| 이름 | 필수 | 설명 |
+|---|---:|---|
+| `keyword` | N | 제목 검색어 |
+| `type` | N | `ebook`, `video`, `file`, `link` |
+| `page` | N | 기본값 `1` |
+| `size` | N | 기본값 `20` |
+
+## Quest와 설문
+### GET /api/quests
+Quest/평가 목록을 조회한다.
+
+### GET /api/surveys
+설문 목록을 조회한다.
+
+## 게시판
+### BoardCode
+```text
+notice
+free
+faq
+qna
+```
+
+### GET /api/boards/{boardCode}/categories
 게시판 카테고리 목록을 조회한다.
 
-### Path Parameters
-| 이름 | 필수 | 설명 |
-|---|---:|---|
-| `boardCode` | Y | `notice` 또는 `free` |
-
-### Response 200
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "name": "학습",
-      "sortOrder": 1
-    }
-  ]
-}
-```
-
-### DB Mapping
-- `boards.board_code`
-- `board_categories.board_id`
-- `board_categories.category_name`
-- `board_categories.sort_order`
-
-## GET /api/boards/{boardCode}/posts
+### GET /api/boards/{boardCode}/posts
 게시글 목록을 조회한다.
 
-### Path Parameters
-| 이름 | 필수 | 설명 |
-|---|---:|---|
-| `boardCode` | Y | `notice` 또는 `free` |
-
-### Query Parameters
+Query:
 | 이름 | 필수 | 기본값 | 설명 |
 |---|---:|---|---|
 | `categoryId` | N | 없음 | 카테고리 필터 |
@@ -88,7 +154,7 @@ free
 | `size` | N | `20` | 페이지 크기 |
 | `sort` | N | `createdAt,desc` | 정렬 |
 
-### Response 200
+Response 200:
 ```json
 {
   "items": [
@@ -119,69 +185,8 @@ free
 }
 ```
 
-### Empty Response 200
-```json
-{
-  "items": [],
-  "page": {
-    "page": 1,
-    "size": 20,
-    "totalItems": 0,
-    "totalPages": 0
-  }
-}
-```
-
-### Error Shape
-```json
-{
-  "error": {
-    "code": "BOARD_NOT_FOUND",
-    "message": "게시판을 찾을 수 없습니다."
-  }
-}
-```
-
-## Status Codes
-| 상태 | 의미 |
-|---:|---|
-| 200 | 조회 성공 |
-| 400 | 잘못된 page/size/sort |
-| 401 | 인증 필요 |
-| 403 | 접근 권한 없음 |
-| 404 | boardCode 없음 |
-| 500 | 서버 오류 |
-
-## DB Mapping
-### 목록 기본
-- `boards`
-- `board_categories`
-- `board_posts`
-- `users`
-
-### 첨부 여부
-- `board_post_attachments`
-
-### 댓글 수
-- `board_comments`
-
-### 반응 수
-- `board_post_reactions`
-
-## Backend Acceptance Criteria
-- `notice`와 `free`가 같은 handler/service 구조를 공유한다.
-- category filter, keyword search, page/size가 동시에 동작한다.
-- 없는 boardCode는 404로 응답한다.
-- page/size가 유효하지 않으면 400으로 응답한다.
-
-## Frontend Acceptance Criteria
-- `items.length === 0`이면 빈 상태를 표시한다.
-- `401`이면 로그인 필요 상태로 이동 또는 안내한다.
-- `403`이면 접근 제한 메시지를 표시한다.
-- `notice` 화면에서는 댓글/반응 UI를 제한할 수 있다.
-- `free` 화면에서는 댓글/반응/첨부 메타를 표시한다.
-
-## Open Questions
-- 인증 방식과 세션 쿠키/API 토큰 방식은 앱 프레임워크 선택 후 확정한다.
-- `bookmarkCount`를 `board_post_reactions`로 볼지 별도 모델이 필요한지는 상세 구현 전 확인한다.
-- `notice_yn`을 상단 고정 게시글로 사용할지 별도 sort rule로 둘지 seed 이후 확정한다.
+## 우선순위 1 Acceptance Criteria
+- 로그인, 메인 대시보드, 출석, 레벨/포인트, 공지, 자유게시판, 학습자료, Quest, 설문 화면이 API와 연결된다.
+- notice/free/faq/qna는 공통 board API를 재사용한다.
+- 목록 API는 빈 응답, 검색, 필터, 페이지네이션 상태를 깨지지 않게 처리한다.
+- 직접 작성 코드 파일은 500줄 이하로 유지한다.

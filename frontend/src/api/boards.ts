@@ -1,0 +1,65 @@
+import { buildQuery, fetchJson } from './client';
+import { mockCategories, mockPosts } from '../data/mockData';
+import type { BoardCategory, BoardCode, BoardPostListItem, BoardPostListResponse } from '../types';
+
+const PAGE_SIZE = 20;
+
+interface PostQuery {
+  categoryId?: number;
+  keyword?: string;
+  page: number;
+  size?: number;
+  sort?: string;
+}
+
+function filterPosts(boardCode: BoardCode, query: PostQuery): BoardPostListResponse {
+  const keyword = query.keyword?.trim().toLowerCase();
+  const page = query.page || 1;
+  const size = query.size || PAGE_SIZE;
+
+  const filtered = mockPosts.filter((post) => {
+    const matchesBoard = post.boardCode === boardCode;
+    const matchesCategory = !query.categoryId || post.category?.id === query.categoryId;
+    const matchesKeyword = !keyword || post.title.toLowerCase().includes(keyword);
+    return matchesBoard && matchesCategory && matchesKeyword;
+  });
+
+  const start = (page - 1) * size;
+  const items = filtered.slice(start, start + size);
+
+  return {
+    items,
+    page: {
+      page,
+      size,
+      totalItems: filtered.length,
+      totalPages: Math.ceil(filtered.length / size),
+    },
+  };
+}
+
+export function getCategories(boardCode: BoardCode): Promise<{ items: BoardCategory[] }> {
+  return fetchJson<{ items: BoardCategory[] }>(`/api/boards/${boardCode}/categories`, {
+    fallback: () => ({ items: mockCategories[boardCode] }),
+  });
+}
+
+export function getPosts(boardCode: BoardCode, query: PostQuery): Promise<BoardPostListResponse> {
+  const params = buildQuery({
+    categoryId: query.categoryId,
+    keyword: query.keyword?.trim(),
+    page: query.page,
+    size: query.size || PAGE_SIZE,
+    sort: query.sort || 'createdAt,desc',
+  });
+
+  return fetchJson<BoardPostListResponse>(`/api/boards/${boardCode}/posts${params}`, {
+    fallback: () => filterPosts(boardCode, query),
+  });
+}
+
+export function getPost(boardCode: BoardCode, postId: number): Promise<BoardPostListItem | undefined> {
+  return fetchJson<BoardPostListItem | undefined>(`/api/boards/${boardCode}/posts/${postId}`, {
+    fallback: () => mockPosts.find((post) => post.boardCode === boardCode && post.id === postId),
+  });
+}

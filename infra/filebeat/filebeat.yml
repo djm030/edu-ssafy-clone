@@ -1,0 +1,20 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    enabled: true
+    prospector.scanner.symlinks: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - container: ~
+
+processors:
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+  - add_fields:
+      target: project
+      fields:
+        name: ssafy-clone
+
+output.logstash:
+  hosts: ["logstash:5044"]
