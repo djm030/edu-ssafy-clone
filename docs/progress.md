@@ -21,6 +21,7 @@
 | worker-5 | 24 | smoke/CI/docs/commit and task redistribution gates |
 
 ### 완료된 작업
+- Task 89 README freshness check: README updated with current NOT READY/PARTIAL status, passing checks, blocked backend/live-smoke checks, and readiness source-of-truth docs.
 - Task 87 test-result documentation check: PASS for documentation presence; test evidence is recorded in `docs/test-report.md`, with backend/live smoke blockers still open.
 - Task 83 core feature PASS check: **NOT PASS**; all core groups are not fully complete, with PARTIAL/GAP items mirrored in `docs/final-verification.md` and `docs/remaining-work.md`.
 - Team state snapshot: completed 55, failed 1, in_progress 5, pending 69.
