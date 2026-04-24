@@ -16,3 +16,9 @@ Worker-3 records the following hard guardrails before continuing implementation 
 - Task 3 documented completed/partial feature evidence in `docs/collaboration/WORKER_3_COMPLETED_FEATURES_AUDIT.md`.
 - Task 8 documented executable verification in `docs/collaboration/WORKER_3_VERIFICATION_REPORT.md`.
 - Tasks 15 and 16 documented Docker inspection and non-replacement in `docs/collaboration/WORKER_3_DOCKER_CONFIG_AUDIT.md`.
+
+## Task 29 — 계획만 작성하고 종료
+
+- Status: this anti-pattern is explicitly rejected.
+- Worker-3 must not stop at a plan-only artifact when assigned implementation, verification, or guardrail work.
+- Evidence from this run: worker-3 created committed verification/guardrail artifacts and completed lifecycle transitions before moving to the next feasible task.
