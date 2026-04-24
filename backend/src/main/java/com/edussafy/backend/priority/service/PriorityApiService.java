@@ -5,6 +5,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -142,6 +143,10 @@ public class PriorityApiService {
                 ROLE_PERMISSIONS.getOrDefault(role, ROLE_PERMISSIONS.get("learner")),
                 "learner".equals(role) ? LEARNER_DENIED_ROUTES : List.of()
         );
+    }
+
+    public AuthActionResponse logout() {
+        return new AuthActionResponse(true, "Logged out.");
     }
 
     public DashboardSummary dashboardSummary() {

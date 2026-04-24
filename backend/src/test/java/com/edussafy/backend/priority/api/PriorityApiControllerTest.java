@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
@@ -120,6 +121,16 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.role").value("learner"))
                 .andExpect(jsonPath("$.permissions[0]").value("dashboard:read"))
                 .andExpect(jsonPath("$.deniedRoutes[0]").value("/admin"));
+    }
+
+    @Test
+    void logoutReturnsActionResponse() throws Exception {
+        given(priorityApiService.logout()).willReturn(new AuthActionResponse(true, "Logged out."));
+
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Logged out."));
     }
 
     @Test
