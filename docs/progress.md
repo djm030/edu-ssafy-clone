@@ -6,6 +6,14 @@
 - Created task ids: 49-64, covering R7 auth/RBAC, frontend fallback and unauthorized states, R8 attachments/material reactions, R9 survey/support depth, R10 E2E/CI, and documentation tracker upkeep.
 - Verification: `omx team api list-tasks` reported 64 total tasks after creation, with the 16 new tasks present and assigned across workers 1, 2, 4, and 5.
 
+
+## Worker-4 Incomplete Feature Audit (Task 4, 2026-04-24)
+- Goal: verify whether any feature remains incomplete before the team declares full-clone completion.
+- Evidence inspected: backend controller endpoint map, frontend route/page map, existing `TODO`/placeholder/mock scan, `docs/remaining-work.md`, and current progress/test notes.
+- Result: full clone is still PARTIAL. Core backend/frontend surfaces exist, but auth/RBAC, durable notification/ticket/survey/material workflows, attachments, permissions, browser E2E, CI/live smoke, and final verification remain open.
+- Documentation updated: `docs/remaining-work.md` now contains a Worker-4 audit table with current evidence, status, and follow-up needs.
+- Task-state note: no service names, ports, networks, or volumes were changed. No code runtime behavior was changed in this audit.
+
 ## R7.0 Contract/Fallback Guardrail - DevOps/QA slice (worker-5, 2026-04-24)
 - Goal: strengthen smoke verification so critical auth/profile/board paths validate JSON response contracts, not only HTTP 200.
 - Completed: added PowerShell smoke JSON helpers and live shape assertions for `POST /api/auth/login`, `GET /api/me`, `GET /api/profile`, board list pagination, board detail wrapper `{ post }`, and board create wrapper `{ item }`.
