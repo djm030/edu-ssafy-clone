@@ -93,7 +93,7 @@ git diff --check
 | 학습자료 | PARTIAL | list/detail/viewer/resource surface 존재, 실첨부·반응·권한 depth 부족. |
 | 학습자료 리소스 | PARTIAL | resources endpoint 존재, 다운로드/권한/실데이터 검증 부족. |
 | 첨부파일 | FAIL | 공통 업로드/저장/다운로드 end-to-end가 미완료. |
-| 학습자료 반응 | FAIL | material reaction(좋아요/북마크 등) 워크플로우 미구현. |
+| 학습자료 반응 | PASS | `/api/learning/materials/{id}/reactions` 토글 + `learning_material_reactions` 영속화 + 목록/상세 반응 카운트/활성값 노출 + 프론트 상세 반응 버튼 연동 구현 및 backend/frontend 테스트 통과. |
 | 퀘스트/평가 | PARTIAL | list/detail/submit surface 존재, 평가/채점/첨부 depth 부족. |
 | 퀘스트 제출 상태 | PARTIAL | submit status 필드는 있으나 lifecycle/grade 검증 부족. |
 | 설문 생성/조회 | PARTIAL | list/detail/respond surface 존재, 생성·운영 depth 부족. |

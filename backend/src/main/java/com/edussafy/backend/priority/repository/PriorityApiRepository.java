@@ -5,6 +5,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
@@ -235,7 +236,43 @@ public class PriorityApiRepository {
                         rs.getString("detail_url"),
                         rs.getInt("view_count"),
                         toOffset(rs.getTimestamp("created_at")),
+                        0L,
+                        0L,
+                        0L,
+                        false,
+                        false,
+                        false,
                         List.of()
+                ))
+                .list();
+    }
+
+    public List<MaterialReactionSummary> findMaterialReactionSummaries(List<Long> materialIds, long userId) {
+        if (materialIds == null || materialIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                SELECT lmr.learning_material_id,
+                       SUM(CASE WHEN lmr.reaction_type_code = 'like' THEN 1 ELSE 0 END) AS like_count,
+                       SUM(CASE WHEN lmr.reaction_type_code = 'bookmark' THEN 1 ELSE 0 END) AS bookmark_count,
+                       SUM(CASE WHEN lmr.reaction_type_code = 'helpful' THEN 1 ELSE 0 END) AS favorite_count,
+                       MAX(CASE WHEN lmr.reaction_type_code = 'like' AND lmr.user_id = :userId THEN 1 ELSE 0 END) AS liked,
+                       MAX(CASE WHEN lmr.reaction_type_code = 'bookmark' AND lmr.user_id = :userId THEN 1 ELSE 0 END) AS bookmarked,
+                       MAX(CASE WHEN lmr.reaction_type_code = 'helpful' AND lmr.user_id = :userId THEN 1 ELSE 0 END) AS favorited
+                FROM learning_material_reactions lmr
+                WHERE lmr.learning_material_id IN (:materialIds)
+                GROUP BY lmr.learning_material_id
+                """)
+                .param("materialIds", materialIds)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new MaterialReactionSummary(
+                        rs.getLong("learning_material_id"),
+                        rs.getLong("like_count"),
+                        rs.getLong("bookmark_count"),
+                        rs.getLong("favorite_count"),
+                        rs.getInt("liked") == 1,
+                        rs.getInt("bookmarked") == 1,
+                        rs.getInt("favorited") == 1
                 ))
                 .list();
     }

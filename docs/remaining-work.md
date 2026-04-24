@@ -104,7 +104,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 - 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 인증/세션, 권한 enforcement, 첨부파일, 설문/문의 depth, E2E/CI 검증이 남아 있다.
 
 ### FAIL 항목
-- `docs/final-verification.md` 기준 명시적인 기능 FAIL 항목이 있다: 첨부파일, 학습자료 반응, 게시글 첨부파일, 문의 첨부파일.
+- `docs/final-verification.md` 기준 명시적인 기능 FAIL 항목이 있다: 첨부파일, 게시글 첨부파일, 문의 답변, 문의 첨부파일.
 - Backend Maven test는 Dockerized Java 21에서 PASS했지만, host Java 25 직접 실행은 Mockito/Byte Buddy 호환성 문제로 실패할 수 있다. Java 21 또는 Dockerized Maven을 표준 검증 경로로 유지해야 한다.
 
 ### UNKNOWN 항목

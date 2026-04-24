@@ -20,6 +20,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsResponse;
@@ -236,7 +238,8 @@ class PriorityApiControllerTest {
     @Test
     void p3LearningDetailsReturnShapes() throws Exception {
         given(priorityApiService.material(5L)).willReturn(new MaterialDetailResponse(new MaterialItem(
-                5L, "Material", "document", null, null, 0, null, List.of()
+                5L, "Material", "document", null, null, 0, null,
+                0L, 0L, 0L, false, false, false, List.of()
         )));
         given(priorityApiService.materialResources(5L)).willReturn(new MaterialResourcesResponse(List.of()));
 
@@ -247,6 +250,22 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/learning/materials/5/resources"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void materialReactionToggleReturnsShape() throws Exception {
+        given(priorityApiService.toggleMaterialReaction(eq(5L), any())).willReturn(new MaterialReactionResponse(
+                new MaterialReactionItem(5L, "favorite", true, false)
+        ));
+
+        mockMvc.perform(post("/api/learning/materials/5/reactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"favorite\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.materialId").value(5))
+                .andExpect(jsonPath("$.item.type").value("favorite"))
+                .andExpect(jsonPath("$.item.active").value(true))
+                .andExpect(jsonPath("$.item.demo").value(false));
     }
 
     @Test

@@ -93,6 +93,10 @@ type BackendMaterialItem = Partial<LearningMaterial> & {
   resources?: BackendMaterialResource[];
 };
 
+type MaterialReactionType = 'like' | 'bookmark' | 'favorite';
+type MaterialReactionState = { active: boolean; type: MaterialReactionType };
+const materialReactionFallbackState = new Map<string, boolean>();
+
 type BackendQuestItem = Partial<QuestItem> & {
   startAt?: string | null;
   endAt?: string | null;
@@ -221,6 +225,12 @@ function toLearningMaterial(item: BackendMaterialItem): LearningMaterial {
     authorName: item.authorName || 'SSAFY',
     createdAt: item.createdAt || '-',
     viewCount: item.viewCount ?? 0,
+    likeCount: item.likeCount ?? 0,
+    bookmarkCount: item.bookmarkCount ?? 0,
+    favoriteCount: item.favoriteCount ?? 0,
+    liked: Boolean(item.liked),
+    bookmarked: Boolean(item.bookmarked),
+    favorited: Boolean(item.favorited),
     description: item.description || item.summary || undefined,
     fileName: item.fileName || firstResource?.title || item.detailUrl || firstResource?.targetUrl || undefined,
   };
@@ -370,6 +380,20 @@ export function getLearningMaterial(id: number): Promise<LearningMaterial | unde
   return fetchJson<ItemResponse<BackendMaterialItem> | undefined>(`/api/learning/materials/${id}`, {
     fallback: () => (fallbackMaterial ? { item: fallbackMaterial } : undefined),
   }).then((response) => (response?.item ? toLearningMaterial(response.item) : undefined));
+}
+
+export function toggleMaterialReaction(materialId: number, type: MaterialReactionType): Promise<MaterialReactionState> {
+  return fetchJson<ItemResponse<MaterialReactionState>>(`/api/learning/materials/${materialId}/reactions`, {
+    body: JSON.stringify({ type }),
+    fallback: () => {
+      const key = `${materialId}:${type}`;
+      const next = !materialReactionFallbackState.get(key);
+      materialReactionFallbackState.set(key, next);
+      return { item: { type, active: next } };
+    },
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
 }
 
 export function getQuests(): Promise<{ items: QuestItem[] }> {
