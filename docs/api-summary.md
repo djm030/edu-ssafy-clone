@@ -60,7 +60,7 @@
 - Added maintained contract bootstrap `docs/openapi.yaml` and drift-marker command `scripts/dev/verify-openapi.ps1`; keep both updated as endpoints/wrappers change.
 
 ## Implemented API Surface
-- `POST /api/auth/login`, `GET /api/me`
+- `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/roles/current`, `POST /api/auth/logout`
 - `POST /api/profile/password-check`, `GET /api/profile`, `PUT /api/profile`
 - `GET /api/dashboard/summary`
 - `GET /api/attendance/records`, `POST /api/attendance/appeals`

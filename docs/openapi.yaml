@@ -34,6 +34,16 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UserResponse' }
+  /api/auth/roles/current:
+    get:
+      summary: Current role access matrix
+      responses:
+        '200': { description: Current user role and available actions }
+  /api/auth/logout:
+    post:
+      summary: Logout current session
+      responses:
+        '200': { description: Logout action result }
   /api/profile/password-check:
     post:
       summary: Check current user's password
