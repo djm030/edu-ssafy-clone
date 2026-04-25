@@ -1,5 +1,11 @@
 # API Summary
 
+## Final Verification API Sync (2026-04-25)
+- Controller 기준으로 다시 대조한 결과, Spring MVC controller surface는 **50 operations**이며 `docs/openapi.yaml` / `docs/openapi.json`에 모두 반영되어 있다.
+- `docs/openapi.yaml`은 `Auth/Profile/Campus/Cohort/Class/Track/Attendance/Attendance Appeal/Notification/Curriculum/Lecture Replay/Learning Material/Quest/Survey/Board/Comment/Support Ticket/Attachment` 그룹을 포함한다.
+- Spring Boot 프로젝트에는 아직 `springdoc-openapi` 자동 생성 의존성이 없으므로 Swagger UI와 `/v3/api-docs`는 실행 가능한 endpoint가 아니다. 현재 OpenAPI는 정적 controller-derived contract이며, 최종 PASS 전에는 자동 생성 또는 CI drift check가 필요하다.
+- Material reaction은 더 이상 "미구현"이 아니다: `/api/learning/materials/{id}/reactions`가 controller/service/repository/frontend detail page에 연결되어 반응 상태와 카운트를 반환한다.
+
 ## Task 69 Recheck Snapshot (worker-4, 2026-04-25)
 - API 표는 endpoint/method/request/response/auth/frontend-screen 컬럼을 유지하고 있다.
 - 본 문서는 현재 구현된 컨트롤러 surface와 frontend 연결 화면 기준으로 유지되며, 미구현 depth는 `docs/remaining-work.md`와 신규 task 125-130으로 추적한다.
@@ -29,6 +35,7 @@
 | `/api/learning/materials` | GET | `keyword`, `type`, `page`, `size` optional | `{ items, page }` materials | Yes (demo) | `/learning/materials` |
 | `/api/learning/materials/{id}` | GET | path `id` | `{ item/material }` material detail | Yes (demo) | `/learning/materials/:id` |
 | `/api/learning/materials/{id}/resources` | GET | path `id` | `{ items }` material resources | Yes (demo) | `/learning/materials/:id`, `/learning/materials/:id/viewer` |
+| `/api/learning/materials/{id}/reactions` | POST | path `id`, body `{ type }` (`like`/`bookmark`/`favorite`) | `{ item }` active state, per-type counts, current-user flags | Yes (demo) | `/learning/materials/:id` |
 | `/api/quests` | GET | `page`, `size` optional | `{ items, page }` quest list | Yes (demo) | `/quest` |
 | `/api/quests/{id}` | GET | path `id` | `{ item/quest }` quest detail | Yes (demo) | `/quest/:id`, `/quest/:id/submit` |
 | `/api/quests/{id}/submissions` | POST | path `id`, body `{ content, attachmentUrl? }` | created submission `{ item }` | Yes (demo) | `/quest/:id/submit` |
@@ -39,10 +46,22 @@
 | `/api/boards/{boardCode}/posts` | GET | path `boardCode`; `categoryId`, `keyword`, `page`, `size`, `sort` optional | `{ items, page }` board posts | Yes (demo) | board list screens |
 | `/api/boards/{boardCode}/posts/{postId}` | GET | path `boardCode`, `postId` | `{ post }` detail wrapper | Yes (demo) | board detail screens |
 | `/api/boards/{boardCode}/posts` | POST | path `boardCode`, body post draft | created `{ item }` | Yes (demo) | `/community/free/write`, `/help/qna/new` |
+| `/api/boards/{boardCode}/posts/{postId}` | PUT | path `boardCode`, `postId`, header `X-User-Role: admin`, body post draft | updated `{ item }` | Admin (demo) | board detail/admin action |
+| `/api/boards/{boardCode}/posts/{postId}` | DELETE | path `boardCode`, `postId`, header `X-User-Role: admin` | `204 No Content` | Admin (demo) | board detail/admin action |
 | `/api/boards/{boardCode}/posts/{postId}/comments` | POST | path `boardCode`, `postId`, body `{ content }` | created comment `{ item }` | Yes (demo) | board detail screens |
 | `/api/boards/{boardCode}/posts/{postId}/reactions` | POST | path `boardCode`, `postId`, body reaction type | created reaction `{ item }` | Yes (demo) | board detail screens |
+| `/api/boards/{boardCode}/posts/{postId}/attachments` | POST | path `boardCode`, `postId`, header `X-User-Role: admin`, body attachment metadata | created attachment metadata `{ item }` | Admin (demo) | board detail/admin action |
 | `/api/support/tickets` | GET | `page`, `size`, status filters optional | `{ items, page }` support tickets | Yes (demo) | `/help/qna` |
 | `/api/support/tickets` | POST | body `{ title, content, category }` | created support ticket `{ item }` | Yes (demo) | `/help/qna/new` |
+| `/api/admin/campus-structure` | GET | header `X-User-Role: admin` | campus/cohort/track/class lists | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/campuses` | POST | header `X-User-Role: admin`, body `{ name }` | created campus `{ item }` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/campuses/{campusId}` | PUT/DELETE | header `X-User-Role: admin`, path `campusId` | updated `{ item }` or `204` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/cohorts` | POST | header `X-User-Role: admin`, body `{ name, year }` | created cohort `{ item }` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/cohorts/{cohortId}` | PUT/DELETE | header `X-User-Role: admin`, path `cohortId` | updated `{ item }` or `204` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/tracks` | POST | header `X-User-Role: admin`, body `{ name, description? }` | created track `{ item }` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/tracks/{trackId}` | PUT/DELETE | header `X-User-Role: admin`, path `trackId` | updated `{ item }` or `204` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/classes` | POST | header `X-User-Role: admin`, body `{ campusId, cohortId, trackId, name, classroom?, capacity? }` | created class `{ item }` | Admin (demo) | `/admin/campus` |
+| `/api/admin/campus-structure/classes/{classId}` | PUT/DELETE | header `X-User-Role: admin`, path `classId` | updated `{ item }` or `204` | Admin (demo) | `/admin/campus` |
 | `/api/health` | GET | none | `{ status: "UP" }` | No | smoke/ops only |
 | `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
 
@@ -71,7 +90,7 @@
 - `GET /api/attendance/records`, `POST /api/attendance/appeals`
 - `GET /api/notifications`
 - `GET /api/learning/curriculum`, `GET /api/learning/replays`
-- `GET /api/learning/materials`, `GET /api/learning/materials/{id}`, `GET /api/learning/materials/{id}/resources`
+- `GET /api/learning/materials`, `GET /api/learning/materials/{id}`, `GET /api/learning/materials/{id}/resources`, `POST /api/learning/materials/{id}/reactions`
 - `GET /api/quests`, `GET /api/quests/{id}`, `POST /api/quests/{id}/submissions`
 - `GET /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
@@ -104,9 +123,8 @@
 ## Still Needed For Full Clone
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.
-- Material like/bookmark/favorite reactions.
 - Attachment upload/download APIs for materials, boards, tickets, and submissions.
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.
-- OpenAPI/Swagger generation or maintained machine-readable API spec.
+- Executable Springdoc/Swagger UI and `/v3/api-docs`; static `docs/openapi.yaml`/`docs/openapi.json` is maintained, but runtime generation is not configured.

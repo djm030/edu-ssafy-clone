@@ -242,7 +242,22 @@ public class PriorityApiService {
         String normalizedType = normalizeMaterialReactionType(request.type());
         String dbType = toMaterialReactionDbType(normalizedType);
         boolean active = safe(() -> p3Repository.toggleMaterialReaction(materialId, user.id(), dbType), true);
-        return new MaterialReactionResponse(new MaterialReactionItem(materialId, normalizedType, active, false));
+        MaterialReactionSummary summary = safe(
+                () -> p3Repository.findMaterialReactionSummary(materialId, user.id()).orElse(MaterialReactionSummary.empty(materialId)),
+                MaterialReactionSummary.empty(materialId)
+        );
+        return new MaterialReactionResponse(new MaterialReactionItem(
+                materialId,
+                normalizedType,
+                active,
+                summary.likeCount(),
+                summary.bookmarkCount(),
+                summary.favoriteCount(),
+                summary.liked(),
+                summary.bookmarked(),
+                summary.favorited(),
+                false
+        ));
     }
 
     public QuestsResponse quests(int page, int size) {

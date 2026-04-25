@@ -20,6 +20,9 @@ function MaterialDetailPage({ materialId }: { materialId: number }) {
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -33,6 +36,9 @@ function MaterialDetailPage({ materialId }: { materialId: number }) {
         setLiked(Boolean(response?.liked));
         setBookmarked(Boolean(response?.bookmarked));
         setFavorited(Boolean(response?.favorited));
+        setLikeCount(response?.likeCount ?? 0);
+        setBookmarkCount(response?.bookmarkCount ?? 0);
+        setFavoriteCount(response?.favoriteCount ?? 0);
         setLoadState(response ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -46,16 +52,59 @@ function MaterialDetailPage({ materialId }: { materialId: number }) {
     };
   }, [materialId]);
 
-  function applyReactionState(type: 'like' | 'bookmark' | 'favorite', active: boolean) {
-    if (type === 'like') setLiked(active);
-    if (type === 'bookmark') setBookmarked(active);
-    if (type === 'favorite') setFavorited(active);
+  function applyReactionState(type: 'like' | 'bookmark' | 'favorite', next: boolean, reactionState?: {
+    likeCount?: number;
+    bookmarkCount?: number;
+    favoriteCount?: number;
+    liked?: boolean;
+    bookmarked?: boolean;
+    favorited?: boolean;
+  }) {
+    if (reactionState?.likeCount != null) {
+      setLikeCount(reactionState.likeCount);
+    }
+    if (reactionState?.bookmarkCount != null) {
+      setBookmarkCount(reactionState.bookmarkCount);
+    }
+    if (reactionState?.favoriteCount != null) {
+      setFavoriteCount(reactionState.favoriteCount);
+    }
+
+    if (type === 'like') {
+      setLiked((previousLiked) => {
+        const updated = reactionState?.liked ?? next;
+        if (reactionState?.likeCount == null) {
+          setLikeCount((current) => current + (updated ? (previousLiked ? 0 : 1) : (previousLiked ? -1 : 0)));
+        }
+        return updated;
+      });
+      return;
+    }
+
+    if (type === 'bookmark') {
+      setBookmarked((previousBookmarked) => {
+        const updated = reactionState?.bookmarked ?? next;
+        if (reactionState?.bookmarkCount == null) {
+          setBookmarkCount((current) => current + (updated ? (previousBookmarked ? 0 : 1) : (previousBookmarked ? -1 : 0)));
+        }
+        return updated;
+      });
+      return;
+    }
+
+    setFavorited((previousFavorited) => {
+      const updated = reactionState?.favorited ?? next;
+      if (reactionState?.favoriteCount == null) {
+        setFavoriteCount((current) => current + (updated ? (previousFavorited ? 0 : 1) : (previousFavorited ? -1 : 0)));
+      }
+      return updated;
+    });
   }
 
   async function handleReaction(type: 'like' | 'bookmark' | 'favorite') {
     try {
       const response = await toggleMaterialReaction(materialId, type);
-      applyReactionState(type, response.active);
+      applyReactionState(type, response.active, response);
       const label = type === 'like' ? '좋아요' : type === 'bookmark' ? '북마크' : '즐겨찾기';
       setMessage(`${label} 상태가 변경되었습니다.`);
     } catch (error) {
@@ -75,6 +124,9 @@ function MaterialDetailPage({ materialId }: { materialId: number }) {
           bookmarked={bookmarked}
           favorited={favorited}
           liked={liked}
+          likeCount={likeCount}
+          bookmarkCount={bookmarkCount}
+          favoriteCount={favoriteCount}
           material={material}
           onReaction={handleReaction}
         />
@@ -88,21 +140,21 @@ function MaterialContent({
   liked,
   bookmarked,
   favorited,
+  likeCount,
+  bookmarkCount,
+  favoriteCount,
   onReaction,
 }: {
   material: LearningMaterial;
   liked: boolean;
   bookmarked: boolean;
   favorited: boolean;
+  likeCount: number;
+  bookmarkCount: number;
+  favoriteCount: number;
   onReaction: (type: 'like' | 'bookmark' | 'favorite') => void;
 }) {
   const canOpenViewer = material.type === 'ebook' || material.type === 'file';
-  const likeBase = material.likeCount || 0;
-  const bookmarkBase = material.bookmarkCount || 0;
-  const favoriteBase = material.favoriteCount || 0;
-  const likeCount = likeBase + (liked ? 1 : 0) - (material.liked ? 1 : 0);
-  const bookmarkCount = bookmarkBase + (bookmarked ? 1 : 0) - (material.bookmarked ? 1 : 0);
-  const favoriteCount = favoriteBase + (favorited ? 1 : 0) - (material.favorited ? 1 : 0);
 
   return (
     <article className="panel detail-panel">

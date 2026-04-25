@@ -94,7 +94,16 @@ type BackendMaterialItem = Partial<LearningMaterial> & {
 };
 
 type MaterialReactionType = 'like' | 'bookmark' | 'favorite';
-type MaterialReactionState = { active: boolean; type: MaterialReactionType };
+type MaterialReactionState = {
+  active: boolean;
+  type: MaterialReactionType;
+  likeCount?: number;
+  bookmarkCount?: number;
+  favoriteCount?: number;
+  liked?: boolean;
+  bookmarked?: boolean;
+  favorited?: boolean;
+};
 const materialReactionFallbackState = new Map<string, boolean>();
 
 type BackendQuestItem = Partial<QuestItem> & {

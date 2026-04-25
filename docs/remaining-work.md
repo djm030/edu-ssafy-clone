@@ -1,8 +1,13 @@
 # Remaining Work
 
+## Final Verification Sync (2026-04-25)
+- Material like/bookmark/favorite reactions were rechecked and are now implemented (`POST /api/learning/materials/{id}/reactions`, persisted `learning_material_reactions`, frontend material detail state/count updates, backend/frontend verification passing).
+- Remaining completion blockers are now: production auth/session/RBAC breadth, common attachment upload/download, support-ticket answers/threads/status transitions, survey question/option/response depth, notification read/delete lifecycle, browser E2E/visual evidence, runtime Swagger UI/`/v3/api-docs`, and team-runtime recovery/commit hygiene.
+- OMX team runtime was cleaned up from a dead `team-exec` state and now reports no team state; this is not a normal all-complete terminal state. Recreate/recover the team backlog before any future final completion attempt.
+
 ## Worker-4 Remaining Work Sync (2026-04-25)
 - Task 4/109 후속으로 미완성 영역을 task 117-124로 재동기화했다.
-- 필수 구현 잔여분(인증/인가, 첨부파일, 학습자료 반응, 설문/문의 depth, E2E+CI)은 여전히 남아 있으며 완료 선언 금지 상태를 유지한다.
+- 필수 구현 잔여분(인증/인가, 첨부파일, 설문/문의 depth, E2E+CI)은 여전히 남아 있으며 완료 선언 금지 상태를 유지한다.
 
 
 ## Final Verification Recheck (2026-04-24)
@@ -18,7 +23,7 @@ Question: does `docs/remaining-work.md` have no required work left? **No.** Requ
 Required non-PASS work still present:
 - Production auth/session/RBAC: real credential verification, token/session persistence, expiry, role enforcement, 401/403 UI.
 - Durable workflows: attendance appeal status/history, notifications send/read/delete, support ticket threads/answers/status, survey question/options and response persistence.
-- Attachments/reactions: materials, boards, tickets, submissions, material like/bookmark/favorite.
+- Attachments/domain depth: upload/download flows for materials, boards, tickets, submissions plus remaining domain-specific workflow depth.
 - Permissions and management: board edit/delete/owner/moderator behavior, admin campus/cohort/class/track flows as needed.
 - QA/release: backend Maven or Dockerized Maven in host/CI, rebuilt live smoke, browser E2E, CI workflow, final all-PASS verification.
 
@@ -63,7 +68,7 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | Attendance | partial | Records and appeal submit exist; add durable appeal workflow/status/history. |
 | Notifications | partial | List exists and R6 source adds classmate send API; add durable send/read/delete persistence and live rebuild verification. |
 | Curriculum/replays | partial | Lists exist and frontend adapters now map backend DTOs; add richer filters, replay authorization and progress state. |
-| Materials/resources | partial | List/detail/resources exist and frontend adapters map backend DTOs; add attachments, viewer fidelity, like/bookmark/favorite. |
+| Materials/resources | partial | List/detail/resources and like/bookmark/favorite reactions exist; add attachment upload/download, viewer fidelity, and broader authorization checks. |
 | Quest/evaluation | partial | List/detail/submit exists; add result detail, file attachments, grading status. |
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
 | Board/community | pass | List/detail/write/comment/reaction plus admin edit/delete and attachment metadata-linking are implemented and verified. |
@@ -83,7 +88,7 @@ Note: prior 문서에 기록된 `117-130` 묶음은 이 라운드에서 `117-124
 |---|---|---|
 | 117 | Build/Test Runtime | Java 21 기반 backend 검증 경로 고정 및 CI 재현. |
 | 118 | Auth/RBAC | 서버 측 RBAC guard 확대 및 role matrix 테스트 추가. |
-| 119-120 | Attachments/Materials | 공통 첨부파일 흐름 + 학습자료 반응 영속화. |
+| 119-120 | Attachments/Materials | 공통 첨부파일 흐름이 남아 있으며, 학습자료 반응 영속화는 구현됨. |
 | 121-122 | Survey/Support | 설문 질문·선택지·응답 depth + 문의 thread/answer/status 전이. |
 | 123-124 | QA/Docs | 브라우저 E2E smoke/CI 강화 + 최종 검증 문서 동기화. |
 
@@ -91,14 +96,14 @@ Note: prior 문서에 기록된 `117-130` 묶음은 이 라운드에서 `117-124
 |---|---|
 | Auth/RBAC/Profile | Real credential/session behavior, role guards, unauthorized UI, profile authorization/persistence. |
 | Admin/Attendance/Notifications/Curriculum | Admin management depth, attendance appeal workflow/history, persisted notification lifecycle, replay access/progress. |
-| Attachments/Domain Depth | Material reactions/attachments, quest result/grading, survey questions/options/responses, board permissions/attachments, support ticket threads/answers/status. |
+| Attachments/Domain Depth | Material/board/ticket/submission attachments, quest result/grading, survey questions/options/responses, broader board permissions, support ticket threads/answers/status. |
 | QA/Docs | Browser E2E or CI smoke coverage and final verification/remaining-work synchronization. |
 
 Completion remains blocked until these areas are represented by active tasks in the current team state and verified as PASS.
 
 ## Next Rounds
 1. R7-auth-rbac: real session/token model, role guards, unauthorized UI states.
-2. R8-attachments-reactions: file upload/download, board/material/ticket attachments, material reactions.
+2. R8-attachments: file upload/download and board/material/ticket/submission attachment integration.
 3. R9-survey-ticket-depth: full survey questions/options, support ticket thread/answers/status.
 4. R10-e2e-ci-docs: browser E2E smoke, CI workflow, README/runbook finalization.
 

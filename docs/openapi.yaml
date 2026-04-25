@@ -1,19 +1,56 @@
 openapi: 3.0.3
 info:
   title: eduSSAFY Clone API
-  version: 0.7.0
-  description: Maintained API contract bootstrap for R7.0 guardrail work. Update this file with endpoint and wrapper changes before moving to Auth/RBAC rounds.
+  version: 0.8.0
+  description: >
+    Static OpenAPI contract maintained from the Spring MVC controller surface on
+    2026-04-25. The backend does not currently ship springdoc/Swagger UI, so
+    `/v3/api-docs` is not an executable source of truth yet.
 servers:
   - url: http://localhost:18080
+    description: backend container published port
+  - url: http://localhost:18000
+    description: nginx app profile proxy
+tags:
+  - name: Health
+  - name: Auth
+  - name: Profile
+  - name: Dashboard
+  - name: Attendance
+  - name: Notification
+  - name: Learning
+  - name: Quest
+  - name: Survey
+  - name: Board
+  - name: Community
+  - name: Support
+  - name: Admin Campus
 paths:
   /api/health:
     get:
+      tags: [Health]
       summary: Backend health probe
+      x-auth-required: false
       responses:
-        '200': { description: Health status }
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+        default: { $ref: '#/components/responses/ErrorResponse' }
+  /actuator/health:
+    get:
+      tags: [Health]
+      summary: Spring Actuator health probe
+      x-auth-required: false
+      responses:
+        '200': { description: Actuator health status }
+        default: { $ref: '#/components/responses/ErrorResponse' }
   /api/auth/login:
     post:
+      tags: [Auth]
       summary: Demo login
+      x-auth-required: false
       requestBody:
         required: true
         content:
@@ -25,215 +62,655 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UserResponse' }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/me:
     get:
+      tags: [Auth]
       summary: Current user bootstrap
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
         '200':
           description: Current user wrapper
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UserResponse' }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/auth/roles/current:
     get:
+      tags: [Auth]
       summary: Current role access matrix
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
       responses:
-        '200': { description: Current user role and available actions }
+        '200':
+          description: Current role and route permissions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoleAccessResponse' }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/auth/logout:
     post:
-      summary: Logout current session
+      tags: [Auth]
+      summary: Logout current demo session
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
-        '200': { description: Logout action result }
+        '200':
+          description: Logout action result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthActionResponse' }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/profile/password-check:
     post:
+      tags: [Profile]
       summary: Check current user's password
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordCheckRequest' }
       responses:
-        '200': { description: Password validity wrapper }
+        '200':
+          description: Password validity wrapper
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PasswordCheckResponse' }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/profile:
     get:
+      tags: [Profile]
       summary: Read editable profile details
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
         '200':
           description: Profile wrapper
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ProfileResponse' }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
     put:
+      tags: [Profile]
       summary: Update editable profile details
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileUpdateRequest' }
       responses:
         '200':
           description: Updated profile wrapper
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ProfileResponse' }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/dashboard/summary:
     get:
+      tags: [Dashboard]
       summary: Dashboard summary
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
-        '200': { description: Dashboard summary }
+        '200': { description: Dashboard summary, content: { application/json: { schema: { $ref: '#/components/schemas/DashboardSummary' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/attendance/records:
     get:
+      tags: [Attendance]
       summary: Attendance records and summary
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
-        '200': { description: Attendance record list }
+        '200': { description: Attendance record list, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceRecordsResponse' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/attendance/appeals:
     post:
+      tags: [Attendance]
       summary: Submit attendance appeal
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttendanceAppealRequest' }
       responses:
-        '201': { description: Created appeal item wrapper }
+        '201': { description: Created appeal item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/notifications:
     get:
+      tags: [Notification]
       summary: Notification list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
-        '200': { description: Notification list with pagination }
+        '200': { description: Notification list with pagination, content: { application/json: { schema: { $ref: '#/components/schemas/PageEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/learning/curriculum:
     get:
+      tags: [Learning]
       summary: Curriculum schedule list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
-        '200': { description: Curriculum item list }
+        '200': { description: Curriculum item list, content: { application/json: { schema: { $ref: '#/components/schemas/ListEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/learning/replays:
     get:
+      tags: [Learning]
       summary: Lecture replay list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
-        '200': { description: Replay item list }
+        '200': { description: Replay item list, content: { application/json: { schema: { $ref: '#/components/schemas/ListEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/learning/materials:
     get:
+      tags: [Learning]
       summary: Learning material list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema: { type: string }
+        - name: type
+          in: query
+          required: false
+          schema: { type: string }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
-        '200': { description: Learning material list with pagination }
+        '200': { description: Learning material list with pagination, content: { application/json: { schema: { $ref: '#/components/schemas/PageEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/learning/materials/{id}:
     get:
+      tags: [Learning]
       summary: Learning material detail
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
-        '200': { description: Learning material detail wrapper }
+        '200': { description: Learning material detail wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /api/learning/materials/{id}/resources:
     get:
+      tags: [Learning]
       summary: Learning material resources
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
-        '200': { description: Material resource list }
+        '200': { description: Material resource list, content: { application/json: { schema: { $ref: '#/components/schemas/ListEnvelope' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
+  /api/learning/materials/{id}/reactions:
+    post:
+      tags: [Learning]
+      summary: Toggle material like/bookmark/favorite reaction
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReactionRequest' }
+      responses:
+        '201': { description: Material reaction state and counts, content: { application/json: { schema: { $ref: '#/components/schemas/MaterialReactionResponse' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/quests:
     get:
+      tags: [Quest]
       summary: Quest list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
-        '200': { description: Quest list with pagination }
+        '200': { description: Quest list with pagination, content: { application/json: { schema: { $ref: '#/components/schemas/PageEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/quests/{id}:
     get:
+      tags: [Quest]
       summary: Quest detail
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
-        '200': { description: Quest detail wrapper }
+        '200': { description: Quest detail wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /api/quests/{id}/submissions:
     post:
+      tags: [Quest]
       summary: Submit quest answer
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestSubmissionRequest' }
       responses:
-        '201': { description: Created submission item wrapper }
+        '201': { description: Created submission item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/surveys:
     get:
+      tags: [Survey]
       summary: Survey list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
-        '200': { description: Survey list with pagination }
+        '200': { description: Survey list with pagination, content: { application/json: { schema: { $ref: '#/components/schemas/PageEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/surveys/{id}:
     get:
+      tags: [Survey]
       summary: Survey detail
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Id'
       responses:
-        '200': { description: Survey detail wrapper }
+        '200': { description: Survey detail wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /api/surveys/{id}/responses:
     post:
+      tags: [Survey]
       summary: Submit survey response
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SurveyResponseSubmitRequest' }
       responses:
-        '201': { description: Created response item wrapper }
+        '201': { description: Created response item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/boards/{boardCode}/categories:
     get:
+      tags: [Board]
       summary: Board category list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BoardCode'
       responses:
-        '200': { description: Category list wrapper }
+        '200': { description: Category list wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ListEnvelope' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /api/boards/{boardCode}/posts:
     get:
+      tags: [Board]
       summary: Board post list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BoardCode'
+        - name: categoryId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: keyword
+          in: query
+          required: false
+          schema: { type: string }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: sort
+          in: query
+          required: false
+          schema: { type: string, default: createdAt,desc }
       responses:
-        '200':
-          description: Board post list wrapper
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/BoardPostListResponse' }
+        '200': { description: Board post list wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/BoardPostListResponse' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
     post:
+      tags: [Board]
       summary: Create board post
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BoardCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BoardPostWriteRequest' }
       responses:
-        '201':
-          description: Created board post item wrapper
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/BoardPostCreateResponse' }
+        '201': { description: Created board post item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/BoardPostWriteResponse' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/boards/{boardCode}/posts/{postId}:
     get:
+      tags: [Board]
       summary: Board post detail
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BoardCode'
         - $ref: '#/components/parameters/PostId'
       responses:
-        '200':
-          description: Board post detail wrapper
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/BoardPostDetailResponse' }
+        '200': { description: Board post detail wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/BoardPostDetailResponse' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
+    put:
+      tags: [Board]
+      summary: Update board post
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BoardCode'
+        - $ref: '#/components/parameters/PostId'
+        - $ref: '#/components/parameters/UserRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BoardPostWriteRequest' }
+      responses:
+        '200': { description: Updated board post item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/BoardPostWriteResponse' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
+    delete:
+      tags: [Board]
+      summary: Delete board post
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BoardCode'
+        - $ref: '#/components/parameters/PostId'
+        - $ref: '#/components/parameters/UserRole'
+      responses:
+        '204': { description: Deleted without body }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /api/boards/{boardCode}/posts/{postId}/comments:
     post:
+      tags: [Board]
       summary: Create board comment
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BoardCode'
         - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommentRequest' }
       responses:
-        '201': { description: Created comment item wrapper }
+        '201': { description: Created comment item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
   /api/boards/{boardCode}/posts/{postId}/reactions:
     post:
+      tags: [Board]
       summary: Toggle board reaction
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BoardCode'
         - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReactionRequest' }
       responses:
-        '201': { description: Reaction item wrapper }
-  /api/support/tickets:
-    get:
-      summary: Support ticket list
-      responses:
-        '200': { description: Support ticket list with pagination }
+        '201': { description: Reaction item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+  /api/boards/{boardCode}/posts/{postId}/attachments:
     post:
-      summary: Create support ticket
+      tags: [Board]
+      summary: Link board attachment metadata
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BoardCode'
+        - $ref: '#/components/parameters/PostId'
+        - $ref: '#/components/parameters/UserRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttachmentMetadataRequest' }
       responses:
-        '201': { description: Created support ticket item wrapper }
+        '201': { description: Created board attachment item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
   /api/community/classmates:
     get:
+      tags: [Community]
       summary: Classmate list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
       responses:
-        '200': { description: Classmate list wrapper }
+        '200': { description: Classmate list wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ListEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
   /api/community/classmates/{userId}/notifications:
     post:
+      tags: [Community, Notification]
       summary: Send classmate notification
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
       parameters:
         - name: userId
           in: path
           required: true
           schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClassmateNotificationRequest' }
       responses:
-        '201': { description: Notification send item wrapper }
+        '201': { description: Notification send item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/support/tickets:
+    get:
+      tags: [Support]
+      summary: Support ticket list
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200': { description: Support ticket list with pagination, content: { application/json: { schema: { $ref: '#/components/schemas/PageEnvelope' } } } }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
+    post:
+      tags: [Support]
+      summary: Create support ticket
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupportTicketCreateRequest' }
+      responses:
+        '201': { description: Created support ticket item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure:
+    get:
+      tags: [Admin Campus]
+      summary: Read campus/cohort/track/class structure
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserRole'
+      responses:
+        '200': { description: Campus structure wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/CampusStructureResponse' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/campuses:
+    post:
+      tags: [Admin Campus]
+      summary: Create campus
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserRole' }]
+      requestBody: { $ref: '#/components/requestBodies/CampusWriteBody' }
+      responses:
+        '201': { description: Created campus item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/campuses/{campusId}:
+    put:
+      tags: [Admin Campus]
+      summary: Update campus
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CampusId'
+        - $ref: '#/components/parameters/UserRole'
+      requestBody: { $ref: '#/components/requestBodies/CampusWriteBody' }
+      responses:
+        '200': { description: Updated campus item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+    delete:
+      tags: [Admin Campus]
+      summary: Delete campus
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CampusId'
+        - $ref: '#/components/parameters/UserRole'
+      responses:
+        '204': { description: Deleted without body }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/cohorts:
+    post:
+      tags: [Admin Campus]
+      summary: Create cohort
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserRole' }]
+      requestBody: { $ref: '#/components/requestBodies/CohortWriteBody' }
+      responses:
+        '201': { description: Created cohort item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/cohorts/{cohortId}:
+    put:
+      tags: [Admin Campus]
+      summary: Update cohort
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CohortId'
+        - $ref: '#/components/parameters/UserRole'
+      requestBody: { $ref: '#/components/requestBodies/CohortWriteBody' }
+      responses:
+        '200': { description: Updated cohort item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+    delete:
+      tags: [Admin Campus]
+      summary: Delete cohort
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CohortId'
+        - $ref: '#/components/parameters/UserRole'
+      responses:
+        '204': { description: Deleted without body }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/tracks:
+    post:
+      tags: [Admin Campus]
+      summary: Create track
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserRole' }]
+      requestBody: { $ref: '#/components/requestBodies/TrackWriteBody' }
+      responses:
+        '201': { description: Created track item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/tracks/{trackId}:
+    put:
+      tags: [Admin Campus]
+      summary: Update track
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/UserRole'
+      requestBody: { $ref: '#/components/requestBodies/TrackWriteBody' }
+      responses:
+        '200': { description: Updated track item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+    delete:
+      tags: [Admin Campus]
+      summary: Delete track
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/TrackId'
+        - $ref: '#/components/parameters/UserRole'
+      responses:
+        '204': { description: Deleted without body }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/classes:
+    post:
+      tags: [Admin Campus]
+      summary: Create class group
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserRole' }]
+      requestBody: { $ref: '#/components/requestBodies/ClassGroupWriteBody' }
+      responses:
+        '201': { description: Created class group item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/admin/campus-structure/classes/{classId}:
+    put:
+      tags: [Admin Campus]
+      summary: Update class group
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ClassId'
+        - $ref: '#/components/parameters/UserRole'
+      requestBody: { $ref: '#/components/requestBodies/ClassGroupWriteBody' }
+      responses:
+        '200': { description: Updated class group item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+    delete:
+      tags: [Admin Campus]
+      summary: Delete class group
+      x-auth-required: true
+      security: [{ DemoAuth: [] }, { DemoRole: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ClassId'
+        - $ref: '#/components/parameters/UserRole'
+      responses:
+        '204': { description: Deleted without body }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
 components:
+  securitySchemes:
+    DemoAuth:
+      type: apiKey
+      in: header
+      name: X-Demo-Auth
+      description: Demo guard; use `false` to force 401 in local verification.
+    DemoRole:
+      type: apiKey
+      in: header
+      name: X-User-Role
+      description: Demo role header. Supported values are learner, coach, admin.
   parameters:
     Id:
       name: id
@@ -250,13 +727,133 @@ components:
       in: path
       required: true
       schema: { type: string, enum: [notice, free, faq, qna] }
+    Page:
+      name: page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, default: 1 }
+    Size:
+      name: size
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    UserRole:
+      name: X-User-Role
+      in: header
+      required: false
+      schema: { type: string, enum: [learner, coach, admin], default: learner }
+    CampusId: { name: campusId, in: path, required: true, schema: { type: integer, format: int64 } }
+    CohortId: { name: cohortId, in: path, required: true, schema: { type: integer, format: int64 } }
+    TrackId: { name: trackId, in: path, required: true, schema: { type: integer, format: int64 } }
+    ClassId: { name: classId, in: path, required: true, schema: { type: integer, format: int64 } }
+  requestBodies:
+    CampusWriteBody:
+      required: true
+      content:
+        application/json:
+          schema: { type: object, required: [name], properties: { name: { type: string } } }
+    CohortWriteBody:
+      required: true
+      content:
+        application/json:
+          schema: { type: object, required: [name, year], properties: { name: { type: string }, year: { type: integer } } }
+    TrackWriteBody:
+      required: true
+      content:
+        application/json:
+          schema: { type: object, required: [name], properties: { name: { type: string }, description: { type: string, nullable: true } } }
+    ClassGroupWriteBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [campusId, cohortId, trackId, name]
+            properties:
+              campusId: { type: integer, format: int64 }
+              cohortId: { type: integer, format: int64 }
+              trackId: { type: integer, format: int64 }
+              name: { type: string }
+              classroom: { type: string, nullable: true }
+              capacity: { type: integer }
+  responses:
+    ErrorResponse:
+      description: Standard error response
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
   schemas:
+    GenericObject:
+      type: object
+      additionalProperties: true
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, example: UP }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+    Page:
+      type: object
+      required: [page, size, totalItems, totalPages]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    ItemEnvelope:
+      type: object
+      required: [item]
+      properties:
+        item: { $ref: '#/components/schemas/GenericObject' }
+    ListEnvelope:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }
+    PageEnvelope:
+      type: object
+      required: [items, page]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }
+        page: { $ref: '#/components/schemas/Page' }
     LoginRequest:
       type: object
       required: [email, password]
       properties:
         email: { type: string, format: email }
         password: { type: string }
+    PasswordCheckRequest:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string }
+    PasswordCheckResponse:
+      type: object
+      required: [valid]
+      properties:
+        valid: { type: boolean }
+    AuthActionResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+    RoleAccessResponse:
+      type: object
+      required: [role, permissions, deniedRoutes]
+      properties:
+        role: { type: string }
+        permissions: { type: array, items: { type: string } }
+        deniedRoutes: { type: array, items: { type: string } }
     UserResponse:
       type: object
       required: [user]
@@ -276,33 +873,106 @@ components:
       type: object
       required: [profile]
       properties:
-        profile:
+        profile: { $ref: '#/components/schemas/GenericObject' }
+    ProfileUpdateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 100 }
+        zipCode: { type: string, maxLength: 20, nullable: true }
+        addressLine1: { type: string, maxLength: 255, nullable: true }
+        addressLine2: { type: string, maxLength: 255, nullable: true }
+        mobilePhone: { type: string, maxLength: 30, nullable: true }
+        emergencyPhone: { type: string, maxLength: 30, nullable: true }
+        marketingOptIn: { type: boolean, nullable: true }
+    DashboardSummary:
+      type: object
+      additionalProperties: true
+    AttendanceRecordsResponse:
+      type: object
+      required: [summary, items]
+      properties:
+        summary: { $ref: '#/components/schemas/GenericObject' }
+        items: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }
+    AttendanceAppealRequest:
+      type: object
+      required: [type, reason]
+      properties:
+        type: { type: string, maxLength: 50 }
+        reason: { type: string, maxLength: 1000 }
+        requestedStatus: { type: string, maxLength: 50, nullable: true }
+    ReactionRequest:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, maxLength: 50, example: like }
+    MaterialReactionResponse:
+      type: object
+      required: [item]
+      properties:
+        item:
           type: object
-          required: [id, name, email, campusName, cohortName, trackName]
+          required: [materialId, type, active, likeCount, bookmarkCount, favoriteCount, liked, bookmarked, favorited, demo]
+          properties:
+            materialId: { type: integer, format: int64 }
+            type: { type: string, enum: [like, bookmark, favorite] }
+            active: { type: boolean }
+            likeCount: { type: integer, format: int64 }
+            bookmarkCount: { type: integer, format: int64 }
+            favoriteCount: { type: integer, format: int64 }
+            liked: { type: boolean }
+            bookmarked: { type: boolean }
+            favorited: { type: boolean }
+            demo: { type: boolean }
+    QuestSubmissionRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, maxLength: 4000 }
+        attachmentUrl: { type: string, maxLength: 500, nullable: true }
+    SurveyResponseSubmitRequest:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            required: [questionId]
+            properties:
+              questionId: { type: integer, format: int64 }
+              answerText: { type: string, maxLength: 4000, nullable: true }
+              optionIds: { type: array, items: { type: integer, format: int64 } }
+    BoardPostWriteRequest:
+      type: object
+      required: [title, content]
+      properties:
+        categoryId: { type: integer, format: int64, nullable: true }
+        title: { type: string, maxLength: 255 }
+        content: { type: string, maxLength: 4000 }
+    BoardPostWriteResponse:
+      type: object
+      required: [item]
+      properties:
+        item:
+          type: object
+          required: [id, boardCode, title, content, authorName, createdAt, demo]
           properties:
             id: { type: integer, format: int64 }
-            name: { type: string }
-            email: { type: string }
-            campusName: { type: string }
-            cohortName: { type: string }
-            trackName: { type: string }
-    Page:
-      type: object
-      required: [page, size, totalItems, totalPages]
-      properties:
-        page: { type: integer }
-        size: { type: integer }
-        totalItems: { type: integer }
-        totalPages: { type: integer }
+            boardCode: { type: string }
+            categoryId: { type: integer, format: int64, nullable: true }
+            title: { type: string }
+            content: { type: string }
+            authorName: { type: string }
+            createdAt: { type: string, format: date-time }
+            demo: { type: boolean }
     BoardPostListResponse:
       type: object
       required: [items, page]
       properties:
         items:
           type: array
-          items:
-            type: object
-            required: [id, boardCode, title, authorName, createdAt]
+          items: { $ref: '#/components/schemas/GenericObject' }
         page: { $ref: '#/components/schemas/Page' }
     BoardPostDetailResponse:
       type: object
@@ -311,18 +981,36 @@ components:
         post:
           type: object
           required: [id, boardCode, title, content, engagement]
-          properties:
-            id: { type: integer, format: int64 }
-            boardCode: { type: string }
-            title: { type: string }
-            content: { type: string }
-            engagement:
-              type: object
-              required: [commentCount, reactionCount]
-    BoardPostCreateResponse:
+          additionalProperties: true
+    CommentRequest:
       type: object
-      required: [item]
+      required: [content]
       properties:
-        item:
-          type: object
-          required: [id, boardCode, title, content, authorName, createdAt]
+        content: { type: string, maxLength: 4000 }
+    AttachmentMetadataRequest:
+      type: object
+      required: [fileName]
+      properties:
+        fileName: { type: string, maxLength: 255 }
+        mimeType: { type: string, maxLength: 100, nullable: true }
+        fileSize: { type: integer, format: int64, nullable: true }
+        url: { type: string, maxLength: 500, nullable: true }
+    ClassmateNotificationRequest:
+      type: object
+      properties:
+        type: { type: string, maxLength: 50, nullable: true }
+        message: { type: string, maxLength: 1000, nullable: true }
+    SupportTicketCreateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title: { type: string, maxLength: 255 }
+        content: { type: string, maxLength: 4000 }
+    CampusStructureResponse:
+      type: object
+      required: [campuses, cohorts, tracks, classes]
+      properties:
+        campuses: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }
+        cohorts: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }
+        tracks: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }
+        classes: { type: array, items: { $ref: '#/components/schemas/GenericObject' } }

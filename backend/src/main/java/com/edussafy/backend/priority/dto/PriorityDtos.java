@@ -156,6 +156,12 @@ public final class PriorityDtos {
             long materialId,
             String type,
             boolean active,
+            long likeCount,
+            long bookmarkCount,
+            long favoriteCount,
+            boolean liked,
+            boolean bookmarked,
+            boolean favorited,
             boolean demo
     ) {
     }

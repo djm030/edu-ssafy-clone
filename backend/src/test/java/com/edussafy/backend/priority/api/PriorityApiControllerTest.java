@@ -255,7 +255,7 @@ class PriorityApiControllerTest {
     @Test
     void materialReactionToggleReturnsShape() throws Exception {
         given(priorityApiService.toggleMaterialReaction(eq(5L), any())).willReturn(new MaterialReactionResponse(
-                new MaterialReactionItem(5L, "favorite", true, false)
+                new MaterialReactionItem(5L, "favorite", true, 3L, 1L, 2L, false, true, false, false)
         ));
 
         mockMvc.perform(post("/api/learning/materials/5/reactions")
@@ -265,6 +265,12 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.materialId").value(5))
                 .andExpect(jsonPath("$.item.type").value("favorite"))
                 .andExpect(jsonPath("$.item.active").value(true))
+                .andExpect(jsonPath("$.item.likeCount").value(3))
+                .andExpect(jsonPath("$.item.bookmarkCount").value(1))
+                .andExpect(jsonPath("$.item.favoriteCount").value(2))
+                .andExpect(jsonPath("$.item.liked").value(false))
+                .andExpect(jsonPath("$.item.bookmarked").value(true))
+                .andExpect(jsonPath("$.item.favorited").value(false))
                 .andExpect(jsonPath("$.item.demo").value(false));
     }
 

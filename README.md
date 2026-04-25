@@ -4,6 +4,12 @@
 - Team backlog has been re-synced with explicit follow-up tasks 125-130 for unresolved auth, attachment/reaction, survey/support depth, and E2E/CI closure.
 - Project remains **NOT READY** until those tasks and remaining-work gates are closed with fresh verification evidence.
 
+## Final verification sync (2026-04-25)
+- Current verification still concludes **NOT COMPLETE / PARTIAL**.
+- Backend Java 21 tests, frontend lint/build, Docker compose config, static OpenAPI validation, and controller-vs-OpenAPI drift checks pass in this workspace.
+- Live localhost HTTP probes and `/v3/api-docs` are not PASS in this sandbox: localhost network calls return `Operation not permitted`, and Springdoc/Swagger UI is not configured.
+- Material reactions are implemented and no longer listed as future work, but production auth/RBAC, common attachment upload/download, support-ticket answers/threads, survey depth, browser E2E, and team-runtime recovery remain blockers.
+
 
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.
 
@@ -107,5 +113,6 @@ Required project documents are maintained under `docs/`:
 ## Known current caveats
 
 - R6 source includes `POST /api/community/classmates/{userId}/notifications`; if live smoke returns 404 for that optional check, rebuild the backend image with `scripts\dev\localhost.ps1 -Smoke` or `scripts\dev\up.ps1 -App`.
-- Material reaction API is intentionally still future work and is optional in smoke.
+- Material reaction API is implemented at `POST /api/learning/materials/{id}/reactions`; rerun backend tests and frontend build after touching the material detail page.
+- Static OpenAPI files live at `docs/openapi.yaml` and `docs/openapi.json`, but Swagger UI and `/v3/api-docs` need a future Springdoc integration.
 - Git commit from Codex may require `.git` ACL recovery; see `scripts/dev/README.md`.
