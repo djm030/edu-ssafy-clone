@@ -195,7 +195,14 @@ public class PriorityP3Repository {
 
     public Optional<QuestSubmissionItem> findQuestSubmission(long userId, long questId) {
         return jdbcClient.sql("""
-                SELECT quest_submission_id, quest_evaluation_id, submit_status_code, submitted_at
+                SELECT
+                    quest_submission_id,
+                    quest_evaluation_id,
+                    submit_status_code,
+                    submitted_at,
+                    result_status_code,
+                    score,
+                    graded_at
                 FROM quest_submissions
                 WHERE user_id = :userId AND quest_evaluation_id = :questId
                 """)
@@ -206,6 +213,9 @@ public class PriorityP3Repository {
                         rs.getLong("quest_evaluation_id"),
                         rs.getString("submit_status_code"),
                         toOffset(rs.getTimestamp("submitted_at")),
+                        rs.getString("result_status_code"),
+                        nullableDouble(rs, "score"),
+                        toOffset(rs.getTimestamp("graded_at")),
                         false
                 ))
                 .optional();
@@ -458,6 +468,11 @@ public class PriorityP3Repository {
 
     private Long nullableLong(ResultSet rs, String columnName) throws SQLException {
         long value = rs.getLong(columnName);
+        return rs.wasNull() ? null : value;
+    }
+
+    private Double nullableDouble(ResultSet rs, String columnName) throws SQLException {
+        double value = rs.getDouble(columnName);
         return rs.wasNull() ? null : value;
     }
 

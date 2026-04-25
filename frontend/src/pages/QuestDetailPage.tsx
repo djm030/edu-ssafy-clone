@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { getQuest } from '../api/app';
+import { getQuest, getQuestSubmission } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { LoadState, QuestItem } from '../types';
+import type { LoadState, QuestItem, QuestSubmissionResult } from '../types';
 
 const statusMap = {
   done: { label: '완료', tone: 'green' },
@@ -14,15 +14,20 @@ const statusMap = {
 
 function QuestDetailPage({ questId }: { questId: number }) {
   const [quest, setQuest] = useState<QuestItem>();
+  const [submission, setSubmission] = useState<QuestSubmissionResult>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     let ignore = false;
-    getQuest(questId)
-      .then((response) => {
+    Promise.all([
+      getQuest(questId),
+      getQuestSubmission(questId).catch(() => undefined),
+    ])
+      .then(([response, submissionResponse]) => {
         if (ignore) return;
         setQuest(response);
+        setSubmission(submissionResponse);
         setLoadState(response ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -41,12 +46,12 @@ function QuestDetailPage({ questId }: { questId: number }) {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="Quest를 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="Quest를 찾을 수 없습니다." /> : null}
-      {quest ? <QuestContent quest={quest} /> : null}
+      {quest ? <QuestContent quest={quest} submission={submission} /> : null}
     </section>
   );
 }
 
-function QuestContent({ quest }: { quest: QuestItem }) {
+function QuestContent({ quest, submission }: { quest: QuestItem; submission?: QuestSubmissionResult }) {
   const status = statusMap[quest.status];
 
   return (
@@ -62,12 +67,48 @@ function QuestContent({ quest }: { quest: QuestItem }) {
           <li key={task}>{task}</li>
         ))}
       </ul>
+      <section className="board-actions" aria-label="제출 결과">
+        <h3>내 제출 결과</h3>
+        {submission ? (
+          <dl className="info-list detail-info">
+            <div>
+              <dt>제출 상태</dt>
+              <dd>{submission.status}</dd>
+            </div>
+            <div>
+              <dt>평가 상태</dt>
+              <dd>{submission.resultStatus || 'pending'}</dd>
+            </div>
+            <div>
+              <dt>점수</dt>
+              <dd>{typeof submission.score === 'number' ? submission.score.toLocaleString('ko-KR') : '-'}</dd>
+            </div>
+            <div>
+              <dt>제출일</dt>
+              <dd>{formatDate(submission.submittedAt)}</dd>
+            </div>
+            <div>
+              <dt>채점일</dt>
+              <dd>{formatDate(submission.gradedAt)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="muted-text">아직 제출 내역이 없습니다.</p>
+        )}
+      </section>
       <div className="action-row">
         <a className="ghost-button" href="/quest">목록</a>
         <a className="primary-action" href={`/quest/${quest.id}/submit`}>제출하기</a>
       </div>
     </article>
   );
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 export default QuestDetailPage;

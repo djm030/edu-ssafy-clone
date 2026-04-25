@@ -39,6 +39,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeReque
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
@@ -351,6 +352,9 @@ class PriorityApiServiceTest {
                 5L,
                 "submitted",
                 OffsetDateTime.parse("2026-04-25T12:00:00+09:00"),
+                "pending",
+                null,
+                null,
                 false
         );
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
@@ -373,6 +377,49 @@ class PriorityApiServiceTest {
         assertThat(response.item().demo()).isFalse();
         verify(p3Repository).findQuest(1L, 5L);
         verify(p3Repository).upsertQuestSubmission(1L, 5L);
+    }
+
+    @Test
+    void readsQuestSubmissionResultDetail() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        QuestItem quest = new QuestItem(
+                5L,
+                "Algorithm Quest",
+                "assignment",
+                "required",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-25T18:00:00+09:00"),
+                100,
+                "completed",
+                "submitted",
+                "graded"
+        );
+        QuestSubmissionItem saved = new QuestSubmissionItem(
+                77L,
+                5L,
+                "submitted",
+                OffsetDateTime.parse("2026-04-25T12:00:00+09:00"),
+                "graded",
+                95.0,
+                OffsetDateTime.parse("2026-04-25T19:00:00+09:00"),
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findQuest(1L, 5L)).willReturn(Optional.of(quest));
+        given(p3Repository.findQuestSubmission(1L, 5L)).willReturn(Optional.of(saved));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        QuestSubmissionDetailResponse response = service.questSubmission(5L);
+
+        assertThat(response.item().resultStatus()).isEqualTo("graded");
+        assertThat(response.item().score()).isEqualTo(95.0);
+        assertThat(response.item().gradedAt()).isNotNull();
+        verify(p3Repository).findQuestSubmission(1L, 5L);
     }
 
     @Test

@@ -561,6 +561,12 @@ export function getQuest(id: number): Promise<QuestItem | undefined> {
   }).then((response) => (response?.item ? toQuestItem(response.item) : undefined));
 }
 
+export function getQuestSubmission(questId: number): Promise<QuestSubmissionResult | undefined> {
+  return fetchJson<ItemResponse<QuestSubmissionResult> | undefined>(`/api/quests/${questId}/submission`, {
+    fallback: () => undefined,
+  }).then((response) => response?.item);
+}
+
 export function getSurveys(): Promise<{ items: SurveyItem[] }> {
   return fetchJson<{ items: BackendSurveyItem[] }>('/api/surveys', {
     fallback: () => ({ items: mockSurveys }),

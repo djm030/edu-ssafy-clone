@@ -332,6 +332,9 @@ export interface QuestSubmissionResult {
   questId: number;
   status: string;
   submittedAt?: string;
+  resultStatus?: string;
+  score?: number | null;
+  gradedAt?: string | null;
   demo?: boolean;
 }
 

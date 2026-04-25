@@ -43,6 +43,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
@@ -533,6 +534,15 @@ public class PriorityApiService {
         UserProfile user = currentUser();
         QuestItem item = safe(() -> p3Repository.findQuest(user.id(), id).orElse(fallbackQuest(id)), fallbackQuest(id));
         return new QuestDetailResponse(item);
+    }
+
+    public QuestSubmissionDetailResponse questSubmission(long id) {
+        UserProfile user = currentUser();
+        p3Repository.findQuest(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest not found."));
+        QuestSubmissionItem item = p3Repository.findQuestSubmission(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest submission not found."));
+        return new QuestSubmissionDetailResponse(item);
     }
 
     @Transactional

@@ -14,6 +14,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetail;
@@ -80,7 +81,10 @@ class PriorityP4ControllerTest {
     @Test
     void questAndSurveySubmitReturnPersistedShapes() throws Exception {
         given(priorityApiService.submitQuest(eq(5L), any())).willReturn(new QuestSubmissionResponse(
-                new QuestSubmissionItem(55L, 5L, "submitted", null, false)
+                new QuestSubmissionItem(55L, 5L, "submitted", null, "pending", null, null, false)
+        ));
+        given(priorityApiService.questSubmission(5L)).willReturn(new QuestSubmissionDetailResponse(
+                new QuestSubmissionItem(55L, 5L, "submitted", null, "pending", null, null, false)
         ));
         given(priorityApiService.submitSurvey(eq(6L), any())).willReturn(new SurveyResponseSubmitResponse(
                 new SurveyResponseSubmitItem(66L, 6L, true, 1, null, false)
@@ -93,6 +97,12 @@ class PriorityP4ControllerTest {
                 .andExpect(jsonPath("$.item.id").value(55))
                 .andExpect(jsonPath("$.item.questId").value(5))
                 .andExpect(jsonPath("$.item.status").value("submitted"))
+                .andExpect(jsonPath("$.item.resultStatus").value("pending"))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(get("/api/quests/5/submission"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(55))
+                .andExpect(jsonPath("$.item.resultStatus").value("pending"))
                 .andExpect(jsonPath("$.item.demo").value(false));
         mockMvc.perform(post("/api/surveys/6/responses")
                         .contentType(MediaType.APPLICATION_JSON)

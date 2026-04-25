@@ -267,11 +267,17 @@ public final class PriorityDtos {
     public record QuestSubmissionResponse(QuestSubmissionItem item) {
     }
 
+    public record QuestSubmissionDetailResponse(QuestSubmissionItem item) {
+    }
+
     public record QuestSubmissionItem(
             long id,
             long questId,
             String status,
             OffsetDateTime submittedAt,
+            String resultStatus,
+            Double score,
+            OffsetDateTime gradedAt,
             boolean demo
     ) {
     }
