@@ -78,9 +78,9 @@ class PriorityP4ControllerTest {
     }
 
     @Test
-    void questAndSurveySubmitReturnDemoShapes() throws Exception {
+    void questAndSurveySubmitReturnPersistedShapes() throws Exception {
         given(priorityApiService.submitQuest(eq(5L), any())).willReturn(new QuestSubmissionResponse(
-                new QuestSubmissionItem(0L, 5L, "submitted", null, true)
+                new QuestSubmissionItem(55L, 5L, "submitted", null, false)
         ));
         given(priorityApiService.submitSurvey(eq(6L), any())).willReturn(new SurveyResponseSubmitResponse(
                 new SurveyResponseSubmitItem(66L, 6L, true, 1, null, false)
@@ -90,8 +90,10 @@ class PriorityP4ControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"submission text\"}"))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(55))
                 .andExpect(jsonPath("$.item.questId").value(5))
-                .andExpect(jsonPath("$.item.status").value("submitted"));
+                .andExpect(jsonPath("$.item.status").value("submitted"))
+                .andExpect(jsonPath("$.item.demo").value(false));
         mockMvc.perform(post("/api/surveys/6/responses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"answers\":[{\"questionId\":1,\"answerText\":\"yes\"}]}"))

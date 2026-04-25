@@ -284,6 +284,14 @@ export interface QuestSubmissionDraft {
   content: string;
 }
 
+export interface QuestSubmissionResult {
+  id: number;
+  questId: number;
+  status: string;
+  submittedAt?: string;
+  demo?: boolean;
+}
+
 export interface SurveyResponseDraft {
   surveyId: number;
   answers: SurveyAnswerDraft[];

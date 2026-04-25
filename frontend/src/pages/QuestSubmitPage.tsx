@@ -41,7 +41,7 @@ function QuestSubmitPage({ questId }: { questId: number }) {
     try {
       const response = await submitQuest({ questId, repositoryUrl, content });
       setResult('success');
-      setMessage(`Quest가 제출되었습니다. 상태: ${response.status}`);
+      setMessage(`Quest가 제출되었습니다. 제출번호 ${response.id}, 상태: ${response.status}`);
     } catch (error) {
       setResult('error');
       setMessage(getErrorMessage(error));

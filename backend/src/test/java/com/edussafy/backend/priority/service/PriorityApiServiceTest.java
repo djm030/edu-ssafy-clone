@@ -29,6 +29,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
@@ -259,6 +263,51 @@ class PriorityApiServiceTest {
         assertThat(response.item().viewCount()).isEqualTo(6);
         assertThat(response.item().resources()).containsExactly(resource);
         verify(p3Repository).incrementMaterialViewCount(15L);
+    }
+
+    @Test
+    void persistsQuestSubmissionAndReturnsSavedStatus() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        QuestItem quest = new QuestItem(
+                5L,
+                "Algorithm Quest",
+                "assignment",
+                "required",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-25T18:00:00+09:00"),
+                100,
+                "in_progress",
+                null,
+                null
+        );
+        QuestSubmissionItem saved = new QuestSubmissionItem(
+                77L,
+                5L,
+                "submitted",
+                OffsetDateTime.parse("2026-04-25T12:00:00+09:00"),
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findQuest(1L, 5L)).willReturn(Optional.of(quest));
+        given(p3Repository.upsertQuestSubmission(1L, 5L)).willReturn(Optional.of(saved));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        QuestSubmissionResponse response = service.submitQuest(
+                5L,
+                new QuestSubmissionRequest("Implemented dynamic programming solution.", "https://example.com/repo")
+        );
+
+        assertThat(response.item().id()).isEqualTo(77L);
+        assertThat(response.item().questId()).isEqualTo(5L);
+        assertThat(response.item().status()).isEqualTo("submitted");
+        assertThat(response.item().demo()).isFalse();
+        verify(p3Repository).findQuest(1L, 5L);
+        verify(p3Repository).upsertQuestSubmission(1L, 5L);
     }
 
     @Test

@@ -420,14 +420,18 @@ public class PriorityApiService {
         return new QuestDetailResponse(item);
     }
 
+    @Transactional
     public QuestSubmissionResponse submitQuest(long id, QuestSubmissionRequest request) {
-        return new QuestSubmissionResponse(new QuestSubmissionItem(
-                0L,
-                id,
-                "submitted",
-                null,
-                true
-        ));
+        UserProfile user = currentUser();
+        String content = request.content() == null ? "" : request.content().trim();
+        if (content.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quest submission content is required.");
+        }
+        p3Repository.findQuest(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest not found."));
+        QuestSubmissionItem item = p3Repository.upsertQuestSubmission(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Quest submission was not saved."));
+        return new QuestSubmissionResponse(item);
     }
 
     public SurveysResponse surveys(int page, int size) {

@@ -3,6 +3,7 @@ package com.edussafy.backend.priority.repository;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
@@ -98,6 +99,49 @@ public class PriorityP3Repository {
                 .param("userId", userId)
                 .param("questId", questId)
                 .query(this::mapQuest)
+                .optional();
+    }
+
+    public Optional<QuestSubmissionItem> upsertQuestSubmission(long userId, long questId) {
+        jdbcClient.sql("""
+                INSERT INTO quest_submissions (
+                    quest_evaluation_id,
+                    user_id,
+                    result_status_code,
+                    submit_status_code,
+                    submitted_at,
+                    graded_at,
+                    score
+                )
+                VALUES (:questId, :userId, 'pending', 'submitted', CURRENT_TIMESTAMP, NULL, NULL)
+                ON DUPLICATE KEY UPDATE
+                    result_status_code = 'pending',
+                    submit_status_code = 'submitted',
+                    submitted_at = VALUES(submitted_at),
+                    graded_at = NULL,
+                    score = NULL
+                """)
+                .param("questId", questId)
+                .param("userId", userId)
+                .update();
+        return findQuestSubmission(userId, questId);
+    }
+
+    public Optional<QuestSubmissionItem> findQuestSubmission(long userId, long questId) {
+        return jdbcClient.sql("""
+                SELECT quest_submission_id, quest_evaluation_id, submit_status_code, submitted_at
+                FROM quest_submissions
+                WHERE user_id = :userId AND quest_evaluation_id = :questId
+                """)
+                .param("userId", userId)
+                .param("questId", questId)
+                .query((rs, rowNum) -> new QuestSubmissionItem(
+                        rs.getLong("quest_submission_id"),
+                        rs.getLong("quest_evaluation_id"),
+                        rs.getString("submit_status_code"),
+                        toOffset(rs.getTimestamp("submitted_at")),
+                        false
+                ))
                 .optional();
     }
 

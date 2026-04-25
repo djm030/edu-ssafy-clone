@@ -33,6 +33,7 @@ import type {
   QnaDraft,
   QuestItem,
   QuestSubmissionDraft,
+  QuestSubmissionResult,
   ReplayItem,
   ProfileEditDraft,
   ProfileDetails,
@@ -741,15 +742,15 @@ export function cancelAttendanceAppeal(appealId: number): Promise<AttendanceAppe
   }).then((response) => response.item);
 }
 
-export function submitQuest(draft: QuestSubmissionDraft): Promise<{ id: number; status: string }> {
+export function submitQuest(draft: QuestSubmissionDraft): Promise<QuestSubmissionResult> {
   const payload = {
     content: draft.content,
     attachmentUrl: draft.repositoryUrl?.trim() || undefined,
   };
 
-  return fetchJson<ItemResponse<{ id: number; status: string }>>(`/api/quests/${draft.questId}/submissions`, {
+  return fetchJson<ItemResponse<QuestSubmissionResult>>(`/api/quests/${draft.questId}/submissions`, {
     body: JSON.stringify(payload),
-    fallback: () => ({ item: { id: Date.now(), status: 'submitted' } }),
+    fallback: () => ({ item: { id: Date.now(), questId: draft.questId, status: 'submitted', demo: true } }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   }).then((response) => response.item);
