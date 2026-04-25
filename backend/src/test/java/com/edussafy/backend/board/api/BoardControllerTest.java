@@ -18,6 +18,9 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeletedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
@@ -183,6 +186,12 @@ class BoardControllerTest {
         given(boardService.createComment(eq("free"), eq(10L), any())).willReturn(new BoardCommentCreateResponse(
                 new BoardCommentCreatedItem(44L, 10L, 40L, "Comment", "Demo Learner", null, false)
         ));
+        given(boardService.updateComment(eq("free"), eq(10L), eq(44L), any())).willReturn(new BoardCommentUpdateResponse(
+                new BoardCommentCreatedItem(44L, 10L, 40L, "Updated comment", "Demo Learner", null, false)
+        ));
+        given(boardService.deleteComment("free", 10L, 44L)).willReturn(new BoardCommentDeleteResponse(
+                new BoardCommentDeletedItem(44L, 10L, true, false)
+        ));
         given(boardService.createReaction(eq("free"), eq(10L), any())).willReturn(new BoardReactionCreateResponse(
                 new BoardReactionCreatedItem(10L, "like", true, false)
         ));
@@ -197,6 +206,19 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.item.id").value(44))
                 .andExpect(jsonPath("$.item.postId").value(10))
                 .andExpect(jsonPath("$.item.parentCommentId").value(40))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(put("/api/boards/free/posts/10/comments/44")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"Updated comment\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(44))
+                .andExpect(jsonPath("$.item.content").value("Updated comment"))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(delete("/api/boards/free/posts/10/comments/44"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(44))
+                .andExpect(jsonPath("$.item.postId").value(10))
+                .andExpect(jsonPath("$.item.deleted").value(true))
                 .andExpect(jsonPath("$.item.demo").value(false));
         mockMvc.perform(post("/api/boards/free/posts/10/reactions")
                         .contentType(MediaType.APPLICATION_JSON)

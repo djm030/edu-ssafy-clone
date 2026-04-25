@@ -10,6 +10,8 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
@@ -157,6 +159,33 @@ class BoardServiceTest {
         assertThat(response.item().id()).isEqualTo(45L);
         assertThat(response.item().parentCommentId()).isEqualTo(44L);
         verify(repository).createComment(10L, 7L, 44L, "Reply");
+    }
+
+    @Test
+    void updateAndDeleteCommentRequireBoardPostAndPersist() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Original", List.of());
+        BoardCommentItem existing = new BoardCommentItem(44L, 10L, null, "Before", "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem updated = new BoardCommentItem(44L, 10L, null, "After", "Demo Student", OffsetDateTime.now(), List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
+        given(repository.findComment(44L)).willReturn(Optional.of(existing), Optional.of(updated), Optional.of(updated));
+        given(repository.updateComment(10L, 44L, "After")).willReturn(1);
+        given(repository.deleteComment(10L, 44L)).willReturn(1);
+        BoardService service = new BoardService(repository);
+
+        BoardCommentUpdateResponse updateResponse = service.updateComment("free", 10L, 44L, new BoardCommentCreateRequest(null, " After "));
+        BoardCommentDeleteResponse deleteResponse = service.deleteComment("free", 10L, 44L);
+
+        assertThat(updateResponse.item().id()).isEqualTo(44L);
+        assertThat(updateResponse.item().content()).isEqualTo("After");
+        assertThat(updateResponse.item().demo()).isFalse();
+        assertThat(deleteResponse.item().id()).isEqualTo(44L);
+        assertThat(deleteResponse.item().postId()).isEqualTo(10L);
+        assertThat(deleteResponse.item().deleted()).isTrue();
+        assertThat(deleteResponse.item().demo()).isFalse();
+        verify(repository).updateComment(10L, 44L, "After");
+        verify(repository).deleteComment(10L, 44L);
     }
 
     @Test

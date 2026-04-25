@@ -9,6 +9,9 @@ import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeletedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
@@ -164,6 +167,57 @@ public class BoardService {
                 created.createdAt(),
                 false
         ));
+    }
+
+    @Transactional
+    public BoardCommentUpdateResponse updateComment(
+            String boardCode,
+            long postId,
+            long commentId,
+            BoardCommentCreateRequest request
+    ) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        BoardCommentItem existing = boardRepository.findComment(commentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        if (existing.postId() != postId) {
+            throw new BoardPostNotFoundException(postId);
+        }
+        int updated = boardRepository.updateComment(postId, commentId, request.content().trim());
+        if (updated == 0) {
+            throw new BoardPostNotFoundException(postId);
+        }
+        BoardCommentItem saved = boardRepository.findComment(commentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        return new BoardCommentUpdateResponse(new BoardCommentCreatedItem(
+                saved.id(),
+                saved.postId(),
+                saved.parentCommentId(),
+                saved.content(),
+                saved.authorName(),
+                saved.createdAt(),
+                false
+        ));
+    }
+
+    @Transactional
+    public BoardCommentDeleteResponse deleteComment(String boardCode, long postId, long commentId) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        BoardCommentItem existing = boardRepository.findComment(commentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        if (existing.postId() != postId) {
+            throw new BoardPostNotFoundException(postId);
+        }
+        int deleted = boardRepository.deleteComment(postId, commentId);
+        if (deleted == 0) {
+            throw new BoardPostNotFoundException(postId);
+        }
+
+        return new BoardCommentDeleteResponse(new BoardCommentDeletedItem(commentId, postId, true, false));
     }
 
     @Transactional

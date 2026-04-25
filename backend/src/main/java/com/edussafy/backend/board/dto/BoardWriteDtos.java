@@ -41,6 +41,9 @@ public final class BoardWriteDtos {
     public record BoardCommentCreateResponse(BoardCommentCreatedItem item) {
     }
 
+    public record BoardCommentUpdateResponse(BoardCommentCreatedItem item) {
+    }
+
     public record BoardCommentCreatedItem(
             long id,
             long postId,
@@ -50,6 +53,12 @@ public final class BoardWriteDtos {
             OffsetDateTime createdAt,
             boolean demo
     ) {
+    }
+
+    public record BoardCommentDeleteResponse(BoardCommentDeletedItem item) {
+    }
+
+    public record BoardCommentDeletedItem(long id, long postId, boolean deleted, boolean demo) {
     }
 
     public record BoardReactionCreateRequest(@NotBlank @Size(max = 50) String type) {

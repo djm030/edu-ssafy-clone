@@ -264,6 +264,30 @@ public class BoardRepository {
                 .optional();
     }
 
+    public int updateComment(long postId, long commentId, String content) {
+        return jdbcClient.sql("""
+                UPDATE board_comments
+                SET content = :content
+                WHERE board_post_id = :postId
+                  AND board_comment_id = :commentId
+                """)
+                .param("postId", postId)
+                .param("commentId", commentId)
+                .param("content", content)
+                .update();
+    }
+
+    public int deleteComment(long postId, long commentId) {
+        return jdbcClient.sql("""
+                DELETE FROM board_comments
+                WHERE board_post_id = :postId
+                  AND board_comment_id = :commentId
+                """)
+                .param("postId", postId)
+                .param("commentId", commentId)
+                .update();
+    }
+
     public List<BoardCommentItem> findComments(long postId) {
         return jdbcClient.sql("""
                 SELECT bc.board_comment_id, bc.board_post_id, bc.parent_comment_id, bc.content,

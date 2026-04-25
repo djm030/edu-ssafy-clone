@@ -7,6 +7,7 @@ const PAGE_SIZE = 20;
 type BoardPostDetailResponse = { post?: BoardPostListItem; item?: BoardPostListItem };
 type BoardPostCreateResponse = { item: BoardPostListItem };
 type BoardCommentCreateResponse = { item: BoardCommentItem };
+type BoardCommentDeleteResponse = { item: { id: number; postId: number; deleted: boolean; demo?: boolean } };
 type BoardReactionResponse = { item: { postId: number; type: string; active: boolean; demo?: boolean } };
 type BoardPostDeleteResponse = { item: { id: number; boardCode: BoardCode; deleted: boolean; demo?: boolean } };
 
@@ -142,6 +143,40 @@ export function createComment(
     }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updateComment(
+  boardCode: BoardCode,
+  postId: number,
+  commentId: number,
+  content: string,
+): Promise<BoardCommentItem> {
+  return fetchJson<BoardCommentCreateResponse>(`/api/boards/${boardCode}/posts/${postId}/comments/${commentId}`, {
+    body: JSON.stringify({ content }),
+    fallback: () => ({
+      item: {
+        id: commentId,
+        postId,
+        content,
+        authorName: '로컬 데모',
+        createdAt: new Date().toISOString(),
+        replies: [],
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteComment(
+  boardCode: BoardCode,
+  postId: number,
+  commentId: number,
+): Promise<BoardCommentDeleteResponse['item']> {
+  return fetchJson<BoardCommentDeleteResponse>(`/api/boards/${boardCode}/posts/${postId}/comments/${commentId}`, {
+    fallback: () => ({ item: { id: commentId, postId, deleted: true, demo: true } }),
+    method: 'DELETE',
   }).then((response) => response.item);
 }
 

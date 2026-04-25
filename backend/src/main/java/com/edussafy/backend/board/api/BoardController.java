@@ -5,6 +5,8 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
@@ -102,6 +104,25 @@ public class BoardController {
             @Valid @RequestBody BoardCommentCreateRequest request
     ) {
         return boardService.createComment(boardCode, postId, request);
+    }
+
+    @PutMapping("/boards/{boardCode}/posts/{postId}/comments/{commentId}")
+    public BoardCommentUpdateResponse updateComment(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            @Valid @RequestBody BoardCommentCreateRequest request
+    ) {
+        return boardService.updateComment(boardCode, postId, commentId, request);
+    }
+
+    @DeleteMapping("/boards/{boardCode}/posts/{postId}/comments/{commentId}")
+    public BoardCommentDeleteResponse deleteComment(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @PathVariable Long commentId
+    ) {
+        return boardService.deleteComment(boardCode, postId, commentId);
     }
 
     @PostMapping("/boards/{boardCode}/posts/{postId}/reactions")

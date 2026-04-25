@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { createComment, createReaction, deletePost, deleteReaction, getPost, updatePost } from '../api/boards';
+import { createComment, createReaction, deleteComment, deletePost, deleteReaction, getPost, updateComment, updatePost } from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -181,8 +181,11 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
   const [comments, setComments] = useState<BoardCommentItem[]>(post.comments ?? []);
   const [replyContent, setReplyContent] = useState('');
   const [replyParentId, setReplyParentId] = useState<number>();
+  const [editingCommentId, setEditingCommentId] = useState<number>();
+  const [editCommentContent, setEditCommentContent] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [submittingCommentMutation, setSubmittingCommentMutation] = useState(false);
   const [submittingReaction, setSubmittingReaction] = useState<'bookmark' | 'like'>();
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
@@ -193,6 +196,8 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
     setComment('');
     setReplyContent('');
     setReplyParentId(undefined);
+    setEditingCommentId(undefined);
+    setEditCommentContent('');
     setMessage('댓글을 등록하면 서버에 저장됩니다.');
   }, [post.id, post.comments]);
 
@@ -232,6 +237,55 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
       setMessage(getErrorMessage(error));
     } finally {
       setSubmittingReply(false);
+    }
+  };
+
+  const startCommentEdit = (item: BoardCommentItem) => {
+    setEditingCommentId(item.id);
+    setEditCommentContent(item.content);
+    setReplyParentId(undefined);
+    setMessage('댓글을 수정할 수 있습니다.');
+  };
+
+  const submitCommentEdit = async (event: FormEvent<HTMLFormElement>, commentId: number) => {
+    event.preventDefault();
+    const content = editCommentContent.trim();
+    if (!content) return;
+
+    setSubmittingCommentMutation(true);
+    setMessage('댓글을 저장하는 중입니다.');
+    try {
+      const updated = await updateComment(boardCode, post.id, commentId, content);
+      setComments((items) => replaceComment(items, { ...updated, replies: updated.replies ?? [] }));
+      setEditingCommentId(undefined);
+      setEditCommentContent('');
+      setMessage('댓글이 저장되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingCommentMutation(false);
+    }
+  };
+
+  const deleteCommentItem = async (commentId: number) => {
+    if (!window.confirm('댓글을 삭제할까요?')) return;
+
+    setSubmittingCommentMutation(true);
+    setMessage('댓글을 삭제하는 중입니다.');
+    try {
+      const result = await deleteComment(boardCode, post.id, commentId);
+      if (result.deleted) {
+        setComments((items) => removeComment(items, commentId));
+        setEditingCommentId(undefined);
+        setEditCommentContent('');
+        setMessage('댓글이 삭제되었습니다.');
+      } else {
+        setMessage('댓글 삭제 결과를 확인하지 못했습니다.');
+      }
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingCommentMutation(false);
     }
   };
 
@@ -289,8 +343,19 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
           <CommentList
             comments={comments}
             replyContent={replyContent}
+            editCommentContent={editCommentContent}
+            editingCommentId={editingCommentId}
+            submittingCommentMutation={submittingCommentMutation}
             replyParentId={replyParentId}
             submittingReply={submittingReply}
+            onCommentDelete={(commentId) => { void deleteCommentItem(commentId); }}
+            onCommentEdit={startCommentEdit}
+            onCommentEditCancel={() => {
+              setEditingCommentId(undefined);
+              setEditCommentContent('');
+            }}
+            onCommentEditContentChange={setEditCommentContent}
+            onCommentEditSubmit={submitCommentEdit}
             onReplyContentChange={setReplyContent}
             onReplySubmit={submitReply}
             onReplyToggle={(commentId) => {
@@ -306,17 +371,33 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
 
 function CommentList({
   comments,
+  editCommentContent,
+  editingCommentId,
   replyContent,
   replyParentId,
+  submittingCommentMutation,
   submittingReply,
+  onCommentDelete,
+  onCommentEdit,
+  onCommentEditCancel,
+  onCommentEditContentChange,
+  onCommentEditSubmit,
   onReplyContentChange,
   onReplySubmit,
   onReplyToggle,
 }: {
   comments: BoardCommentItem[];
+  editCommentContent: string;
+  editingCommentId?: number;
   replyContent: string;
   replyParentId?: number;
+  submittingCommentMutation: boolean;
   submittingReply: boolean;
+  onCommentDelete: (commentId: number) => void;
+  onCommentEdit: (comment: BoardCommentItem) => void;
+  onCommentEditCancel: () => void;
+  onCommentEditContentChange: (value: string) => void;
+  onCommentEditSubmit: (event: FormEvent<HTMLFormElement>, commentId: number) => Promise<void>;
   onReplyContentChange: (value: string) => void;
   onReplySubmit: (event: FormEvent<HTMLFormElement>, parentId: number) => Promise<void>;
   onReplyToggle: (commentId: number) => void;
@@ -326,11 +407,38 @@ function CommentList({
       {comments.map((item) => (
         <li key={item.id}>
           <strong>{item.authorName || '익명'}</strong>
-          <span>{item.content}</span>
+          {editingCommentId === item.id ? (
+            <form className="comment-form" onSubmit={(event) => { void onCommentEditSubmit(event, item.id); }}>
+              <label className="visually-hidden" htmlFor={`comment-edit-${item.id}`}>댓글 수정</label>
+              <input
+                disabled={submittingCommentMutation}
+                id={`comment-edit-${item.id}`}
+                onChange={(event) => onCommentEditContentChange(event.target.value)}
+                required
+                value={editCommentContent}
+              />
+              <button className="ghost-button" disabled={submittingCommentMutation} type="submit">
+                {submittingCommentMutation ? '저장 중' : '저장'}
+              </button>
+              <button className="ghost-button" disabled={submittingCommentMutation} onClick={onCommentEditCancel} type="button">
+                취소
+              </button>
+            </form>
+          ) : (
+            <span>{item.content}</span>
+          )}
           <small>{formatDate(item.createdAt)}</small>
-          <button className="ghost-button" type="button" onClick={() => onReplyToggle(item.id)}>
-            {replyParentId === item.id ? '답글 취소' : '답글'}
-          </button>
+          <div className="action-row">
+            <button className="ghost-button" type="button" onClick={() => onReplyToggle(item.id)}>
+              {replyParentId === item.id ? '답글 취소' : '답글'}
+            </button>
+            <button className="ghost-button" disabled={submittingCommentMutation} onClick={() => onCommentEdit(item)} type="button">
+              수정
+            </button>
+            <button className="ghost-button danger" disabled={submittingCommentMutation} onClick={() => onCommentDelete(item.id)} type="button">
+              삭제
+            </button>
+          </div>
           {replyParentId === item.id ? (
             <form className="comment-form" onSubmit={(event) => { void onReplySubmit(event, item.id); }}>
               <label className="visually-hidden" htmlFor={`reply-${item.id}`}>답글</label>
@@ -351,9 +459,17 @@ function CommentList({
             <div className="detail-info">
               <CommentList
                 comments={item.replies}
+                editCommentContent={editCommentContent}
+                editingCommentId={editingCommentId}
                 replyContent={replyContent}
                 replyParentId={replyParentId}
+                submittingCommentMutation={submittingCommentMutation}
                 submittingReply={submittingReply}
+                onCommentDelete={onCommentDelete}
+                onCommentEdit={onCommentEdit}
+                onCommentEditCancel={onCommentEditCancel}
+                onCommentEditContentChange={onCommentEditContentChange}
+                onCommentEditSubmit={onCommentEditSubmit}
                 onReplyContentChange={onReplyContentChange}
                 onReplySubmit={onReplySubmit}
                 onReplyToggle={onReplyToggle}
@@ -376,6 +492,24 @@ function appendReply(comments: BoardCommentItem[], parentId: number, reply: Boar
     }
     return item;
   });
+}
+
+function replaceComment(comments: BoardCommentItem[], updated: BoardCommentItem): BoardCommentItem[] {
+  return comments.map((item) => {
+    if (item.id === updated.id) {
+      return { ...item, ...updated, replies: item.replies };
+    }
+    if (item.replies?.length) {
+      return { ...item, replies: replaceComment(item.replies, updated) };
+    }
+    return item;
+  });
+}
+
+function removeComment(comments: BoardCommentItem[], commentId: number): BoardCommentItem[] {
+  return comments
+    .filter((item) => item.id !== commentId)
+    .map((item) => (item.replies?.length ? { ...item, replies: removeComment(item.replies, commentId) } : item));
 }
 
 function totalCommentCount(comments: BoardCommentItem[]): number {
