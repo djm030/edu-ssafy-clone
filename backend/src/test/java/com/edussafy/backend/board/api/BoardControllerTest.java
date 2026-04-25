@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -149,12 +150,15 @@ class BoardControllerTest {
     }
 
     @Test
-    void createCommentReturnsPersistedShapeAndReactionKeepsDemoShape() throws Exception {
+    void createCommentReturnsPersistedShapeAndReactionCanBeToggled() throws Exception {
         given(boardService.createComment(eq("free"), eq(10L), any())).willReturn(new BoardCommentCreateResponse(
                 new BoardCommentCreatedItem(44L, 10L, 40L, "Comment", "Demo Learner", null, false)
         ));
         given(boardService.createReaction(eq("free"), eq(10L), any())).willReturn(new BoardReactionCreateResponse(
-                new BoardReactionCreatedItem(10L, "like", true, true)
+                new BoardReactionCreatedItem(10L, "like", true, false)
+        ));
+        given(boardService.deleteReaction("free", 10L, "like")).willReturn(new BoardReactionCreateResponse(
+                new BoardReactionCreatedItem(10L, "like", false, false)
         ));
 
         mockMvc.perform(post("/api/boards/free/posts/10/comments")
@@ -170,7 +174,13 @@ class BoardControllerTest {
                         .content("{\"type\":\"like\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.type").value("like"))
-                .andExpect(jsonPath("$.item.active").value(true));
+                .andExpect(jsonPath("$.item.active").value(true))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(delete("/api/boards/free/posts/10/reactions/like"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.type").value("like"))
+                .andExpect(jsonPath("$.item.active").value(false))
+                .andExpect(jsonPath("$.item.demo").value(false));
     }
 
     @Test

@@ -7,6 +7,7 @@ const PAGE_SIZE = 20;
 type BoardPostDetailResponse = { post?: BoardPostListItem; item?: BoardPostListItem };
 type BoardPostCreateResponse = { item: BoardPostListItem };
 type BoardCommentCreateResponse = { item: BoardCommentItem };
+type BoardReactionResponse = { item: { postId: number; type: string; active: boolean; demo?: boolean } };
 
 interface PostQuery {
   categoryId?: number;
@@ -111,5 +112,29 @@ export function createComment(
     }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function createReaction(
+  boardCode: BoardCode,
+  postId: number,
+  type: 'bookmark' | 'like',
+): Promise<BoardReactionResponse['item']> {
+  return fetchJson<BoardReactionResponse>(`/api/boards/${boardCode}/posts/${postId}/reactions`, {
+    body: JSON.stringify({ type }),
+    fallback: () => ({ item: { postId, type, active: true, demo: true } }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function deleteReaction(
+  boardCode: BoardCode,
+  postId: number,
+  type: 'bookmark' | 'like',
+): Promise<BoardReactionResponse['item']> {
+  return fetchJson<BoardReactionResponse>(`/api/boards/${boardCode}/posts/${postId}/reactions/${type}`, {
+    fallback: () => ({ item: { postId, type, active: false, demo: true } }),
+    method: 'DELETE',
   }).then((response) => response.item);
 }

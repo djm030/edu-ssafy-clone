@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { createComment, getPost } from '../api/boards';
+import { createComment, createReaction, deleteReaction, getPost } from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -89,6 +89,7 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
   const [replyParentId, setReplyParentId] = useState<number>();
   const [submittingComment, setSubmittingComment] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [submittingReaction, setSubmittingReaction] = useState<'bookmark' | 'like'>();
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [message, setMessage] = useState('댓글을 등록하면 서버에 저장됩니다.');
@@ -140,13 +141,43 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
     }
   };
 
+  const toggleReaction = async (type: 'bookmark' | 'like', active: boolean) => {
+    setSubmittingReaction(type);
+    setMessage(active ? '반응을 해제하는 중입니다.' : '반응을 저장하는 중입니다.');
+    try {
+      const result = active
+        ? await deleteReaction(boardCode, post.id, type)
+        : await createReaction(boardCode, post.id, type);
+      if (type === 'like') {
+        setLiked(result.active);
+      } else {
+        setBookmarked(result.active);
+      }
+      setMessage(result.active ? '반응이 저장되었습니다.' : '반응이 해제되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingReaction(undefined);
+    }
+  };
+
   return (
     <section className="board-actions" aria-label="게시글 반응">
       <div className="action-row">
-        <button className={liked ? 'primary-action' : 'ghost-button'} onClick={() => { setLiked((value) => !value); setMessage('추천 상태가 변경되었습니다.'); }} type="button">
+        <button
+          className={liked ? 'primary-action' : 'ghost-button'}
+          disabled={submittingReaction === 'like'}
+          onClick={() => { void toggleReaction('like', liked); }}
+          type="button"
+        >
           추천 {(post.reactionCount || 0) + (liked ? 1 : 0)}
         </button>
-        <button className={bookmarked ? 'primary-action' : 'ghost-button'} onClick={() => { setBookmarked((value) => !value); setMessage('찜 상태가 변경되었습니다.'); }} type="button">
+        <button
+          className={bookmarked ? 'primary-action' : 'ghost-button'}
+          disabled={submittingReaction === 'bookmark'}
+          onClick={() => { void toggleReaction('bookmark', bookmarked); }}
+          type="button"
+        >
           찜 {(post.bookmarkCount || 0) + (bookmarked ? 1 : 0)}
         </button>
       </div>

@@ -12,6 +12,7 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.CategorySummary;
 import com.edussafy.backend.board.repository.BoardRepository;
 import java.time.OffsetDateTime;
@@ -116,6 +117,30 @@ class BoardServiceTest {
         assertThat(response.item().id()).isEqualTo(45L);
         assertThat(response.item().parentCommentId()).isEqualTo(44L);
         verify(repository).createComment(10L, 7L, 44L, "Reply");
+    }
+
+    @Test
+    void persistsAndDeletesBoardReaction() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Original", List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
+        BoardService service = new BoardService(repository);
+
+        var created = service.createReaction("free", 10L, new BoardReactionCreateRequest(" Like "));
+        var deleted = service.deleteReaction("free", 10L, "LIKE");
+
+        assertThat(created.item().postId()).isEqualTo(10L);
+        assertThat(created.item().type()).isEqualTo("like");
+        assertThat(created.item().active()).isTrue();
+        assertThat(created.item().demo()).isFalse();
+        assertThat(deleted.item().postId()).isEqualTo(10L);
+        assertThat(deleted.item().type()).isEqualTo("like");
+        assertThat(deleted.item().active()).isFalse();
+        assertThat(deleted.item().demo()).isFalse();
+        verify(repository).createReaction(10L, 7L, "like");
+        verify(repository).deleteReaction(10L, 7L, "like");
     }
 
     private BoardPostDetail detail(long id, String title, List<BoardCommentItem> comments) {

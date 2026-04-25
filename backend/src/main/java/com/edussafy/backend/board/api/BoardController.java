@@ -17,6 +17,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -91,5 +92,14 @@ public class BoardController {
             @Valid @RequestBody BoardReactionCreateRequest request
     ) {
         return boardService.createReaction(boardCode, postId, request);
+    }
+
+    @DeleteMapping("/boards/{boardCode}/posts/{postId}/reactions/{type}")
+    public BoardReactionCreateResponse deleteReaction(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @PathVariable String type
+    ) {
+        return boardService.deleteReaction(boardCode, postId, type);
     }
 }

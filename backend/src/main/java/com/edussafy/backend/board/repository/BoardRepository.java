@@ -253,6 +253,30 @@ public class BoardRepository {
                 .list();
     }
 
+    public void createReaction(long postId, long userId, String reactionType) {
+        jdbcClient.sql("""
+                INSERT IGNORE INTO board_post_reactions (board_post_id, user_id, reaction_type_code)
+                VALUES (:postId, :userId, :reactionType)
+                """)
+                .param("postId", postId)
+                .param("userId", userId)
+                .param("reactionType", reactionType)
+                .update();
+    }
+
+    public void deleteReaction(long postId, long userId, String reactionType) {
+        jdbcClient.sql("""
+                DELETE FROM board_post_reactions
+                WHERE board_post_id = :postId
+                  AND user_id = :userId
+                  AND reaction_type_code = :reactionType
+                """)
+                .param("postId", postId)
+                .param("userId", userId)
+                .param("reactionType", reactionType)
+                .update();
+    }
+
     private SqlParts buildWhereClause(long boardId, BoardQuery query) {
         StringBuilder where = new StringBuilder("WHERE p.board_id = :boardId");
         Map<String, Object> params = new LinkedHashMap<>();

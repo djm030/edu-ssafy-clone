@@ -118,17 +118,47 @@ public class BoardService {
         ));
     }
 
+    @Transactional
     public BoardReactionCreateResponse createReaction(
             String boardCode,
             long postId,
             BoardReactionCreateRequest request
     ) {
-        requireBoardId(boardCode);
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        Long userId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        String type = request.type().trim().toLowerCase();
+        if (userId != null) {
+            boardRepository.createReaction(postId, userId, type);
+        }
         return new BoardReactionCreateResponse(new BoardReactionCreatedItem(
                 postId,
-                request.type().trim().toLowerCase(),
+                type,
                 true,
-                true
+                false
+        ));
+    }
+
+    @Transactional
+    public BoardReactionCreateResponse deleteReaction(
+            String boardCode,
+            long postId,
+            String type
+    ) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        Long userId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        String normalizedType = StringUtils.hasText(type) ? type.trim().toLowerCase() : "like";
+        if (userId != null) {
+            boardRepository.deleteReaction(postId, userId, normalizedType);
+        }
+        return new BoardReactionCreateResponse(new BoardReactionCreatedItem(
+                postId,
+                normalizedType,
+                false,
+                false
         ));
     }
 
