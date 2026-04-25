@@ -311,6 +311,28 @@ class PriorityApiServiceTest {
     }
 
     @Test
+    void loginRejectsUnknownEmailWithoutCreatingDemoSession() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        given(repository.findUserByEmail("intruder@ssafy.com")).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            assertThatThrownBy(() -> service.login(new LoginRequest("intruder@ssafy.com", "password")))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("401");
+            assertThat(request.getSession(false)).isNull();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
     void persistsProfileUpdateAndReturnsStoredProfile() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
         PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);

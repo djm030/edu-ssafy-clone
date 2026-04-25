@@ -166,10 +166,12 @@ public class PriorityApiService {
 
     public UserResponse login(LoginRequest request) {
         Optional<UserProfile> persistedUser = safe(() -> repository.findUserByEmail(request.email()), Optional.empty());
-        UserProfile user = persistedUser.orElse(demoUser(request.email()));
-        String storedPasswordHash = persistedUser
-                .map(profile -> safe(() -> repository.findPasswordHash(profile.id()).orElse(null), null))
-                .orElse("{noop}password");
+        if (persistedUser.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+        }
+
+        UserProfile user = persistedUser.get();
+        String storedPasswordHash = safe(() -> repository.findPasswordHash(user.id()).orElse(null), null);
 
         if (!passwordMatches(request.password(), storedPasswordHash)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password.");

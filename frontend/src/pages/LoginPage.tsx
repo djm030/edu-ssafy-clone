@@ -14,6 +14,7 @@ function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(initialMessage || '세션이 만료되었거나 로그인이 필요한 경우 다시 로그인해 주세요.');
+  const [credentialHint, setCredentialHint] = useState('seed 계정: student@ssafy.com / password');
 
   useEffect(() => {
     if (initialMessage) setMessage(initialMessage);
@@ -27,9 +28,11 @@ function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
     try {
       const response = await login(email, password);
       if (remember) localStorage.setItem('eduSSAFY.email', email);
+      setCredentialHint(`${response.user.name} 계정으로 로그인되었습니다.`);
       onLogin(response.user);
     } catch (error) {
       setMessage(getErrorMessage(error));
+      setCredentialHint('등록된 사용자만 로그인할 수 있습니다. seed 계정: student@ssafy.com / password');
     } finally {
       setSubmitting(false);
     }
@@ -42,6 +45,7 @@ function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
           <p className="eyebrow">eduSSAFY</p>
           <h1 id="login-title">로그인</h1>
           <p>교육생 포털에 접속하려면 계정 정보를 입력하세요.</p>
+          <p className="form-message">{credentialHint}</p>
         </div>
 
         {message ? <div className="inline-alert">{message}</div> : null}
