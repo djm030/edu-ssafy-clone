@@ -6,9 +6,10 @@ import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
 import type { AttendanceRecord, LoadState } from '../types';
 
-const statusLabel = {
+const statusLabel: Record<AttendanceRecord['status'], string> = {
   absent: '결석',
-  appeal: '소명 가능',
+  early_leave: '조퇴',
+  excused: '공결',
   late: '지각',
   present: '출석',
 };
@@ -39,7 +40,7 @@ function AttendancePage() {
   const counts = useMemo(
     () => ({
       absent: records.filter((record) => record.status === 'absent').length,
-      appeal: records.filter((record) => record.status === 'appeal').length,
+      appeal: records.filter((record) => record.appealAvailable).length,
       late: records.filter((record) => record.status === 'late').length,
       present: records.filter((record) => record.status === 'present').length,
     }),
@@ -86,22 +87,46 @@ function AttendanceTable({ records }: { records: AttendanceRecord[] }) {
         <span role="columnheader">입실</span>
         <span role="columnheader">퇴실</span>
         <span role="columnheader">비고</span>
+        <span role="columnheader">소명</span>
       </div>
       {records.map((record) => (
         <div className="simple-row" key={record.id} role="row">
           <span role="cell">{record.date}</span>
           <span role="cell">
-            <StatusPill tone={record.status === 'present' ? 'green' : record.status === 'late' ? 'yellow' : 'red'}>
+            <StatusPill tone={statusTone(record.status)}>
               {statusLabel[record.status]}
             </StatusPill>
           </span>
           <span role="cell">{record.checkIn || '-'}</span>
           <span role="cell">{record.checkOut || '-'}</span>
           <span role="cell">{record.note || '-'}</span>
+          <span role="cell">
+            {record.appealAvailable ? (
+              <a href={`/mycampus/attendance/appeals/new?recordId=${record.id}`}>신청</a>
+            ) : record.appealStatus ? (
+              <StatusPill tone="gray">{appealStatusLabel(record.appealStatus)}</StatusPill>
+            ) : (
+              '-'
+            )}
+          </span>
         </div>
       ))}
     </div>
   );
+}
+
+function statusTone(status: AttendanceRecord['status']) {
+  if (status === 'present' || status === 'excused') return 'green';
+  if (status === 'late' || status === 'early_leave') return 'yellow';
+  return 'red';
+}
+
+function appealStatusLabel(status: string) {
+  if (status === 'requested') return '접수됨';
+  if (status === 'approved') return '승인됨';
+  if (status === 'rejected') return '반려됨';
+  if (status === 'canceled') return '취소됨';
+  return status;
 }
 
 export default AttendancePage;

@@ -50,6 +50,9 @@ type BackendAttendanceRecord = Partial<AttendanceRecord> & {
   checkOutAt?: string | null;
   approvalType?: string | null;
   appealAvailable?: boolean;
+  appealId?: number | null;
+  appealStatus?: string | null;
+  appealRequestedAt?: string | null;
 };
 
 type BackendNotificationItem = Partial<NotificationItem> & {
@@ -124,20 +127,26 @@ function isToday(value?: string | null): boolean {
 }
 
 function toAttendanceStatus(item: BackendAttendanceRecord): AttendanceRecord['status'] {
-  if (item.appealAvailable || item.status === 'appeal') return 'appeal';
   if (item.status === 'late') return 'late';
   if (item.status === 'absent') return 'absent';
+  if (item.status === 'early_leave') return 'early_leave';
+  if (item.status === 'excused') return 'excused';
   return 'present';
 }
 
 function toAttendanceRecord(item: BackendAttendanceRecord): AttendanceRecord {
+  const appealStatus = item.appealStatus || undefined;
   return {
     id: Number(item.id),
     date: item.date || '-',
     status: toAttendanceStatus(item),
     checkIn: item.checkIn || item.checkInAt?.slice(0, 5),
     checkOut: item.checkOut || item.checkOutAt?.slice(0, 5),
-    note: item.note || item.approvalType || undefined,
+    note: item.note || (appealStatus === 'requested' ? '소명 접수됨' : item.approvalType || undefined),
+    appealAvailable: Boolean(item.appealAvailable),
+    appealId: item.appealId ?? undefined,
+    appealStatus,
+    appealRequestedAt: item.appealRequestedAt || undefined,
   };
 }
 

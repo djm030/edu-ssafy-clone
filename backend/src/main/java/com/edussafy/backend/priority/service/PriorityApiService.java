@@ -1,8 +1,8 @@
 package com.edussafy.backend.priority.service;
 
-import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
@@ -62,11 +62,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
@@ -83,6 +85,9 @@ public class PriorityApiService {
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_TYPE = "contact_request";
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
     private static final String SESSION_USER_ID = "edussafy.currentUserId";
+    private static final Set<String> ATTENDANCE_APPEAL_TYPES = Set.of("check_in", "check_out", "status_change", "other");
+    private static final Set<String> ATTENDANCE_STATUSES = Set.of("present", "late", "absent", "early_leave", "excused");
+    private static final Set<String> CLOSED_ATTENDANCE_APPEAL_STATUSES = Set.of("rejected", "canceled");
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "learner", List.of(
                     "dashboard:read",
@@ -187,16 +192,20 @@ public class PriorityApiService {
         return new AttendanceRecordsResponse(summary, safe(() -> repository.findAttendanceRecords(user.id()), List.of()));
     }
 
+    @Transactional
     public AttendanceAppealResponse createAttendanceAppeal(AttendanceAppealRequest request) {
-        return new AttendanceAppealResponse(new AttendanceAppealItem(
-                0L,
-                request.type().trim().toLowerCase(),
-                request.reason().trim(),
-                normalizeNullable(request.requestedStatus()),
-                "requested",
-                null,
-                true
-        ));
+        UserProfile user = currentUser();
+        AttendanceRecordItem record = repository.findAttendanceRecord(user.id(), request.attendanceRecordId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attendance record not found."));
+        if (!isAttendanceAppealAvailable(record)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Attendance appeal is already pending or resolved.");
+        }
+
+        String type = normalizeAttendanceAppealType(request.type());
+        String reason = request.reason().trim();
+        String requestedStatus = normalizeAttendanceStatus(request.requestedStatus(), record.status());
+
+        return new AttendanceAppealResponse(repository.createAttendanceAppeal(record.id(), type, reason, requestedStatus));
     }
 
     public NotificationsResponse notifications(int page, int size) {
@@ -454,6 +463,30 @@ public class PriorityApiService {
             return normalized;
         }
         return "learner";
+    }
+
+    private boolean isAttendanceAppealAvailable(AttendanceRecordItem record) {
+        String appealStatus = record.appealStatus();
+        return record.appealAvailable() && (appealStatus == null || CLOSED_ATTENDANCE_APPEAL_STATUSES.contains(appealStatus));
+    }
+
+    private String normalizeAttendanceAppealType(String value) {
+        String normalized = normalizeWithDefault(value, "other").toLowerCase(Locale.ROOT);
+        if ("missing_check".equals(normalized)) {
+            return "check_in";
+        }
+        if (!ATTENDANCE_APPEAL_TYPES.contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported attendance appeal type.");
+        }
+        return normalized;
+    }
+
+    private String normalizeAttendanceStatus(String value, String defaultStatus) {
+        String normalized = normalizeWithDefault(value, defaultStatus).toLowerCase(Locale.ROOT);
+        if (!ATTENDANCE_STATUSES.contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported requested attendance status.");
+        }
+        return normalized;
     }
 
     private ProfileDetails profileFromUser(UserProfile user) {

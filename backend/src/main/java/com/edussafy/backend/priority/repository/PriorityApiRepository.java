@@ -1,5 +1,6 @@
 package com.edussafy.backend.priority.repository;
 
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
@@ -22,6 +23,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.jdbc.core.GeneratedKeyHolder;
+import org.springframework.jdbc.core.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -118,25 +121,117 @@ public class PriorityApiRepository {
     }
 
     public List<AttendanceRecordItem> findAttendanceRecords(long userId) {
-        return jdbcClient.sql("""
-                SELECT attendance_record_id, attendance_date, check_in_at, check_out_at,
-                       attendance_status_code, approval_type_code
-                FROM attendance_records
-                WHERE user_id = :userId
-                ORDER BY attendance_date DESC
-                LIMIT 60
-                """)
+        return jdbcClient.sql(attendanceRecordSelect("WHERE ar.user_id = :userId ORDER BY ar.attendance_date DESC LIMIT 60"))
                 .param("userId", userId)
-                .query((rs, rowNum) -> new AttendanceRecordItem(
-                        rs.getLong("attendance_record_id"),
-                        rs.getDate("attendance_date").toLocalDate(),
-                        nullableTime(rs, "check_in_at"),
-                        nullableTime(rs, "check_out_at"),
-                        rs.getString("attendance_status_code"),
-                        rs.getString("approval_type_code"),
-                        true
-                ))
+                .query(this::mapAttendanceRecord)
                 .list();
+    }
+
+    public Optional<AttendanceRecordItem> findAttendanceRecord(long userId, long attendanceRecordId) {
+        return jdbcClient.sql(attendanceRecordSelect("WHERE ar.user_id = :userId AND ar.attendance_record_id = :attendanceRecordId LIMIT 1"))
+                .param("userId", userId)
+                .param("attendanceRecordId", attendanceRecordId)
+                .query(this::mapAttendanceRecord)
+                .optional();
+    }
+
+    public AttendanceAppealItem createAttendanceAppeal(
+            long attendanceRecordId,
+            String type,
+            String reason,
+            String requestedStatus
+    ) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO attendance_appeals (
+                    attendance_record_id,
+                    appeal_type_code,
+                    reason,
+                    requested_status_code
+                )
+                VALUES (
+                    :attendanceRecordId,
+                    :appealType,
+                    :reason,
+                    :requestedStatus
+                )
+                """)
+                .param("attendanceRecordId", attendanceRecordId)
+                .param("appealType", type)
+                .param("reason", reason)
+                .param("requestedStatus", requestedStatus)
+                .update(keyHolder, "attendance_appeal_id");
+
+        Number key = keyHolder.getKey();
+        long appealId = key == null ? 0L : key.longValue();
+        return findAttendanceAppeal(appealId).orElseGet(() -> new AttendanceAppealItem(
+                appealId,
+                attendanceRecordId,
+                type,
+                reason,
+                requestedStatus,
+                "requested",
+                OffsetDateTime.now(SEOUL_ZONE),
+                false
+        ));
+    }
+
+    public Optional<AttendanceAppealItem> findAttendanceAppeal(long attendanceAppealId) {
+        return jdbcClient.sql("""
+                SELECT attendance_appeal_id, attendance_record_id, appeal_type_code, reason,
+                       requested_status_code, approval_status_code, requested_at
+                FROM attendance_appeals
+                WHERE attendance_appeal_id = :attendanceAppealId
+                """)
+                .param("attendanceAppealId", attendanceAppealId)
+                .query((rs, rowNum) -> new AttendanceAppealItem(
+                        rs.getLong("attendance_appeal_id"),
+                        rs.getLong("attendance_record_id"),
+                        rs.getString("appeal_type_code"),
+                        rs.getString("reason"),
+                        rs.getString("requested_status_code"),
+                        rs.getString("approval_status_code"),
+                        toOffset(rs.getTimestamp("requested_at")),
+                        false
+                ))
+                .optional();
+    }
+
+    private String attendanceRecordSelect(String suffix) {
+        return """
+                SELECT ar.attendance_record_id, ar.attendance_date, ar.check_in_at, ar.check_out_at,
+                       ar.attendance_status_code, ar.approval_type_code,
+                       latest_appeal.attendance_appeal_id, latest_appeal.approval_status_code AS appeal_status,
+                       latest_appeal.requested_at AS appeal_requested_at
+                FROM attendance_records ar
+                LEFT JOIN (
+                    SELECT a.attendance_appeal_id, a.attendance_record_id, a.approval_status_code, a.requested_at
+                    FROM attendance_appeals a
+                    JOIN (
+                        SELECT attendance_record_id, MAX(attendance_appeal_id) AS latest_id
+                        FROM attendance_appeals
+                        GROUP BY attendance_record_id
+                    ) latest ON latest.latest_id = a.attendance_appeal_id
+                ) latest_appeal ON latest_appeal.attendance_record_id = ar.attendance_record_id
+                """ + suffix;
+    }
+
+    private AttendanceRecordItem mapAttendanceRecord(ResultSet rs, int rowNum) throws SQLException {
+        String appealStatus = rs.getString("appeal_status");
+        Long appealId = nullableLong(rs, "attendance_appeal_id");
+        boolean appealAvailable = appealStatus == null || "rejected".equals(appealStatus) || "canceled".equals(appealStatus);
+        return new AttendanceRecordItem(
+                rs.getLong("attendance_record_id"),
+                rs.getDate("attendance_date").toLocalDate(),
+                nullableTime(rs, "check_in_at"),
+                nullableTime(rs, "check_out_at"),
+                rs.getString("attendance_status_code"),
+                rs.getString("approval_type_code"),
+                appealAvailable,
+                appealId,
+                appealStatus,
+                toOffset(rs.getTimestamp("appeal_requested_at"))
+        );
     }
 
     public long countNotifications(long userId) {
@@ -409,6 +504,11 @@ public class PriorityApiRepository {
 
     private Integer nullableInt(ResultSet rs, String columnName) throws SQLException {
         int value = rs.getInt(columnName);
+        return rs.wasNull() ? null : value;
+    }
+
+    private Long nullableLong(ResultSet rs, String columnName) throws SQLException {
+        long value = rs.getLong(columnName);
         return rs.wasNull() ? null : value;
     }
 

@@ -76,10 +76,14 @@ export interface DashboardSummary {
 export interface AttendanceRecord {
   id: number;
   date: string;
-  status: 'present' | 'late' | 'absent' | 'appeal';
+  status: 'present' | 'late' | 'absent' | 'early_leave' | 'excused';
   checkIn?: string;
   checkOut?: string;
   note?: string;
+  appealAvailable?: boolean;
+  appealId?: number;
+  appealStatus?: string;
+  appealRequestedAt?: string;
 }
 
 export interface NotificationItem {
@@ -218,6 +222,7 @@ export interface BoardPostDraft {
 }
 
 export interface AttendanceAppealDraft {
+  attendanceRecordId: number;
   type: string;
   reason: string;
   requestedStatus?: string;

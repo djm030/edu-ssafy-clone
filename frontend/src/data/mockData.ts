@@ -35,9 +35,9 @@ export const mockDashboard: DashboardSummary = {
 export const mockAttendanceRecords: AttendanceRecord[] = [
   { id: 1, date: '2026-04-24', status: 'present', checkIn: '08:43', checkOut: '17:58' },
   { id: 2, date: '2026-04-23', status: 'present', checkIn: '08:51', checkOut: '18:01' },
-  { id: 3, date: '2026-04-22', status: 'late', checkIn: '09:11', checkOut: '18:04', note: '지각' },
+  { id: 3, date: '2026-04-22', status: 'late', checkIn: '09:11', checkOut: '18:04', note: '지각', appealAvailable: true },
   { id: 4, date: '2026-04-21', status: 'present', checkIn: '08:39', checkOut: '17:55' },
-  { id: 5, date: '2026-04-20', status: 'appeal', checkIn: '-', checkOut: '-', note: '소명 가능' },
+  { id: 5, date: '2026-04-20', status: 'absent', checkIn: '-', checkOut: '-', note: '소명 가능', appealAvailable: true },
 ];
 
 export const mockNotifications: NotificationItem[] = [

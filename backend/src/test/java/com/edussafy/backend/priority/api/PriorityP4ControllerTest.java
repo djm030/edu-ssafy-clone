@@ -39,17 +39,19 @@ class PriorityP4ControllerTest {
     private PriorityApiService priorityApiService;
 
     @Test
-    void attendanceAppealReturnsDemoShape() throws Exception {
+    void attendanceAppealReturnsPersistedShape() throws Exception {
         given(priorityApiService.createAttendanceAppeal(any())).willReturn(new AttendanceAppealResponse(
-                new AttendanceAppealItem(0L, "status_change", "Need correction", "present", "requested", null, true)
+                new AttendanceAppealItem(101L, 7L, "status_change", "Need correction", "present", "requested", null, false)
         ));
 
         mockMvc.perform(post("/api/attendance/appeals")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"type\":\"status_change\",\"reason\":\"Need correction\",\"requestedStatus\":\"present\"}"))
+                        .content("{\"attendanceRecordId\":7,\"type\":\"status_change\",\"reason\":\"Need correction\",\"requestedStatus\":\"present\"}"))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(101))
+                .andExpect(jsonPath("$.item.attendanceRecordId").value(7))
                 .andExpect(jsonPath("$.item.status").value("requested"))
-                .andExpect(jsonPath("$.item.demo").value(true));
+                .andExpect(jsonPath("$.item.demo").value(false));
     }
 
     @Test

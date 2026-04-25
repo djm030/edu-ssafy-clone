@@ -3,6 +3,7 @@ package com.edussafy.backend.priority.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -78,11 +79,15 @@ public final class PriorityDtos {
             LocalTime checkOutAt,
             String status,
             String approvalType,
-            boolean appealAvailable
+            boolean appealAvailable,
+            Long appealId,
+            String appealStatus,
+            OffsetDateTime appealRequestedAt
     ) {
     }
 
     public record AttendanceAppealRequest(
+            @NotNull @Positive Long attendanceRecordId,
             @NotBlank @Size(max = 50) String type,
             @NotBlank @Size(max = 1000) String reason,
             @Size(max = 50) String requestedStatus
@@ -94,6 +99,7 @@ public final class PriorityDtos {
 
     public record AttendanceAppealItem(
             long id,
+            long attendanceRecordId,
             String type,
             String reason,
             String requestedStatus,

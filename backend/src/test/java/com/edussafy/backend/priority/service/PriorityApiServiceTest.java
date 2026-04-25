@@ -6,6 +6,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
@@ -19,6 +23,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
+import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -204,4 +209,79 @@ class PriorityApiServiceTest {
         assertThat(response.profile().zipCode()).isEqualTo("06234");
         assertThat(response.profile().marketingOptIn()).isTrue();
     }
+
+    @Test
+    void persistsAttendanceAppealForSelectedOwnedRecord() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        AttendanceRecordItem record = new AttendanceRecordItem(
+                7L,
+                LocalDate.of(2026, 4, 23),
+                null,
+                null,
+                "late",
+                "auto",
+                true,
+                null,
+                null,
+                null
+        );
+        AttendanceAppealItem stored = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "requested",
+                null,
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findAttendanceRecord(1L, 7L)).willReturn(Optional.of(record));
+        given(repository.createAttendanceAppeal(7L, "status_change", "QR failed", "present")).willReturn(stored);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AttendanceAppealResponse response = service.createAttendanceAppeal(
+                new AttendanceAppealRequest(7L, "status_change", " QR failed ", "present")
+        );
+
+        verify(repository).createAttendanceAppeal(7L, "status_change", "QR failed", "present");
+        assertThat(response.item().id()).isEqualTo(101L);
+        assertThat(response.item().attendanceRecordId()).isEqualTo(7L);
+        assertThat(response.item().demo()).isFalse();
+    }
+
+    @Test
+    void rejectsAttendanceAppealWhenRecordAlreadyHasPendingAppeal() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        AttendanceRecordItem record = new AttendanceRecordItem(
+                7L,
+                LocalDate.of(2026, 4, 23),
+                null,
+                null,
+                "late",
+                "auto",
+                false,
+                99L,
+                "requested",
+                null
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findAttendanceRecord(1L, 7L)).willReturn(Optional.of(record));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThatThrownBy(() -> service.createAttendanceAppeal(
+                new AttendanceAppealRequest(7L, "status_change", "QR failed", "present")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+    }
+
 }
