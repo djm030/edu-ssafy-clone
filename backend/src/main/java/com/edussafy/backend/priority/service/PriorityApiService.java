@@ -145,6 +145,7 @@ public class PriorityApiService {
             "coach", List.of(
                     "dashboard:read",
                     "attendance:read",
+                    "attendance:resolve",
                     "notifications:send",
                     "learning:manage",
                     "quest:review",

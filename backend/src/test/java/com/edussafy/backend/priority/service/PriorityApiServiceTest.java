@@ -117,7 +117,7 @@ class PriorityApiServiceTest {
         RoleAccessResponse response = service.currentRoleAccess();
 
         assertThat(response.role()).isEqualTo("coach");
-        assertThat(response.permissions()).contains("support:answer", "board:moderate");
+        assertThat(response.permissions()).contains("attendance:resolve", "support:answer", "board:moderate");
         assertThat(response.deniedRoutes()).containsExactly("/admin");
     }
 

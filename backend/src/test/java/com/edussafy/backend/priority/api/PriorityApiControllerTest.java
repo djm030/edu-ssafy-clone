@@ -375,6 +375,17 @@ class PriorityApiControllerTest {
     }
 
     @Test
+    void attendanceAppealResolveRequiresStaffRole() throws Exception {
+        mockMvc.perform(patch("/api/attendance/appeals/101/resolve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"approved\",\"comment\":\"OK\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(priorityApiService);
+    }
+
+    @Test
     void attendanceAppealPendingAndResolveExposeStaffWorkflow() throws Exception {
         AttendanceAppealItem pending = new AttendanceAppealItem(
                 101L,

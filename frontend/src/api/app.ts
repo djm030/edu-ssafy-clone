@@ -362,7 +362,7 @@ export function getCurrentRoleAccess(): Promise<RoleAccess> {
   return fetchJson<RoleAccess>('/api/auth/roles/current', {
     fallback: () => ({
       role: mockUser.role || 'learner',
-      permissions: ['dashboard:read', 'profile:update', 'quest:submit'],
+      permissions: ['dashboard:read', 'attendance:read', 'profile:update', 'quest:submit'],
       deniedRoutes: ['/admin'],
     }),
   });
