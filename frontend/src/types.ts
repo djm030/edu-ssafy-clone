@@ -339,6 +339,11 @@ export interface ProfileEditDraft {
   marketingOptIn?: boolean;
 }
 
+export interface ProfilePasswordChangeDraft {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface SupportTicketDraft {
   title: string;
   content: string;

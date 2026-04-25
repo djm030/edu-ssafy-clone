@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { getProfile, getProfileEditAuthorization, updateProfile } from '../api/app';
+import { changeProfilePassword, getProfile, getProfileEditAuthorization, updateProfile } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -24,6 +24,12 @@ function ProfileEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('수정할 프로필 정보를 입력해 주세요.');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordResult, setPasswordResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [passwordMessage, setPasswordMessage] = useState('현재 비밀번호와 새 비밀번호를 입력해 주세요.');
 
   const applyProfile = useCallback((nextProfile: ProfileDetails) => {
     setProfile(nextProfile);
@@ -92,6 +98,36 @@ function ProfileEditPage() {
     }
   };
 
+  const submitPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordResult('error');
+      setPasswordMessage('새 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordResult('error');
+      setPasswordMessage('새 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
+    setChangingPassword(true);
+    setPasswordResult('idle');
+    try {
+      const response = await changeProfilePassword({ currentPassword, newPassword });
+      setPasswordResult('success');
+      setPasswordMessage(response.message || '비밀번호가 변경되었습니다.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+    } catch (error) {
+      setPasswordResult('error');
+      setPasswordMessage(getErrorMessage(error));
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
     <section className="page">
       <PageHeader eyebrow="PROFILE" title="회원정보 수정" description="프로필 기본 정보를 수정합니다." />
@@ -131,6 +167,44 @@ function ProfileEditPage() {
         <div className="check-result" aria-live="polite">
           <StatusPill tone={result === 'success' ? 'green' : result === 'error' ? 'red' : 'gray'}>{result === 'success' ? '저장완료' : result === 'error' ? '오류' : '대기'}</StatusPill>
           <p>{message}</p>
+        </div>
+        <form className="stack-form" onSubmit={submitPassword}>
+          <h2>비밀번호 변경</h2>
+          <label htmlFor="profile-current-password">현재 비밀번호</label>
+          <input
+            id="profile-current-password"
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            required
+            type="password"
+            value={currentPassword}
+          />
+          <label htmlFor="profile-new-password">새 비밀번호</label>
+          <input
+            id="profile-new-password"
+            minLength={8}
+            onChange={(event) => setNewPassword(event.target.value)}
+            required
+            type="password"
+            value={newPassword}
+          />
+          <label htmlFor="profile-new-password-confirm">새 비밀번호 확인</label>
+          <input
+            id="profile-new-password-confirm"
+            minLength={8}
+            onChange={(event) => setNewPasswordConfirm(event.target.value)}
+            required
+            type="password"
+            value={newPasswordConfirm}
+          />
+          <button className="primary-action" disabled={changingPassword} type="submit">
+            {changingPassword ? '변경 중' : '비밀번호 변경'}
+          </button>
+        </form>
+        <div className="check-result" aria-live="polite">
+          <StatusPill tone={passwordResult === 'success' ? 'green' : passwordResult === 'error' ? 'red' : 'gray'}>
+            {passwordResult === 'success' ? '변경완료' : passwordResult === 'error' ? '오류' : '대기'}
+          </StatusPill>
+          <p>{passwordMessage}</p>
         </div>
       </section>
       ) : null}

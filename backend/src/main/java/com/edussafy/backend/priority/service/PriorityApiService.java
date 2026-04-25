@@ -36,6 +36,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
@@ -82,6 +83,7 @@ import com.edussafy.backend.priority.security.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -801,6 +803,28 @@ public class PriorityApiService {
         return new ProfileResponse(persisted);
     }
 
+    @Transactional
+    public AuthActionResponse changeProfilePassword(ProfilePasswordChangeRequest request) {
+        if (currentSessionUserId().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        UserProfile user = currentUser();
+        String storedHash = safe(() -> repository.findPasswordHash(user.id()).orElse(null), null);
+        if (!passwordMatches(request.currentPassword(), storedHash)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "현재 비밀번호가 일치하지 않습니다.");
+        }
+        if (passwordMatches(request.newPassword(), storedHash)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+        }
+
+        int updated = repository.updatePasswordHash(user.id(), passwordHashForStorage(request.newPassword()));
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자 정보를 찾을 수 없습니다.");
+        }
+        clearProfileVerification();
+        return new AuthActionResponse(true, "비밀번호가 변경되었습니다.");
+    }
+
     private UserProfile currentUser() {
         Optional<Long> sessionUserId = currentSessionUserId();
         if (sessionUserId.isPresent()) {
@@ -1038,7 +1062,14 @@ public class PriorityApiService {
         if (storedHash.startsWith("{noop}")) {
             return rawPassword.equals(storedHash.substring("{noop}".length()));
         }
+        if (storedHash.startsWith("{sha256}")) {
+            return passwordHashForStorage(rawPassword).equals(storedHash);
+        }
         return rawPassword.equals(storedHash);
+    }
+
+    private String passwordHashForStorage(String rawPassword) {
+        return "{sha256}" + sha256Hex(rawPassword.getBytes(StandardCharsets.UTF_8));
     }
 
     private List<MaterialItem> attachResources(List<MaterialItem> materials) {

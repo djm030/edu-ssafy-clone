@@ -72,6 +72,18 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public int updatePasswordHash(long userId, String passwordHash) {
+        return jdbcClient.sql("""
+                UPDATE users
+                SET password_hash = :passwordHash,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = :userId AND deleted_at IS NULL
+                """)
+                .param("userId", userId)
+                .param("passwordHash", passwordHash)
+                .update();
+    }
+
     public Optional<LevelSummary> findLevel(long userId) {
         return jdbcClient.sql("""
                 SELECT

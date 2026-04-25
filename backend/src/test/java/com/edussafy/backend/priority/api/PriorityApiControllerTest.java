@@ -43,6 +43,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PageMeta;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
@@ -749,6 +750,24 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.profile.learnerNo").value("SSAFY-12-0001"))
                 .andExpect(jsonPath("$.profile.mobilePhone").value("010-1111-2222"))
                 .andExpect(jsonPath("$.profile.marketingOptIn").value(true));
+    }
+
+    @Test
+    void profilePasswordChangeReturnsActionResult() throws Exception {
+        given(priorityApiService.changeProfilePassword(any(ProfilePasswordChangeRequest.class)))
+                .willReturn(new AuthActionResponse(true, "비밀번호가 변경되었습니다."));
+
+        mockMvc.perform(patch("/api/profile/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentPassword": "password",
+                                  "newPassword": "new-password-1"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다."));
     }
 
     @Test

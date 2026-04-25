@@ -2,7 +2,10 @@ package com.edussafy.backend.priority.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -12,6 +15,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -28,6 +32,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
@@ -66,6 +71,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -572,6 +578,65 @@ class PriorityApiServiceTest {
             assertThat(response.profile().name()).isEqualTo("Updated Student");
             assertThat(response.profile().zipCode()).isEqualTo("06234");
             assertThat(response.profile().marketingOptIn()).isTrue();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void changesProfilePasswordAfterVerifyingCurrentPassword() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        AuthSession.markProfileVerified(request.getSession(), java.time.Instant.now());
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        given(repository.findUserById(1L)).willReturn(Optional.of(USER));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        given(repository.updatePasswordHash(1L, "{sha256}05bef02ed98c2079162d4a8870bd88b66f587a90c57ae10a8502254c75cac717"))
+                .willReturn(1);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            AuthActionResponse response = service.changeProfilePassword(
+                    new ProfilePasswordChangeRequest("password", "new-password-1")
+            );
+
+            ArgumentCaptor<String> hashCaptor = ArgumentCaptor.forClass(String.class);
+            verify(repository).updatePasswordHash(eq(1L), hashCaptor.capture());
+            assertThat(hashCaptor.getValue()).startsWith("{sha256}");
+            assertThat(response.success()).isTrue();
+            assertThat(response.message()).contains("비밀번호");
+            assertThat(request.getSession().getAttribute(AuthSession.PROFILE_VERIFIED_UNTIL)).isNull();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void rejectsProfilePasswordChangeWhenCurrentPasswordDiffers() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        given(repository.findUserById(1L)).willReturn(Optional.of(USER));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            assertThatThrownBy(() -> service.changeProfilePassword(
+                    new ProfilePasswordChangeRequest("wrong-password", "new-password-1")
+            ))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("401");
+            verify(repository, never()).updatePasswordHash(eq(1L), anyString());
         } finally {
             RequestContextHolder.resetRequestAttributes();
         }

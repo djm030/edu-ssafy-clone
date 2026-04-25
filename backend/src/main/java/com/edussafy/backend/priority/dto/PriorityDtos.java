@@ -522,6 +522,12 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record ProfilePasswordChangeRequest(
+            @NotBlank String currentPassword,
+            @NotBlank @Size(min = 8, max = 72) String newPassword
+    ) {
+    }
+
     public record ProfileDetails(
             long id,
             String name,

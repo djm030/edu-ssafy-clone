@@ -38,6 +38,7 @@ import type {
   ReplayItem,
   ProfileEditDraft,
   ProfileDetails,
+  ProfilePasswordChangeDraft,
   SupportTicketAttachmentDraft,
   SupportTicketAttachmentItem,
   SupportTicketDraft,
@@ -564,6 +565,17 @@ export function getProfile(): Promise<ProfileDetails> {
       },
     }),
   }).then((response) => response.profile);
+}
+
+export function changeProfilePassword(draft: ProfilePasswordChangeDraft): Promise<{ success: boolean; message: string }> {
+  return fetchJson<{ success: boolean; message: string }>('/api/profile/password', {
+    body: JSON.stringify(draft),
+    fallback: () => ({ success: true, message: '비밀번호가 변경되었습니다.' }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'PATCH',
+  });
 }
 
 export function getClassmates(): Promise<{ items: Classmate[] }> {
