@@ -277,6 +277,11 @@ export interface SupportTicketDraft {
   content: string;
 }
 
+export interface SupportTicketsResponse {
+  items: SupportTicketItem[];
+  page: PageMeta;
+}
+
 export interface SupportTicketItem {
   id: number;
   title: string;
@@ -286,6 +291,24 @@ export interface SupportTicketItem {
   closedAt?: string | null;
   messageCount?: number;
   latestMessageAt?: string | null;
+}
+
+export interface SupportTicketDetail extends SupportTicketItem {
+  messages: SupportTicketMessageItem[];
+}
+
+export interface SupportTicketMessageItem {
+  id: number;
+  ticketId: number;
+  senderUserId?: number | null;
+  senderName?: string | null;
+  type: string;
+  content: string;
+  createdAt?: string;
+}
+
+export interface SupportTicketMessageDraft {
+  content: string;
 }
 
 export interface AdminCampusStructure {

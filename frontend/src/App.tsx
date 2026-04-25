@@ -21,6 +21,8 @@ import MaterialsPage from './pages/MaterialsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfileCheckPage from './pages/ProfileCheckPage';
 import ProfileEditPage from './pages/ProfileEditPage';
+import QnaDetailPage from './pages/QnaDetailPage';
+import QnaListPage from './pages/QnaListPage';
 import QnaNewPage from './pages/QnaNewPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestPage from './pages/QuestPage';
@@ -209,6 +211,7 @@ function renderPage(path: string) {
   const questMatch = match(/^\/quest\/(\d+)$/);
   const surveyRespondMatch = match(/^\/survey\/(\d+)\/respond$/);
   const surveyMatch = match(/^\/survey\/(\d+)$/);
+  const qnaTicketMatch = match(/^\/help\/qna\/tickets\/(\d+)$/);
 
   if (path === '/') return <DashboardPage />;
   if (path === '/admin/campus') return <AdminCampusPage />;
@@ -223,9 +226,11 @@ function renderPage(path: string) {
   if (path === '/profile/edit') return <ProfileEditPage />;
   if (path === '/community/classmates') return <ClassmatesPage />;
   if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage />;
+  if (path === '/help/qna') return <QnaListPage />;
   if (path === '/quest') return <QuestPage />;
   if (path === '/survey') return <SurveyPage />;
   if (path === '/help/qna/new') return <QnaNewPage />;
+  if (qnaTicketMatch) return <QnaDetailPage ticketId={Number(qnaTicketMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;
   if (surveyRespondMatch) return <SurveyRespondPage surveyId={Number(surveyRespondMatch[1])} />;
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;

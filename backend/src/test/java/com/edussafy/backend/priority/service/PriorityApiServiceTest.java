@@ -27,7 +27,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitReques
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
@@ -399,6 +403,99 @@ class PriorityApiServiceTest {
         assertThat(response.item().messageCount()).isEqualTo(1L);
         verify(p2Repository).createSupportTicket(1L, "Need help");
         verify(p2Repository).createSupportTicketMessage(55L, 1L, "Please check this.");
+    }
+
+    @Test
+    void loadsSupportTicketDetailWithMessages() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        SupportTicketItem ticket = new SupportTicketItem(
+                55L,
+                "Need help",
+                "open",
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                null,
+                1L,
+                OffsetDateTime.now()
+        );
+        SupportTicketMessageItem message = new SupportTicketMessageItem(
+                66L,
+                55L,
+                1L,
+                "Demo Student",
+                "user_message",
+                "Please check this.",
+                OffsetDateTime.now()
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p2Repository.findSupportTicket(1L, 55L)).willReturn(Optional.of(ticket));
+        given(p2Repository.findSupportTicketMessages(1L, 55L)).willReturn(List.of(message));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        SupportTicketDetailResponse response = service.supportTicket(55L);
+
+        assertThat(response.item().id()).isEqualTo(55L);
+        assertThat(response.item().messages()).containsExactly(message);
+    }
+
+    @Test
+    void persistsSupportTicketFollowUpMessage() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        OffsetDateTime now = OffsetDateTime.now();
+        SupportTicketItem existing = new SupportTicketItem(
+                55L,
+                "Need help",
+                "answered",
+                now,
+                now,
+                null,
+                1L,
+                now
+        );
+        SupportTicketItem updated = new SupportTicketItem(
+                55L,
+                "Need help",
+                "open",
+                now,
+                now,
+                null,
+                2L,
+                now
+        );
+        SupportTicketMessageItem storedMessage = new SupportTicketMessageItem(
+                67L,
+                55L,
+                1L,
+                "Demo Student",
+                "user_message",
+                "More context.",
+                now
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p2Repository.findSupportTicket(1L, 55L)).willReturn(Optional.of(existing), Optional.of(updated));
+        given(p2Repository.createSupportTicketMessage(55L, 1L, "user_message", "More context.")).willReturn(67L);
+        given(p2Repository.findSupportTicketMessage(1L, 55L, 67L)).willReturn(Optional.of(storedMessage));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        SupportTicketMessageCreateResponse response = service.createSupportTicketMessage(
+                55L,
+                new SupportTicketMessageRequest(" More context. ")
+        );
+
+        assertThat(response.item()).isEqualTo(storedMessage);
+        assertThat(response.ticket().messageCount()).isEqualTo(2L);
+        assertThat(response.ticket().status()).isEqualTo("open");
+        verify(p2Repository).markSupportTicketOpen(55L);
     }
 
     private SurveyDetail surveyDetail(long id) {

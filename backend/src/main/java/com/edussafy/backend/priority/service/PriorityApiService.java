@@ -39,7 +39,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
@@ -335,6 +340,17 @@ public class PriorityApiService {
         return new SupportTicketsResponse(items, pageMeta(page, size, total));
     }
 
+    public SupportTicketDetailResponse supportTicket(long ticketId) {
+        UserProfile user = currentUser();
+        SupportTicketItem ticket = p2Repository.findSupportTicket(user.id(), ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket not found."));
+        List<SupportTicketMessageItem> messages = safe(
+                () -> p2Repository.findSupportTicketMessages(user.id(), ticketId),
+                List.of()
+        );
+        return new SupportTicketDetailResponse(SupportTicketDetail.from(ticket, messages));
+    }
+
     @Transactional
     public SupportTicketCreateResponse createSupportTicket(SupportTicketCreateRequest request) {
         UserProfile user = currentUser();
@@ -346,6 +362,27 @@ public class PriorityApiService {
         SupportTicketItem item = p2Repository.findSupportTicket(user.id(), ticketId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket not found."));
         return new SupportTicketCreateResponse(item);
+    }
+
+    @Transactional
+    public SupportTicketMessageCreateResponse createSupportTicketMessage(
+            long ticketId,
+            SupportTicketMessageRequest request
+    ) {
+        UserProfile user = currentUser();
+        SupportTicketItem ticket = p2Repository.findSupportTicket(user.id(), ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket not found."));
+        if ("closed".equals(ticket.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Closed support ticket cannot receive messages.");
+        }
+
+        String content = request.content().trim();
+        long messageId = p2Repository.createSupportTicketMessage(ticket.id(), user.id(), "user_message", content);
+        p2Repository.markSupportTicketOpen(ticket.id());
+        SupportTicketMessageItem message = p2Repository.findSupportTicketMessage(user.id(), ticket.id(), messageId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket message not found."));
+        SupportTicketItem updatedTicket = p2Repository.findSupportTicket(user.id(), ticket.id()).orElse(ticket);
+        return new SupportTicketMessageCreateResponse(message, updatedTicket);
     }
 
     public ClassmatesResponse classmates() {

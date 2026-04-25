@@ -2,6 +2,9 @@ package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import jakarta.validation.Valid;
@@ -10,6 +13,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,9 +40,23 @@ public class SupportController {
         return priorityApiService.supportTickets(page, size);
     }
 
+    @GetMapping("/tickets/{ticketId}")
+    public SupportTicketDetailResponse ticket(@PathVariable @Min(1) long ticketId) {
+        return priorityApiService.supportTicket(ticketId);
+    }
+
     @PostMapping("/tickets")
     @ResponseStatus(HttpStatus.CREATED)
     public SupportTicketCreateResponse createTicket(@Valid @RequestBody SupportTicketCreateRequest request) {
         return priorityApiService.createSupportTicket(request);
+    }
+
+    @PostMapping("/tickets/{ticketId}/messages")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SupportTicketMessageCreateResponse createTicketMessage(
+            @PathVariable @Min(1) long ticketId,
+            @Valid @RequestBody SupportTicketMessageRequest request
+    ) {
+        return priorityApiService.createSupportTicketMessage(ticketId, request);
     }
 }

@@ -4,6 +4,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -79,6 +80,42 @@ public class PriorityP2Repository {
                 .optional();
     }
 
+    public List<SupportTicketMessageItem> findSupportTicketMessages(long userId, long ticketId) {
+        return jdbcClient.sql("""
+                SELECT stm.support_ticket_message_id, stm.support_ticket_id, stm.sender_user_id,
+                       COALESCE(u.name, 'Unknown') AS sender_name,
+                       stm.message_type_code, stm.content, stm.created_at
+                FROM support_ticket_messages stm
+                JOIN support_tickets st ON st.support_ticket_id = stm.support_ticket_id
+                LEFT JOIN users u ON u.user_id = stm.sender_user_id
+                WHERE st.requester_user_id = :userId AND st.support_ticket_id = :ticketId
+                ORDER BY stm.created_at ASC, stm.support_ticket_message_id ASC
+                """)
+                .param("userId", userId)
+                .param("ticketId", ticketId)
+                .query(this::mapSupportTicketMessage)
+                .list();
+    }
+
+    public Optional<SupportTicketMessageItem> findSupportTicketMessage(long userId, long ticketId, long messageId) {
+        return jdbcClient.sql("""
+                SELECT stm.support_ticket_message_id, stm.support_ticket_id, stm.sender_user_id,
+                       COALESCE(u.name, 'Unknown') AS sender_name,
+                       stm.message_type_code, stm.content, stm.created_at
+                FROM support_ticket_messages stm
+                JOIN support_tickets st ON st.support_ticket_id = stm.support_ticket_id
+                LEFT JOIN users u ON u.user_id = stm.sender_user_id
+                WHERE st.requester_user_id = :userId
+                  AND st.support_ticket_id = :ticketId
+                  AND stm.support_ticket_message_id = :messageId
+                """)
+                .param("userId", userId)
+                .param("ticketId", ticketId)
+                .param("messageId", messageId)
+                .query(this::mapSupportTicketMessage)
+                .optional();
+    }
+
     public long createSupportTicket(long userId, String title) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql("""
@@ -94,6 +131,10 @@ public class PriorityP2Repository {
     }
 
     public long createSupportTicketMessage(long ticketId, long senderUserId, String content) {
+        return createSupportTicketMessage(ticketId, senderUserId, "user_message", content);
+    }
+
+    public long createSupportTicketMessage(long ticketId, long senderUserId, String messageType, String content) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql("""
                 INSERT INTO support_ticket_messages (
@@ -102,15 +143,28 @@ public class PriorityP2Repository {
                     message_type_code,
                     content
                 )
-                VALUES (:ticketId, :senderUserId, 'user_message', :content)
+                VALUES (:ticketId, :senderUserId, :messageType, :content)
                 """)
                 .param("ticketId", ticketId)
                 .param("senderUserId", senderUserId)
+                .param("messageType", messageType)
                 .param("content", content)
                 .update(keyHolder, "support_ticket_message_id");
 
         Number key = keyHolder.getKey();
         return key == null ? 0L : key.longValue();
+    }
+
+    public void markSupportTicketOpen(long ticketId) {
+        jdbcClient.sql("""
+                UPDATE support_tickets
+                SET status_code = 'open',
+                    closed_at = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE support_ticket_id = :ticketId
+                """)
+                .param("ticketId", ticketId)
+                .update();
     }
 
     public List<ClassmateItem> findClassmates(long userId) {
@@ -257,6 +311,20 @@ public class PriorityP2Repository {
                 toOffset(rs.getTimestamp("closed_at")),
                 rs.getLong("message_count"),
                 toOffset(rs.getTimestamp("latest_message_at"))
+        );
+    }
+
+    private SupportTicketMessageItem mapSupportTicketMessage(ResultSet rs, int rowNum) throws SQLException {
+        long senderUserId = rs.getLong("sender_user_id");
+        Long nullableSenderUserId = rs.wasNull() ? null : senderUserId;
+        return new SupportTicketMessageItem(
+                rs.getLong("support_ticket_message_id"),
+                rs.getLong("support_ticket_id"),
+                nullableSenderUserId,
+                rs.getString("sender_name"),
+                rs.getString("message_type_code"),
+                rs.getString("content"),
+                toOffset(rs.getTimestamp("created_at"))
         );
     }
 

@@ -35,7 +35,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
@@ -284,6 +288,53 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.title").value("Need help"))
                 .andExpect(jsonPath("$.item.status").value("open"))
                 .andExpect(jsonPath("$.item.messageCount").value(1));
+    }
+
+    @Test
+    void supportTicketDetailReturnsMessageThread() throws Exception {
+        SupportTicketMessageItem message = new SupportTicketMessageItem(
+                66L,
+                55L,
+                1L,
+                "Demo Learner",
+                "user_message",
+                "Please check this.",
+                null
+        );
+        given(priorityApiService.supportTicket(55L)).willReturn(new SupportTicketDetailResponse(
+                new SupportTicketDetail(55L, "Need help", "open", null, null, null, 1L, null, List.of(message))
+        ));
+
+        mockMvc.perform(get("/api/support/tickets/55"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(55))
+                .andExpect(jsonPath("$.item.messages[0].id").value(66))
+                .andExpect(jsonPath("$.item.messages[0].senderName").value("Demo Learner"))
+                .andExpect(jsonPath("$.item.messages[0].content").value("Please check this."));
+    }
+
+    @Test
+    void supportTicketMessageCreateReturnsPersistedMessage() throws Exception {
+        SupportTicketItem updated = new SupportTicketItem(55L, "Need help", "open", null, null, null, 2L, null);
+        SupportTicketMessageItem message = new SupportTicketMessageItem(
+                67L,
+                55L,
+                1L,
+                "Demo Learner",
+                "user_message",
+                "More context.",
+                null
+        );
+        given(priorityApiService.createSupportTicketMessage(eq(55L), any()))
+                .willReturn(new SupportTicketMessageCreateResponse(message, updated));
+
+        mockMvc.perform(post("/api/support/tickets/55/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"More context.\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(67))
+                .andExpect(jsonPath("$.item.content").value("More context."))
+                .andExpect(jsonPath("$.ticket.messageCount").value(2));
     }
 
     @Test

@@ -310,6 +310,57 @@ public final class PriorityDtos {
     public record SupportTicketCreateResponse(SupportTicketItem item) {
     }
 
+    public record SupportTicketDetailResponse(SupportTicketDetail item) {
+    }
+
+    public record SupportTicketDetail(
+            long id,
+            String title,
+            String status,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            OffsetDateTime closedAt,
+            long messageCount,
+            OffsetDateTime latestMessageAt,
+            List<SupportTicketMessageItem> messages
+    ) {
+        public static SupportTicketDetail from(SupportTicketItem item, List<SupportTicketMessageItem> messages) {
+            return new SupportTicketDetail(
+                    item.id(),
+                    item.title(),
+                    item.status(),
+                    item.createdAt(),
+                    item.updatedAt(),
+                    item.closedAt(),
+                    item.messageCount(),
+                    item.latestMessageAt(),
+                    messages
+            );
+        }
+    }
+
+    public record SupportTicketMessageItem(
+            long id,
+            long ticketId,
+            Long senderUserId,
+            String senderName,
+            String type,
+            String content,
+            OffsetDateTime createdAt
+    ) {
+    }
+
+    public record SupportTicketMessageRequest(
+            @NotBlank @Size(max = 4000) String content
+    ) {
+    }
+
+    public record SupportTicketMessageCreateResponse(
+            SupportTicketMessageItem item,
+            SupportTicketItem ticket
+    ) {
+    }
+
     public record ClassmatesResponse(List<ClassmateItem> items) {
     }
 

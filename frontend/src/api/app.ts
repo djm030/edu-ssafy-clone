@@ -32,7 +32,11 @@ import type {
   ProfileEditDraft,
   ProfileDetails,
   SupportTicketDraft,
+  SupportTicketDetail,
   SupportTicketItem,
+  SupportTicketMessageDraft,
+  SupportTicketMessageItem,
+  SupportTicketsResponse,
   SurveyResponseDraft,
   SurveyItem,
 } from '../types';
@@ -478,6 +482,53 @@ export function createSupportTicket(draft: SupportTicketDraft): Promise<SupportT
     },
     method: 'POST',
   }).then((response) => response.item);
+}
+
+export function getSupportTickets(query: { page?: number; size?: number } = {}): Promise<SupportTicketsResponse> {
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ page, size });
+
+  return fetchJson<SupportTicketsResponse>(`/api/support/tickets${params}`, {
+    fallback: () => ({
+      items: [],
+      page: { page, size, totalItems: 0, totalPages: 0 },
+    }),
+  });
+}
+
+export function getSupportTicket(ticketId: number): Promise<SupportTicketDetail | undefined> {
+  return fetchJson<ItemResponse<SupportTicketDetail> | undefined>(`/api/support/tickets/${ticketId}`, {
+    fallback: () => undefined,
+  }).then((response) => response?.item);
+}
+
+export function createSupportTicketMessage(
+  ticketId: number,
+  draft: SupportTicketMessageDraft,
+): Promise<{ item: SupportTicketMessageItem; ticket: SupportTicketItem }> {
+  return fetchJson<{ item: SupportTicketMessageItem; ticket: SupportTicketItem }>(`/api/support/tickets/${ticketId}/messages`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({
+      item: {
+        id: Date.now(),
+        ticketId,
+        senderName: '로컬 데모',
+        type: 'user_message',
+        content: draft.content,
+        createdAt: new Date().toISOString(),
+      },
+      ticket: {
+        id: ticketId,
+        title: '1:1 문의',
+        status: 'open',
+        messageCount: 1,
+        latestMessageAt: new Date().toISOString(),
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  });
 }
 
 export function createFreePost(draft: BoardPostDraft): Promise<{ id: number; title: string }> {

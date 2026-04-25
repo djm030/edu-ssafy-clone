@@ -53,9 +53,12 @@ function QnaNewPage() {
           </StatusPill>
           <p>{message}</p>
           {createdTicket ? (
-            <p className="muted-text">
-              초기 문의 메시지 {createdTicket.messageCount || 1}건이 함께 저장되었습니다.
-            </p>
+            <>
+              <p className="muted-text">
+                초기 문의 메시지 {createdTicket.messageCount || 1}건이 함께 저장되었습니다.
+              </p>
+              <a className="ghost-button" href={`/help/qna/tickets/${createdTicket.id}`}>등록한 문의 보기</a>
+            </>
           ) : null}
         </div>
       </section>
