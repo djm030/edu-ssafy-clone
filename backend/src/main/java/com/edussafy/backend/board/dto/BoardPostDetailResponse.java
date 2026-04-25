@@ -17,6 +17,7 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             int viewCount,
             EngagementSummary engagement,
             List<BoardCommentItem> comments,
+            List<BoardAttachmentItem> attachments,
             boolean hasAttachment,
             boolean isPinned
     ) {
@@ -33,6 +34,17 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             String authorName,
             OffsetDateTime createdAt,
             List<BoardCommentItem> replies
+    ) {
+    }
+
+    public record BoardAttachmentItem(
+            long id,
+            String originalFilename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            Long fileSize,
+            OffsetDateTime createdAt
     ) {
     }
 }

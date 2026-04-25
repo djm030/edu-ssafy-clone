@@ -1,5 +1,6 @@
 package com.edussafy.backend.board.repository;
 
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
@@ -207,6 +208,107 @@ public class BoardRepository {
         return key == null ? 0L : key.longValue();
     }
 
+    public List<BoardAttachmentItem> findAttachments(long postId) {
+        return jdbcClient.sql("""
+                SELECT
+                    a.attachment_id,
+                    a.original_filename,
+                    a.storage_key,
+                    a.stored_path,
+                    a.mime_type,
+                    a.file_size,
+                    a.created_at
+                FROM board_post_attachments bpa
+                JOIN attachments a ON a.attachment_id = bpa.attachment_id
+                WHERE bpa.board_post_id = :postId
+                ORDER BY a.created_at ASC, a.attachment_id ASC
+                """)
+                .param("postId", postId)
+                .query(this::mapAttachment)
+                .list();
+    }
+
+    public long createAttachment(
+            String originalFilename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            Long fileSize,
+            String checksumSha256
+    ) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO attachments (
+                    original_filename,
+                    storage_key,
+                    stored_path,
+                    mime_type,
+                    file_size,
+                    checksum_sha256
+                )
+                VALUES (
+                    :originalFilename,
+                    :storageKey,
+                    :storedPath,
+                    :mimeType,
+                    :fileSize,
+                    :checksumSha256
+                )
+                """)
+                .param("originalFilename", originalFilename)
+                .param("storageKey", storageKey)
+                .param("storedPath", storedPath)
+                .param("mimeType", mimeType)
+                .param("fileSize", fileSize)
+                .param("checksumSha256", checksumSha256)
+                .update(keyHolder, "attachment_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public Optional<BoardAttachmentItem> findAttachment(long postId, long attachmentId) {
+        return jdbcClient.sql("""
+                SELECT
+                    a.attachment_id,
+                    a.original_filename,
+                    a.storage_key,
+                    a.stored_path,
+                    a.mime_type,
+                    a.file_size,
+                    a.created_at
+                FROM board_post_attachments bpa
+                JOIN attachments a ON a.attachment_id = bpa.attachment_id
+                WHERE bpa.board_post_id = :postId
+                  AND bpa.attachment_id = :attachmentId
+                """)
+                .param("postId", postId)
+                .param("attachmentId", attachmentId)
+                .query(this::mapAttachment)
+                .optional();
+    }
+
+    public void attachPost(long postId, long attachmentId) {
+        jdbcClient.sql("""
+                INSERT IGNORE INTO board_post_attachments (board_post_id, attachment_id)
+                VALUES (:postId, :attachmentId)
+                """)
+                .param("postId", postId)
+                .param("attachmentId", attachmentId)
+                .update();
+    }
+
+    public int deletePostAttachment(long postId, long attachmentId) {
+        return jdbcClient.sql("""
+                DELETE FROM board_post_attachments
+                WHERE board_post_id = :postId
+                  AND attachment_id = :attachmentId
+                """)
+                .param("postId", postId)
+                .param("attachmentId", attachmentId)
+                .update();
+    }
+
     public int updatePost(long boardId, long postId, Long categoryId, String title, String content) {
         return jdbcClient.sql("""
                 UPDATE board_posts
@@ -391,6 +493,7 @@ public class BoardRepository {
                         rs.getLong("bookmark_count")
                 ),
                 List.of(),
+                List.of(),
                 rs.getLong("attachment_count") > 0,
                 rs.getBoolean("notice_yn")
         );
@@ -405,6 +508,18 @@ public class BoardRepository {
                 rs.getString("author_name"),
                 toOffsetDateTime(rs.getTimestamp("created_at")),
                 List.of()
+        );
+    }
+
+    private BoardAttachmentItem mapAttachment(ResultSet rs, int rowNum) throws SQLException {
+        return new BoardAttachmentItem(
+                rs.getLong("attachment_id"),
+                rs.getString("original_filename"),
+                rs.getString("storage_key"),
+                rs.getString("stored_path"),
+                rs.getString("mime_type"),
+                nullableLong(rs, "file_size"),
+                toOffsetDateTime(rs.getTimestamp("created_at"))
         );
     }
 

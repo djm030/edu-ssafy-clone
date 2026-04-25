@@ -1,10 +1,21 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { createComment, createReaction, deleteComment, deletePost, deleteReaction, getPost, updateComment, updatePost } from '../api/boards';
+import {
+  createComment,
+  createPostAttachment,
+  createReaction,
+  deleteComment,
+  deletePost,
+  deletePostAttachment,
+  deleteReaction,
+  getPost,
+  updateComment,
+  updatePost,
+} from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { BoardCode, BoardCommentItem, BoardPostListItem, LoadState } from '../types';
+import type { BoardAttachmentDraft, BoardAttachmentItem, BoardCode, BoardCommentItem, BoardPostListItem, LoadState } from '../types';
 
 interface BoardDetailPageProps {
   boardCode: BoardCode;
@@ -168,11 +179,146 @@ function DetailContent({ boardCode, post, listPath }: { boardCode: BoardCode; po
         ) : null}
         <p className="form-message" aria-live="polite">{postMessage}</p>
       </section>
+      <AttachmentManager boardCode={boardCode} post={currentPost} onChange={(attachments) => {
+        setCurrentPost((previous) => ({ ...previous, attachments, hasAttachment: attachments.length > 0 }));
+      }} />
       <BoardActions boardCode={boardCode} post={currentPost} />
       <div className="action-row">
         <a className="ghost-button" href={listPath}>목록</a>
       </div>
     </article>
+  );
+}
+
+function AttachmentManager({
+  boardCode,
+  onChange,
+  post,
+}: {
+  boardCode: BoardCode;
+  onChange: (attachments: BoardAttachmentItem[]) => void;
+  post: BoardPostListItem;
+}) {
+  const [attachments, setAttachments] = useState<BoardAttachmentItem[]>(post.attachments ?? []);
+  const [originalFilename, setOriginalFilename] = useState('');
+  const [storedPath, setStoredPath] = useState('');
+  const [mimeType, setMimeType] = useState('');
+  const [fileSize, setFileSize] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState('첨부파일 메타데이터를 등록하면 게시글 상세에서 함께 조회됩니다.');
+
+  useEffect(() => {
+    setAttachments(post.attachments ?? []);
+    setOriginalFilename('');
+    setStoredPath('');
+    setMimeType('');
+    setFileSize('');
+    setMessage('첨부파일 메타데이터를 등록하면 게시글 상세에서 함께 조회됩니다.');
+  }, [post.id, post.attachments]);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const filename = originalFilename.trim();
+    if (!filename) return;
+
+    setSubmitting(true);
+    setMessage('첨부파일을 저장하는 중입니다.');
+    try {
+      const draft: BoardAttachmentDraft = {
+        originalFilename: filename,
+        storedPath: storedPath.trim() || undefined,
+        mimeType: mimeType.trim() || undefined,
+        fileSize: fileSize ? Number(fileSize) : undefined,
+      };
+      const created = await createPostAttachment(boardCode, post.id, draft);
+      const nextAttachments = [...attachments, created];
+      setAttachments(nextAttachments);
+      onChange(nextAttachments);
+      setOriginalFilename('');
+      setStoredPath('');
+      setMimeType('');
+      setFileSize('');
+      setMessage('첨부파일이 저장되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const remove = async (attachmentId: number) => {
+    if (!window.confirm('첨부파일 연결을 삭제할까요?')) return;
+
+    setSubmitting(true);
+    setMessage('첨부파일을 삭제하는 중입니다.');
+    try {
+      const result = await deletePostAttachment(boardCode, post.id, attachmentId);
+      if (result.deleted) {
+        const nextAttachments = attachments.filter((item) => item.id !== attachmentId);
+        setAttachments(nextAttachments);
+        onChange(nextAttachments);
+        setMessage('첨부파일 연결이 삭제되었습니다.');
+      } else {
+        setMessage('첨부파일 삭제 결과를 확인하지 못했습니다.');
+      }
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="board-actions" aria-label="첨부파일">
+      <h3>첨부파일 {attachments.length}</h3>
+      {attachments.length === 0 ? (
+        <p className="muted-text">등록된 첨부파일이 없습니다.</p>
+      ) : (
+        <ul className="info-list">
+          {attachments.map((attachment) => (
+            <li key={attachment.id}>
+              <strong>{attachment.originalFilename}</strong>
+              <span>{attachment.mimeType || 'unknown'} · {formatFileSize(attachment.fileSize)}</span>
+              {attachment.storedPath ? <a className="ghost-button" href={attachment.storedPath}>열기</a> : null}
+              <button className="ghost-button danger" disabled={submitting} onClick={() => { void remove(attachment.id); }} type="button">
+                삭제
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className="stack-form" onSubmit={submit}>
+        <label htmlFor={`attachment-name-${post.id}`}>파일명</label>
+        <input
+          disabled={submitting}
+          id={`attachment-name-${post.id}`}
+          onChange={(event) => setOriginalFilename(event.target.value)}
+          placeholder="예: project-guide.pdf"
+          required
+          value={originalFilename}
+        />
+        <label htmlFor={`attachment-path-${post.id}`}>저장 경로</label>
+        <input
+          disabled={submitting}
+          id={`attachment-path-${post.id}`}
+          onChange={(event) => setStoredPath(event.target.value)}
+          placeholder="/uploads/board/project-guide.pdf"
+          value={storedPath}
+        />
+        <div className="inline-fields">
+          <label>
+            MIME
+            <input disabled={submitting} onChange={(event) => setMimeType(event.target.value)} placeholder="application/pdf" value={mimeType} />
+          </label>
+          <label>
+            크기(byte)
+            <input disabled={submitting} min="0" onChange={(event) => setFileSize(event.target.value)} type="number" value={fileSize} />
+          </label>
+        </div>
+        <button className="ghost-button" disabled={submitting} type="submit">{submitting ? '저장 중' : '첨부 추가'}</button>
+      </form>
+      <p className="form-message" aria-live="polite">{message}</p>
+    </section>
   );
 }
 
@@ -521,6 +667,13 @@ function formatDate(value?: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+function formatFileSize(value?: number | null): string {
+  if (typeof value !== 'number') return '크기 미상';
+  if (value < 1024) return `${value.toLocaleString('ko-KR')} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default BoardDetailPage;

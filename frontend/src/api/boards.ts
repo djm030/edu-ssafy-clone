@@ -1,15 +1,33 @@
 import { buildQuery, fetchJson } from './client';
 import { mockCategories, mockPosts } from '../data/mockData';
-import type { BoardCategory, BoardCode, BoardCommentItem, BoardPostDraft, BoardPostListItem, BoardPostListResponse } from '../types';
+import type {
+  BoardAttachmentDraft,
+  BoardAttachmentItem,
+  BoardCategory,
+  BoardCode,
+  BoardCommentItem,
+  BoardPostDraft,
+  BoardPostListItem,
+  BoardPostListResponse,
+} from '../types';
 
 const PAGE_SIZE = 20;
 
-type BoardPostDetailResponse = { post?: BoardPostListItem; item?: BoardPostListItem };
+type BoardPostDetailPayload = BoardPostListItem & {
+  engagement?: {
+    commentCount?: number;
+    reactionCount?: number;
+    bookmarkCount?: number;
+  };
+};
+type BoardPostDetailResponse = { post?: BoardPostDetailPayload; item?: BoardPostDetailPayload };
 type BoardPostCreateResponse = { item: BoardPostListItem };
 type BoardCommentCreateResponse = { item: BoardCommentItem };
 type BoardCommentDeleteResponse = { item: { id: number; postId: number; deleted: boolean; demo?: boolean } };
 type BoardReactionResponse = { item: { postId: number; type: string; active: boolean; demo?: boolean } };
 type BoardPostDeleteResponse = { item: { id: number; boardCode: BoardCode; deleted: boolean; demo?: boolean } };
+type BoardAttachmentCreateResponse = { item: BoardAttachmentItem };
+type BoardAttachmentDeleteResponse = { item: { id: number; postId: number; deleted: boolean; demo?: boolean } };
 
 interface PostQuery {
   categoryId?: number;
@@ -68,7 +86,7 @@ export function getPosts(boardCode: BoardCode, query: PostQuery): Promise<BoardP
 export function getPost(boardCode: BoardCode, postId: number): Promise<BoardPostListItem | undefined> {
   return fetchJson<BoardPostDetailResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
     fallback: () => ({ post: mockPosts.find((item) => item.boardCode === boardCode && item.id === postId) }),
-  }).then((response) => response.post ?? response.item);
+  }).then((response) => normalizePost(response.post ?? response.item));
 }
 
 export function createPost(boardCode: BoardCode, draft: BoardPostDraft): Promise<BoardPostListItem> {
@@ -118,6 +136,42 @@ export function updatePost(boardCode: BoardCode, postId: number, draft: BoardPos
 export function deletePost(boardCode: BoardCode, postId: number): Promise<BoardPostDeleteResponse['item']> {
   return fetchJson<BoardPostDeleteResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
     fallback: () => ({ item: { id: postId, boardCode, deleted: true, demo: true } }),
+    method: 'DELETE',
+  }).then((response) => response.item);
+}
+
+export function createPostAttachment(
+  boardCode: BoardCode,
+  postId: number,
+  draft: BoardAttachmentDraft,
+): Promise<BoardAttachmentItem> {
+  return fetchJson<BoardAttachmentCreateResponse>(`/api/boards/${boardCode}/posts/${postId}/attachments`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({
+      item: {
+        id: Date.now(),
+        postId,
+        originalFilename: draft.originalFilename,
+        storageKey: draft.storageKey,
+        storedPath: draft.storedPath,
+        mimeType: draft.mimeType,
+        fileSize: draft.fileSize,
+        createdAt: new Date().toISOString(),
+        demo: true,
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function deletePostAttachment(
+  boardCode: BoardCode,
+  postId: number,
+  attachmentId: number,
+): Promise<BoardAttachmentDeleteResponse['item']> {
+  return fetchJson<BoardAttachmentDeleteResponse>(`/api/boards/${boardCode}/posts/${postId}/attachments/${attachmentId}`, {
+    fallback: () => ({ item: { id: attachmentId, postId, deleted: true, demo: true } }),
     method: 'DELETE',
   }).then((response) => response.item);
 }
@@ -202,4 +256,17 @@ export function deleteReaction(
     fallback: () => ({ item: { postId, type, active: false, demo: true } }),
     method: 'DELETE',
   }).then((response) => response.item);
+}
+
+function normalizePost(post?: BoardPostDetailPayload): BoardPostListItem | undefined {
+  if (!post) return undefined;
+
+  return {
+    ...post,
+    commentCount: post.commentCount ?? post.engagement?.commentCount ?? 0,
+    reactionCount: post.reactionCount ?? post.engagement?.reactionCount ?? 0,
+    bookmarkCount: post.bookmarkCount ?? post.engagement?.bookmarkCount ?? 0,
+    hasAttachment: post.hasAttachment || Boolean(post.attachments?.length),
+    attachments: post.attachments ?? [],
+  };
 }

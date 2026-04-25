@@ -16,6 +16,10 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeletedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
@@ -98,6 +102,7 @@ class BoardControllerTest {
                 7,
                 new EngagementSummary(2, 3, 1),
                 List.of(),
+                List.of(),
                 true,
                 true
         )));
@@ -177,6 +182,48 @@ class BoardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.item.id").value(33))
                 .andExpect(jsonPath("$.item.boardCode").value("free"))
+                .andExpect(jsonPath("$.item.deleted").value(true))
+                .andExpect(jsonPath("$.item.demo").value(false));
+    }
+
+    @Test
+    void createAndDeleteAttachmentReturnPersistedShape() throws Exception {
+        given(boardService.createAttachment(eq("free"), eq(33L), any())).willReturn(new BoardAttachmentCreateResponse(
+                new BoardAttachmentCreatedItem(
+                        91L,
+                        33L,
+                        "guide.pdf",
+                        "board/33/guide.pdf",
+                        "/uploads/board/33/guide.pdf",
+                        "application/pdf",
+                        2048L,
+                        null,
+                        false
+                )
+        ));
+        given(boardService.deleteAttachment("free", 33L, 91L)).willReturn(new BoardAttachmentDeleteResponse(
+                new BoardAttachmentDeletedItem(91L, 33L, true, false)
+        ));
+
+        mockMvc.perform(post("/api/boards/free/posts/33/attachments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "originalFilename":"guide.pdf",
+                                  "storageKey":"board/33/guide.pdf",
+                                  "storedPath":"/uploads/board/33/guide.pdf",
+                                  "mimeType":"application/pdf",
+                                  "fileSize":2048
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(91))
+                .andExpect(jsonPath("$.item.postId").value(33))
+                .andExpect(jsonPath("$.item.originalFilename").value("guide.pdf"))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(delete("/api/boards/free/posts/33/attachments/91"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(91))
                 .andExpect(jsonPath("$.item.deleted").value(true))
                 .andExpect(jsonPath("$.item.demo").value(false));
     }

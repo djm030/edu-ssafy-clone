@@ -5,9 +5,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
@@ -120,6 +124,53 @@ class BoardServiceTest {
     }
 
     @Test
+    void createAndDeleteAttachmentPersistBoardAttachmentLink() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(33L, "Before", List.of());
+        OffsetDateTime createdAt = OffsetDateTime.now();
+        BoardAttachmentItem attachment = new BoardAttachmentItem(
+                91L,
+                "guide.pdf",
+                "board/33/guide.pdf",
+                "/uploads/board/33/guide.pdf",
+                "application/pdf",
+                2048L,
+                createdAt
+        );
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(post), Optional.of(post));
+        given(repository.createAttachment(
+                "guide.pdf",
+                "board/33/guide.pdf",
+                "/uploads/board/33/guide.pdf",
+                "application/pdf",
+                2048L,
+                null
+        )).willReturn(91L);
+        given(repository.findAttachment(33L, 91L)).willReturn(Optional.of(attachment), Optional.of(attachment));
+        given(repository.deletePostAttachment(33L, 91L)).willReturn(1);
+        BoardService service = new BoardService(repository);
+
+        BoardAttachmentCreateResponse created = service.createAttachment("free", 33L, new BoardAttachmentCreateRequest(
+                " guide.pdf ",
+                " board/33/guide.pdf ",
+                " /uploads/board/33/guide.pdf ",
+                " application/pdf ",
+                2048L,
+                null
+        ));
+        BoardAttachmentDeleteResponse deleted = service.deleteAttachment("free", 33L, 91L);
+
+        assertThat(created.item().id()).isEqualTo(91L);
+        assertThat(created.item().originalFilename()).isEqualTo("guide.pdf");
+        assertThat(created.item().demo()).isFalse();
+        assertThat(deleted.item().deleted()).isTrue();
+        assertThat(deleted.item().demo()).isFalse();
+        verify(repository).attachPost(33L, 91L);
+        verify(repository).deletePostAttachment(33L, 91L);
+    }
+
+    @Test
     void createCommentRequiresBoardPostAndPersists() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
@@ -229,6 +280,7 @@ class BoardServiceTest {
                 0,
                 new EngagementSummary(comments.size(), 0, 0),
                 comments,
+                List.of(),
                 false,
                 false
         );

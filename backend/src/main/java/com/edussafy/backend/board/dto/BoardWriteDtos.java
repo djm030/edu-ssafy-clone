@@ -1,7 +1,9 @@
 package com.edussafy.backend.board.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 
@@ -74,5 +76,38 @@ public final class BoardWriteDtos {
     }
 
     public record BoardPostDeletedItem(long id, String boardCode, boolean deleted, boolean demo) {
+    }
+
+    public record BoardAttachmentCreateRequest(
+            @NotBlank @Size(max = 255) String originalFilename,
+            @Size(max = 100) String storageKey,
+            @Size(max = 500) String storedPath,
+            @Size(max = 100) String mimeType,
+            @PositiveOrZero Long fileSize,
+            @Pattern(regexp = "^[a-fA-F0-9]{64}$", message = "checksumSha256 must be a 64 character hex string")
+            String checksumSha256
+    ) {
+    }
+
+    public record BoardAttachmentCreateResponse(BoardAttachmentCreatedItem item) {
+    }
+
+    public record BoardAttachmentDeleteResponse(BoardAttachmentDeletedItem item) {
+    }
+
+    public record BoardAttachmentCreatedItem(
+            long id,
+            long postId,
+            String originalFilename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            Long fileSize,
+            OffsetDateTime createdAt,
+            boolean demo
+    ) {
+    }
+
+    public record BoardAttachmentDeletedItem(long id, long postId, boolean deleted, boolean demo) {
     }
 }

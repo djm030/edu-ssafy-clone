@@ -3,6 +3,9 @@ package com.edussafy.backend.board.api;
 import com.edussafy.backend.board.dto.BoardCategoryListResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
@@ -94,6 +97,25 @@ public class BoardController {
             @PathVariable Long postId
     ) {
         return boardService.deletePost(boardCode, postId);
+    }
+
+    @PostMapping("/boards/{boardCode}/posts/{postId}/attachments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BoardAttachmentCreateResponse createAttachment(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @Valid @RequestBody BoardAttachmentCreateRequest request
+    ) {
+        return boardService.createAttachment(boardCode, postId, request);
+    }
+
+    @DeleteMapping("/boards/{boardCode}/posts/{postId}/attachments/{attachmentId}")
+    public BoardAttachmentDeleteResponse deleteAttachment(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId
+    ) {
+        return boardService.deleteAttachment(boardCode, postId, attachmentId);
     }
 
     @PostMapping("/boards/{boardCode}/posts/{postId}/comments")

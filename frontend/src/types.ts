@@ -171,6 +171,7 @@ export interface BoardPostListItem {
   isNew?: boolean;
   content?: string;
   comments?: BoardCommentItem[];
+  attachments?: BoardAttachmentItem[];
 }
 
 export interface BoardCommentItem {
@@ -181,6 +182,18 @@ export interface BoardCommentItem {
   authorName?: string;
   createdAt?: string;
   replies?: BoardCommentItem[];
+}
+
+export interface BoardAttachmentItem {
+  id: number;
+  postId?: number;
+  originalFilename: string;
+  storageKey?: string | null;
+  storedPath?: string | null;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  createdAt?: string;
+  demo?: boolean;
 }
 
 export interface BoardPostListResponse {
@@ -264,6 +277,15 @@ export interface BoardPostDraft {
   categoryId?: number;
   title: string;
   content: string;
+}
+
+export interface BoardAttachmentDraft {
+  originalFilename: string;
+  storageKey?: string;
+  storedPath?: string;
+  mimeType?: string;
+  fileSize?: number;
+  checksumSha256?: string;
 }
 
 export interface AttendanceAppealDraft {

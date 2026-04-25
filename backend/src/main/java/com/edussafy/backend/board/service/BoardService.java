@@ -2,6 +2,7 @@ package com.edussafy.backend.board.service;
 
 import com.edussafy.backend.board.dto.BoardCategoryListResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostListItem;
@@ -18,6 +19,11 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeletedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeletedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
@@ -66,7 +72,11 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         BoardPostDetail post = boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
-        return new BoardPostDetailResponse(withComments(post, nestComments(boardRepository.findComments(postId))));
+        return new BoardPostDetailResponse(withCommentsAndAttachments(
+                post,
+                nestComments(boardRepository.findComments(postId)),
+                nonNullList(boardRepository.findAttachments(postId))
+        ));
     }
 
     @Transactional
@@ -140,6 +150,57 @@ public class BoardService {
         }
 
         return new BoardPostDeleteResponse(new BoardPostDeletedItem(postId, boardCode, true, false));
+    }
+
+    @Transactional
+    public BoardAttachmentCreateResponse createAttachment(
+            String boardCode,
+            long postId,
+            BoardAttachmentCreateRequest request
+    ) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        String originalFilename = request.originalFilename().trim();
+        long attachmentId = boardRepository.createAttachment(
+                originalFilename,
+                normalizedOrNull(request.storageKey()),
+                normalizedOrNull(request.storedPath()),
+                normalizedOrNull(request.mimeType()),
+                request.fileSize(),
+                normalizedOrNull(request.checksumSha256())
+        );
+        boardRepository.attachPost(postId, attachmentId);
+        BoardAttachmentItem saved = boardRepository.findAttachment(postId, attachmentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        return new BoardAttachmentCreateResponse(new BoardAttachmentCreatedItem(
+                saved.id(),
+                postId,
+                saved.originalFilename(),
+                saved.storageKey(),
+                saved.storedPath(),
+                saved.mimeType(),
+                saved.fileSize(),
+                saved.createdAt(),
+                false
+        ));
+    }
+
+    @Transactional
+    public BoardAttachmentDeleteResponse deleteAttachment(String boardCode, long postId, long attachmentId) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        boardRepository.findAttachment(postId, attachmentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        int deleted = boardRepository.deletePostAttachment(postId, attachmentId);
+        if (deleted == 0) {
+            throw new BoardPostNotFoundException(postId);
+        }
+
+        return new BoardAttachmentDeleteResponse(new BoardAttachmentDeletedItem(attachmentId, postId, true, false));
     }
 
     @Transactional
@@ -323,7 +384,19 @@ public class BoardService {
         return roots;
     }
 
-    private BoardPostDetail withComments(BoardPostDetail post, List<BoardCommentItem> comments) {
+    private String normalizedOrNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private <T> List<T> nonNullList(List<T> items) {
+        return items == null ? List.of() : items;
+    }
+
+    private BoardPostDetail withCommentsAndAttachments(
+            BoardPostDetail post,
+            List<BoardCommentItem> comments,
+            List<BoardAttachmentItem> attachments
+    ) {
         return new BoardPostDetail(
                 post.id(),
                 post.boardCode(),
@@ -336,7 +409,8 @@ public class BoardService {
                 post.viewCount(),
                 post.engagement(),
                 comments,
-                post.hasAttachment(),
+                attachments,
+                !attachments.isEmpty() || post.hasAttachment(),
                 post.isPinned()
         );
     }
