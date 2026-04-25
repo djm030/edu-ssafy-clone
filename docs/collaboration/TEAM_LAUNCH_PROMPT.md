@@ -5,8 +5,11 @@
 
 ## 권장 실행 명령
 ```bash
-omx team 3:executor "Execute the board-list pilot using docs/collaboration/TEAM_LAUNCH_PROMPT.md. Preserve the sequence: design notes, implementation plan, code writing, tests, human review package."
+OMX_DEFAULT_SPARK_MODEL=gpt-5.3-codex-spark omx team 4:executor "$(cat prompts/ssafy-full-clone-team.md)"
 ```
+
+역할 고정 기준은 `prompts/ssafy-full-clone-team.md`의 `worker-1..4` 계약을 따른다.
+역할 혼합은 금지한다.
 
 최종 검증은 별도 Ralph 루프로 닫는다.
 

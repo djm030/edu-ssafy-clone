@@ -1,4 +1,4 @@
-# PM + 3-Agent Collaboration Harness
+# PM + 4-Worker Collaboration Harness
 
 ## 목적
 SSAFY 클론 코딩을 `설계노트 -> 구현계획 -> 코드작성 -> 테스트 -> 사람리뷰` 순서로 진행하기 위한 협업 하네스다.
@@ -25,6 +25,16 @@ PM / Orchestrator
 | Backend Agent  | Frontend Agent | DevOps-QA Agent |
 +----------------+----------------+----------------+
 ```
+
+고정 매핑:
+- `worker-1`: PM / Architect (API 계약, 범위 잠금, 완료 기준/판정, `docs/remaining-work.md`, `docs/progress.md`)
+- `worker-2`: Backend (Spring Boot, DB/MySQL, 인증/RBAC, 첨부파일, 문의/설문/퀘스트/알림 API, REST Docs snippet)
+- `worker-3`: Frontend (React/Tailwind, API client, 첨부 UI, 문의/설문/퀘스트/알림 UX, 401/403/빈 상태/로딩/에러)
+- `worker-4`: DevOps/QA (Compose, Nginx, smoke/E2E/CI, REST Docs 노출, `docs/test-report.md`)
+
+역할 혼합 금지:
+- 각 worker는 자기 역할 task만 수행한다.
+- 타 역할 작업이 필요하면 PM(worker-1)이 owner를 재지정한다.
 
 ## PM 책임
 - `docs/collaboration/DESIGN_NOTES.md` 유지
@@ -101,12 +111,14 @@ PM / Orchestrator
 ## OMX 사용 방식
 계획 검토:
 ```bash
-omx plan --consensus "SSAFY clone PM+3-agent harness 설계와 파일럿 구현계획 검토"
+omx --profile omx-plan
+# Codex 세션 안에서:
+# $ralplan $(cat prompts/ssafy-full-clone-plan.md)
 ```
 
 병렬 실행:
 ```bash
-omx team 3:executor "execute docs/collaboration/IMPLEMENTATION_PLAN.md with Backend, Frontend, DevOps-QA lanes"
+OMX_DEFAULT_SPARK_MODEL=gpt-5.3-codex-spark omx team 4:executor "$(cat prompts/ssafy-full-clone-team.md)"
 ```
 
 최종 검증:

@@ -1,0 +1,132 @@
+# =========================================================
+# Codex / OMX Profiles (project-local)
+# =========================================================
+
+# ---------------------------------------------------------
+# 1) OMX Team: 일반 구현용
+# ---------------------------------------------------------
+[profiles.omx-team]
+model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+model_verbosity = "medium"
+web_search = "disabled"
+tool_output_token_limit = 10000
+commit_attribution = ""
+check_for_update_on_startup = false
+suppress_unstable_features_warning = true
+
+[profiles.omx-team.tools]
+web_search = false
+
+[profiles.omx-team.apps._default]
+enabled = false
+destructive_enabled = false
+open_world_enabled = false
+
+[profiles.omx-team.history]
+persistence = "save-all"
+max_bytes = 15728640
+
+
+# ---------------------------------------------------------
+# 1.5) OMX Plan: 계획/합의용 (reasoning 상향)
+# ---------------------------------------------------------
+[profiles.omx-plan]
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+web_search = "disabled"
+tool_output_token_limit = 12000
+commit_attribution = ""
+check_for_update_on_startup = false
+suppress_unstable_features_warning = true
+
+[profiles.omx-plan.tools]
+web_search = false
+
+[profiles.omx-plan.apps._default]
+enabled = false
+destructive_enabled = false
+open_world_enabled = false
+
+[profiles.omx-plan.history]
+persistence = "save-all"
+max_bytes = 20971520
+
+
+# ---------------------------------------------------------
+# 2) OMX Debug: 빌드/테스트/인프라 디버깅용
+# ---------------------------------------------------------
+[profiles.omx-debug]
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+web_search = "disabled"
+tool_output_token_limit = 14000
+commit_attribution = ""
+check_for_update_on_startup = false
+suppress_unstable_features_warning = true
+
+[profiles.omx-debug.tools]
+web_search = false
+
+[profiles.omx-debug.apps._default]
+enabled = false
+destructive_enabled = false
+open_world_enabled = false
+
+[profiles.omx-debug.history]
+persistence = "save-all"
+max_bytes = 25165824
+
+
+# ---------------------------------------------------------
+# 3) OMX Verify: 최종 검증용
+# ---------------------------------------------------------
+[profiles.omx-verify]
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+web_search = "disabled"
+tool_output_token_limit = 14000
+commit_attribution = ""
+check_for_update_on_startup = false
+suppress_unstable_features_warning = true
+
+[profiles.omx-verify.tools]
+web_search = false
+
+[profiles.omx-verify.apps._default]
+enabled = false
+destructive_enabled = false
+open_world_enabled = false
+
+[profiles.omx-verify.history]
+persistence = "save-all"
+max_bytes = 25165824
+
+
+# ---------------------------------------------------------
+# 4) OMX Readonly: 읽기/분석 전용
+# ---------------------------------------------------------
+[profiles.omx-readonly]
+model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+model_verbosity = "low"
+sandbox_mode = "read-only"
+web_search = "disabled"
+tool_output_token_limit = 3000
+commit_attribution = ""
+check_for_update_on_startup = false
+suppress_unstable_features_warning = true
+
+[profiles.omx-readonly.tools]
+web_search = false
+
+[profiles.omx-readonly.apps._default]
+enabled = false
+destructive_enabled = false
+open_world_enabled = false
+
+[profiles.omx-readonly.history]
+persistence = "none"

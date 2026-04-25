@@ -18,6 +18,8 @@ PLAN은 다음만 수행한다.
 4. TEAM 단계의 4개 역할에 작업을 배정한다.
 5. 작업별 완료 조건과 필요한 검증 명령을 지정한다.
 6. Spring REST Docs 반영이 필요한 API 변경 지점을 표시한다.
+7. `plan => team => ralph` 전체 완주 경로를 만든다.
+8. 마지막 종료조건(`docs/remaining-work.md`의 blocker 소거 + Ralph 검증 PASS)을 명시한다.
 
 PLAN은 다음을 하지 않는다.
 
@@ -26,6 +28,7 @@ PLAN은 다음을 하지 않는다.
 - final verification 반복
 - API Docs만 늘리는 작업을 우선순위로 배치
 - 기능 구현 없이 완료 선언
+- 중간 단계까지만 만들고 종료되는 부분 계획
 
 ---
 
@@ -121,6 +124,21 @@ Suggested commit message:
 
 작업은 반드시 커밋 가능한 단위여야 한다. “분석한다”, “정리한다” 같은 추상 작업만 만들지 않는다.
 
+추가 필수 산출물:
+
+```text
+Execution Sequence:
+1) PLAN 실행 명령
+2) TEAM 실행 명령
+3) RALPH 실행 명령
+
+Terminal Completion Criteria:
+- 남은 blocker 목록
+- blocker별 owner(worker-1..4)
+- 제거 확인 증거 명령
+- 최종 PASS 판정 기준
+```
+
 ---
 
 ## 5. 완료 착각 방지
@@ -133,6 +151,7 @@ PLAN 단계에서도 다음 기준은 유지한다.
 - REST Docs만 있으면 완료가 아니다.
 - 테스트/빌드/스모크 근거가 없으면 완료가 아니다.
 - `docs/remaining-work.md`에 필수 blocker가 있으면 전체 완료가 아니다.
+- PLAN 산출물에는 blocker를 "언제/누가/어떤 증거로" 제거할지 반드시 포함한다.
 
 ---
 
@@ -146,3 +165,5 @@ PLAN 단계에서도 다음 기준은 유지한다.
 4. Spring REST Docs 반영 대상
 5. 실행 전 주의할 blocker
 6. TEAM 단계에서 실행할 첫 번째 task
+7. PLAN -> TEAM -> RALPH 전체 실행 명령
+8. 완료 전까지 반복할 검증 루프와 종료 조건
