@@ -1,136 +1,126 @@
 # Final Verification
 
-Date: 2026-04-24
+Date: 2026-04-26 KST
 Role: final verification owner
-Decision: **NOT COMPLETE / PARTIAL**
+Decision: **PARTIAL / PRODUCTION-HARDENING NOT COMPLETE**
 
 ## 1. 최종 검증 요약
 
-SSAFY 풀 클론 프로젝트는 이제 로컬 Docker Compose app profile로 **backend, frontend, MySQL, Redis, RabbitMQ, Nginx가 기동되고 기본 HTTP smoke가 통과**한다. 또한 backend Maven test, frontend lint/build, Docker image build가 현재 검증 환경에서 통과했다.
+`omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`를 TTY로 실행했지만 Docker/Maven 검증 단계에서 approval 대기와 장시간 `Working` 상태로 멈춰 직접 검증으로 전환했다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, 실행 중인 app profile 컨테이너 health, Nginx reverse proxy smoke가 통과했다.
 
-그러나 기능 완성도 기준으로는 아직 최종 완료가 아니다. 핵심 화면과 API 골격은 다수 존재하지만, 실서비스 수준의 인증/세션/RBAC, 첨부파일 업로드/다운로드, 알림/문의/설문/출석 이의신청의 durable workflow, 권한별 서버 enforcement, 브라우저 E2E/visual 검증이 부족하다. OMX 팀 런타임도 아직 pending/in-progress/failed task가 남아 있어 종료 조건을 만족하지 못했다.
+프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 다만 설문 “생성” API, 일부 공통 첨부파일의 실제 바이너리 업로드/다운로드, 전체 권한 행렬, 브라우저 E2E/visual 검증, 최신 이미지 rebuild 검증이 아직 완전하지 않아 “모든 기능이 실제 서비스 수준으로 완료”라고 판정하지 않는다.
 
 ## 2. 실행한 명령어
 
 ```bash
 git status --short
-git log --oneline -10
-find . -maxdepth 2 -type f
-find backend/src -type f
-find frontend/src -type f
-sed -n '1,220p' docs/final-verification.md
-sed -n '1,180p' docs/test-report.md
-sed -n '1,160p' docs/remaining-work.md
-omx team api mailbox-list --input '{"team_name":"ssafy-full-clone-omx-continuou","worker":"leader"}' --json
-omx team api get-summary --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json
-omx team api read-monitor-snapshot --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json
-docker compose -f compose.yml config
-docker compose -f compose.yml --profile app config
-docker compose -f compose.observability.yml config
-npm --prefix frontend ci
-npm --prefix frontend run lint
-npm --prefix frontend run build
-docker run --rm -v /Users/baeggwan-yeol/Desktop/edu-ssafy-clone-coding/backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test
-docker compose -f compose.yml --profile app build backend frontend
-docker compose -f compose.yml --profile app up -d
-docker compose -f compose.yml --profile app ps
-python3 local HTTP smoke against http://localhost and http://localhost:8080
-git diff --check
+git log --oneline -15
+find backend/src/main/java/com/edussafy/backend/priority -type f | sort
+find backend/src/main/java/com/edussafy/backend/board -type f | sort
+find frontend/src -maxdepth 3 -type f | sort
+grep -R "@(Get|Post|Put|Patch|Delete)Mapping" -n backend/src/main/java/com/edussafy/backend/{priority,board}/api
+grep -R "@Test" -n backend/src/test/java/com/edussafy/backend
+
+docker compose config --services
+docker compose --profile app config --services
+docker compose --profile app ps
+
+docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B test
+cd frontend && npm run build
+cd frontend && npm run lint
+
+curl -fsS -i http://localhost:18080/actuator/health
+curl -fsS -I http://localhost:18000/
+curl -fsS -i http://localhost:18000/api/health
+curl -fsS -c "$tmp_cookie" -H 'Content-Type: application/json' \
+  -d '{"email":"student@ssafy.com","password":"password"}' http://localhost:18000/api/auth/login
+curl -fsS -b "$tmp_cookie" http://localhost:18000/api/me
+curl -fsS -b "$tmp_cookie" 'http://localhost:18000/api/attendance/records?size=2'
+curl -fsS -b "$tmp_cookie" 'http://localhost:18000/api/boards/free/posts?size=2'
+curl -fsS -b "$tmp_cookie" 'http://localhost:18000/api/surveys?size=2'
+curl -fsS -b "$tmp_cookie" 'http://localhost:18000/api/quests?size=2'
+curl -fsS -b "$tmp_cookie" 'http://localhost:18000/api/support/tickets?size=2'
+
+docker compose --profile app up -d --build
 ```
 
 ## 3. 테스트 결과
 
 | Gate | Result | Evidence |
 |---|---:|---|
-| Repository structure inspection | PASS | backend/frontend/docs/scripts/compose files inspected. |
-| Recent commits inspection | PASS | recent commits include team merge, CI smoke gate, and previous verification snapshots. |
-| Required docs existence | PASS | README plus `docs/progress.md`, `architecture.md`, `api-summary.md`, `test-report.md`, `remaining-work.md`, `final-verification.md` exist. |
-| Compose config render | PASS | `compose.yml`, `compose.yml --profile app`, `compose.observability.yml` all rendered successfully. |
-| Frontend dependency install | PASS with warning | `npm --prefix frontend ci` passed; Node engine warning only for current Node 23 vs dependency supported ranges. |
-| Frontend lint | PASS | `npm --prefix frontend run lint` passed after App shell wiring fix. |
-| Frontend production build | PASS | `npm --prefix frontend run build` passed; Vite transformed 67 modules. |
-| Backend Maven tests | PASS | Dockerized Maven Java 21: Tests run 34, Failures 0, Errors 0, Skipped 0. |
-| Docker image build | PASS | `docker compose -f compose.yml --profile app build backend frontend` completed for both services. |
-| Local Compose startup | PASS | mysql/redis/rabbitmq/backend/frontend/nginx became healthy after correcting the nginx healthcheck host to 127.0.0.1. |
-| Local HTTP smoke | PASS | `/nginx-health`, `/actuator/health`, `/api/me`, `/api/auth/login`, `/api/auth/roles/current`, `/api/attendance/records`, `/api/learning/materials`, `/api/boards/free/posts` returned HTTP 200. |
-| PowerShell smoke harness | UNKNOWN | `pwsh`/`powershell` is not installed on this macOS verification host. |
-| Browser E2E / visual fidelity | UNKNOWN | No Playwright/Cypress/browser visual test was available or executed. |
-| OMX team completion | FAIL | summary reported total=132, completed=110, pending=18, in_progress=3, failed=1; workers were not alive. |
+| 저장소/최근 커밋 확인 | PASS | 최근 커밋은 auth 세션/비밀번호, board 작성자 권한, 보안 헤더, REST Docs, cookie hardening을 포함한다. |
+| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 111, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`. |
+| Frontend build | PASS | `tsc -b && vite build`, 69 modules transformed, build completed. |
+| Frontend lint | PASS | `npm run lint` completed without errors. |
+| Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx. |
+| Running Compose health | PASS | `docker compose --profile app ps`: backend/frontend/mysql/nginx/rabbitmq/redis all `healthy`. |
+| Backend health | PASS | `http://localhost:18080/actuator/health` -> HTTP 200, `{"status":"UP"}`. |
+| Nginx/frontend | PASS | `http://localhost:18000/` -> HTTP 200 via Nginx. |
+| Nginx API proxy | PASS | `http://localhost:18000/api/health` -> HTTP 200, backend health payload. |
+| Auth/session smoke | PASS | login with seeded `student@ssafy.com` / `password` returned session cookie and `/api/me` returned the current user. |
+| Domain read smoke | PASS | attendance, board, survey, quest, support list endpoints returned HTTP 200 through Nginx with session cookie. |
+| Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` stalled while loading Docker Hub metadata for base images and was cancelled; existing running app profile remained healthy. |
+| Browser E2E / visual | UNKNOWN | No Playwright/Cypress/visual baseline was available or executed. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
 | 핵심 기능 | 판정 | 근거 |
 |---|---:|---|
-| 인증/인가 | PARTIAL | demo login/current user/role API and frontend unauthorized state exist; real credential verification, session/token expiry, and server-side RBAC are incomplete. |
-| 사용자 프로필 | PARTIAL | profile read/update and password-check surfaces exist; authorization/persistence depth is not fully verified. |
-| 캠퍼스/기수/반/트랙 | PARTIAL | schema/seed/admin UI/API surfaces exist; complete persisted CRUD/edit/delete and RBAC are not proven. |
-| 출석 조회 | PARTIAL | `/api/attendance/records` smoke returned 200 and UI exists; full history/filter/permission coverage is not proven. |
-| 출석 이의신청 | PARTIAL | submit endpoint/UI exists; durable status/history/approval workflow remains. |
-| 알림 발송/수신/읽음 | PARTIAL | list and classmate send route exist; durable send/read/delete lifecycle is incomplete. |
-| 커리큘럼 일정 | PARTIAL | list API/UI exists; richer filters/progress/access checks remain. |
-| 강의 다시보기 | PARTIAL | list API/UI exists; replay authorization/progress state remains. |
-| 학습자료 | PARTIAL | list/detail/viewer/resource surfaces exist; live smoke showed HTTP 200 but page payload needs deeper data-shape verification. |
-| 학습자료 리소스 | PARTIAL | resource endpoint/UI exists; attachment download fidelity and permissions are not complete. |
-| 첨부파일 | FAIL | common upload/store/download flow across board/material/ticket/submission is not implemented end-to-end. |
-| 학습자료 반응 | FAIL | like/bookmark/favorite/reaction workflow remains future work. |
-| 퀘스트/평가 | PARTIAL | list/detail/submit surfaces exist; result detail/grading/attachments remain. |
-| 퀘스트 제출 상태 | PARTIAL | submit status fields exist; full lifecycle/grading verification remains. |
-| 설문 생성/조회 | PARTIAL | list/detail/respond surfaces exist; survey creation/admin flow is not fully implemented. |
-| 설문 문항/선택지 | PARTIAL | question/option DTO depth and persistence are incomplete. |
-| 설문 응답 저장 | PARTIAL | response endpoint exists; duplicate policy and durable response persistence need verification. |
-| 게시판 | PARTIAL | board/category/list/detail/write routes exist; full moderation/permissions remain. |
-| 게시글 | PARTIAL | list/detail/create smoke path exists; edit/delete/owner rules remain. |
-| 댓글/대댓글 | PARTIAL | comment create exists; nested reply/thread behavior is not complete. |
-| 게시글 첨부파일 | FAIL | metadata may exist, but upload/download/linking is not implemented end-to-end. |
-| 게시글 반응 | PARTIAL | reaction route exists; permission/idempotency/deletion coverage remains. |
-| 1:1 문의 | PARTIAL | ticket list/create UI/API exists; full thread workflow remains. |
-| 문의 답변 | PARTIAL | answer/status transition depth is not fully implemented. |
-| 문의 첨부파일 | FAIL | ticket attachment upload/download is not implemented end-to-end. |
-| 권한별 접근 제어 | PARTIAL | frontend role bootstrap and denied routes exist; server-side enforcement tests are insufficient. |
-| 에러 처리 | PARTIAL | DataState/client error handling exists; all mutation/permission edge cases are not exhaustively verified. |
-| 로컬 실행 | PASS | Compose app profile started successfully and core HTTP smoke returned 200. |
-| 테스트 | PARTIAL | backend tests and frontend lint/build pass; PowerShell smoke, browser E2E, visual fidelity, and CI run evidence remain missing. |
-| 문서 최신화 | PASS | this final verification snapshot and related status docs now reflect the current partial state and recent fixes. |
+| 인증/인가 | PASS | hashed password login, HTTP session, logout/session metadata, auth-required interceptor, 401/403 tests, frontend login/session bootstrap 존재. |
+| 사용자 프로필 | PASS | profile read/update/password-check/password-change API, DB persistence service tests, profile edit screens 존재. |
+| 캠퍼스/기수/반/트랙 | PASS | admin campus structure 조회와 campus/cohort/track/class 생성 API 및 관리자 화면, admin role guard test 존재. |
+| 출석 조회 | PASS | attendance records filtering API, summary, frontend page, service/controller tests, live smoke 200. |
+| 출석 이의신청 | PASS | appeal create/list/cancel/pending/resolve, staff role guard, record status update tests 존재. |
+| 알림 발송/수신/읽음 | PASS | classmate notification send, notification list/read/read-all/delete, unread count tests와 화면/API client 존재. |
+| 커리큘럼 일정 | PASS | curriculum API, DB 조회, frontend curriculum page/client 존재. |
+| 강의 다시보기 | PASS | replay list API와 frontend replays page/client 존재. |
+| 학습자료 | PASS | material list/detail/view-count API, DB 조회, frontend list/detail/viewer 연결, tests 존재. |
+| 학습자료 리소스 | PASS | material resources API, DB 조회, viewer/detail 연결, tests 존재. |
+| 첨부파일 | PARTIAL | board/support attachment metadata 및 support byte download는 있으나 material/quest 공통 바이너리 업로드·다운로드까지 일관되게 검증되지는 않았다. |
+| 학습자료 반응 | PASS | material like/bookmark create/delete, count/current-user state, tests 존재. |
+| 퀘스트/평가 | PASS | quest list/detail/submit API, DB upsert, frontend detail/submit/result state, tests 존재. |
+| 퀘스트 제출 상태 | PASS | current submission/result detail endpoint와 persisted status tests 존재. |
+| 설문 생성/조회 | PARTIAL | survey list/detail 조회와 응답 저장은 구현·검증됐지만 설문 생성/관리자 작성 API는 확인되지 않았다. |
+| 설문 문항/선택지 | PASS | survey questions/options 조회 DTO, DB 조회, detail/respond 화면 연결, tests 존재. |
+| 설문 응답 저장 | PASS | survey response upsert, answer/option validation, current response 조회 tests 존재. |
+| 게시판 | PASS | board categories/list/detail/write flow, DB repository/service/controller, frontend pages, tests 존재. |
+| 게시글 | PASS | post create/update/delete, owner authorization tests, frontend write/detail 연결 존재. |
+| 댓글/대댓글 | PASS | comment create/update/delete, nested reply persistence, owner/moderator tests 존재. |
+| 게시글 첨부파일 | PARTIAL | post attachment metadata create/delete/link tests는 있으나 실제 multipart upload/download는 미검증. |
+| 게시글 반응 | PASS | board reaction create/delete, DB persistence, frontend action 연결, tests 존재. |
+| 1:1 문의 | PASS | support ticket list/detail/create, message thread, frontend QNA list/detail/new 연결, tests 존재. |
+| 문의 답변 | PASS | staff answer endpoint, status/message persistence, learner forbidden test 존재. |
+| 문의 첨부파일 | PASS | support message attachment metadata create와 stored byte download endpoint/tests 존재. |
+| 권한별 접근 제어 | PARTIAL | session auth와 admin/staff/owner guard는 있으나 전체 role matrix에 대한 모든 도메인 조합 테스트는 부족하다. |
+| 에러 처리 | PARTIAL | Spring error response, invalid request tests, frontend loading/error/empty state가 있으나 모든 mutation/permission edge case는 E2E로 검증되지 않았다. |
+| 로컬 실행 | PASS | app profile 컨테이너 6개가 healthy이고 backend/frontend/Nginx smoke가 통과했다. |
+| 테스트 | PASS | backend 111 tests, frontend lint/build, REST Docs/security headers tests 통과. Browser E2E는 별도 남은 작업으로 분리. |
+| 문서 최신화 | PASS | 이 문서, test report, remaining work, API summary가 2026-04-26 재검증 결과로 갱신됐다. |
 
 ## 5. 발견한 문제
 
-1. `BackendApplication` 안에 오래된 inline demo `ApiController`가 남아 실제 `BoardController` 등과 같은 API path를 중복 mapping했다. 이 때문에 Spring context startup/backend tests/Docker build가 실패했다.
-2. `frontend/src/App.tsx`에서 `useMemo`가 unused였고, `roleAccess`/`accessError` state가 선언되지 않았으며 `AppShell`에 `onLogout` 등 필수 props가 전달되지 않아 lint/build gate가 깨질 수 있었다.
-3. Nginx container는 외부 HTTP 200에도 Docker health가 처음에는 unhealthy였다. 원인은 container 내부 healthcheck가 `localhost`를 사용한 점으로 판단되어 `127.0.0.1`로 수정했고, 재기동 후 healthy를 확인했다.
-4. OMX team state는 아직 완료가 아니다: total=132, completed=110, pending=18, in_progress=3, failed=1, workers not alive.
-5. PowerShell 기반 smoke script는 macOS host에 `pwsh`/`powershell`이 없어 실행하지 못했다.
-6. 기능 자체는 runnable scaffold 수준이며, remaining-work의 product depth gap이 아직 다수 남아 있다.
+1. `omx ralph` 실행은 TTY/approval/장시간 `Working` 문제로 완료되지 않았다. 최종 검증은 직접 명령 실행으로 대체했다.
+2. 현재 실행 중인 Compose app은 healthy이지만, `docker compose --profile app up -d --build`가 Docker Hub metadata 단계에서 멈춰 최신 이미지 rebuild 완료까지는 검증하지 못했다.
+3. 설문 “생성” 관리자 API는 확인되지 않았다. 현재는 설문 조회/문항/선택지/응답 저장까지 PASS다.
+4. 공통 첨부파일은 board/support에는 구현되어 있으나 material/quest까지 동일한 바이너리 업로드·다운로드 모델로 완성됐다고 볼 근거가 부족하다.
+5. 전체 권한 matrix와 브라우저 E2E/visual 검증이 없다.
 
 ## 6. 즉시 수정한 내용
 
-- `backend/src/main/java/com/edussafy/backend/BackendApplication.java`
-  - 중복 API mapping을 만들던 nested demo controller와 demo seed helper를 제거했다.
-  - `@SpringBootApplication`을 실제 controller/service/repository wiring entrypoint로 복원했다.
-- `frontend/src/App.tsx`
-  - unused `useMemo` import를 제거했다.
-  - `roleAccess`/`accessError` state를 추가했다.
-  - `AppShell`에 `accessError`, `roleAccess`, `user`, `currentPath`, `onNavigate`, `onLogout` props를 명시적으로 전달했다.
-- `compose.yml`
-  - Nginx healthcheck를 `localhost`에서 `127.0.0.1`로 바꿔 container-internal IPv4 health probe가 안정적으로 통과하도록 했다.
+- 코드 결함으로 판단되는 컴파일/테스트 오류는 발견되지 않았다.
+- 오래된 검증 문서가 현재 구현/테스트 결과와 맞지 않아 `docs/final-verification.md`, `docs/test-report.md`, `docs/remaining-work.md`, `docs/api-summary.md`를 최신 검증 결과로 갱신했다.
 
 ## 7. 남은 작업
 
-1. 실서비스 수준 인증/세션/token expiry/password recovery 구현.
-2. 서버 측 RBAC enforcement와 learner/operator/admin role matrix 테스트 추가.
-3. 공통 첨부파일 업로드/다운로드/권한/저장소 연동 구현.
-4. 출석 이의신청 status/history/approval workflow 구현.
-5. 알림 send/read/delete durable lifecycle 구현.
-6. 학습자료 reaction/bookmark/favorite 및 viewer/download fidelity 구현.
-7. 퀘스트 result/grading/submission attachment 구현.
-8. 설문 question/option/response persistence 및 duplicate policy 구현.
-9. 게시글 edit/delete/owner/moderator permission 및 attachment 구현.
-10. 1:1 문의 thread/answer/status/attachment 구현.
-11. PowerShell smoke 또는 cross-platform smoke를 CI/host에서 실행.
-12. Browser E2E/visual fidelity 검증 추가.
-13. OMX team pending/in-progress/failed tasks 정리 후 재검증.
+1. 설문 생성/관리자 CRUD API와 화면을 추가하고 권한 테스트를 붙인다.
+2. material/quest까지 포함하는 공통 파일 업로드·다운로드·권한 모델을 통일한다.
+3. learner/coach/admin 전체 role matrix를 도메인별로 테스트한다.
+4. Playwright/Cypress 등 브라우저 E2E smoke와 핵심 화면 visual 검증을 추가한다.
+5. Docker base image metadata/pull 이슈가 없는 네트워크에서 `docker compose --profile app up -d --build`를 재실행해 최신 이미지 rebuild를 검증한다.
+6. Spring REST Docs/OpenAPI 산출물을 전체 mutation endpoint까지 확장한다.
 
 ## 8. 최종 판단
 
-**완료로 판정할 수 없다.**
+**완료 선언은 아직 금지한다.**
 
-실행 가능성은 크게 개선되어 backend/frontend build/test 및 Docker Compose smoke는 통과했다. 하지만 clone completion 기준인 기능 완성도, 권한/첨부/워크플로우 depth, E2E/visual/CI evidence, team task drain 조건이 충족되지 않았다. 따라서 현재 상태는 **runnable partial clone**이며, 위 남은 작업을 완료하고 모든 핵심 기능 row가 PASS가 될 때까지 최종 완료 선언을 금지한다.
+현재 저장소는 로컬에서 실행 가능하고 대부분의 핵심 기능이 실제 DB-backed API와 frontend 연결, backend/frontend 검증을 통과한 상태다. 그러나 위 PARTIAL 항목과 rebuild/E2E/권한 matrix gap이 남아 있으므로 최종 상태는 **production-oriented runnable clone / PARTIAL**이다. 실제 서비스 가능한 “완성”으로 판정하려면 남은 작업을 처리하고 모든 핵심 기능 row를 PASS로 재검증해야 한다.

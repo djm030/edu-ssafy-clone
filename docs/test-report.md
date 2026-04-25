@@ -1,5 +1,18 @@
 # Test Report
 
+## Final Verification Direct Recheck (2026-04-26 KST)
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, Tests run: 111, Failures: 0, Errors: 0, Skipped: 0.
+- `cd frontend && npm run build` -> PASS, TypeScript build and Vite production build completed; 69 modules transformed.
+- `cd frontend && npm run lint` -> PASS.
+- `docker compose config --services` -> PASS for mysql/rabbitmq/redis.
+- `docker compose --profile app config --services` -> PASS for mysql/rabbitmq/redis/backend/frontend/nginx.
+- `docker compose --profile app ps` -> PASS, running backend/frontend/mysql/nginx/rabbitmq/redis are healthy.
+- Backend/Nginx smoke -> PASS: `localhost:18080/actuator/health`, `localhost:18000/`, and `localhost:18000/api/health` returned HTTP 200.
+- Session/domain smoke -> PASS: seeded login through Nginx created a session and `/api/me`, attendance, board, survey, quest, support list endpoints returned HTTP 200.
+- `docker compose --profile app up -d --build` -> BLOCKED/CANCELLED: Docker Hub base-image metadata loading stalled; existing app profile stayed healthy.
+- Browser E2E/visual -> UNKNOWN: no browser E2E harness was available in this verification pass.
+
+
 ## Final Verification Recheck (2026-04-24)
 - `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, Tests run: 34, Failures: 0, Errors: 0, Skipped: 0.
 - `npm --prefix frontend run lint` -> PASS after App shell prop/state fix.

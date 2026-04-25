@@ -1,5 +1,17 @@
 # API Summary
 
+## Final Verification API Delta (2026-04-26 KST)
+- Auth/session endpoints are verified as session-backed with hashed password login: `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/session`, `POST /api/auth/logout`.
+- Attendance appeals now include list, pending staff list, create, cancel, and resolve endpoints.
+- Notifications include list, read one, read all, delete, plus classmate notification send.
+- Learning materials include list/detail/resources/view-count and like/bookmark reaction create/delete.
+- Quests include list/detail/current submission/submission upsert.
+- Surveys include list/detail/current response/response submit; survey creation/admin CRUD remains missing.
+- Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
+- Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
+- Remaining API gaps before final service readiness: survey creation/admin CRUD, common binary file upload/download across all attachment domains, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage.
+
+
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
 
 > Auth note: current implementation uses demo/current-user semantics. `POST /api/auth/login` is public; most other learner-facing APIs should be treated as auth-required for product completion, but production RBAC/session enforcement is still tracked as remaining work.
