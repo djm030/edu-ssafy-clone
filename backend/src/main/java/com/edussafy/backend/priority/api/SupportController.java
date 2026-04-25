@@ -2,6 +2,8 @@ package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageRequest;
@@ -67,5 +69,15 @@ public class SupportController {
             @Valid @RequestBody SupportTicketMessageRequest request
     ) {
         return priorityApiService.createSupportTicketAnswer(ticketId, request);
+    }
+
+    @PostMapping("/tickets/{ticketId}/messages/{messageId}/attachments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SupportTicketAttachmentCreateResponse createTicketMessageAttachment(
+            @PathVariable @Min(1) long ticketId,
+            @PathVariable @Min(1) long messageId,
+            @Valid @RequestBody SupportTicketAttachmentRequest request
+    ) {
+        return priorityApiService.createSupportTicketMessageAttachment(ticketId, messageId, request);
     }
 }

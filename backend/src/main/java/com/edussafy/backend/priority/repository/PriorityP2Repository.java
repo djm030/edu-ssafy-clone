@@ -3,6 +3,7 @@ package com.edussafy.backend.priority.repository;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
 import java.sql.ResultSet;
@@ -12,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.GeneratedKeyHolder;
 import org.springframework.jdbc.core.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -194,6 +196,52 @@ public class PriorityP2Repository {
                 .optional();
     }
 
+    public List<SupportTicketAttachmentItem> findSupportTicketMessageAttachments(List<Long> messageIds) {
+        if (messageIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                SELECT stma.support_ticket_message_id,
+                       a.attachment_id,
+                       a.original_filename,
+                       a.storage_key,
+                       a.stored_path,
+                       a.mime_type,
+                       a.file_size,
+                       a.checksum_sha256,
+                       a.created_at
+                FROM support_ticket_message_attachments stma
+                JOIN attachments a ON a.attachment_id = stma.attachment_id
+                WHERE stma.support_ticket_message_id IN (:messageIds)
+                ORDER BY a.created_at ASC, a.attachment_id ASC
+                """)
+                .param("messageIds", messageIds)
+                .query(this::mapSupportTicketAttachment)
+                .list();
+    }
+
+    public Optional<SupportTicketAttachmentItem> findSupportTicketMessageAttachment(long messageId, long attachmentId) {
+        return jdbcClient.sql("""
+                SELECT stma.support_ticket_message_id,
+                       a.attachment_id,
+                       a.original_filename,
+                       a.storage_key,
+                       a.stored_path,
+                       a.mime_type,
+                       a.file_size,
+                       a.checksum_sha256,
+                       a.created_at
+                FROM support_ticket_message_attachments stma
+                JOIN attachments a ON a.attachment_id = stma.attachment_id
+                WHERE stma.support_ticket_message_id = :messageId
+                  AND a.attachment_id = :attachmentId
+                """)
+                .param("messageId", messageId)
+                .param("attachmentId", attachmentId)
+                .query(this::mapSupportTicketAttachment)
+                .optional();
+    }
+
     public long createSupportTicket(long userId, String title) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql("""
@@ -231,6 +279,68 @@ public class PriorityP2Repository {
 
         Number key = keyHolder.getKey();
         return key == null ? 0L : key.longValue();
+    }
+
+    public long createOrFindAttachment(
+            String filename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            long fileSize,
+            String checksumSha256
+    ) {
+        Optional<Long> existing = findAttachmentIdByChecksum(checksumSha256);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        try {
+            jdbcClient.sql("""
+                    INSERT INTO attachments (
+                        original_filename,
+                        storage_key,
+                        stored_path,
+                        mime_type,
+                        file_size,
+                        checksum_sha256
+                    )
+                    VALUES (:filename, :storageKey, :storedPath, :mimeType, :fileSize, :checksumSha256)
+                    """)
+                    .param("filename", filename)
+                    .param("storageKey", storageKey)
+                    .param("storedPath", storedPath)
+                    .param("mimeType", mimeType)
+                    .param("fileSize", fileSize)
+                    .param("checksumSha256", checksumSha256)
+                    .update(keyHolder, "attachment_id");
+        } catch (DuplicateKeyException exception) {
+            return findAttachmentIdByChecksum(checksumSha256).orElseThrow(() -> exception);
+        }
+
+        Number key = keyHolder.getKey();
+        return key == null ? findAttachmentIdByChecksum(checksumSha256).orElse(0L) : key.longValue();
+    }
+
+    public void linkSupportTicketMessageAttachment(long messageId, long attachmentId) {
+        jdbcClient.sql("""
+                INSERT IGNORE INTO support_ticket_message_attachments (support_ticket_message_id, attachment_id)
+                VALUES (:messageId, :attachmentId)
+                """)
+                .param("messageId", messageId)
+                .param("attachmentId", attachmentId)
+                .update();
+    }
+
+    private Optional<Long> findAttachmentIdByChecksum(String checksumSha256) {
+        return jdbcClient.sql("""
+                SELECT attachment_id
+                FROM attachments
+                WHERE checksum_sha256 = :checksumSha256
+                """)
+                .param("checksumSha256", checksumSha256)
+                .query(Long.class)
+                .optional();
     }
 
     public void markSupportTicketOpen(long ticketId) {
@@ -414,6 +524,21 @@ public class PriorityP2Repository {
                 rs.getString("sender_name"),
                 rs.getString("message_type_code"),
                 rs.getString("content"),
+                toOffset(rs.getTimestamp("created_at")),
+                List.of()
+        );
+    }
+
+    private SupportTicketAttachmentItem mapSupportTicketAttachment(ResultSet rs, int rowNum) throws SQLException {
+        return new SupportTicketAttachmentItem(
+                rs.getLong("attachment_id"),
+                rs.getLong("support_ticket_message_id"),
+                rs.getString("original_filename"),
+                rs.getString("storage_key"),
+                rs.getString("stored_path"),
+                rs.getString("mime_type"),
+                rs.getLong("file_size"),
+                rs.getString("checksum_sha256"),
                 toOffset(rs.getTimestamp("created_at"))
         );
     }

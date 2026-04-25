@@ -305,10 +305,29 @@ export interface SupportTicketMessageItem {
   type: string;
   content: string;
   createdAt?: string;
+  attachments?: SupportTicketAttachmentItem[];
 }
 
 export interface SupportTicketMessageDraft {
   content: string;
+}
+
+export interface SupportTicketAttachmentItem {
+  id: number;
+  messageId: number;
+  filename: string;
+  storageKey?: string | null;
+  storedPath?: string | null;
+  mimeType?: string | null;
+  fileSize?: number;
+  checksumSha256?: string | null;
+  createdAt?: string;
+}
+
+export interface SupportTicketAttachmentDraft {
+  filename: string;
+  mimeType?: string;
+  contentBase64: string;
 }
 
 export interface AdminCampusStructure {

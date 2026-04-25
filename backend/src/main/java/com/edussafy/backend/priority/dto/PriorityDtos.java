@@ -346,8 +346,12 @@ public final class PriorityDtos {
             String senderName,
             String type,
             String content,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            List<SupportTicketAttachmentItem> attachments
     ) {
+        public SupportTicketMessageItem withAttachments(List<SupportTicketAttachmentItem> attachments) {
+            return new SupportTicketMessageItem(id, ticketId, senderUserId, senderName, type, content, createdAt, attachments);
+        }
     }
 
     public record SupportTicketMessageRequest(
@@ -358,6 +362,32 @@ public final class PriorityDtos {
     public record SupportTicketMessageCreateResponse(
             SupportTicketMessageItem item,
             SupportTicketItem ticket
+    ) {
+    }
+
+    public record SupportTicketAttachmentRequest(
+            @NotBlank @Size(max = 255) String filename,
+            @Size(max = 100) String mimeType,
+            @NotBlank @Size(max = 3_000_000) String contentBase64
+    ) {
+    }
+
+    public record SupportTicketAttachmentItem(
+            long id,
+            long messageId,
+            String filename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            long fileSize,
+            String checksumSha256,
+            OffsetDateTime createdAt
+    ) {
+    }
+
+    public record SupportTicketAttachmentCreateResponse(
+            SupportTicketAttachmentItem item,
+            SupportTicketMessageItem message
     ) {
     }
 

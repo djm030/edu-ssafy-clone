@@ -1,10 +1,15 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { createSupportTicketAnswer, createSupportTicketMessage, getSupportTicket } from '../api/app';
+import {
+  createSupportTicketAnswer,
+  createSupportTicketMessage,
+  createSupportTicketMessageAttachment,
+  getSupportTicket,
+} from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { LoadState, SupportTicketDetail, SupportTicketMessageItem } from '../types';
+import type { LoadState, SupportTicketAttachmentItem, SupportTicketDetail, SupportTicketMessageItem } from '../types';
 
 function QnaDetailPage({ canAnswerSupport = false, ticketId }: { canAnswerSupport?: boolean; ticketId: number }) {
   const [ticket, setTicket] = useState<SupportTicketDetail>();
@@ -85,6 +90,17 @@ function TicketContent({
     }
   };
 
+  const updateMessage = (updatedMessage: SupportTicketMessageItem) => {
+    onTicketChange({
+      ...ticket,
+      messages: ticket.messages.map((item) => (
+        item.id === updatedMessage.id
+          ? { ...item, ...updatedMessage, attachments: updatedMessage.attachments ?? item.attachments ?? [] }
+          : item
+      )),
+    });
+  };
+
   return (
     <article className="panel detail-panel">
       <div className="detail-meta">
@@ -106,7 +122,13 @@ function TicketContent({
           <dd>{(ticket.messages.length || ticket.messageCount || 0).toLocaleString('ko-KR')}건</dd>
         </div>
       </dl>
-      <MessageThread messages={ticket.messages} />
+      <MessageThread
+        canAnswerSupport={canAnswerSupport}
+        messages={ticket.messages}
+        onMessageChange={updateMessage}
+        ticketId={ticket.id}
+        ticketStatus={ticket.status}
+      />
       {ticket.status === 'closed' ? (
         <p className="form-message">종료된 문의에는 메시지를 추가할 수 없습니다.</p>
       ) : (
@@ -133,7 +155,19 @@ function TicketContent({
   );
 }
 
-function MessageThread({ messages }: { messages: SupportTicketMessageItem[] }) {
+function MessageThread({
+  canAnswerSupport,
+  messages,
+  onMessageChange,
+  ticketId,
+  ticketStatus,
+}: {
+  canAnswerSupport: boolean;
+  messages: SupportTicketMessageItem[];
+  onMessageChange: (message: SupportTicketMessageItem) => void;
+  ticketId: number;
+  ticketStatus: string;
+}) {
   if (messages.length === 0) {
     return <p className="muted-text">등록된 메시지가 없습니다.</p>;
   }
@@ -148,10 +182,88 @@ function MessageThread({ messages }: { messages: SupportTicketMessageItem[] }) {
             <StatusPill tone={item.type === 'admin_reply' ? 'green' : 'blue'}>{messageTypeLabel(item.type)}</StatusPill>
             <span>{item.content}</span>
             <small>{formatDate(item.createdAt)}</small>
+            <AttachmentList attachments={item.attachments ?? []} />
+            {ticketStatus === 'closed' || (!canAnswerSupport && item.type !== 'user_message') ? null : (
+              <AttachmentUploader message={item} onUploaded={onMessageChange} ticketId={ticketId} />
+            )}
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+function AttachmentList({ attachments }: { attachments: SupportTicketAttachmentItem[] }) {
+  if (attachments.length === 0) {
+    return <span className="muted-text">첨부파일 없음</span>;
+  }
+
+  return (
+    <ul className="info-list" aria-label="첨부파일">
+      {attachments.map((attachment) => (
+        <li key={attachment.id}>
+          <strong>{attachment.filename}</strong>
+          <span>{attachment.mimeType || 'application/octet-stream'} · {formatFileSize(attachment.fileSize)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function AttachmentUploader({
+  message,
+  onUploaded,
+  ticketId,
+}: {
+  message: SupportTicketMessageItem;
+  onUploaded: (message: SupportTicketMessageItem) => void;
+  ticketId: number;
+}) {
+  const [file, setFile] = useState<File>();
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!file) return;
+
+    setUploading(true);
+    setUploadMessage('첨부파일을 저장하는 중입니다.');
+    try {
+      const contentBase64 = await readFileAsBase64(file);
+      const response = await createSupportTicketMessageAttachment(ticketId, message.id, {
+        filename: file.name,
+        mimeType: file.type || undefined,
+        contentBase64,
+      });
+      onUploaded({
+        ...message,
+        ...response.message,
+        attachments: response.message.attachments ?? [...(message.attachments ?? []), response.item],
+      });
+      setFile(undefined);
+      setUploadMessage('첨부파일이 저장되었습니다.');
+    } catch (error) {
+      setUploadMessage(getErrorMessage(error));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <form className="comment-form" onSubmit={submit}>
+      <label className="visually-hidden" htmlFor={`support-attachment-${message.id}`}>첨부파일</label>
+      <input
+        disabled={uploading}
+        id={`support-attachment-${message.id}`}
+        onChange={(event) => setFile(event.target.files?.[0])}
+        type="file"
+      />
+      <button className="ghost-button" disabled={!file || uploading} type="submit">
+        {uploading ? '첨부 중' : '첨부 저장'}
+      </button>
+      {uploadMessage ? <span className="form-message" aria-live="polite">{uploadMessage}</span> : null}
+    </form>
   );
 }
 
@@ -181,6 +293,25 @@ function formatDate(value?: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+function formatFileSize(value?: number): string {
+  if (!value) return '0 B';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('첨부파일을 읽지 못했습니다.'));
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      resolve(result.includes(',') ? result.split(',')[1] : result);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export default QnaDetailPage;

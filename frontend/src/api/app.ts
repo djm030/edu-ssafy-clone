@@ -31,6 +31,8 @@ import type {
   ReplayItem,
   ProfileEditDraft,
   ProfileDetails,
+  SupportTicketAttachmentDraft,
+  SupportTicketAttachmentItem,
   SupportTicketDraft,
   SupportTicketDetail,
   SupportTicketItem,
@@ -517,6 +519,7 @@ export function createSupportTicketMessage(
         type: 'user_message',
         content: draft.content,
         createdAt: new Date().toISOString(),
+        attachments: [],
       },
       ticket: {
         id: ticketId,
@@ -545,6 +548,7 @@ export function createSupportTicketAnswer(
         type: 'admin_reply',
         content: draft.content,
         createdAt: new Date().toISOString(),
+        attachments: [],
       },
       ticket: {
         id: ticketId,
@@ -557,6 +561,43 @@ export function createSupportTicketAnswer(
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
+}
+
+export function createSupportTicketMessageAttachment(
+  ticketId: number,
+  messageId: number,
+  draft: SupportTicketAttachmentDraft,
+): Promise<{ item: SupportTicketAttachmentItem; message: SupportTicketMessageItem }> {
+  return fetchJson<{ item: SupportTicketAttachmentItem; message: SupportTicketMessageItem }>(
+    `/api/support/tickets/${ticketId}/messages/${messageId}/attachments`,
+    {
+      body: JSON.stringify(draft),
+      fallback: () => {
+        const item = {
+          id: Date.now(),
+          messageId,
+          filename: draft.filename,
+          mimeType: draft.mimeType || 'application/octet-stream',
+          fileSize: Math.ceil((draft.contentBase64.length * 3) / 4),
+          createdAt: new Date().toISOString(),
+        };
+        return {
+          item,
+          message: {
+            id: messageId,
+            ticketId,
+            senderName: '로컬 데모',
+            type: 'user_message',
+            content: '',
+            createdAt: new Date().toISOString(),
+            attachments: [item],
+          },
+        };
+      },
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    },
+  );
 }
 
 export function createFreePost(draft: BoardPostDraft): Promise<{ id: number; title: string }> {

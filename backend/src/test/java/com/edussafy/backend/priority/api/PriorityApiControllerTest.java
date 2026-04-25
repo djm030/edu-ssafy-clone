@@ -34,6 +34,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
@@ -299,7 +301,8 @@ class PriorityApiControllerTest {
                 "Demo Learner",
                 "user_message",
                 "Please check this.",
-                null
+                null,
+                List.of()
         );
         given(priorityApiService.supportTicket(55L)).willReturn(new SupportTicketDetailResponse(
                 new SupportTicketDetail(55L, "Need help", "open", null, null, null, 1L, null, List.of(message))
@@ -323,7 +326,8 @@ class PriorityApiControllerTest {
                 "Demo Learner",
                 "user_message",
                 "More context.",
-                null
+                null,
+                List.of()
         );
         given(priorityApiService.createSupportTicketMessage(eq(55L), any()))
                 .willReturn(new SupportTicketMessageCreateResponse(message, updated));
@@ -347,7 +351,8 @@ class PriorityApiControllerTest {
                 "Demo Manager",
                 "admin_reply",
                 "We checked it.",
-                null
+                null,
+                List.of()
         );
         given(priorityApiService.createSupportTicketAnswer(eq(55L), any()))
                 .willReturn(new SupportTicketMessageCreateResponse(message, updated));
@@ -359,6 +364,41 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.type").value("admin_reply"))
                 .andExpect(jsonPath("$.item.senderName").value("Demo Manager"))
                 .andExpect(jsonPath("$.ticket.status").value("answered"));
+    }
+
+    @Test
+    void supportTicketAttachmentCreateReturnsPersistedMetadata() throws Exception {
+        SupportTicketAttachmentItem attachment = new SupportTicketAttachmentItem(
+                77L,
+                67L,
+                "error.png",
+                "support/tickets/55/messages/67/abc-error.png",
+                "/support/tickets/55/messages/67/attachments/abc",
+                "image/png",
+                11L,
+                "abc",
+                null
+        );
+        SupportTicketMessageItem message = new SupportTicketMessageItem(
+                67L,
+                55L,
+                1L,
+                "Demo Learner",
+                "user_message",
+                "More context.",
+                null,
+                List.of(attachment)
+        );
+        given(priorityApiService.createSupportTicketMessageAttachment(eq(55L), eq(67L), any()))
+                .willReturn(new SupportTicketAttachmentCreateResponse(attachment, message));
+
+        mockMvc.perform(post("/api/support/tickets/55/messages/67/attachments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"filename\":\"error.png\",\"mimeType\":\"image/png\",\"contentBase64\":\"aGVsbG8=\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(77))
+                .andExpect(jsonPath("$.item.filename").value("error.png"))
+                .andExpect(jsonPath("$.message.attachments[0].id").value(77));
     }
 
     @Test

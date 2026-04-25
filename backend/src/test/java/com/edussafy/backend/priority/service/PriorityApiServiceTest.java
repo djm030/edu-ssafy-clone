@@ -25,6 +25,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
@@ -429,11 +432,13 @@ class PriorityApiServiceTest {
                 "Demo Student",
                 "user_message",
                 "Please check this.",
-                OffsetDateTime.now()
+                OffsetDateTime.now(),
+                List.of()
         );
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
         given(p2Repository.findSupportTicket(1L, 55L)).willReturn(Optional.of(ticket));
         given(p2Repository.findSupportTicketMessages(1L, 55L)).willReturn(List.of(message));
+        given(p2Repository.findSupportTicketMessageAttachments(List.of(66L))).willReturn(List.of());
         PriorityApiService service = new PriorityApiService(
                 repository,
                 p2Repository,
@@ -478,7 +483,8 @@ class PriorityApiServiceTest {
                 "Demo Student",
                 "user_message",
                 "More context.",
-                now
+                now,
+                List.of()
         );
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
         given(p2Repository.findSupportTicket(1L, 55L)).willReturn(Optional.of(existing), Optional.of(updated));
@@ -499,6 +505,61 @@ class PriorityApiServiceTest {
         assertThat(response.ticket().messageCount()).isEqualTo(2L);
         assertThat(response.ticket().status()).isEqualTo("open");
         verify(p2Repository).markSupportTicketOpen(55L);
+    }
+
+    @Test
+    void persistsSupportTicketMessageAttachmentMetadata() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        OffsetDateTime now = OffsetDateTime.now();
+        SupportTicketMessageItem message = new SupportTicketMessageItem(
+                67L,
+                55L,
+                1L,
+                "Demo Student",
+                "user_message",
+                "More context.",
+                now,
+                List.of()
+        );
+        SupportTicketAttachmentItem attachment = new SupportTicketAttachmentItem(
+                77L,
+                67L,
+                "error.png",
+                "support/tickets/55/messages/67/2cf24dba5fb0-error.png",
+                "/support/tickets/55/messages/67/attachments/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                "image/png",
+                5L,
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                now
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p2Repository.findSupportTicketMessage(1L, 55L, 67L)).willReturn(Optional.of(message));
+        given(p2Repository.createOrFindAttachment(
+                "error.png",
+                "support/tickets/55/messages/67/2cf24dba5fb0-error.png",
+                "/support/tickets/55/messages/67/attachments/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                "image/png",
+                5L,
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        )).willReturn(77L);
+        given(p2Repository.findSupportTicketMessageAttachment(67L, 77L)).willReturn(Optional.of(attachment));
+        given(p2Repository.findSupportTicketMessageAttachments(List.of(67L))).willReturn(List.of(attachment));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        SupportTicketAttachmentCreateResponse response = service.createSupportTicketMessageAttachment(
+                55L,
+                67L,
+                new SupportTicketAttachmentRequest(" error.png ", "image/png", "aGVsbG8=")
+        );
+
+        assertThat(response.item()).isEqualTo(attachment);
+        assertThat(response.message().attachments()).containsExactly(attachment);
+        verify(p2Repository).linkSupportTicketMessageAttachment(67L, 77L);
     }
 
     @Test
@@ -533,7 +594,8 @@ class PriorityApiServiceTest {
                 "Demo Manager",
                 "admin_reply",
                 "We checked it.",
-                now
+                now,
+                List.of()
         );
         given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
         given(p2Repository.findSupportTicketForStaff(55L)).willReturn(Optional.of(existing), Optional.of(answered));

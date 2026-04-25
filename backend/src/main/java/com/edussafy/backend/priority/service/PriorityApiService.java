@@ -39,6 +39,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
@@ -65,11 +68,16 @@ import com.edussafy.backend.priority.repository.PriorityP3Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -98,6 +106,7 @@ public class PriorityApiService {
     private static final Set<String> ATTENDANCE_APPEAL_TYPES = Set.of("check_in", "check_out", "status_change", "other");
     private static final Set<String> ATTENDANCE_STATUSES = Set.of("present", "late", "absent", "early_leave", "excused");
     private static final Set<String> CLOSED_ATTENDANCE_APPEAL_STATUSES = Set.of("rejected", "canceled");
+    private static final int SUPPORT_ATTACHMENT_MAX_BYTES = 2 * 1024 * 1024;
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "learner", List.of(
                     "dashboard:read",
@@ -361,7 +370,7 @@ public class PriorityApiService {
                         : p2Repository.findSupportTicketMessages(user.id(), ticketId),
                 List.of()
         );
-        return new SupportTicketDetailResponse(SupportTicketDetail.from(ticket, messages));
+        return new SupportTicketDetailResponse(SupportTicketDetail.from(ticket, attachSupportAttachments(messages)));
     }
 
     @Transactional
@@ -421,6 +430,49 @@ public class PriorityApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support answer not found."));
         SupportTicketItem updatedTicket = p2Repository.findSupportTicketForStaff(ticket.id()).orElse(ticket);
         return new SupportTicketMessageCreateResponse(message, updatedTicket);
+    }
+
+    @Transactional
+    public SupportTicketAttachmentCreateResponse createSupportTicketMessageAttachment(
+            long ticketId,
+            long messageId,
+            SupportTicketAttachmentRequest request
+    ) {
+        UserProfile user = currentUser();
+        boolean supportStaff = canAnswerSupport(user);
+        SupportTicketMessageItem message = (supportStaff
+                ? p2Repository.findSupportTicketMessageForStaff(ticketId, messageId)
+                : p2Repository.findSupportTicketMessage(user.id(), ticketId, messageId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket message not found."));
+        if (!supportStaff && !Objects.equals(message.senderUserId(), user.id())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot attach files to another sender's support message.");
+        }
+
+        byte[] fileBytes = decodeSupportAttachment(request.contentBase64());
+        String filename = sanitizeAttachmentFilename(request.filename());
+        String mimeType = normalizeWithDefault(request.mimeType(), "application/octet-stream");
+        String checksum = sha256Hex(fileBytes);
+        String storageKey = "support/tickets/%d/messages/%d/%s-%s".formatted(
+                ticketId,
+                messageId,
+                checksum.substring(0, 12),
+                filename
+        );
+        String storedPath = "/support/tickets/%d/messages/%d/attachments/%s".formatted(ticketId, messageId, checksum);
+
+        long attachmentId = p2Repository.createOrFindAttachment(
+                filename,
+                storageKey,
+                storedPath,
+                mimeType,
+                fileBytes.length,
+                checksum
+        );
+        p2Repository.linkSupportTicketMessageAttachment(message.id(), attachmentId);
+        SupportTicketAttachmentItem attachment = p2Repository.findSupportTicketMessageAttachment(message.id(), attachmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support attachment not found."));
+        List<SupportTicketAttachmentItem> attachments = p2Repository.findSupportTicketMessageAttachments(List.of(message.id()));
+        return new SupportTicketAttachmentCreateResponse(attachment, message.withAttachments(attachments));
     }
 
     public ClassmatesResponse classmates() {
@@ -571,6 +623,55 @@ public class PriorityApiService {
     private boolean canAnswerSupport(UserProfile user) {
         String role = normalizeAccessRole(user.role());
         return "coach".equals(role) || "admin".equals(role);
+    }
+
+    private List<SupportTicketMessageItem> attachSupportAttachments(List<SupportTicketMessageItem> messages) {
+        if (messages.isEmpty()) {
+            return messages;
+        }
+
+        List<Long> messageIds = messages.stream()
+                .map(SupportTicketMessageItem::id)
+                .toList();
+        Map<Long, List<SupportTicketAttachmentItem>> attachments = safe(
+                () -> p2Repository.findSupportTicketMessageAttachments(messageIds).stream()
+                        .collect(Collectors.groupingBy(SupportTicketAttachmentItem::messageId)),
+                Map.of()
+        );
+        return messages.stream()
+                .map(message -> message.withAttachments(attachments.getOrDefault(message.id(), List.of())))
+                .toList();
+    }
+
+    private byte[] decodeSupportAttachment(String contentBase64) {
+        try {
+            byte[] decoded = Base64.getDecoder().decode(contentBase64.trim());
+            if (decoded.length == 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment cannot be empty.");
+            }
+            if (decoded.length > SUPPORT_ATTACHMENT_MAX_BYTES) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment exceeds the 2MB limit.");
+            }
+            return decoded;
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment content must be base64.");
+        }
+    }
+
+    private String sanitizeAttachmentFilename(String filename) {
+        String normalized = filename.trim().replaceAll("[\\\\/\\p{Cntrl}]+", "_");
+        if (normalized.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment filename is required.");
+        }
+        return normalized.length() <= 255 ? normalized : normalized.substring(0, 255);
+    }
+
+    private String sha256Hex(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 digest is unavailable.", exception);
+        }
     }
 
     private boolean isAttendanceAppealAvailable(AttendanceRecordItem record) {
