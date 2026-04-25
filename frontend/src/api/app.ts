@@ -15,6 +15,7 @@ import type {
   AdminCampusStructure,
   AdminClassGroupDraft,
   AdminClassGroupItem,
+  AttendanceAppeal,
   AttendanceRecord,
   AttendanceAppealDraft,
   BoardPostDraft,
@@ -669,6 +670,19 @@ export function submitAttendanceAppeal(draft: AttendanceAppealDraft): Promise<{ 
     fallback: () => ({ item: { id: Date.now(), status: 'requested' } }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function getAttendanceAppeals(): Promise<{ items: AttendanceAppeal[] }> {
+  return fetchJson<{ items: AttendanceAppeal[] }>('/api/attendance/appeals', {
+    fallback: () => ({ items: [] }),
+  });
+}
+
+export function cancelAttendanceAppeal(appealId: number): Promise<AttendanceAppeal> {
+  return fetchJson<ItemResponse<AttendanceAppeal>>(`/api/attendance/appeals/${appealId}/cancel`, {
+    fallback: () => ({ item: { id: appealId, attendanceRecordId: 0, type: 'status_change', reason: '', status: 'canceled' } }),
+    method: 'PATCH',
   }).then((response) => response.item);
 }
 

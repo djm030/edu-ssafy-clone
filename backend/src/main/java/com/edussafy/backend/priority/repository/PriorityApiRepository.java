@@ -197,6 +197,64 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public List<AttendanceAppealItem> findAttendanceAppeals(long userId) {
+        return jdbcClient.sql(attendanceAppealSelect("""
+                WHERE ar.user_id = :userId
+                ORDER BY aa.requested_at DESC, aa.attendance_appeal_id DESC
+                """))
+                .param("userId", userId)
+                .query(this::mapAttendanceAppeal)
+                .list();
+    }
+
+    public Optional<AttendanceAppealItem> findAttendanceAppeal(long userId, long attendanceAppealId) {
+        return jdbcClient.sql(attendanceAppealSelect("""
+                WHERE ar.user_id = :userId AND aa.attendance_appeal_id = :attendanceAppealId
+                LIMIT 1
+                """))
+                .param("userId", userId)
+                .param("attendanceAppealId", attendanceAppealId)
+                .query(this::mapAttendanceAppeal)
+                .optional();
+    }
+
+    public int cancelAttendanceAppeal(long userId, long attendanceAppealId) {
+        return jdbcClient.sql("""
+                UPDATE attendance_appeals aa
+                JOIN attendance_records ar ON ar.attendance_record_id = aa.attendance_record_id
+                SET aa.approval_status_code = 'canceled',
+                    aa.resolved_at = CURRENT_TIMESTAMP
+                WHERE ar.user_id = :userId
+                  AND aa.attendance_appeal_id = :attendanceAppealId
+                  AND aa.approval_status_code = 'requested'
+                """)
+                .param("userId", userId)
+                .param("attendanceAppealId", attendanceAppealId)
+                .update();
+    }
+
+    private String attendanceAppealSelect(String suffix) {
+        return """
+                SELECT aa.attendance_appeal_id, aa.attendance_record_id, aa.appeal_type_code, aa.reason,
+                       aa.requested_status_code, aa.approval_status_code, aa.requested_at
+                FROM attendance_appeals aa
+                JOIN attendance_records ar ON ar.attendance_record_id = aa.attendance_record_id
+                """ + suffix;
+    }
+
+    private AttendanceAppealItem mapAttendanceAppeal(ResultSet rs, int rowNum) throws SQLException {
+        return new AttendanceAppealItem(
+                rs.getLong("attendance_appeal_id"),
+                rs.getLong("attendance_record_id"),
+                rs.getString("appeal_type_code"),
+                rs.getString("reason"),
+                rs.getString("requested_status_code"),
+                rs.getString("approval_status_code"),
+                toOffset(rs.getTimestamp("requested_at")),
+                false
+        );
+    }
+
     private String attendanceRecordSelect(String suffix) {
         return """
                 SELECT ar.attendance_record_id, ar.attendance_date, ar.check_in_at, ar.check_out_at,

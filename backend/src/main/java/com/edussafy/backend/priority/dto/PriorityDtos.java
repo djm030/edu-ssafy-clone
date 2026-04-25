@@ -97,6 +97,9 @@ public final class PriorityDtos {
     public record AttendanceAppealResponse(AttendanceAppealItem item) {
     }
 
+    public record AttendanceAppealsResponse(List<AttendanceAppealItem> items) {
+    }
+
     public record AttendanceAppealItem(
             long id,
             long attendanceRecordId,

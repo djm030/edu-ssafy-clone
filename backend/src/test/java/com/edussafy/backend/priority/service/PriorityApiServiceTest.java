@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -364,6 +365,71 @@ class PriorityApiServiceTest {
         assertThat(response.item().id()).isEqualTo(101L);
         assertThat(response.item().attendanceRecordId()).isEqualTo(7L);
         assertThat(response.item().demo()).isFalse();
+    }
+
+    @Test
+    void listsOwnedAttendanceAppeals() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        AttendanceAppealItem requested = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "requested",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findAttendanceAppeals(1L)).willReturn(List.of(requested));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AttendanceAppealsResponse response = service.attendanceAppeals();
+
+        assertThat(response.items()).containsExactly(requested);
+        verify(repository).findAttendanceAppeals(1L);
+    }
+
+    @Test
+    void cancelsRequestedAttendanceAppeal() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        AttendanceAppealItem requested = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "requested",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                false
+        );
+        AttendanceAppealItem canceled = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "canceled",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findAttendanceAppeal(1L, 101L)).willReturn(Optional.of(requested), Optional.of(canceled));
+        given(repository.cancelAttendanceAppeal(1L, 101L)).willReturn(1);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AttendanceAppealResponse response = service.cancelAttendanceAppeal(101L);
+
+        assertThat(response.item()).isEqualTo(canceled);
+        verify(repository).cancelAttendanceAppeal(1L, 101L);
     }
 
     @Test

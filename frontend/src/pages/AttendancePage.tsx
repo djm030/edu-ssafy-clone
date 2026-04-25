@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getAttendanceRecords } from '../api/app';
+import { cancelAttendanceAppeal, getAttendanceAppeals, getAttendanceRecords } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { AttendanceRecord, LoadState } from '../types';
+import type { AttendanceAppeal, AttendanceRecord, LoadState } from '../types';
 
 const statusLabel: Record<AttendanceRecord['status'], string> = {
   absent: '결석',
@@ -16,16 +16,20 @@ const statusLabel: Record<AttendanceRecord['status'], string> = {
 
 function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [appeals, setAppeals] = useState<AttendanceAppeal[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const [appealMessage, setAppealMessage] = useState('');
+  const [cancelingAppealId, setCancelingAppealId] = useState<number>();
 
   useEffect(() => {
     let ignore = false;
-    getAttendanceRecords()
-      .then((response) => {
+    Promise.all([getAttendanceRecords(), getAttendanceAppeals()])
+      .then(([recordsResponse, appealsResponse]) => {
         if (ignore) return;
-        setRecords(response.items);
-        setLoadState(response.items.length ? 'loaded' : 'empty');
+        setRecords(recordsResponse.items);
+        setAppeals(appealsResponse.items);
+        setLoadState(recordsResponse.items.length || appealsResponse.items.length ? 'loaded' : 'empty');
       })
       .catch((error) => {
         if (ignore) return;
@@ -36,6 +40,23 @@ function AttendancePage() {
       ignore = true;
     };
   }, []);
+
+  const handleCancelAppeal = async (appealId: number) => {
+    setCancelingAppealId(appealId);
+    setAppealMessage('');
+    try {
+      const canceled = await cancelAttendanceAppeal(appealId);
+      setAppeals((current) => current.map((appeal) => (appeal.id === appealId ? canceled : appeal)));
+      setRecords((current) => current.map((record) => (
+        record.appealId === appealId ? { ...record, appealAvailable: true, appealStatus: canceled.status } : record
+      )));
+      setAppealMessage('이의신청이 취소되었습니다.');
+    } catch (error) {
+      setAppealMessage(getErrorMessage(error));
+    } finally {
+      setCancelingAppealId(undefined);
+    }
+  };
 
   const counts = useMemo(
     () => ({
@@ -64,7 +85,83 @@ function AttendancePage() {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="출석현황을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="출석 기록이 없습니다." /> : null}
-      {loadState === 'loaded' ? <AttendanceTable records={records} /> : null}
+      {loadState === 'loaded' ? (
+        <>
+          <AttendanceTable records={records} />
+          <AttendanceAppealsPanel
+            appeals={appeals}
+            cancelingAppealId={cancelingAppealId}
+            message={appealMessage}
+            onCancel={handleCancelAppeal}
+          />
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+function AttendanceAppealsPanel({
+  appeals,
+  cancelingAppealId,
+  message,
+  onCancel,
+}: {
+  appeals: AttendanceAppeal[];
+  cancelingAppealId?: number;
+  message: string;
+  onCancel: (appealId: number) => Promise<void>;
+}) {
+  return (
+    <section className="panel">
+      <div className="section-heading">
+        <div>
+          <p>소명 내역</p>
+          <h2>제출한 출석 이의신청</h2>
+        </div>
+        <span>{appeals.length}건</span>
+      </div>
+      {message ? <div className="inline-alert">{message}</div> : null}
+      {appeals.length === 0 ? (
+        <DataState title="제출한 소명 내역이 없습니다." message="출석 기록의 신청 버튼으로 이의신청을 제출할 수 있습니다." />
+      ) : (
+        <div className="simple-table" role="table" aria-label="출석 이의신청 내역">
+          <div className="simple-row table-head" role="row">
+            <span role="columnheader">접수번호</span>
+            <span role="columnheader">대상 기록</span>
+            <span role="columnheader">요청 상태</span>
+            <span role="columnheader">사유</span>
+            <span role="columnheader">상태</span>
+            <span role="columnheader">관리</span>
+          </div>
+          {appeals.map((appeal) => (
+            <div className="simple-row" key={appeal.id} role="row">
+              <span role="cell">#{appeal.id}</span>
+              <span role="cell">{appeal.attendanceRecordId}</span>
+              <span role="cell">{appeal.requestedStatus || '-'}</span>
+              <span role="cell">{appeal.reason || '-'}</span>
+              <span role="cell">
+                <StatusPill tone={appealStatusTone(appeal.status)}>{appealStatusLabel(appeal.status)}</StatusPill>
+              </span>
+              <span role="cell">
+                {appeal.status === 'requested' ? (
+                  <button
+                    className="ghost-button"
+                    disabled={cancelingAppealId === appeal.id}
+                    type="button"
+                    onClick={() => {
+                      void onCancel(appeal.id);
+                    }}
+                  >
+                    {cancelingAppealId === appeal.id ? '취소 중...' : '신청 취소'}
+                  </button>
+                ) : (
+                  '-'
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -127,6 +224,13 @@ function appealStatusLabel(status: string) {
   if (status === 'rejected') return '반려됨';
   if (status === 'canceled') return '취소됨';
   return status;
+}
+
+function appealStatusTone(status: string) {
+  if (status === 'approved') return 'green';
+  if (status === 'rejected') return 'red';
+  if (status === 'canceled') return 'gray';
+  return 'blue';
 }
 
 export default AttendancePage;

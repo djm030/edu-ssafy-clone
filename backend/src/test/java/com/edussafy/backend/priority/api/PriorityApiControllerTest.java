@@ -12,6 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
@@ -288,6 +291,43 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/support/tickets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page.totalItems").value(0));
+    }
+
+    @Test
+    void attendanceAppealHistoryAndCancelReturnPersistedShape() throws Exception {
+        AttendanceAppealItem requested = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "requested",
+                null,
+                false
+        );
+        AttendanceAppealItem canceled = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "canceled",
+                null,
+                false
+        );
+        given(priorityApiService.attendanceAppeals()).willReturn(new AttendanceAppealsResponse(List.of(requested)));
+        given(priorityApiService.cancelAttendanceAppeal(101L)).willReturn(new AttendanceAppealResponse(canceled));
+
+        mockMvc.perform(get("/api/attendance/appeals"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(101))
+                .andExpect(jsonPath("$.items[0].status").value("requested"))
+                .andExpect(jsonPath("$.items[0].demo").value(false));
+        mockMvc.perform(patch("/api/attendance/appeals/101/cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(101))
+                .andExpect(jsonPath("$.item.status").value("canceled"))
+                .andExpect(jsonPath("$.item.demo").value(false));
     }
 
     @Test

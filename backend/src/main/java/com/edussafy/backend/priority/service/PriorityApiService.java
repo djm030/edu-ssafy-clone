@@ -1,7 +1,9 @@
 package com.edussafy.backend.priority.service;
 
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
@@ -214,6 +216,11 @@ public class PriorityApiService {
         return new AttendanceRecordsResponse(summary, safe(() -> repository.findAttendanceRecords(user.id()), List.of()));
     }
 
+    public AttendanceAppealsResponse attendanceAppeals() {
+        UserProfile user = currentUser();
+        return new AttendanceAppealsResponse(safe(() -> repository.findAttendanceAppeals(user.id()), List.of()));
+    }
+
     @Transactional
     public AttendanceAppealResponse createAttendanceAppeal(AttendanceAppealRequest request) {
         UserProfile user = currentUser();
@@ -228,6 +235,34 @@ public class PriorityApiService {
         String requestedStatus = normalizeAttendanceStatus(request.requestedStatus(), record.status());
 
         return new AttendanceAppealResponse(repository.createAttendanceAppeal(record.id(), type, reason, requestedStatus));
+    }
+
+    @Transactional
+    public AttendanceAppealResponse cancelAttendanceAppeal(long attendanceAppealId) {
+        UserProfile user = currentUser();
+        AttendanceAppealItem existing = repository.findAttendanceAppeal(user.id(), attendanceAppealId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attendance appeal not found."));
+        if (!"requested".equals(existing.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only requested attendance appeals can be canceled.");
+        }
+
+        int updated = repository.cancelAttendanceAppeal(user.id(), attendanceAppealId);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Attendance appeal could not be canceled.");
+        }
+
+        AttendanceAppealItem canceled = repository.findAttendanceAppeal(user.id(), attendanceAppealId)
+                .orElse(new AttendanceAppealItem(
+                        existing.id(),
+                        existing.attendanceRecordId(),
+                        existing.type(),
+                        existing.reason(),
+                        existing.requestedStatus(),
+                        "canceled",
+                        existing.requestedAt(),
+                        false
+                ));
+        return new AttendanceAppealResponse(canceled);
     }
 
     public NotificationsResponse notifications(int page, int size) {

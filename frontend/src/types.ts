@@ -259,6 +259,17 @@ export interface AttendanceAppealDraft {
   requestedStatus?: string;
 }
 
+export interface AttendanceAppeal {
+  id: number;
+  attendanceRecordId: number;
+  type: string;
+  reason: string;
+  requestedStatus?: string | null;
+  status: string;
+  requestedAt?: string | null;
+  demo?: boolean;
+}
+
 export interface QuestSubmissionDraft {
   questId: number;
   repositoryUrl?: string;
