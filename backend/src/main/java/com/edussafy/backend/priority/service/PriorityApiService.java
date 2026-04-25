@@ -727,6 +727,11 @@ public class PriorityApiService {
     }
 
     private void storeCurrentUserId(long userId) {
+        HttpSession existingSession = currentSession(false);
+        if (existingSession != null) {
+            existingSession.invalidate();
+        }
+
         HttpSession session = currentSession(true);
         if (session != null) {
             session.setMaxInactiveInterval(AuthSession.MAX_INACTIVE_SECONDS);

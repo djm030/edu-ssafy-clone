@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
@@ -267,6 +268,9 @@ class PriorityApiServiceTest {
                 2L, "Demo Manager", "manager@ssafy.com", "manager", "Seoul", "12th", "Java"
         );
         MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession anonymousSession = new MockHttpSession();
+        anonymousSession.setAttribute(AuthSession.PROFILE_VERIFIED_UNTIL, Long.MAX_VALUE);
+        request.setSession(anonymousSession);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         given(repository.findUserByEmail("manager@ssafy.com")).willReturn(Optional.of(manager));
         given(repository.findPasswordHash(2L)).willReturn(Optional.of("{noop}password"));
@@ -280,7 +284,10 @@ class PriorityApiServiceTest {
         try {
             service.login(new LoginRequest("manager@ssafy.com", "password"));
 
+            assertThat(anonymousSession.isInvalid()).isTrue();
+            assertThat(request.getSession(false)).isNotSameAs(anonymousSession);
             assertThat(request.getSession(false).getAttribute(AuthSession.CURRENT_USER_ID)).isEqualTo(2L);
+            assertThat(request.getSession(false).getAttribute(AuthSession.PROFILE_VERIFIED_UNTIL)).isNull();
             assertThat(request.getSession(false).getMaxInactiveInterval()).isEqualTo(AuthSession.MAX_INACTIVE_SECONDS);
             assertThat(service.me().user().email()).isEqualTo("manager@ssafy.com");
         } finally {
