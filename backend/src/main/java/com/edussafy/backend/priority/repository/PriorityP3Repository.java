@@ -36,12 +36,45 @@ public class PriorityP3Repository {
     }
 
     public Optional<MaterialItem> findMaterial(long materialId) {
+        return findMaterial(materialId, null);
+    }
+
+    public Optional<MaterialItem> findMaterial(long materialId, Long userId) {
         return jdbcClient.sql("""
-                SELECT learning_material_id, title, material_type_code, summary, detail_url, view_count, created_at
-                FROM learning_materials
-                WHERE learning_material_id = :materialId
+                SELECT
+                    lm.learning_material_id,
+                    lm.title,
+                    lm.material_type_code,
+                    lm.summary,
+                    lm.detail_url,
+                    lm.view_count,
+                    lm.created_at,
+                    COALESCE(reactions.like_count, 0) AS like_count,
+                    COALESCE(reactions.bookmark_count, 0) AS bookmark_count,
+                    COALESCE(user_reactions.liked, 0) AS liked,
+                    COALESCE(user_reactions.bookmarked, 0) AS bookmarked
+                FROM learning_materials lm
+                LEFT JOIN (
+                    SELECT
+                        learning_material_id,
+                        SUM(CASE WHEN reaction_type_code = 'like' THEN 1 ELSE 0 END) AS like_count,
+                        SUM(CASE WHEN reaction_type_code = 'bookmark' THEN 1 ELSE 0 END) AS bookmark_count
+                    FROM learning_material_reactions
+                    GROUP BY learning_material_id
+                ) reactions ON reactions.learning_material_id = lm.learning_material_id
+                LEFT JOIN (
+                    SELECT
+                        learning_material_id,
+                        MAX(CASE WHEN reaction_type_code = 'like' THEN 1 ELSE 0 END) AS liked,
+                        MAX(CASE WHEN reaction_type_code = 'bookmark' THEN 1 ELSE 0 END) AS bookmarked
+                    FROM learning_material_reactions
+                    WHERE user_id = :userId
+                    GROUP BY learning_material_id
+                ) user_reactions ON user_reactions.learning_material_id = lm.learning_material_id
+                WHERE lm.learning_material_id = :materialId
                 """)
                 .param("materialId", materialId)
+                .param("userId", userId)
                 .query((rs, rowNum) -> new MaterialItem(
                         rs.getLong("learning_material_id"),
                         rs.getString("title"),
@@ -50,7 +83,11 @@ public class PriorityP3Repository {
                         rs.getString("detail_url"),
                         rs.getInt("view_count"),
                         toOffset(rs.getTimestamp("created_at")),
-                        List.of()
+                        List.of(),
+                        rs.getLong("like_count"),
+                        rs.getLong("bookmark_count"),
+                        rs.getBoolean("liked"),
+                        rs.getBoolean("bookmarked")
                 ))
                 .optional();
     }
@@ -83,6 +120,35 @@ public class PriorityP3Repository {
                 WHERE learning_material_id = :materialId
                 """)
                 .param("materialId", materialId)
+                .update();
+    }
+
+    public void createMaterialReaction(long materialId, long userId, String reactionType) {
+        jdbcClient.sql("""
+                INSERT IGNORE INTO learning_material_reactions (
+                    learning_material_id,
+                    user_id,
+                    reaction_type_code_group,
+                    reaction_type_code
+                )
+                VALUES (:materialId, :userId, 'REACTION_TYPE', :reactionType)
+                """)
+                .param("materialId", materialId)
+                .param("userId", userId)
+                .param("reactionType", reactionType)
+                .update();
+    }
+
+    public void deleteMaterialReaction(long materialId, long userId, String reactionType) {
+        jdbcClient.sql("""
+                DELETE FROM learning_material_reactions
+                WHERE learning_material_id = :materialId
+                  AND user_id = :userId
+                  AND reaction_type_code = :reactionType
+                """)
+                .param("materialId", materialId)
+                .param("userId", userId)
+                .param("reactionType", reactionType)
                 .update();
     }
 

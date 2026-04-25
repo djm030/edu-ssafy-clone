@@ -538,13 +538,42 @@ public class PriorityApiRepository {
     public List<MaterialItem> findMaterials(long userId, String keyword, String type, int limit, int offset) {
         SqlParts parts = materialWhere(keyword, type);
         return jdbcClient.sql("""
-                SELECT learning_material_id, title, material_type_code, summary, detail_url, view_count, created_at
+                SELECT
+                    lm.learning_material_id,
+                    lm.title,
+                    lm.material_type_code,
+                    lm.summary,
+                    lm.detail_url,
+                    lm.view_count,
+                    lm.created_at,
+                    COALESCE(reactions.like_count, 0) AS like_count,
+                    COALESCE(reactions.bookmark_count, 0) AS bookmark_count,
+                    COALESCE(user_reactions.liked, 0) AS liked,
+                    COALESCE(user_reactions.bookmarked, 0) AS bookmarked
                 FROM learning_materials lm
+                LEFT JOIN (
+                    SELECT
+                        learning_material_id,
+                        SUM(CASE WHEN reaction_type_code = 'like' THEN 1 ELSE 0 END) AS like_count,
+                        SUM(CASE WHEN reaction_type_code = 'bookmark' THEN 1 ELSE 0 END) AS bookmark_count
+                    FROM learning_material_reactions
+                    GROUP BY learning_material_id
+                ) reactions ON reactions.learning_material_id = lm.learning_material_id
+                LEFT JOIN (
+                    SELECT
+                        learning_material_id,
+                        MAX(CASE WHEN reaction_type_code = 'like' THEN 1 ELSE 0 END) AS liked,
+                        MAX(CASE WHEN reaction_type_code = 'bookmark' THEN 1 ELSE 0 END) AS bookmarked
+                    FROM learning_material_reactions
+                    WHERE user_id = :userId
+                    GROUP BY learning_material_id
+                ) user_reactions ON user_reactions.learning_material_id = lm.learning_material_id
                 """ + parts.whereClause() + """
-                ORDER BY created_at DESC, learning_material_id DESC
+                ORDER BY lm.created_at DESC, lm.learning_material_id DESC
                 LIMIT :limit OFFSET :offset
                 """)
                 .params(parts.params())
+                .param("userId", userId)
                 .param("limit", limit)
                 .param("offset", offset)
                 .query((rs, rowNum) -> new MaterialItem(
@@ -555,7 +584,11 @@ public class PriorityApiRepository {
                         rs.getString("detail_url"),
                         rs.getInt("view_count"),
                         toOffset(rs.getTimestamp("created_at")),
-                        List.of()
+                        List.of(),
+                        rs.getLong("like_count"),
+                        rs.getLong("bookmark_count"),
+                        rs.getBoolean("liked"),
+                        rs.getBoolean("bookmarked")
                 ))
                 .list();
     }

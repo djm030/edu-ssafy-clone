@@ -24,6 +24,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
@@ -245,7 +246,11 @@ class PriorityApiServiceTest {
                 "/materials/rest-docs.pdf",
                 6,
                 OffsetDateTime.parse("2026-04-25T10:00:00+09:00"),
-                List.of()
+                List.of(),
+                1,
+                0,
+                true,
+                false
         );
         MaterialResourceItem resource = new MaterialResourceItem(
                 30L,
@@ -258,7 +263,7 @@ class PriorityApiServiceTest {
         );
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
         given(p3Repository.incrementMaterialViewCount(15L)).willReturn(1);
-        given(p3Repository.findMaterial(15L)).willReturn(Optional.of(updated));
+        given(p3Repository.findMaterial(15L, USER.id())).willReturn(Optional.of(updated));
         given(p3Repository.findMaterialResources(15L)).willReturn(List.of(resource));
         PriorityApiService service = new PriorityApiService(
                 repository,
@@ -272,6 +277,57 @@ class PriorityApiServiceTest {
         assertThat(response.item().viewCount()).isEqualTo(6);
         assertThat(response.item().resources()).containsExactly(resource);
         verify(p3Repository).incrementMaterialViewCount(15L);
+    }
+
+    @Test
+    void createsAndDeletesMaterialReactionForCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        MaterialItem before = new MaterialItem(
+                15L,
+                "Spring REST Docs",
+                "file",
+                "API 문서 실습",
+                "/materials/rest-docs.pdf",
+                6,
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00"),
+                List.of(),
+                0,
+                0,
+                false,
+                false
+        );
+        MaterialItem after = new MaterialItem(
+                15L,
+                "Spring REST Docs",
+                "file",
+                "API 문서 실습",
+                "/materials/rest-docs.pdf",
+                6,
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00"),
+                List.of(),
+                1,
+                0,
+                true,
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findMaterial(15L, USER.id()))
+                .willReturn(Optional.of(before), Optional.of(after), Optional.of(after), Optional.of(before));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        MaterialReactionResponse created = service.createMaterialReaction(15L, " Like ");
+        MaterialReactionResponse deleted = service.deleteMaterialReaction(15L, "like");
+
+        assertThat(created.item().liked()).isTrue();
+        assertThat(created.item().likeCount()).isEqualTo(1);
+        assertThat(deleted.item().liked()).isFalse();
+        verify(p3Repository).createMaterialReaction(15L, USER.id(), "like");
+        verify(p3Repository).deleteMaterialReaction(15L, USER.id(), "like");
     }
 
     @Test

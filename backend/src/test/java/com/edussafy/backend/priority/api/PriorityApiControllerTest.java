@@ -34,6 +34,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
@@ -459,10 +460,16 @@ class PriorityApiControllerTest {
     @Test
     void p3LearningDetailsReturnShapes() throws Exception {
         given(priorityApiService.material(5L)).willReturn(new MaterialDetailResponse(new MaterialItem(
-                5L, "Material", "document", null, null, 0, null, List.of()
+                5L, "Material", "document", null, null, 0, null, List.of(), 0, 0, false, false
         )));
         given(priorityApiService.recordMaterialView(5L)).willReturn(new MaterialViewResponse(new MaterialItem(
-                5L, "Material", "document", null, null, 1, null, List.of()
+                5L, "Material", "document", null, null, 1, null, List.of(), 1, 0, true, false
+        )));
+        given(priorityApiService.createMaterialReaction(5L, "like")).willReturn(new MaterialReactionResponse(new MaterialItem(
+                5L, "Material", "document", null, null, 1, null, List.of(), 1, 0, true, false
+        )));
+        given(priorityApiService.deleteMaterialReaction(5L, "like")).willReturn(new MaterialReactionResponse(new MaterialItem(
+                5L, "Material", "document", null, null, 1, null, List.of(), 0, 0, false, false
         )));
         given(priorityApiService.materialResources(5L)).willReturn(new MaterialResourcesResponse(List.of()));
 
@@ -474,6 +481,13 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.item.id").value(5))
                 .andExpect(jsonPath("$.item.viewCount").value(1));
+        mockMvc.perform(post("/api/learning/materials/5/reactions/like"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.liked").value(true))
+                .andExpect(jsonPath("$.item.likeCount").value(1));
+        mockMvc.perform(delete("/api/learning/materials/5/reactions/like"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.liked").value(false));
         mockMvc.perform(get("/api/learning/materials/5/resources"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());

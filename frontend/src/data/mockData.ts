@@ -88,10 +88,10 @@ export const mockPosts: BoardPostListItem[] = [
 ];
 
 export const mockMaterials: LearningMaterial[] = [
-  { id: 1, title: 'Spring Boot REST API 실습 자료', type: 'file', authorName: '교수지원', createdAt: '2026-04-24', viewCount: 184, fileName: 'spring-rest-api.pdf', description: 'REST API 계층 설계와 예외 처리 실습 자료입니다.' },
-  { id: 2, title: 'JPA 기본 개념 eBook', type: 'ebook', authorName: '교육지원팀', createdAt: '2026-04-23', viewCount: 231, fileName: 'jpa-basics.epub', description: '엔티티, 연관관계, 영속성 컨텍스트를 정리한 eBook입니다.' },
-  { id: 3, title: 'Vue 상태 관리 다시보기', type: 'video', authorName: '강의실', createdAt: '2026-04-22', viewCount: 97, description: 'Vue 상태 관리 강의 다시보기 링크입니다.' },
-  { id: 4, title: 'Git 협업 체크리스트', type: 'link', authorName: '운영자', createdAt: '2026-04-21', viewCount: 143, description: '팀 협업 전 확인해야 할 Git 규칙 체크리스트입니다.' },
+  { id: 1, title: 'Spring Boot REST API 실습 자료', type: 'file', authorName: '교수지원', createdAt: '2026-04-24', viewCount: 184, fileName: 'spring-rest-api.pdf', description: 'REST API 계층 설계와 예외 처리 실습 자료입니다.', likeCount: 12, bookmarkCount: 6, liked: false, bookmarked: true },
+  { id: 2, title: 'JPA 기본 개념 eBook', type: 'ebook', authorName: '교육지원팀', createdAt: '2026-04-23', viewCount: 231, fileName: 'jpa-basics.epub', description: '엔티티, 연관관계, 영속성 컨텍스트를 정리한 eBook입니다.', likeCount: 21, bookmarkCount: 9 },
+  { id: 3, title: 'Vue 상태 관리 다시보기', type: 'video', authorName: '강의실', createdAt: '2026-04-22', viewCount: 97, description: 'Vue 상태 관리 강의 다시보기 링크입니다.', likeCount: 7, bookmarkCount: 4 },
+  { id: 4, title: 'Git 협업 체크리스트', type: 'link', authorName: '운영자', createdAt: '2026-04-21', viewCount: 143, description: '팀 협업 전 확인해야 할 Git 규칙 체크리스트입니다.', likeCount: 15, bookmarkCount: 11 },
 ];
 
 export const mockQuests: QuestItem[] = [

@@ -214,11 +214,31 @@ public final class PriorityDtos {
             String detailUrl,
             int viewCount,
             OffsetDateTime createdAt,
-            List<MaterialResourceItem> resources
+            List<MaterialResourceItem> resources,
+            long likeCount,
+            long bookmarkCount,
+            boolean liked,
+            boolean bookmarked
     ) {
         public MaterialItem withResources(List<MaterialResourceItem> resources) {
-            return new MaterialItem(id, title, type, summary, detailUrl, viewCount, createdAt, resources);
+            return new MaterialItem(
+                    id,
+                    title,
+                    type,
+                    summary,
+                    detailUrl,
+                    viewCount,
+                    createdAt,
+                    resources,
+                    likeCount,
+                    bookmarkCount,
+                    liked,
+                    bookmarked
+            );
         }
+    }
+
+    public record MaterialReactionResponse(MaterialItem item) {
     }
 
     public record MaterialResourceItem(

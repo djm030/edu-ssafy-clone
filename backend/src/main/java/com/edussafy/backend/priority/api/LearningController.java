@@ -2,6 +2,7 @@ package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
@@ -10,6 +11,7 @@ import com.edussafy.backend.priority.service.PriorityApiService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +58,16 @@ public class LearningController {
     @PostMapping("/materials/{id}/views")
     public MaterialViewResponse recordMaterialView(@PathVariable Long id) {
         return priorityApiService.recordMaterialView(id);
+    }
+
+    @PostMapping("/materials/{id}/reactions/{type}")
+    public MaterialReactionResponse createMaterialReaction(@PathVariable Long id, @PathVariable String type) {
+        return priorityApiService.createMaterialReaction(id, type);
+    }
+
+    @DeleteMapping("/materials/{id}/reactions/{type}")
+    public MaterialReactionResponse deleteMaterialReaction(@PathVariable Long id, @PathVariable String type) {
+        return priorityApiService.deleteMaterialReaction(id, type);
     }
 
     @GetMapping("/materials/{id}/resources")

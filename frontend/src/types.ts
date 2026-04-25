@@ -225,6 +225,10 @@ export interface LearningMaterial {
   viewCount: number;
   description?: string;
   fileName?: string;
+  likeCount?: number;
+  bookmarkCount?: number;
+  liked?: boolean;
+  bookmarked?: boolean;
 }
 
 export interface LearningMaterialViewResult {

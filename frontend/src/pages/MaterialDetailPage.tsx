@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLearningMaterial } from '../api/app';
+import { getLearningMaterial, toggleLearningMaterialReaction } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -51,33 +51,76 @@ function MaterialDetailPage({ materialId }: { materialId: number }) {
 }
 
 function MaterialContent({ material }: { material: LearningMaterial }) {
-  const canOpenViewer = material.type === 'ebook' || material.type === 'file';
+  const [currentMaterial, setCurrentMaterial] = useState(material);
+  const [updatingReaction, setUpdatingReaction] = useState<'bookmark' | 'like'>();
+  const [message, setMessage] = useState('좋아요와 북마크는 서버에 저장됩니다.');
+  const canOpenViewer = currentMaterial.type === 'ebook' || currentMaterial.type === 'file';
+
+  useEffect(() => {
+    setCurrentMaterial(material);
+    setMessage('좋아요와 북마크는 서버에 저장됩니다.');
+    setUpdatingReaction(undefined);
+  }, [material]);
+
+  const toggleReaction = async (type: 'bookmark' | 'like') => {
+    const active = type === 'like' ? Boolean(currentMaterial.liked) : Boolean(currentMaterial.bookmarked);
+    setUpdatingReaction(type);
+    setMessage(active ? '반응을 해제하는 중입니다.' : '반응을 저장하는 중입니다.');
+    try {
+      const response = await toggleLearningMaterialReaction(currentMaterial.id, type, active);
+      setCurrentMaterial(response.item);
+      setMessage(active ? '반응이 해제되었습니다.' : '반응이 저장되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setUpdatingReaction(undefined);
+    }
+  };
 
   return (
     <article className="panel detail-panel">
       <div className="detail-meta">
-        <StatusPill tone="blue">{typeLabels[material.type]}</StatusPill>
-        <StatusPill tone="gray">조회 {material.viewCount.toLocaleString('ko-KR')}</StatusPill>
+        <StatusPill tone="blue">{typeLabels[currentMaterial.type]}</StatusPill>
+        <StatusPill tone="gray">조회 {currentMaterial.viewCount.toLocaleString('ko-KR')}</StatusPill>
       </div>
-      <h2>{material.title}</h2>
+      <h2>{currentMaterial.title}</h2>
       <dl className="info-list detail-info">
         <div>
           <dt>등록자</dt>
-          <dd>{material.authorName}</dd>
+          <dd>{currentMaterial.authorName}</dd>
         </div>
         <div>
           <dt>등록일</dt>
-          <dd>{material.createdAt}</dd>
+          <dd>{currentMaterial.createdAt}</dd>
         </div>
         <div>
           <dt>파일명</dt>
-          <dd>{material.fileName || '-'}</dd>
+          <dd>{currentMaterial.fileName || '-'}</dd>
         </div>
       </dl>
-      <div className="detail-body">{material.description || '자료 설명이 없습니다.'}</div>
+      <div className="detail-body">{currentMaterial.description || '자료 설명이 없습니다.'}</div>
+      <div className="action-row" aria-label="학습자료 반응">
+        <button
+          className={currentMaterial.liked ? 'primary-action' : 'ghost-button'}
+          disabled={updatingReaction === 'like'}
+          onClick={() => { void toggleReaction('like'); }}
+          type="button"
+        >
+          좋아요 {(currentMaterial.likeCount || 0).toLocaleString('ko-KR')}
+        </button>
+        <button
+          className={currentMaterial.bookmarked ? 'primary-action' : 'ghost-button'}
+          disabled={updatingReaction === 'bookmark'}
+          onClick={() => { void toggleReaction('bookmark'); }}
+          type="button"
+        >
+          북마크 {(currentMaterial.bookmarkCount || 0).toLocaleString('ko-KR')}
+        </button>
+      </div>
+      <p className="form-message" aria-live="polite">{message}</p>
       <div className="action-row">
         <a className="ghost-button" href="/learning/materials">목록</a>
-        {canOpenViewer ? <a className="primary-action" href={`/learning/materials/${material.id}/viewer`}>열기</a> : null}
+        {canOpenViewer ? <a className="primary-action" href={`/learning/materials/${currentMaterial.id}/viewer`}>열기</a> : null}
       </div>
     </article>
   );

@@ -259,6 +259,10 @@ function toLearningMaterial(item: BackendMaterialItem): LearningMaterial {
     viewCount: item.viewCount ?? 0,
     description: item.description || item.summary || undefined,
     fileName: item.fileName || firstResource?.title || item.detailUrl || firstResource?.targetUrl || undefined,
+    likeCount: item.likeCount ?? 0,
+    bookmarkCount: item.bookmarkCount ?? 0,
+    liked: item.liked ?? false,
+    bookmarked: item.bookmarked ?? false,
   };
 }
 
@@ -505,6 +509,39 @@ export function recordLearningMaterialView(id: number): Promise<LearningMaterial
         ...fallbackMaterial,
         id,
         viewCount: (fallbackMaterial?.viewCount ?? 0) + 1,
+      },
+    }),
+  }).then((response) => ({ item: toLearningMaterial(response.item) }));
+}
+
+export function toggleLearningMaterialReaction(
+  id: number,
+  type: 'bookmark' | 'like',
+  active: boolean,
+): Promise<LearningMaterialViewResult> {
+  const fallbackMaterial = mockMaterials.find((material) => material.id === id) || mockMaterials[0] || {
+    authorName: 'SSAFY',
+    createdAt: '-',
+    id,
+    title: 'Learning Material',
+    type: 'file' as const,
+    viewCount: 0,
+  };
+
+  return fetchJson<ItemResponse<BackendMaterialItem>>(`/api/learning/materials/${id}/reactions/${type}`, {
+    method: active ? 'DELETE' : 'POST',
+    fallback: () => ({
+      item: {
+        ...fallbackMaterial,
+        id,
+        likeCount: type === 'like'
+          ? Math.max(0, (fallbackMaterial.likeCount ?? 0) + (active ? -1 : 1))
+          : fallbackMaterial.likeCount,
+        bookmarkCount: type === 'bookmark'
+          ? Math.max(0, (fallbackMaterial.bookmarkCount ?? 0) + (active ? -1 : 1))
+          : fallbackMaterial.bookmarkCount,
+        liked: type === 'like' ? !active : fallbackMaterial.liked,
+        bookmarked: type === 'bookmark' ? !active : fallbackMaterial.bookmarked,
       },
     }),
   }).then((response) => ({ item: toLearningMaterial(response.item) }));

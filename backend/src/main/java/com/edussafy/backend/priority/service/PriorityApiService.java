@@ -23,6 +23,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
@@ -475,7 +476,8 @@ public class PriorityApiService {
     }
 
     public MaterialDetailResponse material(long id) {
-        MaterialItem item = safe(() -> p3Repository.findMaterial(id)
+        UserProfile user = currentUser();
+        MaterialItem item = safe(() -> p3Repository.findMaterial(id, user.id())
                 .map(material -> material.withResources(safe(() -> p3Repository.findMaterialResources(id), List.of())))
                 .orElse(fallbackMaterial(id)), fallbackMaterial(id));
         return new MaterialDetailResponse(item);
@@ -483,15 +485,35 @@ public class PriorityApiService {
 
     @Transactional
     public MaterialViewResponse recordMaterialView(long id) {
-        currentUser();
+        UserProfile user = currentUser();
         int updatedRows = p3Repository.incrementMaterialViewCount(id);
         if (updatedRows == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found.");
         }
-        MaterialItem item = p3Repository.findMaterial(id)
+        MaterialItem item = p3Repository.findMaterial(id, user.id())
                 .map(material -> material.withResources(safe(() -> p3Repository.findMaterialResources(id), List.of())))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found."));
         return new MaterialViewResponse(item);
+    }
+
+    @Transactional
+    public MaterialReactionResponse createMaterialReaction(long id, String type) {
+        UserProfile user = currentUser();
+        String normalizedType = normalizeMaterialReaction(type);
+        p3Repository.findMaterial(id, user.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found."));
+        p3Repository.createMaterialReaction(id, user.id(), normalizedType);
+        return materialReaction(id, user.id());
+    }
+
+    @Transactional
+    public MaterialReactionResponse deleteMaterialReaction(long id, String type) {
+        UserProfile user = currentUser();
+        String normalizedType = normalizeMaterialReaction(type);
+        p3Repository.findMaterial(id, user.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found."));
+        p3Repository.deleteMaterialReaction(id, user.id(), normalizedType);
+        return materialReaction(id, user.id());
     }
 
     public MaterialResourcesResponse materialResources(long id) {
@@ -1114,8 +1136,27 @@ public class PriorityApiService {
                 null,
                 0,
                 null,
-                List.of()
+                List.of(),
+                0,
+                0,
+                false,
+                false
         );
+    }
+
+    private MaterialReactionResponse materialReaction(long materialId, long userId) {
+        MaterialItem item = p3Repository.findMaterial(materialId, userId)
+                .map(material -> material.withResources(safe(() -> p3Repository.findMaterialResources(materialId), List.of())))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found."));
+        return new MaterialReactionResponse(item);
+    }
+
+    private String normalizeMaterialReaction(String type) {
+        String normalizedType = StringUtils.hasText(type) ? type.trim().toLowerCase() : "";
+        if (!Set.of("like", "bookmark").contains(normalizedType)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported material reaction type.");
+        }
+        return normalizedType;
     }
 
     private QuestItem fallbackQuest(long id) {
