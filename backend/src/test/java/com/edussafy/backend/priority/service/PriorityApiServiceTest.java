@@ -45,8 +45,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
@@ -1205,6 +1209,88 @@ class PriorityApiServiceTest {
         assertThat(response.item().answers()).containsExactlyElementsOf(answers);
         assertThat(response.item().demo()).isFalse();
         verify(p3Repository).findSurveyResponseAnswers(77L);
+    }
+
+    @Test
+    void staffCreatesSurveyWithQuestionOptions() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        SurveyQuestionItem savedQuestion = new SurveyQuestionItem(
+                11L,
+                "single_choice",
+                "이번 주 과정은 어땠나요?",
+                1,
+                List.of(new SurveyOptionItem(101L, "좋음", 1), new SurveyOptionItem(102L, "보통", 2))
+        );
+        SurveyDetail savedSurvey = new SurveyDetail(
+                6L,
+                "Weekly pulse",
+                "satisfaction",
+                true,
+                null,
+                null,
+                "in_progress",
+                false,
+                1,
+                List.of()
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        given(p3Repository.findDefaultContentScopeId()).willReturn(Optional.of(42L));
+        given(p3Repository.createSurvey(42L, "Weekly pulse", "satisfaction", true, null, null, "in_progress"))
+                .willReturn(6L);
+        given(p3Repository.createSurveyQuestion(6L, "single_choice", "이번 주 과정은 어땠나요?", 1))
+                .willReturn(11L);
+        given(p3Repository.findSurvey(2L, 6L)).willReturn(Optional.of(savedSurvey));
+        given(p3Repository.findSurveyQuestions(6L)).willReturn(List.of(savedQuestion));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        SurveyDetailResponse response = service.createSurvey(new SurveyCreateRequest(
+                " Weekly pulse ",
+                "satisfaction",
+                true,
+                null,
+                null,
+                "in_progress",
+                List.of(new SurveyQuestionCreateRequest(
+                        "single_choice",
+                        " 이번 주 과정은 어땠나요? ",
+                        List.of(new SurveyOptionCreateRequest("좋음"), new SurveyOptionCreateRequest("보통"))
+                ))
+        ));
+
+        assertThat(response.item().id()).isEqualTo(6L);
+        assertThat(response.item().questions()).containsExactly(savedQuestion);
+        verify(p3Repository).createSurveyOption(11L, "좋음", 1);
+        verify(p3Repository).createSurveyOption(11L, "보통", 2);
+    }
+
+    @Test
+    void learnerCannotCreateSurvey() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        assertThatThrownBy(() -> service.createSurvey(new SurveyCreateRequest(
+                "Weekly pulse",
+                "satisfaction",
+                true,
+                null,
+                null,
+                "in_progress",
+                List.of(new SurveyQuestionCreateRequest("long_text", "의견을 적어 주세요.", List.of()))
+        )))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("403");
+        verify(p3Repository, never()).findDefaultContentScopeId();
     }
 
     @Test

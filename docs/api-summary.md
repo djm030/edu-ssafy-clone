@@ -6,10 +6,10 @@
 - Notifications include list, read one, read all, delete, plus classmate notification send.
 - Learning materials include list/detail/resources/view-count and like/bookmark reaction create/delete.
 - Quests include list/detail/current submission/submission upsert.
-- Surveys include list/detail/current response/response submit; survey creation/admin CRUD remains missing.
+- Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: survey creation/admin CRUD, common binary file upload/download across all attachment domains, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage.
+- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, common binary file upload/download across all attachment domains, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -80,7 +80,7 @@
 - `GET /api/learning/curriculum`, `GET /api/learning/replays`
 - `GET /api/learning/materials`, `GET /api/learning/materials/{id}`, `GET /api/learning/materials/{id}/resources`
 - `GET /api/quests`, `GET /api/quests/{id}`, `POST /api/quests/{id}/submissions`
-- `GET /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
+- `GET /api/surveys`, `POST /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
 - `POST /api/boards/{boardCode}/posts`, `POST /api/boards/{boardCode}/posts/{postId}/comments`, `POST /api/boards/{boardCode}/posts/{postId}/reactions`
 - `GET /api/support/tickets`, `POST /api/support/tickets`

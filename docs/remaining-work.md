@@ -3,7 +3,7 @@
 ## Final Verification Remaining Work (2026-04-26 KST)
 - Overall status: **PARTIAL**, not final complete.
 - PASS evidence now exists for auth/profile, attendance/appeals, board/post/comment/reaction, notifications, learning materials/resources/reactions, quests/submissions, support tickets/answers/attachments, local compose health, backend tests, frontend lint/build.
-- Still PARTIAL: survey creation/admin CRUD, common binary attachment model across all domains, full role-matrix coverage, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
+- Still PARTIAL: survey edit/delete admin CRUD, common binary attachment model across all domains, full role-matrix coverage, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
 - Rebuild blocker: `docker compose --profile app up -d --build` stalled while resolving Docker Hub metadata for base images and was cancelled; rerun on a stable Docker network/cache before final release.
 - Do not declare all-PASS until the PARTIAL rows in `docs/final-verification.md` are implemented and reverified.
 

@@ -273,6 +273,22 @@ export interface SurveyOption {
   displayOrder?: number;
 }
 
+export interface SurveyCreateDraft {
+  title: string;
+  category: string;
+  required: boolean;
+  status: string;
+  startAt?: string;
+  endAt?: string;
+  questions: SurveyQuestionCreateDraft[];
+}
+
+export interface SurveyQuestionCreateDraft {
+  type: string;
+  text: string;
+  options?: string[];
+}
+
 export interface QnaDraft {
   categoryId?: number;
   title: string;

@@ -276,6 +276,116 @@ public class PriorityP3Repository {
                 .toList();
     }
 
+    public Optional<Long> findDefaultContentScopeId() {
+        return jdbcClient.sql("""
+                SELECT content_scope_id
+                FROM content_scopes
+                ORDER BY
+                    CASE scope_type_code
+                        WHEN 'class_group' THEN 1
+                        WHEN 'track_cohort' THEN 2
+                        WHEN 'cohort' THEN 3
+                        ELSE 4
+                    END,
+                    content_scope_id ASC
+                LIMIT 1
+                """)
+                .query(Long.class)
+                .optional();
+    }
+
+    public long createSurvey(
+            long contentScopeId,
+            String title,
+            String category,
+            boolean required,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            String status
+    ) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO surveys (
+                    content_scope_id,
+                    title,
+                    survey_category_code,
+                    required_yn,
+                    progress_status_code,
+                    start_at,
+                    end_at
+                )
+                VALUES (
+                    :contentScopeId,
+                    :title,
+                    :category,
+                    :required,
+                    :status,
+                    :startAt,
+                    :endAt
+                )
+                """)
+                .param("contentScopeId", contentScopeId)
+                .param("title", title)
+                .param("category", category)
+                .param("required", required)
+                .param("status", status)
+                .param("startAt", toTimestamp(startAt))
+                .param("endAt", toTimestamp(endAt))
+                .update(keyHolder, "survey_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public long createSurveyQuestion(long surveyId, String type, String text, int displayOrder) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO survey_questions (
+                    survey_id,
+                    question_type_code,
+                    question_text,
+                    display_order
+                )
+                VALUES (
+                    :surveyId,
+                    :type,
+                    :text,
+                    :displayOrder
+                )
+                """)
+                .param("surveyId", surveyId)
+                .param("type", type)
+                .param("text", text)
+                .param("displayOrder", displayOrder)
+                .update(keyHolder, "survey_question_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public long createSurveyOption(long questionId, String text, int displayOrder) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO survey_options (
+                    survey_question_id,
+                    option_text,
+                    display_order
+                )
+                VALUES (
+                    :questionId,
+                    :text,
+                    :displayOrder
+                )
+                """)
+                .param("questionId", questionId)
+                .param("text", text)
+                .param("displayOrder", displayOrder)
+                .update(keyHolder, "survey_option_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
     public SurveyResponsePersistence saveSurveyResponse(long surveyId, long userId) {
         jdbcClient.sql("""
                 INSERT INTO survey_responses (survey_id, user_id, completed_yn, responded_at)
@@ -478,6 +588,10 @@ public class PriorityP3Repository {
 
     private OffsetDateTime toOffset(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toLocalDateTime().atZone(SEOUL_ZONE).toOffsetDateTime();
+    }
+
+    private Timestamp toTimestamp(OffsetDateTime value) {
+        return value == null ? null : Timestamp.from(value.toInstant());
     }
 
     private String normalizeNullable(String value) {

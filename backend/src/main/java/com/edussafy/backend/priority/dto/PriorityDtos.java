@@ -302,6 +302,27 @@ public final class PriorityDtos {
     public record SurveyDetailResponse(SurveyDetail item) {
     }
 
+    public record SurveyCreateRequest(
+            @NotBlank @Size(max = 255) String title,
+            @NotBlank @Size(max = 50) String category,
+            boolean required,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            @NotBlank @Size(max = 50) String status,
+            @NotEmpty List<@Valid SurveyQuestionCreateRequest> questions
+    ) {
+    }
+
+    public record SurveyQuestionCreateRequest(
+            @NotBlank @Size(max = 50) String type,
+            @NotBlank @Size(max = 1000) String text,
+            List<@Valid SurveyOptionCreateRequest> options
+    ) {
+    }
+
+    public record SurveyOptionCreateRequest(@NotBlank @Size(max = 255) String text) {
+    }
+
     public record SurveyResponseSubmitRequest(@NotEmpty List<@Valid SurveyAnswerRequest> answers) {
     }
 

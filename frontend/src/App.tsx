@@ -254,7 +254,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage />;
   if (path === '/help/qna') return <QnaListPage canAnswerSupport={canAnswerSupport(roleAccess)} />;
   if (path === '/quest') return <QuestPage />;
-  if (path === '/survey') return <SurveyPage />;
+  if (path === '/survey') return <SurveyPage canManageSurveys={canManageSurveys(roleAccess)} />;
   if (path === '/help/qna/new') return <QnaNewPage />;
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;
@@ -273,6 +273,10 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
 
 function canAnswerSupport(roleAccess?: RoleAccess): boolean {
   return Boolean(roleAccess?.permissions.includes('*') || roleAccess?.permissions.includes('support:answer'));
+}
+
+function canManageSurveys(roleAccess?: RoleAccess): boolean {
+  return Boolean(roleAccess?.permissions.includes('*') || roleAccess?.permissions.includes('survey:manage'));
 }
 
 export default App;

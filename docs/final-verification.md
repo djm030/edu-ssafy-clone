@@ -8,7 +8,7 @@ Decision: **PARTIAL / PRODUCTION-HARDENING NOT COMPLETE**
 
 `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`를 TTY로 실행했지만 Docker/Maven 검증 단계에서 approval 대기와 장시간 `Working` 상태로 멈춰 직접 검증으로 전환했다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, 실행 중인 app profile 컨테이너 health, Nginx reverse proxy smoke가 통과했다.
 
-프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 다만 설문 “생성” API, 일부 공통 첨부파일의 실제 바이너리 업로드/다운로드, 전체 권한 행렬, 브라우저 E2E/visual 검증, 최신 이미지 rebuild 검증이 아직 완전하지 않아 “모든 기능이 실제 서비스 수준으로 완료”라고 판정하지 않는다.
+프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 다만 일부 공통 첨부파일의 실제 바이너리 업로드/다운로드, 전체 권한 행렬, 브라우저 E2E/visual 검증, 최신 이미지 rebuild 검증이 아직 완전하지 않아 “모든 기능이 실제 서비스 수준으로 완료”라고 판정하지 않는다.
 
 ## 2. 실행한 명령어
 
@@ -80,7 +80,7 @@ docker compose --profile app up -d --build
 | 학습자료 반응 | PASS | material like/bookmark create/delete, count/current-user state, tests 존재. |
 | 퀘스트/평가 | PASS | quest list/detail/submit API, DB upsert, frontend detail/submit/result state, tests 존재. |
 | 퀘스트 제출 상태 | PASS | current submission/result detail endpoint와 persisted status tests 존재. |
-| 설문 생성/조회 | PARTIAL | survey list/detail 조회와 응답 저장은 구현·검증됐지만 설문 생성/관리자 작성 API는 확인되지 않았다. |
+| 설문 생성/조회 | PASS | survey list/detail 조회와 coach/admin 전용 생성 API, 첫 문항/선택지 저장, frontend 생성 폼, 권한/서비스 테스트가 존재한다. |
 | 설문 문항/선택지 | PASS | survey questions/options 조회 DTO, DB 조회, detail/respond 화면 연결, tests 존재. |
 | 설문 응답 저장 | PASS | survey response upsert, answer/option validation, current response 조회 tests 존재. |
 | 게시판 | PASS | board categories/list/detail/write flow, DB repository/service/controller, frontend pages, tests 존재. |
@@ -101,9 +101,8 @@ docker compose --profile app up -d --build
 
 1. `omx ralph` 실행은 TTY/approval/장시간 `Working` 문제로 완료되지 않았다. 최종 검증은 직접 명령 실행으로 대체했다.
 2. 현재 실행 중인 Compose app은 healthy이지만, `docker compose --profile app up -d --build`가 Docker Hub metadata 단계에서 멈춰 최신 이미지 rebuild 완료까지는 검증하지 못했다.
-3. 설문 “생성” 관리자 API는 확인되지 않았다. 현재는 설문 조회/문항/선택지/응답 저장까지 PASS다.
-4. 공통 첨부파일은 board/support에는 구현되어 있으나 material/quest까지 동일한 바이너리 업로드·다운로드 모델로 완성됐다고 볼 근거가 부족하다.
-5. 전체 권한 matrix와 브라우저 E2E/visual 검증이 없다.
+3. 공통 첨부파일은 board/support에는 구현되어 있으나 material/quest까지 동일한 바이너리 업로드·다운로드 모델로 완성됐다고 볼 근거가 부족하다.
+4. 전체 권한 matrix와 브라우저 E2E/visual 검증이 없다.
 
 ## 6. 즉시 수정한 내용
 
@@ -112,7 +111,7 @@ docker compose --profile app up -d --build
 
 ## 7. 남은 작업
 
-1. 설문 생성/관리자 CRUD API와 화면을 추가하고 권한 테스트를 붙인다.
+1. 설문 edit/delete 등 관리자 CRUD 후속 범위를 추가한다.
 2. material/quest까지 포함하는 공통 파일 업로드·다운로드·권한 모델을 통일한다.
 3. learner/coach/admin 전체 role matrix를 도메인별로 테스트한다.
 4. Playwright/Cypress 등 브라우저 E2E smoke와 핵심 화면 visual 검증을 추가한다.

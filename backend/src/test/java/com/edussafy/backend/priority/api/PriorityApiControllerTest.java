@@ -63,6 +63,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveysResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.TodaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
@@ -511,6 +513,67 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.id").value(8))
                 .andExpect(jsonPath("$.item.questionCount").value(0))
                 .andExpect(jsonPath("$.item.questions").isArray());
+    }
+
+    @Test
+    void surveyCreateReturnsPersistedDraftForStaff() throws Exception {
+        given(priorityApiService.createSurvey(any())).willReturn(new SurveyDetailResponse(new SurveyDetail(
+                9L,
+                "Weekly pulse",
+                "satisfaction",
+                true,
+                null,
+                null,
+                "in_progress",
+                false,
+                1,
+                List.of(new SurveyQuestionItem(
+                        91L,
+                        "single_choice",
+                        "이번 주 과정은 어땠나요?",
+                        1,
+                        List.of(new SurveyOptionItem(911L, "좋음", 1), new SurveyOptionItem(912L, "보통", 2))
+                ))
+        )));
+
+        mockMvc.perform(post("/api/surveys")
+                        .session(sessionFor(2L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Weekly pulse",
+                                  "category": "satisfaction",
+                                  "required": true,
+                                  "status": "in_progress",
+                                  "questions": [
+                                    {
+                                      "type": "single_choice",
+                                      "text": "이번 주 과정은 어땠나요?",
+                                      "options": [{"text": "좋음"}, {"text": "보통"}]
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(9))
+                .andExpect(jsonPath("$.item.questions[0].options[0].text").value("좋음"));
+    }
+
+    @Test
+    void surveyCreateRequiresStaffRole() throws Exception {
+        mockMvc.perform(post("/api/surveys")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Weekly pulse",
+                                  "category": "satisfaction",
+                                  "required": true,
+                                  "status": "in_progress",
+                                  "questions": [{"type": "long_text", "text": "의견을 적어 주세요."}]
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
     }
 
     @Test

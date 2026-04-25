@@ -49,6 +49,7 @@ import type {
   SupportTicketMessageItem,
   SupportTicketsResponse,
   SurveyResponseDraft,
+  SurveyCreateDraft,
   SurveySavedResponse,
   SurveyItem,
 } from '../types';
@@ -588,6 +589,46 @@ export function getSurveyResponse(id: number): Promise<SurveySavedResponse | und
       if (error instanceof ApiError && error.status === 404) return undefined;
       throw error;
     });
+}
+
+export function createSurvey(draft: SurveyCreateDraft): Promise<SurveyItem> {
+  const payload = {
+    ...draft,
+    startAt: draft.startAt || undefined,
+    endAt: draft.endAt || undefined,
+    questions: draft.questions.map((question) => ({
+      type: question.type,
+      text: question.text,
+      options: question.options?.map((text) => ({ text })).filter((option) => option.text.trim()) || [],
+    })),
+  };
+
+  return fetchJson<ItemResponse<BackendSurveyItem>>('/api/surveys', {
+    body: JSON.stringify(payload),
+    fallback: () => ({
+      item: {
+        id: Date.now(),
+        title: draft.title,
+        category: draft.category,
+        required: draft.required,
+        status: draft.status,
+        completed: false,
+        questionCount: draft.questions.length,
+        questions: draft.questions.map((question, index) => ({
+          id: index + 1,
+          text: question.text,
+          type: question.type,
+          options: question.options?.map((text, optionIndex) => ({
+            id: optionIndex + 1,
+            text,
+            displayOrder: optionIndex + 1,
+          })) || [],
+        })),
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => toSurveyItem(response.item));
 }
 
 export function checkProfilePassword(password: string): Promise<{ verified: boolean }> {

@@ -73,6 +73,9 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         String role = normalizeRole(user.get().role());
         boolean denied = ACCESS_RULES.stream()
                 .anyMatch(rule -> rule.matches(request.getMethod(), path) && !rule.allowedRoles().contains(role));
+        if (!denied && isSurveyCreateDenied(request.getMethod(), path, role)) {
+            denied = true;
+        }
         if (denied) {
             writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다.");
             return false;
@@ -112,6 +115,12 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
             return normalized;
         }
         return "learner";
+    }
+
+    private boolean isSurveyCreateDenied(String method, String path, String role) {
+        return "POST".equalsIgnoreCase(method)
+                && "/api/surveys".equals(path)
+                && !Set.of("coach", "admin").contains(role);
     }
 
     private void writeError(HttpServletResponse response, HttpStatus status, String code, String message) throws IOException {

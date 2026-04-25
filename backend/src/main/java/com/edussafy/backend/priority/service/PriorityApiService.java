@@ -63,9 +63,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionCreateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetailResponse;
@@ -132,6 +135,12 @@ public class PriorityApiService {
     private static final Set<String> ATTENDANCE_STATUSES = Set.of("present", "late", "absent", "early_leave", "excused");
     private static final Set<String> ATTENDANCE_APPEAL_DECISIONS = Set.of("approved", "rejected");
     private static final Set<String> CLOSED_ATTENDANCE_APPEAL_STATUSES = Set.of("rejected", "canceled");
+    private static final Set<String> SURVEY_CATEGORIES = Set.of("satisfaction", "course", "lecture", "etc");
+    private static final Set<String> SURVEY_STATUSES = Set.of("draft", "scheduled", "in_progress", "completed", "closed", "archived");
+    private static final Set<String> SURVEY_QUESTION_TYPES = Set.of(
+            "single_choice", "multiple_choice", "short_text", "long_text", "score"
+    );
+    private static final Set<String> SURVEY_CHOICE_TYPES = Set.of("single_choice", "multiple_choice");
     private static final int SUPPORT_ATTACHMENT_MAX_BYTES = 2 * 1024 * 1024;
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "learner", List.of(
@@ -581,6 +590,44 @@ public class PriorityApiService {
     }
 
     @Transactional
+    public SurveyDetailResponse createSurvey(SurveyCreateRequest request) {
+        UserProfile user = currentUser();
+        if (!canManageSurveys(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Survey management permission is required.");
+        }
+
+        PreparedSurveyCreate draft = prepareSurveyCreate(request);
+        long contentScopeId = p3Repository.findDefaultContentScopeId()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Survey content scope is not configured."));
+        long surveyId = p3Repository.createSurvey(
+                contentScopeId,
+                draft.title(),
+                draft.category(),
+                draft.required(),
+                draft.startAt(),
+                draft.endAt(),
+                draft.status()
+        );
+        if (surveyId <= 0) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Survey was not created.");
+        }
+
+        int questionOrder = 1;
+        for (PreparedSurveyQuestion question : draft.questions()) {
+            long questionId = p3Repository.createSurveyQuestion(surveyId, question.type(), question.text(), questionOrder++);
+            int optionOrder = 1;
+            for (String option : question.options()) {
+                p3Repository.createSurveyOption(questionId, option, optionOrder++);
+            }
+        }
+
+        SurveyDetail item = p3Repository.findSurvey(user.id(), surveyId)
+                .map(survey -> survey.withQuestions(p3Repository.findSurveyQuestions(surveyId)))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Created survey could not be loaded."));
+        return new SurveyDetailResponse(item);
+    }
+
+    @Transactional
     public SurveyResponseSubmitResponse submitSurvey(long id, SurveyResponseSubmitRequest request) {
         UserProfile user = currentUser();
         SurveyDetail survey = p3Repository.findSurvey(user.id(), id)
@@ -989,6 +1036,11 @@ public class PriorityApiService {
         return "coach".equals(role) || "admin".equals(role);
     }
 
+    private boolean canManageSurveys(UserProfile user) {
+        String role = normalizeAccessRole(user.role());
+        return "coach".equals(role) || "admin".equals(role);
+    }
+
     private List<SupportTicketMessageItem> attachSupportAttachments(List<SupportTicketMessageItem> messages) {
         if (messages.isEmpty()) {
             return messages;
@@ -1202,6 +1254,57 @@ public class PriorityApiService {
         return new SurveyDetail(id, "Survey", "etc", false, null, null, "scheduled", false, 0, List.of());
     }
 
+    private PreparedSurveyCreate prepareSurveyCreate(SurveyCreateRequest request) {
+        String title = trimRequired(request.title(), "Survey title is required.");
+        String category = trimOrDefault(request.category(), "etc").toLowerCase(Locale.ROOT);
+        String status = trimOrDefault(request.status(), "draft").toLowerCase(Locale.ROOT);
+        if (!SURVEY_CATEGORIES.contains(category)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported survey category.");
+        }
+        if (!SURVEY_STATUSES.contains(status)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported survey status.");
+        }
+        if (request.startAt() != null && request.endAt() != null && request.endAt().isBefore(request.startAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Survey endAt must be after startAt.");
+        }
+
+        List<PreparedSurveyQuestion> questions = request.questions().stream()
+                .map(this::prepareSurveyQuestion)
+                .toList();
+        return new PreparedSurveyCreate(
+                title,
+                category,
+                request.required(),
+                request.startAt(),
+                request.endAt(),
+                status,
+                questions
+        );
+    }
+
+    private PreparedSurveyQuestion prepareSurveyQuestion(SurveyQuestionCreateRequest question) {
+        String type = trimOrDefault(question.type(), "long_text").toLowerCase(Locale.ROOT);
+        String text = trimRequired(question.text(), "Survey question text is required.");
+        if (!SURVEY_QUESTION_TYPES.contains(type)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported survey question type.");
+        }
+
+        List<String> options = Optional.ofNullable(question.options()).orElse(List.of()).stream()
+                .map(SurveyOptionCreateRequest::text)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(option -> !option.isBlank())
+                .distinct()
+                .toList();
+        if (SURVEY_CHOICE_TYPES.contains(type) && options.size() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choice survey questions require at least two options.");
+        }
+        if (!SURVEY_CHOICE_TYPES.contains(type) && !options.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Text survey questions cannot include options.");
+        }
+        return new PreparedSurveyQuestion(type, text, options);
+    }
+
     private UserProfile demoUser(String email) {
         return new UserProfile(
                 DEMO_USER.id(),
@@ -1280,6 +1383,17 @@ public class PriorityApiService {
         return new LinkedHashSet<>(optionIds).stream().toList();
     }
 
+    private String trimRequired(String value, String message) {
+        if (!StringUtils.hasText(value)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
+        return value.trim();
+    }
+
+    private String trimOrDefault(String value, String defaultValue) {
+        return StringUtils.hasText(value) ? value.trim() : defaultValue;
+    }
+
     private String normalizeNullable(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
@@ -1298,5 +1412,19 @@ public class PriorityApiService {
     }
 
     private record PreparedSurveyAnswer(long questionId, String answerText, List<Long> optionIds) {
+    }
+
+    private record PreparedSurveyCreate(
+            String title,
+            String category,
+            boolean required,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            String status,
+            List<PreparedSurveyQuestion> questions
+    ) {
+    }
+
+    private record PreparedSurveyQuestion(String type, String text, List<String> options) {
     }
 }
