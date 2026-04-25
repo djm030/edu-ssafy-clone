@@ -432,6 +432,95 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record AttachmentUploadRequest(
+            @NotBlank @Size(max = 255) String originalFilename,
+            @Size(max = 100) String storageKey,
+            @Size(max = 500) String storedPath,
+            @Size(max = 100) String mimeType,
+            Long fileSize,
+            @Size(max = 64) String checksumSha256
+    ) {
+    }
+
+    public record AttachmentResponse(AttachmentItem item) {
+    }
+
+    public record AttachmentItem(
+            long id,
+            String originalFilename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            Long fileSize,
+            String checksumSha256,
+            String downloadUrl,
+            OffsetDateTime createdAt,
+            boolean demo
+    ) {
+    }
+
+    public record SupportTicketDetailResponse(SupportTicketDetail item) {
+    }
+
+    public record SupportTicketDetail(
+            SupportTicketItem ticket,
+            List<SupportTicketMessageItem> messages,
+            List<AttachmentItem> attachments
+    ) {
+    }
+
+    public record SupportTicketMessageCreateRequest(
+            @NotBlank @Size(max = 4000) String content,
+            List<Long> attachmentIds
+    ) {
+    }
+
+    public record SupportTicketAnswerRequest(
+            @NotBlank @Size(max = 4000) String content,
+            List<Long> attachmentIds
+    ) {
+    }
+
+    public record SupportTicketStatusUpdateRequest(@NotBlank @Size(max = 50) String status) {
+    }
+
+    public record SupportTicketMessageResponse(SupportTicketMessageItem item) {
+    }
+
+    public record SupportTicketStatusResponse(SupportTicketItem item) {
+    }
+
+    public record SupportTicketAttachmentRequest(@Positive long attachmentId) {
+    }
+
+    public record SupportTicketAttachmentResponse(long ticketId, AttachmentItem attachment, boolean demo) {
+    }
+
+    public record SupportTicketMessagesResponse(List<SupportTicketMessageItem> items) {
+    }
+
+    public record SupportTicketMessageItem(
+            long id,
+            long ticketId,
+            long senderUserId,
+            String type,
+            String content,
+            OffsetDateTime createdAt,
+            List<AttachmentItem> attachments,
+            boolean demo
+    ) {
+    }
+
+    public record NotificationActionResponse(NotificationItem item) {
+    }
+
+    public record NotificationSendRequest(
+            @NotBlank @Size(max = 255) String title,
+            @NotBlank @Size(max = 1000) String body,
+            List<Long> recipientUserIds
+    ) {
+    }
+
     public record PageMeta(int page, int size, long totalItems, int totalPages) {
     }
 }
