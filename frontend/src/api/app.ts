@@ -19,6 +19,7 @@ import type {
   AttendanceRecord,
   AttendanceAppealDraft,
   AttendanceAppealResolveDraft,
+  AttendanceRecordFilters,
   BoardPostDraft,
   Classmate,
   CurriculumWeek,
@@ -172,6 +173,15 @@ function toAttendanceRecord(item: BackendAttendanceRecord): AttendanceRecord {
     appealStatus,
     appealRequestedAt: item.appealRequestedAt || undefined,
   };
+}
+
+function filterMockAttendanceRecords(filters: AttendanceRecordFilters): AttendanceRecord[] {
+  return mockAttendanceRecords.filter((record) => {
+    if (filters.dateFrom && record.date < filters.dateFrom) return false;
+    if (filters.dateTo && record.date > filters.dateTo) return false;
+    if (filters.status && record.status !== filters.status) return false;
+    return true;
+  });
 }
 
 function toNotificationCategory(value?: string | null): NotificationItem['category'] {
@@ -381,9 +391,14 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
   }).then(toDashboardSummary);
 }
 
-export function getAttendanceRecords(): Promise<{ items: AttendanceRecord[] }> {
-  return fetchJson<{ items: BackendAttendanceRecord[] }>('/api/attendance/records', {
-    fallback: () => ({ items: mockAttendanceRecords }),
+export function getAttendanceRecords(filters: AttendanceRecordFilters = {}): Promise<{ items: AttendanceRecord[] }> {
+  const query = buildQuery({
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    status: filters.status,
+  });
+  return fetchJson<{ items: BackendAttendanceRecord[] }>(`/api/attendance/records${query}`, {
+    fallback: () => ({ items: filterMockAttendanceRecords(filters) }),
   }).then((response) => ({ items: response.items.map(toAttendanceRecord) }));
 }
 

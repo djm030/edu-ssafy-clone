@@ -86,6 +86,12 @@ export interface AttendanceRecord {
   appealRequestedAt?: string;
 }
 
+export interface AttendanceRecordFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  status?: AttendanceRecord['status'] | '';
+}
+
 export interface NotificationItem {
   id: number;
   title: string;

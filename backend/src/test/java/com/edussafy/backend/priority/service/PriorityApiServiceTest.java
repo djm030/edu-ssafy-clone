@@ -15,6 +15,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
@@ -671,6 +673,60 @@ class PriorityApiServiceTest {
         } finally {
             RequestContextHolder.resetRequestAttributes();
         }
+    }
+
+    @Test
+    void filtersAttendanceRecordsByDateRangeAndStatus() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        LocalDate from = LocalDate.of(2026, 4, 1);
+        LocalDate to = LocalDate.of(2026, 4, 30);
+        AttendanceRecordItem lateRecord = new AttendanceRecordItem(
+                7L,
+                LocalDate.of(2026, 4, 23),
+                null,
+                null,
+                "late",
+                "auto",
+                true,
+                null,
+                null,
+                null
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findAttendanceSummary(1L, from, to, "late"))
+                .willReturn(new AttendanceSummary(0, 1, 0, true));
+        given(repository.findAttendanceRecords(1L, from, to, "late")).willReturn(List.of(lateRecord));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AttendanceRecordsResponse response = service.attendanceRecords(from, to, "late");
+
+        assertThat(response.summary().late()).isEqualTo(1);
+        assertThat(response.items()).containsExactly(lateRecord);
+        verify(repository).findAttendanceSummary(1L, from, to, "late");
+        verify(repository).findAttendanceRecords(1L, from, to, "late");
+    }
+
+    @Test
+    void rejectsAttendanceRecordFilterWhenDateRangeIsReversed() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThatThrownBy(() -> service.attendanceRecords(
+                LocalDate.of(2026, 4, 30),
+                LocalDate.of(2026, 4, 1),
+                null
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
     }
 
     @Test

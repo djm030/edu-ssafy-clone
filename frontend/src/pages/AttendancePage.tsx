@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { cancelAttendanceAppeal, getAttendanceAppeals, getAttendanceRecords } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { AttendanceAppeal, AttendanceRecord, LoadState } from '../types';
+import type { AttendanceAppeal, AttendanceRecord, AttendanceRecordFilters, LoadState } from '../types';
 
 const statusLabel: Record<AttendanceRecord['status'], string> = {
   absent: '결석',
@@ -21,10 +21,16 @@ function AttendancePage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [appealMessage, setAppealMessage] = useState('');
   const [cancelingAppealId, setCancelingAppealId] = useState<number>();
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [status, setStatus] = useState<AttendanceRecordFilters['status']>('');
+  const [appliedFilters, setAppliedFilters] = useState<AttendanceRecordFilters>({ dateFrom: '', dateTo: '', status: '' });
 
-  useEffect(() => {
+  const loadAttendance = useCallback((filters = appliedFilters) => {
     let ignore = false;
-    Promise.all([getAttendanceRecords(), getAttendanceAppeals()])
+    setLoadState('loading');
+    setErrorMessage('');
+    Promise.all([getAttendanceRecords(filters), getAttendanceAppeals()])
       .then(([recordsResponse, appealsResponse]) => {
         if (ignore) return;
         setRecords(recordsResponse.items);
@@ -39,7 +45,21 @@ function AttendancePage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [appliedFilters]);
+
+  useEffect(() => loadAttendance(), [loadAttendance]);
+
+  const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAppliedFilters({ dateFrom, dateTo, status });
+  };
+
+  const resetFilters = () => {
+    setDateFrom('');
+    setDateTo('');
+    setStatus('');
+    setAppliedFilters({ dateFrom: '', dateTo: '', status: '' });
+  };
 
   const handleCancelAppeal = async (appealId: number) => {
     setCancelingAppealId(appealId);
@@ -82,6 +102,26 @@ function AttendancePage() {
         <Summary title="결석" value={counts.absent} />
         <Summary title="소명 가능" value={counts.appeal} />
       </div>
+      <section className="panel form-panel">
+        <form className="stack-form" onSubmit={applyFilters}>
+          <h2>출석 이력 필터</h2>
+          <label htmlFor="attendance-date-from">시작일</label>
+          <input id="attendance-date-from" onChange={(event) => setDateFrom(event.target.value)} type="date" value={dateFrom} />
+          <label htmlFor="attendance-date-to">종료일</label>
+          <input id="attendance-date-to" onChange={(event) => setDateTo(event.target.value)} type="date" value={dateTo} />
+          <label htmlFor="attendance-status">출결 상태</label>
+          <select id="attendance-status" onChange={(event) => setStatus(event.target.value as AttendanceRecordFilters['status'])} value={status}>
+            <option value="">전체</option>
+            {Object.entries(statusLabel).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <div className="button-row">
+            <button className="primary-action" type="submit">조회</button>
+            <button className="ghost-button" type="button" onClick={resetFilters}>초기화</button>
+          </div>
+        </form>
+      </section>
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="출석현황을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="출석 기록이 없습니다." /> : null}

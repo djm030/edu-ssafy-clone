@@ -91,6 +91,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
@@ -272,9 +273,28 @@ public class PriorityApiService {
     }
 
     public AttendanceRecordsResponse attendanceRecords() {
+        return attendanceRecords(null, null, null);
+    }
+
+    public AttendanceRecordsResponse attendanceRecords(LocalDate dateFrom, LocalDate dateTo, String status) {
         UserProfile user = currentUser();
-        AttendanceSummary summary = safe(() -> repository.findAttendanceSummary(user.id()), EMPTY_ATTENDANCE);
-        return new AttendanceRecordsResponse(summary, safe(() -> repository.findAttendanceRecords(user.id()), List.of()));
+        String normalizedStatus = normalizeNullable(status);
+        if (normalizedStatus != null) {
+            normalizedStatus = normalizeAttendanceStatus(normalizedStatus, normalizedStatus);
+        }
+        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attendance dateFrom must be before or equal to dateTo.");
+        }
+
+        final String filterStatus = normalizedStatus;
+        AttendanceSummary summary = safe(
+                () -> repository.findAttendanceSummary(user.id(), dateFrom, dateTo, filterStatus),
+                EMPTY_ATTENDANCE
+        );
+        return new AttendanceRecordsResponse(
+                summary,
+                safe(() -> repository.findAttendanceRecords(user.id(), dateFrom, dateTo, filterStatus), List.of())
+        );
     }
 
     public AttendanceAppealsResponse attendanceAppeals() {

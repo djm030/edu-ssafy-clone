@@ -115,15 +115,19 @@ public class PriorityApiRepository {
     }
 
     public AttendanceSummary findAttendanceSummary(long userId) {
+        return findAttendanceSummary(userId, null, null, null);
+    }
+
+    public AttendanceSummary findAttendanceSummary(long userId, LocalDate dateFrom, LocalDate dateTo, String status) {
+        SqlParts parts = attendanceWhere(userId, dateFrom, dateTo, status);
         return jdbcClient.sql("""
                 SELECT
                     SUM(CASE WHEN attendance_status_code = 'present' THEN 1 ELSE 0 END) AS present_count,
                     SUM(CASE WHEN attendance_status_code = 'late' THEN 1 ELSE 0 END) AS late_count,
                     SUM(CASE WHEN attendance_status_code = 'absent' THEN 1 ELSE 0 END) AS absent_count
                 FROM attendance_records
-                WHERE user_id = :userId
-                """)
-                .param("userId", userId)
+                """ + parts.whereClause())
+                .params(parts.params())
                 .query((rs, rowNum) -> new AttendanceSummary(
                         rs.getInt("present_count"),
                         rs.getInt("late_count"),
@@ -134,8 +138,13 @@ public class PriorityApiRepository {
     }
 
     public List<AttendanceRecordItem> findAttendanceRecords(long userId) {
-        return jdbcClient.sql(attendanceRecordSelect("WHERE ar.user_id = :userId ORDER BY ar.attendance_date DESC LIMIT 60"))
-                .param("userId", userId)
+        return findAttendanceRecords(userId, null, null, null);
+    }
+
+    public List<AttendanceRecordItem> findAttendanceRecords(long userId, LocalDate dateFrom, LocalDate dateTo, String status) {
+        SqlParts parts = attendanceWhere("ar", userId, dateFrom, dateTo, status);
+        return jdbcClient.sql(attendanceRecordSelect(parts.whereClause() + " ORDER BY ar.attendance_date DESC LIMIT 120"))
+                .params(parts.params())
                 .query(this::mapAttendanceRecord)
                 .list();
     }
@@ -699,6 +708,30 @@ public class PriorityApiRepository {
             String normalizedType = type.trim().toLowerCase();
             params.put("materialType", normalizeMaterialType(normalizedType));
             params.put("resourceType", normalizedType);
+        }
+        return new SqlParts(" " + where, params);
+    }
+
+    private SqlParts attendanceWhere(long userId, LocalDate dateFrom, LocalDate dateTo, String status) {
+        return attendanceWhere(null, userId, dateFrom, dateTo, status);
+    }
+
+    private SqlParts attendanceWhere(String tableAlias, long userId, LocalDate dateFrom, LocalDate dateTo, String status) {
+        String prefix = StringUtils.hasText(tableAlias) ? tableAlias + "." : "";
+        StringBuilder where = new StringBuilder("WHERE ").append(prefix).append("user_id = :userId");
+        Map<String, Object> params = new java.util.LinkedHashMap<>();
+        params.put("userId", userId);
+        if (dateFrom != null) {
+            where.append(" AND ").append(prefix).append("attendance_date >= :dateFrom");
+            params.put("dateFrom", dateFrom);
+        }
+        if (dateTo != null) {
+            where.append(" AND ").append(prefix).append("attendance_date <= :dateTo");
+            params.put("dateTo", dateTo);
+        }
+        if (StringUtils.hasText(status)) {
+            where.append(" AND ").append(prefix).append("attendance_status_code = :status");
+            params.put("status", status);
         }
         return new SqlParts(" " + where, params);
     }
