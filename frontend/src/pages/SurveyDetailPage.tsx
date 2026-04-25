@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react';
-import { getSurvey } from '../api/app';
+import { getSurvey, getSurveyResponse } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { LoadState, SurveyItem } from '../types';
+import type { LoadState, SurveyItem, SurveySavedResponse } from '../types';
 
 function SurveyDetailPage({ surveyId }: { surveyId: number }) {
   const [survey, setSurvey] = useState<SurveyItem>();
+  const [savedResponse, setSavedResponse] = useState<SurveySavedResponse>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     let ignore = false;
-    getSurvey(surveyId)
-      .then((response) => {
+    Promise.all([getSurvey(surveyId), getSurveyResponse(surveyId)])
+      .then(([response, surveyResponse]) => {
         if (ignore) return;
         setSurvey(response);
+        setSavedResponse(surveyResponse);
         setLoadState(response ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -35,12 +37,14 @@ function SurveyDetailPage({ surveyId }: { surveyId: number }) {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="설문을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="설문을 찾을 수 없습니다." /> : null}
-      {survey ? <SurveyContent survey={survey} /> : null}
+      {survey ? <SurveyContent savedResponse={savedResponse} survey={survey} /> : null}
     </section>
   );
 }
 
-function SurveyContent({ survey }: { survey: SurveyItem }) {
+function SurveyContent({ savedResponse, survey }: { savedResponse?: SurveySavedResponse; survey: SurveyItem }) {
+  const savedAnswers = new Map((savedResponse?.answers || []).map((answer) => [answer.questionId, answer]));
+
   return (
     <article className="panel detail-panel">
       <div className="detail-meta">
@@ -62,6 +66,9 @@ function SurveyContent({ survey }: { survey: SurveyItem }) {
                 ))}
               </ul>
             ) : null}
+            {savedAnswers.has(question.id) ? (
+              <p className="form-message">내 응답: {formatSavedAnswer(question, savedAnswers.get(question.id))}</p>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -79,6 +86,15 @@ function questionTypeLabel(type?: string): string {
   if (type === 'score') return '점수 입력';
   if (type === 'short_text') return '단답형';
   return '장문형';
+}
+
+function formatSavedAnswer(question: SurveyItem['questions'][number], answer?: SurveySavedResponse['answers'][number]): string {
+  if (!answer) return '-';
+  if (answer.optionIds.length) {
+    const labels = answer.optionIds.map((optionId) => question.options?.find((option) => option.id === optionId)?.text || String(optionId));
+    return labels.join(', ');
+  }
+  return answer.answerText || '-';
 }
 
 export default SurveyDetailPage;

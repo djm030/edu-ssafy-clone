@@ -6,13 +6,16 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveySavedAnswerItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -181,6 +184,63 @@ public class PriorityP3Repository {
                 .single();
     }
 
+    public Optional<SurveyResponsePersistence> findSurveyResponse(long userId, long surveyId) {
+        return jdbcClient.sql("""
+                SELECT survey_response_id, survey_id, completed_yn, responded_at
+                FROM survey_responses
+                WHERE survey_id = :surveyId AND user_id = :userId
+                """)
+                .param("surveyId", surveyId)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new SurveyResponsePersistence(
+                        rs.getLong("survey_response_id"),
+                        rs.getLong("survey_id"),
+                        rs.getBoolean("completed_yn"),
+                        toOffset(rs.getTimestamp("responded_at"))
+                ))
+                .optional();
+    }
+
+    public List<SurveySavedAnswerItem> findSurveyResponseAnswers(long responseId) {
+        List<SurveySavedAnswerRow> rows = jdbcClient.sql("""
+                SELECT
+                    a.survey_question_id,
+                    a.answer_text,
+                    o.survey_option_id
+                FROM survey_response_answers a
+                LEFT JOIN survey_response_answer_options o
+                  ON o.survey_response_answer_id = a.survey_response_answer_id
+                WHERE a.survey_response_id = :responseId
+                ORDER BY a.survey_question_id ASC, o.survey_option_id ASC
+                """)
+                .param("responseId", responseId)
+                .query((rs, rowNum) -> new SurveySavedAnswerRow(
+                        rs.getLong("survey_question_id"),
+                        rs.getString("answer_text"),
+                        nullableLong(rs, "survey_option_id")
+                ))
+                .list();
+
+        Map<Long, List<SurveySavedAnswerRow>> groupedRows = rows.stream()
+                .collect(Collectors.groupingBy(
+                        SurveySavedAnswerRow::questionId,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        return groupedRows.entrySet().stream()
+                .map(entry -> new SurveySavedAnswerItem(
+                        entry.getKey(),
+                        entry.getValue().getFirst().answerText(),
+                        entry.getValue().stream()
+                                .map(SurveySavedAnswerRow::optionId)
+                                .filter(Objects::nonNull)
+                                .distinct()
+                                .toList()
+                ))
+                .toList();
+    }
+
     public void deleteSurveyAnswers(long responseId) {
         jdbcClient.sql("""
                 DELETE FROM survey_response_answers
@@ -286,6 +346,11 @@ public class PriorityP3Repository {
         return rs.wasNull() ? null : value;
     }
 
+    private Long nullableLong(ResultSet rs, String columnName) throws SQLException {
+        long value = rs.getLong(columnName);
+        return rs.wasNull() ? null : value;
+    }
+
     private OffsetDateTime toOffset(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toLocalDateTime().atZone(SEOUL_ZONE).toOffsetDateTime();
     }
@@ -298,6 +363,9 @@ public class PriorityP3Repository {
     }
 
     private record SurveyOptionRow(long questionId, SurveyOptionItem option) {
+    }
+
+    private record SurveySavedAnswerRow(long questionId, String answerText, Long optionId) {
     }
 
     public record SurveyResponsePersistence(

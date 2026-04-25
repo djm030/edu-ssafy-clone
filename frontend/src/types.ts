@@ -283,6 +283,21 @@ export interface SurveyResponseDraft {
   answers: SurveyAnswerDraft[];
 }
 
+export interface SurveySavedResponse {
+  id: number;
+  surveyId: number;
+  completed: boolean;
+  respondedAt?: string;
+  answers: SurveySavedAnswer[];
+  demo?: boolean;
+}
+
+export interface SurveySavedAnswer {
+  questionId: number;
+  answerText?: string | null;
+  optionIds: number[];
+}
+
 export interface SurveyAnswerDraft {
   questionId: number;
   answerText: string;

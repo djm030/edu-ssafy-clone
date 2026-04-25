@@ -247,6 +247,9 @@ public final class PriorityDtos {
     public record SurveyResponseSubmitResponse(SurveyResponseSubmitItem item) {
     }
 
+    public record SurveyResponseDetailResponse(SurveyResponseDetail item) {
+    }
+
     public record SurveyResponseSubmitItem(
             long id,
             long surveyId,
@@ -254,6 +257,23 @@ public final class PriorityDtos {
             int answerCount,
             OffsetDateTime respondedAt,
             boolean demo
+    ) {
+    }
+
+    public record SurveyResponseDetail(
+            long id,
+            long surveyId,
+            boolean completed,
+            OffsetDateTime respondedAt,
+            List<SurveySavedAnswerItem> answers,
+            boolean demo
+    ) {
+    }
+
+    public record SurveySavedAnswerItem(
+            long questionId,
+            String answerText,
+            List<Long> optionIds
     ) {
     }
 

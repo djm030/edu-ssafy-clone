@@ -59,6 +59,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
@@ -410,6 +412,23 @@ public class PriorityApiService {
                 response.completed(),
                 answers.size(),
                 response.respondedAt(),
+                false
+        ));
+    }
+
+    public SurveyResponseDetailResponse surveyResponse(long id) {
+        UserProfile user = currentUser();
+        p3Repository.findSurvey(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey not found."));
+        SurveyResponsePersistence response = p3Repository.findSurveyResponse(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey response not found."));
+
+        return new SurveyResponseDetailResponse(new SurveyResponseDetail(
+                response.id(),
+                response.surveyId(),
+                response.completed(),
+                response.respondedAt(),
+                p3Repository.findSurveyResponseAnswers(response.id()),
                 false
         ));
     }

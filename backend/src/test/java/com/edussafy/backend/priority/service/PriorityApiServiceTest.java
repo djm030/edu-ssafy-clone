@@ -30,8 +30,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveySavedAnswerItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentRequest;
@@ -530,6 +532,37 @@ class PriorityApiServiceTest {
         ))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
+    }
+
+    @Test
+    void returnsPersistedSurveyResponseAnswers() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        OffsetDateTime respondedAt = OffsetDateTime.now();
+        List<SurveySavedAnswerItem> answers = List.of(
+                new SurveySavedAnswerItem(11L, null, List.of(101L)),
+                new SurveySavedAnswerItem(12L, "좋았습니다", List.of())
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findSurvey(1L, 6L)).willReturn(Optional.of(surveyDetail(6L)));
+        given(p3Repository.findSurveyResponse(1L, 6L))
+                .willReturn(Optional.of(new SurveyResponsePersistence(77L, 6L, true, respondedAt)));
+        given(p3Repository.findSurveyResponseAnswers(77L)).willReturn(answers);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        SurveyResponseDetailResponse response = service.surveyResponse(6L);
+
+        assertThat(response.item().id()).isEqualTo(77L);
+        assertThat(response.item().surveyId()).isEqualTo(6L);
+        assertThat(response.item().completed()).isTrue();
+        assertThat(response.item().respondedAt()).isEqualTo(respondedAt);
+        assertThat(response.item().answers()).containsExactlyElementsOf(answers);
+        assertThat(response.item().demo()).isFalse();
+        verify(p3Repository).findSurveyResponseAnswers(77L);
     }
 
     @Test

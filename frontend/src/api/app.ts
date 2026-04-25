@@ -1,4 +1,4 @@
-import { buildQuery, fetchJson } from './client';
+import { ApiError, buildQuery, fetchJson } from './client';
 import {
   mockAttendanceRecords,
   mockClassmates,
@@ -44,6 +44,7 @@ import type {
   SupportTicketMessageItem,
   SupportTicketsResponse,
   SurveyResponseDraft,
+  SurveySavedResponse,
   SurveyItem,
 } from '../types';
 
@@ -117,6 +118,14 @@ type BackendSurveyItem = Partial<SurveyItem> & {
   completed?: boolean;
   category?: string | null;
   questionCount?: number;
+};
+
+type BackendSurveySavedResponse = Partial<SurveySavedResponse> & {
+  answers?: Array<{
+    questionId: number;
+    answerText?: string | null;
+    optionIds?: number[];
+  }>;
 };
 
 type BackendClassmate = Partial<Classmate> & {
@@ -294,6 +303,21 @@ function toSurveyItem(item: BackendSurveyItem): SurveyItem {
     description: item.description || item.category || undefined,
     questionCount: item.questionCount ?? questions.length,
     questions,
+  };
+}
+
+function toSurveySavedResponse(item: BackendSurveySavedResponse): SurveySavedResponse {
+  return {
+    id: Number(item.id),
+    surveyId: Number(item.surveyId),
+    completed: Boolean(item.completed),
+    respondedAt: item.respondedAt,
+    answers: (item.answers || []).map((answer) => ({
+      questionId: Number(answer.questionId),
+      answerText: answer.answerText ?? '',
+      optionIds: (answer.optionIds || []).map(Number),
+    })),
+    demo: item.demo,
   };
 }
 
@@ -482,6 +506,15 @@ export function getSurvey(id: number): Promise<SurveyItem | undefined> {
   return fetchJson<ItemResponse<BackendSurveyItem> | undefined>(`/api/surveys/${id}`, {
     fallback: () => (fallbackSurvey ? { item: fallbackSurvey } : undefined),
   }).then((response) => (response?.item ? toSurveyItem(response.item) : undefined));
+}
+
+export function getSurveyResponse(id: number): Promise<SurveySavedResponse | undefined> {
+  return fetchJson<ItemResponse<BackendSurveySavedResponse>>(`/api/surveys/${id}/responses/current`)
+    .then((response) => toSurveySavedResponse(response.item))
+    .catch((error) => {
+      if (error instanceof ApiError && error.status === 404) return undefined;
+      throw error;
+    });
 }
 
 export function checkProfilePassword(password: string): Promise<{ verified: boolean }> {

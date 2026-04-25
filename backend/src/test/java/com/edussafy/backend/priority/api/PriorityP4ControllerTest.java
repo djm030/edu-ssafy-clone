@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,9 +16,13 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveySavedAnswerItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -94,6 +99,26 @@ class PriorityP4ControllerTest {
                 .andExpect(jsonPath("$.item.id").value(66))
                 .andExpect(jsonPath("$.item.surveyId").value(6))
                 .andExpect(jsonPath("$.item.answerCount").value(1))
+                .andExpect(jsonPath("$.item.demo").value(false));
+    }
+
+    @Test
+    void surveyResponseReturnsPersistedAnswerShape() throws Exception {
+        given(priorityApiService.surveyResponse(6L)).willReturn(new SurveyResponseDetailResponse(
+                new SurveyResponseDetail(66L, 6L, true, null, List.of(
+                        new SurveySavedAnswerItem(11L, null, List.of(101L)),
+                        new SurveySavedAnswerItem(12L, "좋았습니다", List.of())
+                ), false)
+        ));
+
+        mockMvc.perform(get("/api/surveys/6/responses/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(66))
+                .andExpect(jsonPath("$.item.surveyId").value(6))
+                .andExpect(jsonPath("$.item.completed").value(true))
+                .andExpect(jsonPath("$.item.answers[0].questionId").value(11))
+                .andExpect(jsonPath("$.item.answers[0].optionIds[0]").value(101))
+                .andExpect(jsonPath("$.item.answers[1].answerText").value("좋았습니다"))
                 .andExpect(jsonPath("$.item.demo").value(false));
     }
 

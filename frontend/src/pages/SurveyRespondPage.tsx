@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getSurvey, respondSurvey } from '../api/app';
+import { getSurvey, getSurveyResponse, respondSurvey } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { LoadState, SurveyAnswerDraft, SurveyItem } from '../types';
+import type { LoadState, SurveyAnswerDraft, SurveyItem, SurveySavedResponse } from '../types';
 
 function SurveyRespondPage({ surveyId }: { surveyId: number }) {
   const [survey, setSurvey] = useState<SurveyItem>();
@@ -16,15 +16,12 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
 
   useEffect(() => {
     let ignore = false;
-    getSurvey(surveyId)
-      .then((response) => {
+    Promise.all([getSurvey(surveyId), getSurveyResponse(surveyId)])
+      .then(([response, savedResponse]) => {
         if (ignore) return;
         setSurvey(response);
-        setAnswers((response?.questions || []).map((question) => ({
-          questionId: question.id,
-          answerText: '',
-          optionIds: isChoiceQuestion(question.type) ? [] : undefined,
-        })));
+        setAnswers(response ? answersFromSurvey(response, savedResponse) : []);
+        setMessage(savedResponse ? '저장된 응답을 불러왔습니다. 수정 후 다시 제출할 수 있습니다.' : '각 문항에 대한 응답을 입력해 주세요.');
         setLoadState(response ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -44,6 +41,10 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
 
     try {
       const response = await respondSurvey({ surveyId, answers });
+      const savedResponse = survey ? await getSurveyResponse(surveyId) : undefined;
+      if (survey && savedResponse) {
+        setAnswers(answersFromSurvey(survey, savedResponse));
+      }
       setResult('success');
       setMessage(`설문 응답이 저장되었습니다. 응답 수: ${response.answerCount}`);
     } catch (error) {
@@ -201,6 +202,18 @@ function QuestionInput(props: {
 
 function isChoiceQuestion(type?: string): boolean {
   return type === 'single_choice' || type === 'multiple_choice';
+}
+
+function answersFromSurvey(survey: SurveyItem, savedResponse?: SurveySavedResponse): SurveyAnswerDraft[] {
+  const savedAnswers = new Map((savedResponse?.answers || []).map((answer) => [answer.questionId, answer]));
+  return survey.questions.map((question) => {
+    const saved = savedAnswers.get(question.id);
+    return {
+      questionId: question.id,
+      answerText: saved?.answerText || '',
+      optionIds: isChoiceQuestion(question.type) ? (saved?.optionIds || []) : undefined,
+    };
+  });
 }
 
 export default SurveyRespondPage;

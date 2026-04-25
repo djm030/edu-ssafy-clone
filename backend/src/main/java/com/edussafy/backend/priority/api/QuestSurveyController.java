@@ -5,6 +5,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveysResponse;
@@ -67,6 +68,11 @@ public class QuestSurveyController {
     @GetMapping("/surveys/{id}")
     public SurveyDetailResponse survey(@PathVariable Long id) {
         return priorityApiService.survey(id);
+    }
+
+    @GetMapping("/surveys/{id}/responses/current")
+    public SurveyResponseDetailResponse surveyResponse(@PathVariable Long id) {
+        return priorityApiService.surveyResponse(id);
     }
 
     @PostMapping("/surveys/{id}/responses")
