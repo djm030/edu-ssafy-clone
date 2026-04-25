@@ -1,10 +1,12 @@
 import { buildQuery, fetchJson } from './client';
 import { mockCategories, mockPosts } from '../data/mockData';
-import type { BoardCategory, BoardCode, BoardPostListItem, BoardPostListResponse } from '../types';
+import type { BoardCategory, BoardCode, BoardCommentItem, BoardPostDraft, BoardPostListItem, BoardPostListResponse } from '../types';
 
 const PAGE_SIZE = 20;
 
 type BoardPostDetailResponse = { post?: BoardPostListItem; item?: BoardPostListItem };
+type BoardPostCreateResponse = { item: BoardPostListItem };
+type BoardCommentCreateResponse = { item: BoardCommentItem };
 
 interface PostQuery {
   categoryId?: number;
@@ -64,4 +66,43 @@ export function getPost(boardCode: BoardCode, postId: number): Promise<BoardPost
   return fetchJson<BoardPostDetailResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
     fallback: () => ({ post: mockPosts.find((item) => item.boardCode === boardCode && item.id === postId) }),
   }).then((response) => response.post ?? response.item);
+}
+
+export function createPost(boardCode: BoardCode, draft: BoardPostDraft): Promise<BoardPostListItem> {
+  return fetchJson<BoardPostCreateResponse>(`/api/boards/${boardCode}/posts`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({
+      item: {
+        id: Date.now(),
+        boardCode,
+        category: undefined,
+        title: draft.title,
+        content: draft.content,
+        authorName: '로컬 데모',
+        createdAt: new Date().toISOString(),
+        commentCount: 0,
+        reactionCount: 0,
+        bookmarkCount: 0,
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function createComment(boardCode: BoardCode, postId: number, content: string): Promise<BoardCommentItem> {
+  return fetchJson<BoardCommentCreateResponse>(`/api/boards/${boardCode}/posts/${postId}/comments`, {
+    body: JSON.stringify({ content }),
+    fallback: () => ({
+      item: {
+        id: Date.now(),
+        postId,
+        content,
+        authorName: '로컬 데모',
+        createdAt: new Date().toISOString(),
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
 }

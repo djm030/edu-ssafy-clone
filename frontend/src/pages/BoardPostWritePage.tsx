@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { createFreePost } from '../api/app';
+import { createPost } from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
@@ -10,16 +10,19 @@ function BoardPostWritePage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('자유게시판에 공유할 내용을 작성해 주세요.');
+  const [createdPostId, setCreatedPostId] = useState<number>();
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setResult('idle');
+    setCreatedPostId(undefined);
 
     try {
-      const response = await createFreePost({ title, content });
+      const response = await createPost('free', { title, content });
       setResult('success');
       setMessage(`게시글이 등록되었습니다. 글 번호: ${response.id}`);
+      setCreatedPostId(response.id);
       setTitle('');
       setContent('');
     } catch (error) {
@@ -43,19 +46,28 @@ function BoardPostWritePage() {
             {submitting ? '등록 중' : '등록'}
           </button>
         </form>
-        <FormMessage message={message} result={result} />
+        <FormMessage createdPostId={createdPostId} message={message} result={result} />
       </section>
     </section>
   );
 }
 
-function FormMessage({ message, result }: { message: string; result: 'idle' | 'success' | 'error' }) {
+function FormMessage({
+  createdPostId,
+  message,
+  result,
+}: {
+  createdPostId?: number;
+  message: string;
+  result: 'idle' | 'success' | 'error';
+}) {
   return (
     <div className="check-result" aria-live="polite">
       <StatusPill tone={result === 'success' ? 'green' : result === 'error' ? 'red' : 'gray'}>
         {result === 'success' ? '완료' : result === 'error' ? '오류' : '대기'}
       </StatusPill>
       <p>{message}</p>
+      {createdPostId ? <a className="ghost-button" href={`/community/free/${createdPostId}`}>작성한 글 보기</a> : null}
     </div>
   );
 }

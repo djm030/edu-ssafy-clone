@@ -89,6 +89,7 @@ class BoardControllerTest {
                 null,
                 7,
                 new EngagementSummary(2, 3, 1),
+                List.of(),
                 true,
                 true
         )));
@@ -132,25 +133,25 @@ class BoardControllerTest {
     }
 
     @Test
-    void createPostReturnsDemoShape() throws Exception {
+    void createPostReturnsPersistedShape() throws Exception {
         given(boardService.createPost(eq("free"), any())).willReturn(new BoardPostCreateResponse(
-                new BoardPostCreatedItem(0L, "free", null, "Hello", "Body", "Demo Learner", null, true)
+                new BoardPostCreatedItem(33L, "free", null, "Hello", "Body", "Demo Learner", null, false)
         ));
 
         mockMvc.perform(post("/api/boards/free/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Hello\",\"content\":\"Body\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.item.id").value(0))
+                .andExpect(jsonPath("$.item.id").value(33))
                 .andExpect(jsonPath("$.item.boardCode").value("free"))
                 .andExpect(jsonPath("$.item.title").value("Hello"))
-                .andExpect(jsonPath("$.item.demo").value(true));
+                .andExpect(jsonPath("$.item.demo").value(false));
     }
 
     @Test
-    void createCommentAndReactionReturnDemoShapes() throws Exception {
+    void createCommentReturnsPersistedShapeAndReactionKeepsDemoShape() throws Exception {
         given(boardService.createComment(eq("free"), eq(10L), any())).willReturn(new BoardCommentCreateResponse(
-                new BoardCommentCreatedItem(0L, 10L, "Comment", "Demo Learner", null, true)
+                new BoardCommentCreatedItem(44L, 10L, "Comment", "Demo Learner", null, false)
         ));
         given(boardService.createReaction(eq("free"), eq(10L), any())).willReturn(new BoardReactionCreateResponse(
                 new BoardReactionCreatedItem(10L, "like", true, true)
@@ -160,8 +161,9 @@ class BoardControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"Comment\"}"))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(44))
                 .andExpect(jsonPath("$.item.postId").value(10))
-                .andExpect(jsonPath("$.item.demo").value(true));
+                .andExpect(jsonPath("$.item.demo").value(false));
         mockMvc.perform(post("/api/boards/free/posts/10/reactions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"type\":\"like\"}"))

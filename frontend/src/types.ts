@@ -148,6 +148,15 @@ export interface BoardPostListItem {
   isPinned?: boolean;
   isNew?: boolean;
   content?: string;
+  comments?: BoardCommentItem[];
+}
+
+export interface BoardCommentItem {
+  id: number;
+  postId: number;
+  content: string;
+  authorName?: string;
+  createdAt?: string;
 }
 
 export interface BoardPostListResponse {

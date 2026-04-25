@@ -1,5 +1,6 @@
 package com.edussafy.backend.board.repository;
 
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListItem;
@@ -16,6 +17,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.jdbc.core.GeneratedKeyHolder;
+import org.springframework.jdbc.core.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -36,6 +39,30 @@ public class BoardRepository {
                 .param("boardCode", boardCode)
                 .query(Long.class)
                 .optional();
+    }
+
+    public Optional<Long> findDefaultAuthorUserId() {
+        return jdbcClient.sql("""
+                SELECT user_id
+                FROM users
+                WHERE deleted_at IS NULL
+                ORDER BY CASE WHEN email = 'student@ssafy.com' THEN 0 ELSE 1 END, user_id ASC
+                LIMIT 1
+                """)
+                .query(Long.class)
+                .optional();
+    }
+
+    public boolean existsCategory(long boardId, long categoryId) {
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM board_categories
+                WHERE board_id = :boardId AND board_category_id = :categoryId
+                """)
+                .param("boardId", boardId)
+                .param("categoryId", categoryId)
+                .query(Long.class)
+                .single() > 0;
     }
 
     public List<CategoryItem> findCategories(long boardId) {
@@ -163,6 +190,65 @@ public class BoardRepository {
                 .optional();
     }
 
+    public long createPost(long boardId, Long categoryId, Long authorUserId, String title, String content) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO board_posts (board_id, board_category_id, author_user_id, title, content)
+                VALUES (:boardId, :categoryId, :authorUserId, :title, :content)
+                """)
+                .param("boardId", boardId)
+                .param("categoryId", categoryId)
+                .param("authorUserId", authorUserId)
+                .param("title", title)
+                .param("content", content)
+                .update(keyHolder, "board_post_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public long createComment(long postId, Long authorUserId, String content) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO board_comments (board_post_id, author_user_id, content)
+                VALUES (:postId, :authorUserId, :content)
+                """)
+                .param("postId", postId)
+                .param("authorUserId", authorUserId)
+                .param("content", content)
+                .update(keyHolder, "board_comment_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public Optional<BoardCommentItem> findComment(long commentId) {
+        return jdbcClient.sql("""
+                SELECT bc.board_comment_id, bc.board_post_id, bc.content,
+                       COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
+                FROM board_comments bc
+                LEFT JOIN users u ON u.user_id = bc.author_user_id
+                WHERE bc.board_comment_id = :commentId
+                """)
+                .param("commentId", commentId)
+                .query(this::mapComment)
+                .optional();
+    }
+
+    public List<BoardCommentItem> findComments(long postId) {
+        return jdbcClient.sql("""
+                SELECT bc.board_comment_id, bc.board_post_id, bc.content,
+                       COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
+                FROM board_comments bc
+                LEFT JOIN users u ON u.user_id = bc.author_user_id
+                WHERE bc.board_post_id = :postId
+                ORDER BY bc.created_at ASC, bc.board_comment_id ASC
+                """)
+                .param("postId", postId)
+                .query(this::mapComment)
+                .list();
+    }
+
     private SqlParts buildWhereClause(long boardId, BoardQuery query) {
         StringBuilder where = new StringBuilder("WHERE p.board_id = :boardId");
         Map<String, Object> params = new LinkedHashMap<>();
@@ -224,8 +310,19 @@ public class BoardRepository {
                         rs.getLong("reaction_count"),
                         rs.getLong("bookmark_count")
                 ),
+                List.of(),
                 rs.getLong("attachment_count") > 0,
                 rs.getBoolean("notice_yn")
+        );
+    }
+
+    private BoardCommentItem mapComment(ResultSet rs, int rowNum) throws SQLException {
+        return new BoardCommentItem(
+                rs.getLong("board_comment_id"),
+                rs.getLong("board_post_id"),
+                rs.getString("content"),
+                rs.getString("author_name"),
+                toOffsetDateTime(rs.getTimestamp("created_at"))
         );
     }
 

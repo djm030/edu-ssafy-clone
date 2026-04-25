@@ -2,6 +2,8 @@ package com.edussafy.backend.board.service;
 
 import com.edussafy.backend.board.dto.BoardCategoryListResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
@@ -20,6 +22,7 @@ import com.edussafy.backend.board.error.InvalidBoardQueryException;
 import com.edussafy.backend.board.repository.BoardRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -52,37 +55,61 @@ public class BoardService {
 
     public BoardPostDetailResponse getPost(String boardCode, long postId) {
         long boardId = requireBoardId(boardCode);
-        return new BoardPostDetailResponse(boardRepository.findPostDetail(boardId, postId)
-                .orElseThrow(() -> new BoardPostNotFoundException(postId)));
+        BoardPostDetail post = boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        return new BoardPostDetailResponse(withComments(post, boardRepository.findComments(postId)));
     }
 
+    @Transactional
     public BoardPostCreateResponse createPost(String boardCode, BoardPostCreateRequest request) {
-        requireBoardId(boardCode);
-        return new BoardPostCreateResponse(new BoardPostCreatedItem(
-                0L,
-                boardCode,
+        long boardId = requireBoardId(boardCode);
+        validateCategory(boardId, request.categoryId());
+
+        Long authorUserId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        long postId = boardRepository.createPost(
+                boardId,
                 request.categoryId(),
+                authorUserId,
                 request.title().trim(),
-                request.content().trim(),
-                "Demo Learner",
-                null,
-                true
+                request.content().trim()
+        );
+        BoardPostDetail created = boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        return new BoardPostCreateResponse(new BoardPostCreatedItem(
+                created.id(),
+                created.boardCode(),
+                created.category() == null ? null : created.category().id(),
+                created.title(),
+                created.content(),
+                created.authorName(),
+                created.createdAt(),
+                false
         ));
     }
 
+    @Transactional
     public BoardCommentCreateResponse createComment(
             String boardCode,
             long postId,
             BoardCommentCreateRequest request
     ) {
-        requireBoardId(boardCode);
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        Long authorUserId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        long commentId = boardRepository.createComment(postId, authorUserId, request.content().trim());
+        BoardCommentItem created = boardRepository.findComment(commentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
         return new BoardCommentCreateResponse(new BoardCommentCreatedItem(
-                0L,
-                postId,
-                request.content().trim(),
-                "Demo Learner",
-                null,
-                true
+                created.id(),
+                created.postId(),
+                created.content(),
+                created.authorName(),
+                created.createdAt(),
+                false
         ));
     }
 
@@ -115,5 +142,29 @@ public class BoardService {
         if (query.size() < 1 || query.size() > 100) {
             throw new InvalidBoardQueryException("INVALID_SIZE", "size must be between 1 and 100.");
         }
+    }
+
+    private void validateCategory(long boardId, Long categoryId) {
+        if (categoryId != null && !boardRepository.existsCategory(boardId, categoryId)) {
+            throw new InvalidBoardQueryException("INVALID_CATEGORY", "categoryId must belong to the selected board.");
+        }
+    }
+
+    private BoardPostDetail withComments(BoardPostDetail post, List<BoardCommentItem> comments) {
+        return new BoardPostDetail(
+                post.id(),
+                post.boardCode(),
+                post.category(),
+                post.title(),
+                post.content(),
+                post.authorName(),
+                post.createdAt(),
+                post.updatedAt(),
+                post.viewCount(),
+                post.engagement(),
+                comments,
+                post.hasAttachment(),
+                post.isPinned()
+        );
     }
 }
