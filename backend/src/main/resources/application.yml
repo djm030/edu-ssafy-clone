@@ -23,6 +23,13 @@ management:
         include: health,info
 
 server:
+  servlet:
+    session:
+      timeout: ${SERVER_SERVLET_SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        secure: ${SERVER_SERVLET_SESSION_COOKIE_SECURE:false}
+        same-site: ${SERVER_SERVLET_SESSION_COOKIE_SAME_SITE:lax}
   error:
     whitelabel:
       enabled: false

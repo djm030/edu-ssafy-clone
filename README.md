@@ -42,6 +42,13 @@ Demo login:
 - email: `student@ssafy.com`
 - password: `password`
 
+Session/cookie hardening defaults are controlled through `.env`:
+
+- `EDUSSAFY_AUTH_ALLOW_NOOP_PASSWORDS=false` keeps legacy plaintext-style demo hashes disabled.
+- `SERVER_SERVLET_SESSION_TIMEOUT=30m` aligns the servlet container with the app session TTL.
+- Set `SERVER_SERVLET_SESSION_COOKIE_SECURE=true` when serving through HTTPS.
+- `SERVER_SERVLET_SESSION_COOKIE_SAME_SITE=lax` is the local default for form/navigation flows.
+
 ## Browser screen checklist
 
 - http://localhost/
