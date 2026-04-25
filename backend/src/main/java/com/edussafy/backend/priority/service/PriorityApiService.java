@@ -889,6 +889,13 @@ public class PriorityApiService {
             if (sessionUser.isPresent()) {
                 return sessionUser.get();
             }
+            if (hasCurrentRequest()) {
+                clearCurrentSession();
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "세션 사용자 정보를 찾을 수 없습니다.");
+            }
+        }
+        if (hasCurrentRequest()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
         return safe(() -> repository.findDefaultUser().orElse(DEMO_USER), DEMO_USER);
     }
@@ -949,6 +956,10 @@ public class PriorityApiService {
             return request.getSession(create);
         }
         return null;
+    }
+
+    private boolean hasCurrentRequest() {
+        return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes;
     }
 
     private String normalizeAccessRole(String role) {

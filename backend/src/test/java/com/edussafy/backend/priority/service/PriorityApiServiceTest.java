@@ -93,6 +93,53 @@ class PriorityApiServiceTest {
     private static final String PASSWORD_SHA256 = "{sha256}5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8";
 
     @Test
+    void rejectsCurrentUserLookupWithoutWebSession() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        PriorityApiService service = new PriorityApiService(
+                mock(PriorityApiRepository.class),
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            assertThatThrownBy(service::currentRoleAccess)
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("401")
+                    .hasMessageContaining("로그인이 필요합니다.");
+            assertThat(request.getSession(false)).isNull();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void invalidatesSessionWhenCurrentUserDisappears() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(AuthSession.CURRENT_USER_ID, 99L);
+        request.setSession(session);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        given(repository.findUserById(99L)).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            assertThatThrownBy(service::currentRoleAccess)
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("401")
+                    .hasMessageContaining("세션 사용자 정보를 찾을 수 없습니다.");
+            assertThat(session.isInvalid()).isTrue();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
     void exposesLearnerRolePermissionsByDefault() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
         given(repository.findDefaultUser()).willReturn(Optional.empty());
