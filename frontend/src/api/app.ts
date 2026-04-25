@@ -247,12 +247,26 @@ function toQuestItem(item: BackendQuestItem): QuestItem {
 }
 
 function toSurveyQuestions(item: BackendSurveyItem): SurveyItem['questions'] {
-  if (item.questions?.length) return item.questions;
+  if (item.questions?.length) {
+    return item.questions.map((question) => ({
+      id: Number(question.id),
+      text: question.text || '문항',
+      type: question.type || 'long_text',
+      optionIds: question.optionIds || question.options?.map((option) => option.id),
+      options: question.options?.map((option) => ({
+        id: Number(option.id),
+        text: option.text,
+        displayOrder: option.displayOrder,
+      })) || [],
+    }));
+  }
 
   const questionCount = item.questionCount && item.questionCount > 0 ? item.questionCount : 1;
   return Array.from({ length: questionCount }, (_, index) => ({
     id: index + 1,
     text: `문항 ${index + 1}`,
+    type: 'long_text',
+    options: [],
   }));
 }
 

@@ -52,7 +52,17 @@ function SurveyContent({ survey }: { survey: SurveyItem }) {
       <div className="detail-body">{survey.description || '설문 설명이 없습니다.'}</div>
       <ol className="question-list">
         {survey.questions.map((question) => (
-          <li key={question.id}>{question.text}</li>
+          <li key={question.id}>
+            <strong>{question.text}</strong>
+            <p className="muted-text">{questionTypeLabel(question.type)}</p>
+            {question.options?.length ? (
+              <ul>
+                {question.options.map((option) => (
+                  <li key={option.id}>{option.text}</li>
+                ))}
+              </ul>
+            ) : null}
+          </li>
         ))}
       </ol>
       <div className="action-row">
@@ -61,6 +71,14 @@ function SurveyContent({ survey }: { survey: SurveyItem }) {
       </div>
     </article>
   );
+}
+
+function questionTypeLabel(type?: string): string {
+  if (type === 'single_choice') return '단일 선택';
+  if (type === 'multiple_choice') return '복수 선택';
+  if (type === 'score') return '점수 입력';
+  if (type === 'short_text') return '단답형';
+  return '장문형';
 }
 
 export default SurveyDetailPage;

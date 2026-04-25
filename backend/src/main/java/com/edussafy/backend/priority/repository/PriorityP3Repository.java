@@ -4,13 +4,19 @@ import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.springframework.jdbc.core.GeneratedKeyHolder;
+import org.springframework.jdbc.core.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -103,6 +109,138 @@ public class PriorityP3Repository {
                 .optional();
     }
 
+    public List<SurveyQuestionItem> findSurveyQuestions(long surveyId) {
+        List<SurveyQuestionRow> questions = jdbcClient.sql("""
+                SELECT survey_question_id, question_type_code, question_text, display_order
+                FROM survey_questions
+                WHERE survey_id = :surveyId
+                ORDER BY display_order ASC, survey_question_id ASC
+                """)
+                .param("surveyId", surveyId)
+                .query((rs, rowNum) -> new SurveyQuestionRow(
+                        rs.getLong("survey_question_id"),
+                        rs.getString("question_type_code"),
+                        rs.getString("question_text"),
+                        rs.getInt("display_order")
+                ))
+                .list();
+
+        if (questions.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<SurveyOptionItem>> options = findSurveyOptions(
+                questions.stream().map(SurveyQuestionRow::id).toList()
+        );
+        return questions.stream()
+                .map(question -> new SurveyQuestionItem(
+                        question.id(),
+                        question.type(),
+                        question.text(),
+                        question.displayOrder(),
+                        options.getOrDefault(question.id(), List.of())
+                ))
+                .toList();
+    }
+
+    public SurveyResponsePersistence saveSurveyResponse(long surveyId, long userId) {
+        jdbcClient.sql("""
+                INSERT INTO survey_responses (survey_id, user_id, completed_yn, responded_at)
+                VALUES (:surveyId, :userId, TRUE, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE
+                    completed_yn = VALUES(completed_yn),
+                    responded_at = VALUES(responded_at)
+                """)
+                .param("surveyId", surveyId)
+                .param("userId", userId)
+                .update();
+
+        return jdbcClient.sql("""
+                SELECT survey_response_id, survey_id, completed_yn, responded_at
+                FROM survey_responses
+                WHERE survey_id = :surveyId AND user_id = :userId
+                """)
+                .param("surveyId", surveyId)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new SurveyResponsePersistence(
+                        rs.getLong("survey_response_id"),
+                        rs.getLong("survey_id"),
+                        rs.getBoolean("completed_yn"),
+                        toOffset(rs.getTimestamp("responded_at"))
+                ))
+                .single();
+    }
+
+    public void deleteSurveyAnswers(long responseId) {
+        jdbcClient.sql("""
+                DELETE FROM survey_response_answers
+                WHERE survey_response_id = :responseId
+                """)
+                .param("responseId", responseId)
+                .update();
+    }
+
+    public long createSurveyAnswer(long responseId, long surveyId, long questionId, String answerText) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO survey_response_answers (survey_response_id, survey_id, survey_question_id, answer_text)
+                VALUES (:responseId, :surveyId, :questionId, :answerText)
+                """)
+                .param("responseId", responseId)
+                .param("surveyId", surveyId)
+                .param("questionId", questionId)
+                .param("answerText", normalizeNullable(answerText))
+                .update(keyHolder, "survey_response_answer_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public void createSurveyAnswerOptions(long answerId, long questionId, List<Long> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
+            return;
+        }
+
+        for (Long optionId : optionIds) {
+            jdbcClient.sql("""
+                    INSERT INTO survey_response_answer_options (
+                        survey_response_answer_id,
+                        survey_question_id,
+                        survey_option_id
+                    )
+                    VALUES (:answerId, :questionId, :optionId)
+                    """)
+                    .param("answerId", answerId)
+                    .param("questionId", questionId)
+                    .param("optionId", optionId)
+                    .update();
+        }
+    }
+
+    private Map<Long, List<SurveyOptionItem>> findSurveyOptions(List<Long> questionIds) {
+        return jdbcClient.sql("""
+                SELECT survey_question_id, survey_option_id, option_text, display_order
+                FROM survey_options
+                WHERE survey_question_id IN (:questionIds)
+                ORDER BY survey_question_id ASC, display_order ASC, survey_option_id ASC
+                """)
+                .param("questionIds", questionIds)
+                .query((rs, rowNum) -> new SurveyOptionRow(
+                        rs.getLong("survey_question_id"),
+                        new SurveyOptionItem(
+                                rs.getLong("survey_option_id"),
+                                rs.getString("option_text"),
+                                rs.getInt("display_order")
+                        )
+                ))
+                .list()
+                .stream()
+                .collect(Collectors.groupingBy(SurveyOptionRow::questionId, Collectors.mapping(
+                        SurveyOptionRow::option,
+                        Collectors.toList()
+                )));
+    }
+
     private QuestItem mapQuest(ResultSet rs, int rowNum) throws SQLException {
         return new QuestItem(
                 rs.getLong("quest_evaluation_id"),
@@ -128,7 +266,8 @@ public class PriorityP3Repository {
                 toOffset(rs.getTimestamp("end_at")),
                 rs.getString("progress_status_code"),
                 rs.getBoolean("completed_yn"),
-                rs.getLong("question_count")
+                rs.getLong("question_count"),
+                List.of()
         );
     }
 
@@ -139,5 +278,23 @@ public class PriorityP3Repository {
 
     private OffsetDateTime toOffset(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toLocalDateTime().atZone(SEOUL_ZONE).toOffsetDateTime();
+    }
+
+    private String normalizeNullable(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private record SurveyQuestionRow(long id, String type, String text, int displayOrder) {
+    }
+
+    private record SurveyOptionRow(long questionId, SurveyOptionItem option) {
+    }
+
+    public record SurveyResponsePersistence(
+            long id,
+            long surveyId,
+            boolean completed,
+            OffsetDateTime respondedAt
+    ) {
     }
 }

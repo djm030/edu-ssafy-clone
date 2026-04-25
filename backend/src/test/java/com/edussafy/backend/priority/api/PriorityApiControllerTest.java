@@ -256,7 +256,7 @@ class PriorityApiControllerTest {
                 7L, "Quest", "assignment", null, null, null, null, "scheduled", null, null
         )));
         given(priorityApiService.survey(8L)).willReturn(new SurveyDetailResponse(new SurveyDetail(
-                8L, "Survey", "etc", false, null, null, "scheduled", false, 0
+                8L, "Survey", "etc", false, null, null, "scheduled", false, 0, List.of()
         )));
 
         mockMvc.perform(get("/api/quests/7"))
@@ -266,7 +266,8 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/surveys/8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.item.id").value(8))
-                .andExpect(jsonPath("$.item.questionCount").value(0));
+                .andExpect(jsonPath("$.item.questionCount").value(0))
+                .andExpect(jsonPath("$.item.questions").isArray());
     }
 
     @Test

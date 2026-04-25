@@ -266,8 +266,24 @@ public final class PriorityDtos {
             OffsetDateTime endAt,
             String status,
             boolean completed,
-            long questionCount
+            long questionCount,
+            List<SurveyQuestionItem> questions
     ) {
+        public SurveyDetail withQuestions(List<SurveyQuestionItem> questions) {
+            return new SurveyDetail(id, title, category, required, startAt, endAt, status, completed, questionCount, questions);
+        }
+    }
+
+    public record SurveyQuestionItem(
+            long id,
+            String type,
+            String text,
+            int displayOrder,
+            List<SurveyOptionItem> options
+    ) {
+    }
+
+    public record SurveyOptionItem(long id, String text, int displayOrder) {
     }
 
     public record SupportTicketsResponse(List<SupportTicketItem> items, PageMeta page) {

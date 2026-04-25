@@ -41,9 +41,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
@@ -55,9 +57,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.UserSummary;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
+import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,6 +73,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
@@ -284,19 +289,40 @@ public class PriorityApiService {
 
     public SurveyDetailResponse survey(long id) {
         UserProfile user = currentUser();
-        SurveyDetail item = safe(() -> p3Repository.findSurvey(user.id(), id).orElse(fallbackSurvey(id)), fallbackSurvey(id));
+        SurveyDetail item = safe(() -> p3Repository.findSurvey(user.id(), id)
+                .map(survey -> survey.withQuestions(safe(() -> p3Repository.findSurveyQuestions(id), List.of())))
+                .orElse(fallbackSurvey(id)), fallbackSurvey(id));
         return new SurveyDetailResponse(item);
     }
 
+    @Transactional
     public SurveyResponseSubmitResponse submitSurvey(long id, SurveyResponseSubmitRequest request) {
-        int answerCount = request.answers() == null ? 0 : request.answers().size();
+        UserProfile user = currentUser();
+        SurveyDetail survey = p3Repository.findSurvey(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey not found."));
+        Map<Long, SurveyQuestionItem> questions = p3Repository.findSurveyQuestions(id).stream()
+                .collect(Collectors.toMap(SurveyQuestionItem::id, question -> question));
+        List<PreparedSurveyAnswer> answers = prepareSurveyAnswers(request.answers(), questions);
+
+        SurveyResponsePersistence response = p3Repository.saveSurveyResponse(survey.id(), user.id());
+        p3Repository.deleteSurveyAnswers(response.id());
+        for (PreparedSurveyAnswer answer : answers) {
+            long answerId = p3Repository.createSurveyAnswer(
+                    response.id(),
+                    survey.id(),
+                    answer.questionId(),
+                    answer.answerText()
+            );
+            p3Repository.createSurveyAnswerOptions(answerId, answer.questionId(), answer.optionIds());
+        }
+
         return new SurveyResponseSubmitResponse(new SurveyResponseSubmitItem(
-                0L,
-                id,
-                true,
-                answerCount,
-                null,
-                true
+                response.id(),
+                response.surveyId(),
+                response.completed(),
+                answers.size(),
+                response.respondedAt(),
+                false
         ));
     }
 
@@ -552,7 +578,7 @@ public class PriorityApiService {
     }
 
     private SurveyDetail fallbackSurvey(long id) {
-        return new SurveyDetail(id, "Survey", "etc", false, null, null, "scheduled", false, 0);
+        return new SurveyDetail(id, "Survey", "etc", false, null, null, "scheduled", false, 0, List.of());
     }
 
     private UserProfile demoUser(String email) {
@@ -576,6 +602,63 @@ public class PriorityApiService {
         return (page - 1) * size;
     }
 
+    private List<PreparedSurveyAnswer> prepareSurveyAnswers(
+            List<SurveyAnswerRequest> answers,
+            Map<Long, SurveyQuestionItem> questions
+    ) {
+        return answers.stream()
+                .map(answer -> prepareSurveyAnswer(answer, questions))
+                .toList();
+    }
+
+    private PreparedSurveyAnswer prepareSurveyAnswer(
+            SurveyAnswerRequest answer,
+            Map<Long, SurveyQuestionItem> questions
+    ) {
+        SurveyQuestionItem question = questions.get(answer.questionId());
+        if (question == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Survey answer contains an unknown question.");
+        }
+
+        List<Long> optionIds = distinctOptionIds(answer.optionIds());
+        String questionType = normalizeWithDefault(question.type(), "long_text").toLowerCase(Locale.ROOT);
+        if ("single_choice".equals(questionType) || "multiple_choice".equals(questionType)) {
+            validateChoiceAnswer(question, questionType, optionIds);
+            return new PreparedSurveyAnswer(question.id(), null, optionIds);
+        }
+
+        if (!StringUtils.hasText(answer.answerText())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Survey text answer is required.");
+        }
+        if (!optionIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Survey text answer cannot include optionIds.");
+        }
+        return new PreparedSurveyAnswer(question.id(), answer.answerText().trim(), List.of());
+    }
+
+    private void validateChoiceAnswer(SurveyQuestionItem question, String questionType, List<Long> optionIds) {
+        if ("single_choice".equals(questionType) && optionIds.size() != 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Single choice survey answer requires one option.");
+        }
+        if ("multiple_choice".equals(questionType) && optionIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Multiple choice survey answer requires at least one option.");
+        }
+
+        Set<Long> allowedOptionIds = question.options().stream()
+                .map(option -> option.id())
+                .collect(Collectors.toSet());
+        if (!allowedOptionIds.containsAll(optionIds)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Survey answer contains an invalid option.");
+        }
+    }
+
+    private List<Long> distinctOptionIds(List<Long> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
+            return List.of();
+        }
+        return new LinkedHashSet<>(optionIds).stream().toList();
+    }
+
     private String normalizeNullable(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
@@ -591,5 +674,8 @@ public class PriorityApiService {
         } catch (DataAccessException exception) {
             return fallback;
         }
+    }
+
+    private record PreparedSurveyAnswer(long questionId, String answerText, List<Long> optionIds) {
     }
 }

@@ -19,11 +19,20 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
+import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -282,6 +291,91 @@ class PriorityApiServiceTest {
         ))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409");
+    }
+
+    @Test
+    void persistsSurveyResponseWithChoiceAnswer() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        SurveyDetail survey = surveyDetail(6L);
+        SurveyQuestionItem question = new SurveyQuestionItem(
+                11L,
+                "single_choice",
+                "How was this week?",
+                1,
+                List.of(
+                        new SurveyOptionItem(101L, "Good", 1),
+                        new SurveyOptionItem(102L, "Needs support", 2)
+                )
+        );
+        OffsetDateTime respondedAt = OffsetDateTime.now();
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findSurvey(1L, 6L)).willReturn(Optional.of(survey));
+        given(p3Repository.findSurveyQuestions(6L)).willReturn(List.of(question));
+        given(p3Repository.saveSurveyResponse(6L, 1L))
+                .willReturn(new SurveyResponsePersistence(77L, 6L, true, respondedAt));
+        given(p3Repository.createSurveyAnswer(77L, 6L, 11L, null)).willReturn(88L);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        SurveyResponseSubmitResponse response = service.submitSurvey(
+                6L,
+                new SurveyResponseSubmitRequest(List.of(new SurveyAnswerRequest(11L, null, List.of(101L))))
+        );
+
+        assertThat(response.item().id()).isEqualTo(77L);
+        assertThat(response.item().surveyId()).isEqualTo(6L);
+        assertThat(response.item().answerCount()).isEqualTo(1);
+        assertThat(response.item().respondedAt()).isEqualTo(respondedAt);
+        assertThat(response.item().demo()).isFalse();
+        verify(p3Repository).deleteSurveyAnswers(77L);
+        verify(p3Repository).createSurveyAnswerOptions(88L, 11L, List.of(101L));
+    }
+
+    @Test
+    void rejectsSurveyResponseWithInvalidOption() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        SurveyQuestionItem question = new SurveyQuestionItem(
+                11L,
+                "single_choice",
+                "How was this week?",
+                1,
+                List.of(new SurveyOptionItem(101L, "Good", 1))
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findSurvey(1L, 6L)).willReturn(Optional.of(surveyDetail(6L)));
+        given(p3Repository.findSurveyQuestions(6L)).willReturn(List.of(question));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        assertThatThrownBy(() -> service.submitSurvey(
+                6L,
+                new SurveyResponseSubmitRequest(List.of(new SurveyAnswerRequest(11L, null, List.of(999L))))
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+    }
+
+    private SurveyDetail surveyDetail(long id) {
+        return new SurveyDetail(
+                id,
+                "Weekly satisfaction survey",
+                "satisfaction",
+                true,
+                null,
+                null,
+                "in_progress",
+                false,
+                1,
+                List.of()
+        );
     }
 
 }

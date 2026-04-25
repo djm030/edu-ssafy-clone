@@ -215,7 +215,15 @@ export interface SurveyItem {
 export interface SurveyQuestion {
   id: number;
   text: string;
+  type?: string;
   optionIds?: number[];
+  options?: SurveyOption[];
+}
+
+export interface SurveyOption {
+  id: number;
+  text: string;
+  displayOrder?: number;
 }
 
 export interface QnaDraft {

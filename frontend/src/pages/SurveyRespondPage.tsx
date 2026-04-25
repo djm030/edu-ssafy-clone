@@ -20,7 +20,11 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
       .then((response) => {
         if (ignore) return;
         setSurvey(response);
-        setAnswers((response?.questions || []).map((question) => ({ questionId: question.id, answerText: '' })));
+        setAnswers((response?.questions || []).map((question) => ({
+          questionId: question.id,
+          answerText: '',
+          optionIds: isChoiceQuestion(question.type) ? [] : undefined,
+        })));
         setLoadState(response ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -51,7 +55,26 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
   };
 
   const updateAnswer = (index: number, value: string) => {
-    setAnswers((current) => current.map((answer, answerIndex) => (answerIndex === index ? { ...answer, answerText: value } : answer)));
+    setAnswers((current) => current.map((answer, answerIndex) => (
+      answerIndex === index ? { ...answer, answerText: value, optionIds: undefined } : answer
+    )));
+  };
+
+  const updateSingleChoice = (index: number, optionId: number) => {
+    setAnswers((current) => current.map((answer, answerIndex) => (
+      answerIndex === index ? { ...answer, answerText: '', optionIds: [optionId] } : answer
+    )));
+  };
+
+  const toggleMultiChoice = (index: number, optionId: number) => {
+    setAnswers((current) => current.map((answer, answerIndex) => {
+      if (answerIndex !== index) return answer;
+      const currentOptions = answer.optionIds || [];
+      const optionIds = currentOptions.includes(optionId)
+        ? currentOptions.filter((id) => id !== optionId)
+        : [...currentOptions, optionId];
+      return { ...answer, answerText: '', optionIds };
+    }));
   };
 
   return (
@@ -60,7 +83,19 @@ function SurveyRespondPage({ surveyId }: { surveyId: number }) {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="설문을 불러오지 못했습니다." message={message} /> : null}
       {loadState === 'empty' ? <DataState title="설문을 찾을 수 없습니다." /> : null}
-      {survey ? <SurveyForm answers={answers} message={message} result={result} submit={submit} submitting={submitting} survey={survey} updateAnswer={updateAnswer} /> : null}
+      {survey ? (
+        <SurveyForm
+          answers={answers}
+          message={message}
+          result={result}
+          submit={submit}
+          submitting={submitting}
+          survey={survey}
+          toggleMultiChoice={toggleMultiChoice}
+          updateAnswer={updateAnswer}
+          updateSingleChoice={updateSingleChoice}
+        />
+      ) : null}
     </section>
   );
 }
@@ -72,17 +107,27 @@ function SurveyForm(props: {
   submit: (event: FormEvent<HTMLFormElement>) => void;
   submitting: boolean;
   survey: SurveyItem;
+  toggleMultiChoice: (index: number, optionId: number) => void;
   updateAnswer: (index: number, value: string) => void;
+  updateSingleChoice: (index: number, optionId: number) => void;
 }) {
   return (
     <section className="panel form-panel">
       <h2>{props.survey.title}</h2>
       <form className="stack-form" onSubmit={props.submit}>
         {props.survey.questions.map((question, index) => (
-          <label className="question-field" key={question.id}>
+          <div className="question-field" key={question.id}>
             <span>{question.text}</span>
-            <textarea onChange={(event) => props.updateAnswer(index, event.target.value)} required rows={4} value={props.answers[index]?.answerText || ''} />
-          </label>
+            <QuestionInput
+              answer={props.answers[index]}
+              index={index}
+              question={question}
+              submitting={props.submitting}
+              toggleMultiChoice={props.toggleMultiChoice}
+              updateAnswer={props.updateAnswer}
+              updateSingleChoice={props.updateSingleChoice}
+            />
+          </div>
         ))}
         <button className="primary-action" disabled={props.submitting} type="submit">{props.submitting ? '제출 중' : '제출'}</button>
       </form>
@@ -92,6 +137,70 @@ function SurveyForm(props: {
       </div>
     </section>
   );
+}
+
+function QuestionInput(props: {
+  answer?: SurveyAnswerDraft;
+  index: number;
+  question: SurveyItem['questions'][number];
+  submitting: boolean;
+  toggleMultiChoice: (index: number, optionId: number) => void;
+  updateAnswer: (index: number, value: string) => void;
+  updateSingleChoice: (index: number, optionId: number) => void;
+}) {
+  const { answer, index, question, submitting } = props;
+
+  if (question.type === 'single_choice') {
+    return (
+      <span className="option-stack">
+        {(question.options || []).map((option) => (
+          <label key={option.id}>
+            <input
+              checked={answer?.optionIds?.includes(option.id) || false}
+              disabled={submitting}
+              name={`survey-question-${question.id}`}
+              onChange={() => props.updateSingleChoice(index, option.id)}
+              required
+              type="radio"
+            />
+            {option.text}
+          </label>
+        ))}
+      </span>
+    );
+  }
+
+  if (question.type === 'multiple_choice') {
+    return (
+      <span className="option-stack">
+        {(question.options || []).map((option) => (
+          <label key={option.id}>
+            <input
+              checked={answer?.optionIds?.includes(option.id) || false}
+              disabled={submitting}
+              onChange={() => props.toggleMultiChoice(index, option.id)}
+              type="checkbox"
+            />
+            {option.text}
+          </label>
+        ))}
+      </span>
+    );
+  }
+
+  return (
+    <textarea
+      disabled={submitting}
+      onChange={(event) => props.updateAnswer(index, event.target.value)}
+      required
+      rows={question.type === 'short_text' || question.type === 'score' ? 2 : 4}
+      value={answer?.answerText || ''}
+    />
+  );
+}
+
+function isChoiceQuestion(type?: string): boolean {
+  return type === 'single_choice' || type === 'multiple_choice';
 }
 
 export default SurveyRespondPage;
