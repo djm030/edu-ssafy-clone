@@ -1,0 +1,31 @@
+= eduSSAFY Clone API Docs
+:toc: left
+:toclevels: 2
+:sectanchors:
+
+This document is generated with Spring REST Docs from MockMvc tests.
+It is a runtime-independent API documentation artifact and does not require Swagger UI or `/v3/api-docs`.
+
+== Auth
+
+=== Login
+
+operation::auth-login[snippets='http-request,http-response,curl-request']
+
+== Learning
+
+=== Toggle material reaction
+
+operation::learning-material-reaction[snippets='http-request,http-response,curl-request']
+
+== Board
+
+=== List board posts
+
+operation::board-post-list[snippets='http-request,http-response,curl-request']
+
+== Support
+
+=== Create support ticket
+
+operation::support-ticket-create[snippets='http-request,http-response,curl-request']
