@@ -8,6 +8,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -87,6 +88,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.LinkedHashSet;
@@ -202,6 +204,23 @@ public class PriorityApiService {
                 role,
                 ROLE_PERMISSIONS.getOrDefault(role, ROLE_PERMISSIONS.get("learner")),
                 "learner".equals(role) ? LEARNER_DENIED_ROUTES : List.of()
+        );
+    }
+
+    public AuthSessionResponse authSession() {
+        HttpSession session = currentSession(false);
+        if (session == null || AuthSession.currentUserId(session).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        int maxInactiveSeconds = session.getMaxInactiveInterval();
+        Instant expiresAt = Instant.ofEpochMilli(session.getLastAccessedTime()).plusSeconds(maxInactiveSeconds);
+        long secondsRemaining = Math.max(0, (expiresAt.toEpochMilli() - System.currentTimeMillis()) / 1000);
+        return new AuthSessionResponse(
+                true,
+                OffsetDateTime.ofInstant(expiresAt, ZoneOffset.UTC),
+                maxInactiveSeconds,
+                secondsRemaining
         );
     }
 

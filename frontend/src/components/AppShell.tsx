@@ -7,6 +7,8 @@ interface AppShellProps {
   user: UserProfile;
   roleAccess?: RoleAccess;
   accessError?: string;
+  sessionExpiresAt?: string;
+  sessionSecondsRemaining?: number;
   onNavigate: (path: string) => void;
   onLogout: () => void;
 }
@@ -49,7 +51,26 @@ const navSections = [
   },
 ];
 
-function AppShell({ accessError, children, currentPath, onLogout, onNavigate, roleAccess, user }: AppShellProps) {
+function formatSessionExpiry(value?: string): string {
+  if (!value) return '';
+  const expiresAt = new Date(value);
+  if (Number.isNaN(expiresAt.getTime())) return '';
+  return expiresAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function AppShell({
+  accessError,
+  children,
+  currentPath,
+  onLogout,
+  onNavigate,
+  roleAccess,
+  sessionExpiresAt,
+  sessionSecondsRemaining,
+  user,
+}: AppShellProps) {
+  const sessionExpiryText = formatSessionExpiry(sessionExpiresAt);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -84,6 +105,8 @@ function AppShell({ accessError, children, currentPath, onLogout, onNavigate, ro
             </span>
             <span className="role-access">
               {roleAccess ? `역할 ${roleAccess.role} · 권한 ${roleAccess.permissions.length}개` : '권한 확인 중'}
+              {sessionExpiryText ? ` · 세션 ${sessionExpiryText} 만료` : ''}
+              {typeof sessionSecondsRemaining === 'number' && sessionSecondsRemaining < 300 ? ' · 곧 만료' : ''}
               {accessError ? ` · ${accessError}` : ''}
             </span>
           </div>

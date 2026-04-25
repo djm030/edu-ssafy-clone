@@ -28,6 +28,14 @@ public final class PriorityDtos {
     public record AuthActionResponse(boolean success, String message) {
     }
 
+    public record AuthSessionResponse(
+            boolean authenticated,
+            OffsetDateTime expiresAt,
+            int maxInactiveSeconds,
+            long secondsRemaining
+    ) {
+    }
+
     public record RoleAccessResponse(String role, List<String> permissions, List<String> deniedRoutes) {
     }
 

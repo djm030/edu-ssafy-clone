@@ -1,6 +1,7 @@
 package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
@@ -37,6 +38,11 @@ public class AuthController {
     @GetMapping("/auth/roles/current")
     public RoleAccessResponse currentRoleAccess() {
         return priorityApiService.currentRoleAccess();
+    }
+
+    @GetMapping("/auth/session")
+    public AuthSessionResponse authSession() {
+        return priorityApiService.authSession();
     }
 
     @PostMapping("/auth/logout")

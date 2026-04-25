@@ -11,6 +11,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
@@ -282,6 +283,30 @@ class PriorityApiServiceTest {
             assertThat(request.getSession(false).getAttribute(AuthSession.CURRENT_USER_ID)).isEqualTo(2L);
             assertThat(request.getSession(false).getMaxInactiveInterval()).isEqualTo(AuthSession.MAX_INACTIVE_SECONDS);
             assertThat(service.me().user().email()).isEqualTo("manager@ssafy.com");
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void authSessionReportsCurrentSessionExpiry() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        request.getSession().setMaxInactiveInterval(900);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        PriorityApiService service = new PriorityApiService(
+                mock(PriorityApiRepository.class),
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            AuthSessionResponse response = service.authSession();
+
+            assertThat(response.authenticated()).isTrue();
+            assertThat(response.maxInactiveSeconds()).isEqualTo(900);
+            assertThat(response.secondsRemaining()).isBetween(1L, 900L);
+            assertThat(response.expiresAt()).isNotNull();
         } finally {
             RequestContextHolder.resetRequestAttributes();
         }

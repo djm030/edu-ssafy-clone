@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { AUTH_REQUIRED_EVENT, FORBIDDEN_EVENT } from './api/client';
+import { AUTH_REQUIRED_EVENT, FORBIDDEN_EVENT, fetchJson, getErrorMessage } from './api/client';
 import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
 import { getCurrentRoleAccess, getMe, logout } from './api/app';
-import { getErrorMessage } from './api/client';
 import { mockUser } from './data/mockData';
 import AdminCampusPage from './pages/AdminCampusPage';
 import AttendanceAppealPage from './pages/AttendanceAppealPage';
@@ -33,6 +32,17 @@ import SurveyPage from './pages/SurveyPage';
 import SurveyRespondPage from './pages/SurveyRespondPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import type { BoardScreenConfig, RoleAccess, UserProfile } from './types';
+
+interface AuthSessionStatus {
+  authenticated: boolean;
+  expiresAt: string;
+  maxInactiveSeconds: number;
+  secondsRemaining: number;
+}
+
+function getAuthSession(): Promise<AuthSessionStatus> {
+  return fetchJson<AuthSessionStatus>('/api/auth/session');
+}
 
 const boardScreens: Record<string, BoardScreenConfig> = {
   '/community/free': {
@@ -95,6 +105,7 @@ function App() {
   const [path, setPath] = useState(getCurrentPath);
   const [user, setUser] = useState<UserProfile>(mockUser);
   const [roleAccess, setRoleAccess] = useState<RoleAccess>();
+  const [sessionStatus, setSessionStatus] = useState<AuthSessionStatus>();
   const [accessError, setAccessError] = useState<string>();
   const [accessMessage, setAccessMessage] = useState('');
 
@@ -166,11 +177,24 @@ function App() {
     return () => { cancelled = true; };
   }, [user.email]);
 
+  useEffect(() => {
+    let cancelled = false;
+    getAuthSession()
+      .then((status) => {
+        if (!cancelled) setSessionStatus(status);
+      })
+      .catch((error) => {
+        if (!cancelled) setAccessError(getErrorMessage(error));
+      });
+    return () => { cancelled = true; };
+  }, [user.email]);
+
   const handleLogout = () => {
     logout()
       .catch((error) => console.warn(`[auth] logout fallback navigation: ${getErrorMessage(error)}`))
       .finally(() => setUser(mockUser));
     setRoleAccess(undefined);
+    setSessionStatus(undefined);
     navigate('/login');
   };
 
@@ -188,6 +212,8 @@ function App() {
       onLogout={handleLogout}
       onNavigate={navigate}
       roleAccess={roleAccess}
+      sessionExpiresAt={sessionStatus?.expiresAt}
+      sessionSecondsRemaining={sessionStatus?.secondsRemaining}
       user={user}
     >
       {path === '/forbidden' ? <ForbiddenPage message={accessMessage} onNavigateHome={() => { setAccessMessage(''); navigate('/'); }} /> : page}

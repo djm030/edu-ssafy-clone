@@ -20,6 +20,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
@@ -69,6 +70,7 @@ import com.edussafy.backend.priority.security.RoleAccessInterceptor;
 import com.edussafy.backend.priority.security.RoleAccessWebConfig;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -181,6 +183,23 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.role").value("learner"))
                 .andExpect(jsonPath("$.permissions[0]").value("dashboard:read"))
                 .andExpect(jsonPath("$.deniedRoutes[0]").value("/admin"));
+    }
+
+    @Test
+    void authSessionReturnsExpiryMetadata() throws Exception {
+        given(priorityApiService.authSession()).willReturn(new AuthSessionResponse(
+                true,
+                OffsetDateTime.parse("2026-04-25T15:00:00Z"),
+                7200,
+                3600
+        ));
+
+        mockMvc.perform(get("/api/auth/session"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(true))
+                .andExpect(jsonPath("$.expiresAt").value("2026-04-25T15:00:00Z"))
+                .andExpect(jsonPath("$.maxInactiveSeconds").value(7200))
+                .andExpect(jsonPath("$.secondsRemaining").value(3600));
     }
 
     @Test
