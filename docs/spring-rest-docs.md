@@ -38,6 +38,12 @@ http://localhost/docs/api/index.html
 - Source: `backend/src/docs/asciidoc/index.adoc`
 - Tests: `backend/src/test/java/com/edussafy/backend/docs/ApiRestDocsTest.java`
 
+## Final verification status (2026-04-25)
+
+- `mvn -B prepare-package` generated `backend/target/classes/static/docs/api/index.html` and the file size was verified as 37565 bytes.
+- The rebuilt Docker app stack served the generated page from backend (`http://127.0.0.1:8080/docs/api/index.html` inside the backend container: `200 37565`) and through nginx (`http://127.0.0.1/docs/api/index.html` inside the nginx container: `200`, `Content-Length: 37565`).
+- Spring REST Docs executable coverage is **PARTIAL** for full-clone completion: the current test suite generates snippets for 4 documented operations while the Spring MVC controller surface has 52 operations. Use `docs/openapi.yaml` and `docs/openapi.json` as the broad controller-derived catalog until REST Docs coverage is expanded.
+
 ## Current documented operations
 
 - `POST /api/auth/login`

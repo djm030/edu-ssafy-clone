@@ -1,12 +1,20 @@
-import { FormEvent, useState } from 'react';
-import { updateProfile } from '../api/app';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { getProfile, updateProfile } from '../api/app';
 import { getErrorMessage } from '../api/client';
-import { mockUser } from '../data/mockData';
+import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
+import type { LoadState, ProfileDetails } from '../types';
+
+function editableValue(value?: string | null): string {
+  return value ?? '';
+}
 
 function ProfileEditPage() {
-  const [name, setName] = useState(mockUser.name);
+  const [profile, setProfile] = useState<ProfileDetails | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadError, setLoadError] = useState('');
+  const [name, setName] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [addressLine2, setAddressLine2] = useState('');
@@ -16,6 +24,37 @@ function ProfileEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('수정할 프로필 정보를 입력해 주세요.');
+
+  const applyProfile = useCallback((nextProfile: ProfileDetails) => {
+    setProfile(nextProfile);
+    setName(nextProfile.name);
+    setZipCode(editableValue(nextProfile.zipCode));
+    setAddressLine1(editableValue(nextProfile.addressLine1));
+    setAddressLine2(editableValue(nextProfile.addressLine2));
+    setMobilePhone(editableValue(nextProfile.mobilePhone));
+    setEmergencyPhone(editableValue(nextProfile.emergencyPhone));
+    setMarketingOptIn(Boolean(nextProfile.marketingOptIn));
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    getProfile()
+      .then((nextProfile) => {
+        if (ignore) return;
+        applyProfile(nextProfile);
+        setLoadState('loaded');
+      })
+      .catch((error) => {
+        if (ignore) return;
+        setLoadError(getErrorMessage(error));
+        setLoadState('error');
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [applyProfile]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -32,6 +71,7 @@ function ProfileEditPage() {
         emergencyPhone,
         marketingOptIn,
       });
+      applyProfile(response.profile);
       setResult('success');
       setMessage(`${response.profile.name}님의 회원정보가 저장되었습니다.`);
     } catch (error) {
@@ -45,14 +85,23 @@ function ProfileEditPage() {
   return (
     <section className="page">
       <PageHeader eyebrow="PROFILE" title="회원정보 수정" description="프로필 기본 정보를 수정합니다." />
+      {loadState === 'loading' ? <LoadingRows /> : null}
+      {loadState === 'error' ? <DataState title="회원정보를 불러오지 못했습니다." message={loadError} /> : null}
+      {loadState === 'loaded' && profile ? (
       <section className="panel form-panel">
         <form className="stack-form" onSubmit={submit}>
           <label htmlFor="profile-name">이름</label>
           <input id="profile-name" onChange={(event) => setName(event.target.value)} required value={name} />
           <label htmlFor="profile-email">이메일</label>
-          <input id="profile-email" readOnly type="email" value={mockUser.email} />
+          <input id="profile-email" readOnly type="email" value={profile.email} />
+          <label htmlFor="profile-campus">캠퍼스 / 반</label>
+          <input
+            id="profile-campus"
+            readOnly
+            value={[profile.campusName, profile.cohortName, profile.className].filter(Boolean).join(' · ')}
+          />
           <label htmlFor="profile-track">트랙</label>
-          <input id="profile-track" readOnly value={mockUser.trackName} />
+          <input id="profile-track" readOnly value={profile.trackName} />
           <label htmlFor="profile-zip">우편번호</label>
           <input id="profile-zip" onChange={(event) => setZipCode(event.target.value)} value={zipCode} />
           <label htmlFor="profile-address1">주소</label>
@@ -74,6 +123,7 @@ function ProfileEditPage() {
           <p>{message}</p>
         </div>
       </section>
+      ) : null}
     </section>
   );
 }

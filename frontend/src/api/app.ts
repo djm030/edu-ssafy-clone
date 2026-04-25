@@ -316,6 +316,12 @@ export function login(email: string, password: string): Promise<LoginResponse> {
   });
 }
 
+export function getMe(): Promise<LoginResponse> {
+  return fetchJson<LoginResponse>('/api/me', {
+    fallback: () => ({ user: mockUser }),
+  });
+}
+
 export function getCurrentRoleAccess(): Promise<RoleAccess> {
   return fetchJson<RoleAccess>('/api/auth/roles/current', {
     fallback: () => ({
@@ -434,14 +440,32 @@ export function getSurvey(id: number): Promise<SurveyItem | undefined> {
 }
 
 export function checkProfilePassword(password: string): Promise<{ verified: boolean }> {
-  return fetchJson<{ verified: boolean }>('/api/profile/password-check', {
+  return fetchJson<{ valid?: boolean; verified?: boolean }>('/api/profile/password-check', {
     body: JSON.stringify({ password }),
-    fallback: () => ({ verified: password.length > 0 }),
+    fallback: () => ({ valid: password.length > 0 }),
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
-  });
+  }).then((response) => ({ verified: Boolean(response.verified ?? response.valid) }));
+}
+
+export function getProfile(): Promise<ProfileDetails> {
+  return fetchJson<{ profile: ProfileDetails }>('/api/profile', {
+    fallback: () => ({
+      profile: {
+        ...mockUser,
+        learnerNo: null,
+        className: null,
+        zipCode: null,
+        addressLine1: null,
+        addressLine2: null,
+        mobilePhone: null,
+        emergencyPhone: null,
+        marketingOptIn: false,
+      },
+    }),
+  }).then((response) => response.profile);
 }
 
 export function getClassmates(): Promise<{ items: Classmate[] }> {

@@ -6,11 +6,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttachmentResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -58,6 +61,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest({
+        AttachmentController.class,
         AuthController.class,
         DashboardController.class,
         AttendanceController.class,
@@ -319,6 +323,58 @@ class PriorityApiControllerTest {
     }
 
     @Test
+    void attachmentMetadataEndpointsReturnShapes() throws Exception {
+        given(priorityApiService.createAttachment(any())).willReturn(new AttachmentResponse(new AttachmentItem(
+                11L,
+                "report.pdf",
+                "attachments/report.pdf",
+                "/files/report.pdf",
+                "application/pdf",
+                1024L,
+                null,
+                "/api/attachments/11/download",
+                null,
+                false
+        )));
+        given(priorityApiService.attachment(11L)).willReturn(new AttachmentResponse(new AttachmentItem(
+                11L,
+                "report.pdf",
+                "attachments/report.pdf",
+                "/files/report.pdf",
+                "application/pdf",
+                1024L,
+                null,
+                "/api/attachments/11/download",
+                null,
+                false
+        )));
+
+        mockMvc.perform(post("/api/attachments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"originalFilename\":\"report.pdf\",\"storedPath\":\"/files/report.pdf\",\"mimeType\":\"application/pdf\",\"fileSize\":1024}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(11))
+                .andExpect(jsonPath("$.item.originalFilename").value("report.pdf"))
+                .andExpect(jsonPath("$.item.downloadUrl").value("/api/attachments/11/download"))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(get("/api/attachments/11/download"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(11))
+                .andExpect(jsonPath("$.item.storageKey").value("attachments/report.pdf"));
+    }
+
+    @Test
+    void attachmentMetadataValidatesOriginalFilename() throws Exception {
+        mockMvc.perform(post("/api/attachments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"originalFilename\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(priorityApiService);
+    }
+
+    @Test
     void communityAndProfileReturnP2Shapes() throws Exception {
         given(priorityApiService.classmates()).willReturn(new ClassmatesResponse(List.of()));
         given(priorityApiService.createClassmateNotification(eq(7L), any()))
@@ -352,6 +408,34 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.email").value("student@ssafy.com"))
                 .andExpect(jsonPath("$.profile.trackName").value("Java"));
+    }
+
+    @Test
+    void profileUpdateReturnsPersistedProfileShape() throws Exception {
+        given(priorityApiService.updateProfile(any())).willReturn(new ProfileResponse(new ProfileDetails(
+                1L, "Updated Student", "student@ssafy.com", "learner", "SSAFY-12-0001",
+                "Seoul", "12th", "Java", "Seoul Java 1", "06234", "서울시 강남구", "101호",
+                "010-1111-2222", "010-3333-4444", true
+        )));
+
+        mockMvc.perform(put("/api/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Updated Student",
+                                  "zipCode": "06234",
+                                  "addressLine1": "서울시 강남구",
+                                  "addressLine2": "101호",
+                                  "mobilePhone": "010-1111-2222",
+                                  "emergencyPhone": "010-3333-4444",
+                                  "marketingOptIn": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profile.name").value("Updated Student"))
+                .andExpect(jsonPath("$.profile.learnerNo").value("SSAFY-12-0001"))
+                .andExpect(jsonPath("$.profile.mobilePhone").value("010-1111-2222"))
+                .andExpect(jsonPath("$.profile.marketingOptIn").value(true));
     }
 
     @Test

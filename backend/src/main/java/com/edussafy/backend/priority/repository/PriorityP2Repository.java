@@ -2,6 +2,7 @@ package com.edussafy.backend.priority.repository;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -112,6 +113,59 @@ public class PriorityP2Repository {
                 .optional();
     }
 
+    public Optional<ProfileDetails> updateProfile(
+            long userId,
+            ProfileUpdateRequest request,
+            boolean marketingOptIn
+    ) {
+        jdbcClient.sql("""
+                UPDATE users
+                SET name = :name
+                WHERE user_id = :userId AND deleted_at IS NULL
+                """)
+                .param("userId", userId)
+                .param("name", request.name().trim())
+                .update();
+
+        jdbcClient.sql("""
+                INSERT INTO user_profiles (
+                    user_id,
+                    zip_code,
+                    address_line1,
+                    address_line2,
+                    mobile_phone,
+                    emergency_phone,
+                    marketing_opt_in
+                )
+                VALUES (
+                    :userId,
+                    :zipCode,
+                    :addressLine1,
+                    :addressLine2,
+                    :mobilePhone,
+                    :emergencyPhone,
+                    :marketingOptIn
+                )
+                ON DUPLICATE KEY UPDATE
+                    zip_code = VALUES(zip_code),
+                    address_line1 = VALUES(address_line1),
+                    address_line2 = VALUES(address_line2),
+                    mobile_phone = VALUES(mobile_phone),
+                    emergency_phone = VALUES(emergency_phone),
+                    marketing_opt_in = VALUES(marketing_opt_in)
+                """)
+                .param("userId", userId)
+                .param("zipCode", normalizeNullable(request.zipCode()))
+                .param("addressLine1", normalizeNullable(request.addressLine1()))
+                .param("addressLine2", normalizeNullable(request.addressLine2()))
+                .param("mobilePhone", normalizeNullable(request.mobilePhone()))
+                .param("emergencyPhone", normalizeNullable(request.emergencyPhone()))
+                .param("marketingOptIn", marketingOptIn)
+                .update();
+
+        return findProfile(userId);
+    }
+
     private ClassmateItem mapClassmate(ResultSet rs, int rowNum) throws SQLException {
         String role = normalizeRole(rs.getString("role_code"));
         return new ClassmateItem(
@@ -149,6 +203,10 @@ public class PriorityP2Repository {
 
     private String normalizeRole(String roleCode) {
         return "student".equals(roleCode) ? "learner" : roleCode;
+    }
+
+    private String normalizeNullable(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private OffsetDateTime toOffset(Timestamp timestamp) {

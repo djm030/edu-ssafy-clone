@@ -6,9 +6,11 @@
 
 ## Final verification sync (2026-04-25)
 - Current verification still concludes **NOT COMPLETE / PARTIAL**.
-- Backend Java 21 tests, frontend lint/build, Docker compose config, static API Docs/OpenAPI validation, and controller-vs-API Docs drift checks pass in this workspace.
-- Live localhost HTTP probes are not PASS in this verification shell: direct curl to localhost backend/nginx could not connect. Swagger UI and `/v3/api-docs` are intentionally not required for completion while controller-derived API Docs remain valid.
-- Material reactions are implemented and no longer listed as future work, but production auth/RBAC, common attachment upload/download, support-ticket answers/threads, survey depth, browser E2E, and team-runtime recovery remain blockers.
+- Backend Java 21 tests now pass with 53 tests, frontend typecheck/lint/build passes, Docker compose app profile rebuilds, app containers are healthy, and backend/nginx container-internal docs/API smoke passes.
+- Static API Docs/OpenAPI validation and controller-vs-API Docs drift checks pass: controller surface is 52 operations and OpenAPI is 53 operations including `/actuator/health`.
+- Spring REST Docs generates and serves `docs/api/index.html`, but executable REST Docs coverage is still partial at 4 documented operations out of 52 controller operations.
+- Host published-port HTTP probes are not PASS in this verification shell because direct curl to localhost could not connect from the agent sandbox. Swagger UI and `/v3/api-docs` are intentionally not required for completion while controller-derived API Docs remain valid.
+- Material reactions are implemented and shared attachment metadata endpoints now compile/test, but production auth/RBAC, binary attachment upload/download, support-ticket answers/threads/attachments, survey depth, browser E2E, and team-runtime recovery remain blockers.
 
 
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.

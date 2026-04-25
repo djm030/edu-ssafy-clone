@@ -1,10 +1,11 @@
 # API Summary
 
 ## Final Verification API Sync (2026-04-25)
-- Controller 기준으로 다시 대조한 결과, Spring MVC controller surface는 **50 operations**이며 정적 API Docs(`docs/api-summary.md`, `docs/openapi.yaml`, `docs/openapi.json`)에 모두 반영되어 있다.
+- Controller 기준으로 다시 대조한 결과, Spring MVC controller surface는 **52 operations**이며 정적 API Docs(`docs/api-summary.md`, `docs/openapi.yaml`, `docs/openapi.json`)에 모두 반영되어 있다. `docs/openapi.yaml`은 controller 52개 operation에 `/actuator/health` 운영 probe 1개를 더해 **53 operations**를 기록한다.
 - `docs/openapi.yaml`은 `Auth/Profile/Campus/Cohort/Class/Track/Attendance/Attendance Appeal/Notification/Curriculum/Lecture Replay/Learning Material/Quest/Survey/Board/Comment/Support Ticket/Attachment` 그룹을 포함한다.
 - Spring Boot 프로젝트에는 `springdoc-openapi` 자동 생성 의존성이 없으므로 Swagger UI와 `/v3/api-docs`는 실행 가능한 endpoint가 아니다. 그러나 현재 완료 기준은 Swagger runtime이 아니라 controller-derived static API Docs와 drift check다.
 - Material reaction은 더 이상 "미구현"이 아니다: `/api/learning/materials/{id}/reactions`가 controller/service/repository/frontend detail page에 연결되어 반응 상태와 카운트를 반환한다.
+- Shared attachment metadata는 더 이상 backend compile blocker가 아니다: `/api/attachments`, `/api/attachments/{id}/download`가 controller/service/repository/test/OpenAPI에 연결되어 metadata 저장과 download URL wrapper를 반환한다. 다만 실제 binary upload/download와 도메인별 파일 연결 UX는 아직 full-clone 완료 기준에 미달한다.
 
 ## Task 69 Recheck Snapshot (worker-4, 2026-04-25)
 - API 표는 endpoint/method/request/response/auth/frontend-screen 컬럼을 유지하고 있다.
@@ -51,6 +52,8 @@
 | `/api/boards/{boardCode}/posts/{postId}/comments` | POST | path `boardCode`, `postId`, body `{ content }` | created comment `{ item }` | Yes (demo) | board detail screens |
 | `/api/boards/{boardCode}/posts/{postId}/reactions` | POST | path `boardCode`, `postId`, body reaction type | created reaction `{ item }` | Yes (demo) | board detail screens |
 | `/api/boards/{boardCode}/posts/{postId}/attachments` | POST | path `boardCode`, `postId`, header `X-User-Role: admin`, body attachment metadata | created attachment metadata `{ item }` | Admin (demo) | board detail/admin action |
+| `/api/attachments` | POST | body `{ originalFilename, storageKey?, storedPath?, mimeType?, fileSize?, checksumSha256? }` | created shared attachment metadata `{ item }` with `downloadUrl` | Yes (demo) | shared metadata API; full upload UI still pending |
+| `/api/attachments/{id}/download` | GET | path `id` | shared attachment metadata `{ item }` with `downloadUrl` | Yes (demo) | shared metadata API; binary streaming still pending |
 | `/api/support/tickets` | GET | `page`, `size`, status filters optional | `{ items, page }` support tickets | Yes (demo) | `/help/qna` |
 | `/api/support/tickets` | POST | body `{ title, content, category }` | created support ticket `{ item }` | Yes (demo) | `/help/qna/new` |
 | `/api/admin/campus-structure` | GET | header `X-User-Role: admin` | campus/cohort/track/class lists | Admin (demo) | `/admin/campus` |
@@ -66,7 +69,7 @@
 | `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
 
 ## Task 66 API Documentation Status (2026-04-24)
-- Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
+- Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/attachment/support/community/health.
 - Most learner-facing endpoints currently use demo-session semantics; final auth requirement is **not complete** until RBAC/session/token enforcement is implemented and documented per endpoint.
 - Frontend connection screens are mapped in `frontend/src/App.tsx` and page components; high-level coverage is: dashboard `/`, attendance `/mycampus/attendance`, learning `/learning/**`, quest `/quest/**`, survey `/survey/**`, board/community `/community/**`, help/QNA `/help/**`, and profile `/profile/**`.
 - Keep `docs/openapi.yaml` and `scripts/dev/verify-openapi.ps1` aligned with this summary whenever request/response wrappers change.
@@ -96,6 +99,7 @@
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
 - `POST /api/boards/{boardCode}/posts`, `PUT /api/boards/{boardCode}/posts/{postId}`, `DELETE /api/boards/{boardCode}/posts/{postId}`
 - `POST /api/boards/{boardCode}/posts/{postId}/comments`, `POST /api/boards/{boardCode}/posts/{postId}/reactions`, `POST /api/boards/{boardCode}/posts/{postId}/attachments`
+- `POST /api/attachments`, `GET /api/attachments/{id}/download`
 - `GET /api/support/tickets`, `POST /api/support/tickets`
 - `GET /api/community/classmates`
 - `POST /api/community/classmates/{userId}/notifications` (R6 source implemented; live smoke requires rebuilt backend image)
@@ -123,7 +127,7 @@
 ## Still Needed For Full Clone
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.
-- Attachment upload/download APIs for materials, boards, tickets, and submissions.
+- Full binary attachment upload/download APIs and domain-specific attachment UX for materials, boards, tickets, and submissions. Shared metadata create/read endpoints exist, but they are not enough for full-clone completion.
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.

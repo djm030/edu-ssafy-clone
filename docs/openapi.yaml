@@ -23,6 +23,7 @@ tags:
   - name: Survey
   - name: Board
   - name: Community
+  - name: Attachment
   - name: Support
   - name: Admin Campus
 paths:
@@ -495,6 +496,31 @@ paths:
       responses:
         '201': { description: Created board attachment item wrapper, content: { application/json: { schema: { $ref: '#/components/schemas/ItemEnvelope' } } } }
         '403': { $ref: '#/components/responses/ErrorResponse' }
+  /api/attachments:
+    post:
+      tags: [Attachment]
+      summary: Create shared attachment metadata
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttachmentUploadRequest' }
+      responses:
+        '201': { description: Created shared attachment metadata, content: { application/json: { schema: { $ref: '#/components/schemas/AttachmentResponse' } } } }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+  /api/attachments/{id}/download:
+    get:
+      tags: [Attachment]
+      summary: Read shared attachment download metadata
+      x-auth-required: true
+      security: [{ DemoAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Attachment metadata with download URL, content: { application/json: { schema: { $ref: '#/components/schemas/AttachmentResponse' } } } }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /api/community/classmates:
     get:
       tags: [Community]
@@ -995,6 +1021,34 @@ components:
         mimeType: { type: string, maxLength: 100, nullable: true }
         fileSize: { type: integer, format: int64, nullable: true }
         url: { type: string, maxLength: 500, nullable: true }
+    AttachmentUploadRequest:
+      type: object
+      required: [originalFilename]
+      properties:
+        originalFilename: { type: string, maxLength: 255 }
+        storageKey: { type: string, maxLength: 100, nullable: true }
+        storedPath: { type: string, maxLength: 500, nullable: true }
+        mimeType: { type: string, maxLength: 100, nullable: true }
+        fileSize: { type: integer, format: int64, nullable: true }
+        checksumSha256: { type: string, maxLength: 64, nullable: true }
+    AttachmentResponse:
+      type: object
+      required: [item]
+      properties:
+        item:
+          type: object
+          required: [id, originalFilename, downloadUrl, demo]
+          properties:
+            id: { type: integer, format: int64 }
+            originalFilename: { type: string }
+            storageKey: { type: string, nullable: true }
+            storedPath: { type: string, nullable: true }
+            mimeType: { type: string, nullable: true }
+            fileSize: { type: integer, format: int64, nullable: true }
+            checksumSha256: { type: string, nullable: true }
+            downloadUrl: { type: string }
+            createdAt: { type: string, format: date-time, nullable: true }
+            demo: { type: boolean }
     ClassmateNotificationRequest:
       type: object
       properties:

@@ -4,10 +4,19 @@
 
 Completion is still blocked. Do not declare the clone complete until every row below has executable proof and `docs/final-verification.md` has no FAIL/PARTIAL rows.
 
+Latest verification evidence:
+- Backend compile blocker found and fixed: shared attachment metadata endpoints now have repository/service/test coverage.
+- Backend verification passed after the fix: Dockerized Java 21 Maven test ran **53 tests** with `Failures: 0, Errors: 0`, and `mvn -B prepare-package` generated Spring REST Docs HTML.
+- Frontend verification passed: `tsc --noEmit -p tsconfig.app.json`, ESLint, and Vite build passed.
+- Docker app runtime passed inside the compose network: rebuilt backend/frontend/nginx, all app services healthy, backend docs route `200 37565`, nginx docs route `200` with `Content-Length: 37565`, nginx health `200 OK`, and backend `/api/me` returned current-user JSON through the compose network.
+- API drift check passed after docs update: Spring MVC controller surface is **52 operations**; OpenAPI is **53 operations** including `/actuator/health`; missing/extra controller drift is empty.
+- Spring REST Docs remains incomplete for full clone: generated/served HTML is real, but executable snippets cover only 4 of 52 controller operations.
+- Host direct HTTP remains unproven in this agent sandbox because published-port `curl` failed to connect while container-internal HTTP passed.
+
 - API Docs maintenance: keep `docs/api-summary.md`, `docs/openapi.yaml`, and `docs/openapi.json` drift-checked from real controllers/DTOs. Springdoc/Swagger UI and `/v3/api-docs` are optional future work, not current completion blockers.
-- Local runtime proof: rebuild current compose app profile and pass fresh backend/nginx curl smoke from the verification shell, not only stale container logs.
+- Local runtime proof: compose app profile rebuild and container-internal backend/nginx smoke passed; still rerun host published-port curl outside the sandbox or in CI.
 - Production auth/RBAC: implement real credential/session/token expiry/password recovery and domain-wide role guards/tests.
-- Attachments: implement common upload/storage/download and connect materials, boards, support tickets, and quest submissions end-to-end.
+- Attachments: shared metadata create/read now works; implement binary upload/storage/download and connect materials, boards, support tickets, and quest submissions end-to-end.
 - Support tickets: implement answer/thread/status transition/attachment workflows.
 - Survey/notification depth: implement full questions/options/response validation and notification read/delete/send lifecycle.
 - Browser E2E/visual: add automated browser flow evidence for the required screens and API-linked interactions.
@@ -86,11 +95,11 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | Materials/resources | partial | List/detail/resources and like/bookmark/favorite reactions exist; add attachment upload/download, viewer fidelity, and broader authorization checks. |
 | Quest/evaluation | partial | List/detail/submit exists; add result detail, file attachments, grading status. |
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
-| Board/community | pass | List/detail/write/comment/reaction plus admin edit/delete and attachment metadata-linking are implemented and verified. |
+| Board/community | partial | List/detail/write/comment/reaction plus admin edit/delete and attachment metadata-linking are implemented; full browser/RBAC/file-download proof is still missing. |
 | 1:1 inquiry | partial | Ticket list/create exists and QNA new page uses support tickets; add thread messages, answers, status transitions, attachments. |
 | Access control | partial | Frontend role bootstrap and unauthorized route state exist; admin campus API is server-guarded for admin-only access; add broader server-side enforcement coverage and operator/coach role matrices. |
 | Error/loading/empty states | partial | Present in many pages; verify all mutation flows and permission errors. |
-| Local one-command run | partial | Compose profile works in prior live verification; current sandbox cannot rebuild due Docker ACL. |
+| Local one-command run | partial | Compose app profile rebuild and container-internal backend/nginx smoke pass; host published-port curl is still unproven in this sandbox. |
 | Tests/smoke | partial | Backend/frontend/smoke exist; add browser E2E and CI. |
 | README/docs | partial | Add top-level runbook/API/progress/test docs and keep tracker updated. |
 
@@ -135,13 +144,14 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 - 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 인증/세션, 권한 enforcement, 첨부파일, 설문/문의 depth, E2E/CI 검증이 남아 있다.
 
 ### FAIL 항목
-- `docs/final-verification.md` 기준 명시적인 기능 FAIL 항목이 있다: 첨부파일, 게시글 첨부파일, 문의 답변, 문의 첨부파일.
+- `docs/final-verification.md` 기준 명시적인 기능 FAIL 항목이 있다: 문의 답변, 문의 첨부파일, browser E2E/visual, completion hygiene.
+- 첨부파일과 게시글 첨부파일은 shared metadata endpoint/linking이 검증되어 FAIL에서 PARTIAL로 이동했지만, binary upload/download end-to-end가 없어 PASS가 아니다.
 - Backend Maven test는 Dockerized Java 21에서 PASS했지만, host Java 25 직접 실행은 Mockito/Byte Buddy 호환성 문제로 실패할 수 있다. Java 21 또는 Dockerized Maven을 표준 검증 경로로 유지해야 한다.
 
 ### UNKNOWN 항목
-- Docker Compose live smoke 결과: 현재 워커 호스트에서 재검증하지 못했다.
-- PowerShell 기반 `scripts/dev/verify-openapi.ps1` 결과: 현재 워커 호스트에서 재검증하지 못했다.
-- 실제 SSAFY 원본 대비 pixel/interaction fidelity: browser E2E 및 visual capture 기준이 아직 부족하다.
+- Docker Compose container-internal smoke는 재검증했다. Host published-port smoke는 현재 agent sandbox에서 실패했으므로 CI 또는 일반 host shell에서 재검증해야 한다.
+- PowerShell 기반 `scripts/dev/verify-openapi.ps1` 결과는 현재 host에서 재검증하지 않았지만, Python/Ruby 기반 controller-vs-OpenAPI drift check는 missing/extra 없이 PASS했다.
+- 실제 SSAFY 원본 대비 pixel/interaction fidelity는 browser E2E 및 visual capture 기준이 아직 부족하다.
 
 ### 다음에 생성해야 할 task
 1. Java 21 CI/runtime 고정 또는 Mockito/Byte Buddy 테스트 도구 업그레이드로 backend test unblock.

@@ -2,6 +2,8 @@ package com.edussafy.backend.priority.repository;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttachmentUploadRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
@@ -45,9 +47,27 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public Optional<UserProfile> findUserById(long userId) {
+        return userSql("WHERE u.user_id = :userId AND u.deleted_at IS NULL ORDER BY u.user_id ASC LIMIT 1")
+                .param("userId", userId)
+                .query(this::mapUser)
+                .optional();
+    }
+
     public Optional<UserProfile> findDefaultUser() {
         return userSql("WHERE u.deleted_at IS NULL ORDER BY u.user_id ASC LIMIT 1")
                 .query(this::mapUser)
+                .optional();
+    }
+
+    public Optional<String> findPasswordHash(long userId) {
+        return jdbcClient.sql("""
+                SELECT password_hash
+                FROM users
+                WHERE user_id = :userId AND deleted_at IS NULL
+                """)
+                .param("userId", userId)
+                .query(String.class)
                 .optional();
     }
 
@@ -298,6 +318,62 @@ public class PriorityApiRepository {
                 .list();
     }
 
+    public AttachmentItem createAttachment(AttachmentUploadRequest request) {
+        String originalFilename = request.originalFilename().trim();
+        String storageKey = StringUtils.hasText(request.storageKey())
+                ? request.storageKey().trim()
+                : "attachments/" + originalFilename;
+        String storedPath = normalizeNullable(request.storedPath());
+        jdbcClient.sql("""
+                INSERT INTO attachments (original_filename, storage_key, stored_path, mime_type, file_size, checksum_sha256)
+                VALUES (:originalFilename, :storageKey, :storedPath, :mimeType, :fileSize, :checksumSha256)
+                """)
+                .param("originalFilename", originalFilename)
+                .param("storageKey", storageKey)
+                .param("storedPath", storedPath)
+                .param("mimeType", normalizeNullable(request.mimeType()))
+                .param("fileSize", request.fileSize())
+                .param("checksumSha256", normalizeNullable(request.checksumSha256()))
+                .update();
+
+        long attachmentId = lastInsertId();
+        return findAttachment(attachmentId).orElse(new AttachmentItem(
+                attachmentId,
+                originalFilename,
+                storageKey,
+                storedPath,
+                normalizeNullable(request.mimeType()),
+                request.fileSize(),
+                normalizeNullable(request.checksumSha256()),
+                "/api/attachments/" + attachmentId + "/download",
+                null,
+                false
+        ));
+    }
+
+    public Optional<AttachmentItem> findAttachment(long attachmentId) {
+        return jdbcClient.sql("""
+                SELECT attachment_id, original_filename, storage_key, stored_path, mime_type,
+                       file_size, checksum_sha256, created_at
+                FROM attachments
+                WHERE attachment_id = :attachmentId
+                """)
+                .param("attachmentId", attachmentId)
+                .query((rs, rowNum) -> new AttachmentItem(
+                        rs.getLong("attachment_id"),
+                        rs.getString("original_filename"),
+                        rs.getString("storage_key"),
+                        rs.getString("stored_path"),
+                        rs.getString("mime_type"),
+                        nullableLong(rs, "file_size"),
+                        rs.getString("checksum_sha256"),
+                        "/api/attachments/" + rs.getLong("attachment_id") + "/download",
+                        toOffset(rs.getTimestamp("created_at")),
+                        false
+                ))
+                .optional();
+    }
+
     public long countQuests(long userId) {
         return jdbcClient.sql("SELECT COUNT(*) FROM quest_evaluations").query(Long.class).single();
     }
@@ -431,6 +507,11 @@ public class PriorityApiRepository {
         return rs.wasNull() ? null : value;
     }
 
+    private Long nullableLong(ResultSet rs, String columnName) throws SQLException {
+        long value = rs.getLong(columnName);
+        return rs.wasNull() ? null : value;
+    }
+
     private LocalTime nullableTime(ResultSet rs, String columnName) throws SQLException {
         Time value = rs.getTime(columnName);
         return value == null ? null : value.toLocalTime();
@@ -438,6 +519,16 @@ public class PriorityApiRepository {
 
     private OffsetDateTime toOffset(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toLocalDateTime().atZone(SEOUL_ZONE).toOffsetDateTime();
+    }
+
+    private long lastInsertId() {
+        return jdbcClient.sql("SELECT LAST_INSERT_ID()")
+                .query(Long.class)
+                .single();
+    }
+
+    private String normalizeNullable(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private record SqlParts(String whereClause, Map<String, Object> params) {

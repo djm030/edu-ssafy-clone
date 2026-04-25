@@ -3,30 +3,37 @@
 ## Final Verification Evidence Refresh (2026-04-25)
 
 ### Summary
-최종 검증 책임자 관점에서 backend/frontend/build/schema/API Docs/Docker/runtime smoke를 다시 점검했다. 결론은 **NOT COMPLETE / PARTIAL**이다. Backend/Frontend/정적 API Docs는 주요 gate를 통과하지만, live localhost HTTP, attachment/support/auth depth, browser E2E가 완료 기준을 만족하지 못한다.
+최종 검증 책임자 관점에서 backend/frontend/build/schema/API Docs/Spring REST Docs/Docker/runtime smoke를 다시 점검했다. 결론은 **NOT COMPLETE / PARTIAL**이다. Backend/Frontend/정적 API Docs/Docker app stack은 주요 gate를 통과하지만, Spring REST Docs full coverage, binary attachment/support/auth depth, browser E2E가 완료 기준을 만족하지 못한다.
 
 ### Commands Run
 - `git status --short`, `git log --oneline -5 --decorate` -> PASS, 저장소/최근 커밋 확인.
 - `omx team status ssafy-full-clone-omx-continuou` -> NOT PASS, `No team state found`; dead team cleanup 이후 정상 완료 상태 아님.
 - `docker compose -f compose.yml --profile app config --services` -> PASS (`mysql`, `rabbitmq`, `redis`, `backend`, `frontend`, `nginx`).
 - `docker compose -f compose.yml --profile app config --quiet` -> PASS.
-- `docker compose -f compose.yml --profile app ps` -> PARTIAL, 기존 컨테이너들은 healthy로 보이나 current shell curl과 current compose defaults 기준 live PASS는 아님.
-- `docker compose -f compose.yml --profile app logs --tail=40 backend nginx` -> PARTIAL, backend startup/MySQL/RabbitMQ/Nginx API 200 로그 확인.
-- `curl -fsS --max-time 3 http://127.0.0.1:8080/actuator/health` -> FAIL, `Couldn't connect to server`.
-- `curl -fsS --max-time 3 http://127.0.0.1/nginx-health` / `/api/health` -> FAIL, current shell에서 localhost 연결 실패.
+- `docker compose -f compose.yml --profile app up -d --build backend frontend nginx` -> PASS, backend image build 중 Maven 53 tests/Asciidoctor 통과, frontend Vite build 통과.
+- `docker compose -f compose.yml --profile app ps` -> PASS, mysql/rabbitmq/redis/backend/frontend/nginx all running/healthy.
+- `docker compose ... exec -T backend curl ... /docs/api/index.html` -> PASS, backend container 내부 docs route `200 37565`.
+- `docker compose ... exec -T nginx nginx -t` -> PASS, syntax/test successful.
+- `docker compose ... exec -T nginx wget ... /docs/api/index.html` -> PASS, nginx docs route `HTTP/1.1 200`, `Content-Length: 37565`.
+- `docker compose ... exec -T nginx wget ... /nginx-health` -> PASS, `200 OK`, body `ok`.
+- `docker compose ... exec -T nginx wget ... http://backend:8080/api/me` -> PASS, current-user JSON 응답.
+- `curl -fsS --max-time 3 http://127.0.0.1:18080/actuator/health` -> FAIL/PARTIAL, agent sandbox host-network에서 `Couldn't connect to server`; container-internal HTTP는 PASS.
 - `bash scripts/dev/backend-test.sh --help` -> PASS.
-- `bash scripts/dev/backend-test.sh --skip-cache` -> PASS, Dockerized Maven Java 21, `Tests run: 47, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`.
-- `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, 동일하게 47 tests PASS.
+- `bash scripts/dev/backend-test.sh --skip-cache` -> 최초 FAIL, `AttachmentController` missing service methods compile error.
+- `bash scripts/dev/backend-test.sh --skip-cache` -> 수정 후 PASS, Dockerized Maven Java 21, `Tests run: 53, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`.
+- Dockerized `mvn -B prepare-package` -> PASS, 53 tests PASS, Spring REST Docs HTML generated.
+- `test -f backend/target/classes/static/docs/api/index.html && wc -c ...` -> PASS, `37565` bytes.
+- `find backend/target/generated-snippets -maxdepth 2 -type f` -> PARTIAL, REST Docs snippets are limited to 4 documented operations.
+- `cd frontend && npm exec -- tsc --noEmit -p tsconfig.app.json` -> PASS.
 - `npm --prefix frontend run lint` -> PASS.
 - `npm --prefix frontend run build` -> PASS.
 - `python3 scripts/dev/smoke-lite.py --with-frontend` -> PASS/PARTIAL, `PASS=15, FAIL=0, SKIP=1`.
-- `python3 scripts/dev/smoke-lite.py --http --with-frontend` -> PASS/PARTIAL, `PASS=15, FAIL=0, SKIP=4` (HTTP probe skip).
+- `python3 scripts/dev/smoke-lite.py --http --with-frontend` -> PASS/PARTIAL, `PASS=15, FAIL=0, SKIP=4` (sandbox blocks host HTTP probes).
 - `python3 -m json.tool docs/openapi.json` -> PASS, valid JSON.
-- `ruby -ryaml -e ... docs/openapi.yaml` -> PASS, OpenAPI `3.0.3`, paths `42`.
-- controller-vs-API Docs drift Python check -> PASS, controller ops `50`, API Docs/OpenAPI ops `51`, missing `[]`, extra excluding actuator `[]`.
+- `ruby -ryaml -e ... docs/openapi.yaml` -> PASS, OpenAPI `3.0.3`, paths `44`, ops `53`.
+- controller-vs-API Docs drift Python check -> PASS, controller ops `52`, OpenAPI ops `53`, missing `[]`, extra excluding actuator `[]`.
 - repository-vs-schema Python check -> PASS, repository tables `32`, missing schema tables `[]`.
 - `grep -R "springdoc\|openapi\|swagger" backend/...` -> INFO, backend has no Springdoc/Swagger setup; static API Docs are the current completion target.
-- `git diff --check` -> PASS.
 
 
 ### Mandatory ai-slop-cleaner Standard Pass
@@ -35,19 +42,19 @@
 - Behavior lock: backend Maven tests, frontend lint/build, smoke-lite, OpenAPI drift/schema checks were already available and were rerun after cleanup.
 - Cleanup plan: stay inside the changed-files list, remove stale task/team completion wording, do not introduce new dependencies or broad refactors.
 - Cleanup performed: updated stale `task 125-130` / historical active-team wording so docs no longer imply a currently active/completed OMX team state.
-- Post-cleaner gates: `npm --prefix frontend run lint && npm --prefix frontend run build` PASS; `bash scripts/dev/backend-test.sh` PASS (`47` tests); `python3 scripts/dev/smoke-lite.py --http --with-frontend` PASS/PARTIAL (`PASS=15`, `FAIL=0`, `SKIP=4`); OpenAPI JSON/YAML/controller drift PASS; DB schema check PASS; compose config PASS; `git diff --check` PASS.
+- Post-cleaner gates were superseded by the final verification rerun above: backend 53 tests PASS, frontend typecheck/lint/build PASS, smoke-lite PASS/PARTIAL, OpenAPI JSON/YAML/controller drift PASS, DB schema check PASS, compose build/runtime container-internal HTTP PASS.
 
 ### Result
-- PASS: backend tests, frontend lint/build, compose config render, schema/table static check, static API Docs/OpenAPI JSON/YAML validation, controller/API Docs drift check.
-- PARTIAL: Docker runtime evidence and smoke harness, because current shell cannot reach localhost even though compose state/logs show a running prior stack.
-- FAIL: common attachment upload/download, support ticket answers/attachments, browser E2E/visual evidence, normal OMX team terminal completion.
+- PASS: backend tests, frontend typecheck/lint/build, compose config/render/build, schema/table static check, static API Docs/OpenAPI JSON/YAML validation, controller/API Docs drift check, Spring REST Docs HTML generation/serving, container-internal backend/nginx smoke.
+- PARTIAL: Spring REST Docs full API coverage, host published-port HTTP smoke, shared attachments because only metadata create/read is implemented.
+- FAIL: support ticket answers/attachments, browser E2E/visual evidence, normal OMX team terminal completion.
 
 ### Cause Classification
 | Item | Classification | Evidence |
 |---|---|---|
 | `/v3/api-docs` missing | N/A | Springdoc/Swagger runtime is optional; static controller-derived API Docs are maintained. |
-| localhost curl failure | 실행환경/네트워크 검증 실패 | current shell `curl` to backend/nginx ports cannot connect. |
-| Attachment gaps | 기능 미구현 | Common upload/download API and domain E2E links are absent. |
+| host localhost curl failure | 실행환경/네트워크 검증 실패 | agent sandbox cannot connect to published ports; compose-network HTTP checks pass. |
+| Attachment gaps | 기능 미완성 | Shared metadata API now compiles/tests; binary upload/download and domain E2E links are absent. |
 | Support answer gaps | 기능 미구현 | Ticket list/create exists, answer/thread/status/attachments missing. |
 | E2E missing | 테스트 하네스 부족 | Backend/frontend unit/build pass, but browser automation evidence absent. |
 | Team state lost | OMX runtime recovery 필요 | `No team state found` after dead team cleanup; not all-complete terminal. |
