@@ -12,6 +12,9 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeletedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
@@ -89,6 +92,51 @@ public class BoardService {
                 created.createdAt(),
                 false
         ));
+    }
+
+    @Transactional
+    public BoardPostUpdateResponse updatePost(String boardCode, long postId, BoardPostCreateRequest request) {
+        long boardId = requireBoardId(boardCode);
+        validateCategory(boardId, request.categoryId());
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        int updated = boardRepository.updatePost(
+                boardId,
+                postId,
+                request.categoryId(),
+                request.title().trim(),
+                request.content().trim()
+        );
+        if (updated == 0) {
+            throw new BoardPostNotFoundException(postId);
+        }
+        BoardPostDetail saved = boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+
+        return new BoardPostUpdateResponse(new BoardPostCreatedItem(
+                saved.id(),
+                saved.boardCode(),
+                saved.category() == null ? null : saved.category().id(),
+                saved.title(),
+                saved.content(),
+                saved.authorName(),
+                saved.createdAt(),
+                false
+        ));
+    }
+
+    @Transactional
+    public BoardPostDeleteResponse deletePost(String boardCode, long postId) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        int deleted = boardRepository.deletePost(boardId, postId);
+        if (deleted == 0) {
+            throw new BoardPostNotFoundException(postId);
+        }
+
+        return new BoardPostDeleteResponse(new BoardPostDeletedItem(postId, boardCode, true, false));
     }
 
     @Transactional

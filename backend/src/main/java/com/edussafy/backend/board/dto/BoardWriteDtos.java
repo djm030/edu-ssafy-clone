@@ -20,6 +20,9 @@ public final class BoardWriteDtos {
     public record BoardPostCreateResponse(BoardPostCreatedItem item) {
     }
 
+    public record BoardPostUpdateResponse(BoardPostCreatedItem item) {
+    }
+
     public record BoardPostCreatedItem(
             long id,
             String boardCode,
@@ -56,5 +59,11 @@ public final class BoardWriteDtos {
     }
 
     public record BoardReactionCreatedItem(long postId, String type, boolean active, boolean demo) {
+    }
+
+    public record BoardPostDeleteResponse(BoardPostDeletedItem item) {
+    }
+
+    public record BoardPostDeletedItem(long id, String boardCode, boolean deleted, boolean demo) {
     }
 }

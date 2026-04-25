@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +20,9 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreatedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeletedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
 import com.edussafy.backend.board.dto.CategorySummary;
@@ -146,6 +150,31 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.item.id").value(33))
                 .andExpect(jsonPath("$.item.boardCode").value("free"))
                 .andExpect(jsonPath("$.item.title").value("Hello"))
+                .andExpect(jsonPath("$.item.demo").value(false));
+    }
+
+    @Test
+    void updateAndDeletePostReturnPersistedShape() throws Exception {
+        given(boardService.updatePost(eq("free"), eq(33L), any())).willReturn(new BoardPostUpdateResponse(
+                new BoardPostCreatedItem(33L, "free", null, "Updated", "Changed body", "Demo Learner", null, false)
+        ));
+        given(boardService.deletePost("free", 33L)).willReturn(new BoardPostDeleteResponse(
+                new BoardPostDeletedItem(33L, "free", true, false)
+        ));
+
+        mockMvc.perform(put("/api/boards/free/posts/33")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Updated\",\"content\":\"Changed body\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(33))
+                .andExpect(jsonPath("$.item.title").value("Updated"))
+                .andExpect(jsonPath("$.item.content").value("Changed body"))
+                .andExpect(jsonPath("$.item.demo").value(false));
+        mockMvc.perform(delete("/api/boards/free/posts/33"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(33))
+                .andExpect(jsonPath("$.item.boardCode").value("free"))
+                .andExpect(jsonPath("$.item.deleted").value(true))
                 .andExpect(jsonPath("$.item.demo").value(false));
     }
 

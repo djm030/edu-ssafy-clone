@@ -12,6 +12,8 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.CategorySummary;
 import com.edussafy.backend.board.repository.BoardRepository;
@@ -75,6 +77,44 @@ class BoardServiceTest {
         assertThat(response.item().title()).isEqualTo("Hello");
         assertThat(response.item().demo()).isFalse();
         verify(repository).createPost(1L, 4L, 7L, "Hello", "Body");
+    }
+
+    @Test
+    void updatePostPersistsAndReturnsStoredShape() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail existing = detail(33L, "Before", List.of());
+        BoardPostDetail updated = detail(33L, "Updated", "Changed body", List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.existsCategory(1L, 4L)).willReturn(true);
+        given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(existing), Optional.of(updated));
+        given(repository.updatePost(1L, 33L, 4L, "Updated", "Changed body")).willReturn(1);
+        BoardService service = new BoardService(repository);
+
+        BoardPostUpdateResponse response = service.updatePost("free", 33L, new BoardPostCreateRequest(4L, " Updated ", " Changed body "));
+
+        assertThat(response.item().id()).isEqualTo(33L);
+        assertThat(response.item().title()).isEqualTo("Updated");
+        assertThat(response.item().content()).isEqualTo("Changed body");
+        assertThat(response.item().demo()).isFalse();
+        verify(repository).updatePost(1L, 33L, 4L, "Updated", "Changed body");
+    }
+
+    @Test
+    void deletePostRequiresBoardPostAndDeletes() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail existing = detail(33L, "Before", List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(existing));
+        given(repository.deletePost(1L, 33L)).willReturn(1);
+        BoardService service = new BoardService(repository);
+
+        BoardPostDeleteResponse response = service.deletePost("free", 33L);
+
+        assertThat(response.item().id()).isEqualTo(33L);
+        assertThat(response.item().boardCode()).isEqualTo("free");
+        assertThat(response.item().deleted()).isTrue();
+        assertThat(response.item().demo()).isFalse();
+        verify(repository).deletePost(1L, 33L);
     }
 
     @Test
@@ -144,12 +184,16 @@ class BoardServiceTest {
     }
 
     private BoardPostDetail detail(long id, String title, List<BoardCommentItem> comments) {
+        return detail(id, title, "Body", comments);
+    }
+
+    private BoardPostDetail detail(long id, String title, String content, List<BoardCommentItem> comments) {
         return new BoardPostDetail(
                 id,
                 "free",
                 new CategorySummary(4L, "General"),
                 title,
-                "Body",
+                content,
                 "Demo Student",
                 OffsetDateTime.now(),
                 OffsetDateTime.now(),

@@ -207,6 +207,34 @@ public class BoardRepository {
         return key == null ? 0L : key.longValue();
     }
 
+    public int updatePost(long boardId, long postId, Long categoryId, String title, String content) {
+        return jdbcClient.sql("""
+                UPDATE board_posts
+                SET board_category_id = :categoryId,
+                    title = :title,
+                    content = :content
+                WHERE board_id = :boardId
+                  AND board_post_id = :postId
+                """)
+                .param("boardId", boardId)
+                .param("postId", postId)
+                .param("categoryId", categoryId)
+                .param("title", title)
+                .param("content", content)
+                .update();
+    }
+
+    public int deletePost(long boardId, long postId) {
+        return jdbcClient.sql("""
+                DELETE FROM board_posts
+                WHERE board_id = :boardId
+                  AND board_post_id = :postId
+                """)
+                .param("boardId", boardId)
+                .param("postId", postId)
+                .update();
+    }
+
     public long createComment(long postId, Long authorUserId, Long parentCommentId, String content) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql("""

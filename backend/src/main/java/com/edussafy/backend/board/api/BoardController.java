@@ -7,6 +7,8 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostCreateResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.HealthResponse;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -72,6 +75,23 @@ public class BoardController {
             @Valid @RequestBody BoardPostCreateRequest request
     ) {
         return boardService.createPost(boardCode, request);
+    }
+
+    @PutMapping("/boards/{boardCode}/posts/{postId}")
+    public BoardPostUpdateResponse updatePost(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @Valid @RequestBody BoardPostCreateRequest request
+    ) {
+        return boardService.updatePost(boardCode, postId, request);
+    }
+
+    @DeleteMapping("/boards/{boardCode}/posts/{postId}")
+    public BoardPostDeleteResponse deletePost(
+            @PathVariable String boardCode,
+            @PathVariable Long postId
+    ) {
+        return boardService.deletePost(boardCode, postId);
     }
 
     @PostMapping("/boards/{boardCode}/posts/{postId}/comments")

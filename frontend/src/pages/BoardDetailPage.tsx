@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { createComment, createReaction, deleteReaction, getPost } from '../api/boards';
+import { createComment, createReaction, deletePost, deleteReaction, getPost, updatePost } from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -51,30 +51,124 @@ function BoardDetailPage({ boardCode, postId, title, listPath }: BoardDetailPage
 }
 
 function DetailContent({ boardCode, post, listPath }: { boardCode: BoardCode; post: BoardPostListItem; listPath: string }) {
+  const [currentPost, setCurrentPost] = useState(post);
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(post.title);
+  const [draftContent, setDraftContent] = useState(post.content ?? '');
+  const [submittingPost, setSubmittingPost] = useState(false);
+  const [postMessage, setPostMessage] = useState('게시글 수정 또는 삭제가 가능합니다.');
+
+  useEffect(() => {
+    setCurrentPost(post);
+    setDraftTitle(post.title);
+    setDraftContent(post.content ?? '');
+    setEditing(false);
+    setSubmittingPost(false);
+    setPostMessage('게시글 수정 또는 삭제가 가능합니다.');
+  }, [post]);
+
+  const submitUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const title = draftTitle.trim();
+    const content = draftContent.trim();
+    if (!title || !content) return;
+
+    setSubmittingPost(true);
+    setPostMessage('게시글을 저장하는 중입니다.');
+    try {
+      const updated = await updatePost(boardCode, currentPost.id, {
+        categoryId: currentPost.category?.id,
+        title,
+        content,
+      });
+      setCurrentPost((previous) => ({ ...previous, ...updated, comments: previous.comments }));
+      setEditing(false);
+      setPostMessage('게시글이 저장되었습니다.');
+    } catch (error) {
+      setPostMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingPost(false);
+    }
+  };
+
+  const requestDelete = async () => {
+    if (!window.confirm('게시글을 삭제할까요? 삭제 후에는 목록으로 이동합니다.')) return;
+
+    setSubmittingPost(true);
+    setPostMessage('게시글을 삭제하는 중입니다.');
+    try {
+      const result = await deletePost(boardCode, currentPost.id);
+      if (result.deleted) {
+        window.location.href = listPath;
+        return;
+      }
+      setPostMessage('게시글 삭제 결과를 확인하지 못했습니다.');
+    } catch (error) {
+      setPostMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingPost(false);
+    }
+  };
+
   return (
     <article className="panel detail-panel">
       <div className="detail-meta">
-        <StatusPill tone="green">{post.category?.name || '일반'}</StatusPill>
-        {post.isPinned ? <StatusPill tone="yellow">고정</StatusPill> : null}
-        {post.hasAttachment ? <StatusPill tone="blue">첨부 있음</StatusPill> : null}
+        <StatusPill tone="green">{currentPost.category?.name || '일반'}</StatusPill>
+        {currentPost.isPinned ? <StatusPill tone="yellow">고정</StatusPill> : null}
+        {currentPost.hasAttachment ? <StatusPill tone="blue">첨부 있음</StatusPill> : null}
       </div>
-      <h2>{post.title}</h2>
+      <h2>{currentPost.title}</h2>
       <dl className="info-list detail-info">
         <div>
           <dt>작성자</dt>
-          <dd>{post.authorName || '-'}</dd>
+          <dd>{currentPost.authorName || '-'}</dd>
         </div>
         <div>
           <dt>등록일</dt>
-          <dd>{formatDate(post.createdAt)}</dd>
+          <dd>{formatDate(currentPost.createdAt)}</dd>
         </div>
         <div>
           <dt>조회</dt>
-          <dd>{(post.viewCount || 0).toLocaleString('ko-KR')}</dd>
+          <dd>{(currentPost.viewCount || 0).toLocaleString('ko-KR')}</dd>
         </div>
       </dl>
-      <div className="detail-body">{post.content || '등록된 본문이 없습니다.'}</div>
-      <BoardActions boardCode={boardCode} post={post} />
+      <div className="detail-body">{currentPost.content || '등록된 본문이 없습니다.'}</div>
+      <section className="board-actions" aria-label="게시글 관리">
+        <div className="action-row">
+          <button className="ghost-button" disabled={submittingPost} onClick={() => setEditing((value) => !value)} type="button">
+            {editing ? '수정 취소' : '수정'}
+          </button>
+          <button className="ghost-button danger" disabled={submittingPost} onClick={() => { void requestDelete(); }} type="button">
+            삭제
+          </button>
+        </div>
+        {editing ? (
+          <form className="stack-form" onSubmit={submitUpdate}>
+            <label htmlFor={`post-title-${currentPost.id}`}>제목</label>
+            <input
+              disabled={submittingPost}
+              id={`post-title-${currentPost.id}`}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              required
+              value={draftTitle}
+            />
+            <label htmlFor={`post-content-${currentPost.id}`}>내용</label>
+            <textarea
+              disabled={submittingPost}
+              id={`post-content-${currentPost.id}`}
+              onChange={(event) => setDraftContent(event.target.value)}
+              required
+              rows={8}
+              value={draftContent}
+            />
+            <button className="primary-action" disabled={submittingPost} type="submit">
+              {submittingPost ? '저장 중' : '저장'}
+            </button>
+          </form>
+        ) : null}
+        <p className="form-message" aria-live="polite">{postMessage}</p>
+      </section>
+      <BoardActions boardCode={boardCode} post={currentPost} />
       <div className="action-row">
         <a className="ghost-button" href={listPath}>목록</a>
       </div>

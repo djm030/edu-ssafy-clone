@@ -8,6 +8,7 @@ type BoardPostDetailResponse = { post?: BoardPostListItem; item?: BoardPostListI
 type BoardPostCreateResponse = { item: BoardPostListItem };
 type BoardCommentCreateResponse = { item: BoardCommentItem };
 type BoardReactionResponse = { item: { postId: number; type: string; active: boolean; demo?: boolean } };
+type BoardPostDeleteResponse = { item: { id: number; boardCode: BoardCode; deleted: boolean; demo?: boolean } };
 
 interface PostQuery {
   categoryId?: number;
@@ -88,6 +89,35 @@ export function createPost(boardCode: BoardCode, draft: BoardPostDraft): Promise
     }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updatePost(boardCode: BoardCode, postId: number, draft: BoardPostDraft): Promise<BoardPostListItem> {
+  return fetchJson<BoardPostCreateResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({
+      item: {
+        id: postId,
+        boardCode,
+        category: draft.categoryId ? { id: draft.categoryId, name: '선택 카테고리' } : undefined,
+        title: draft.title,
+        content: draft.content,
+        authorName: '로컬 데모',
+        createdAt: new Date().toISOString(),
+        commentCount: 0,
+        reactionCount: 0,
+        bookmarkCount: 0,
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deletePost(boardCode: BoardCode, postId: number): Promise<BoardPostDeleteResponse['item']> {
+  return fetchJson<BoardPostDeleteResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
+    fallback: () => ({ item: { id: postId, boardCode, deleted: true, demo: true } }),
+    method: 'DELETE',
   }).then((response) => response.item);
 }
 
