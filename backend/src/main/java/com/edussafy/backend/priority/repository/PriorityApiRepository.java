@@ -360,6 +360,48 @@ public class PriorityApiRepository {
                 .update();
     }
 
+    public int deleteNotification(long userId, long notificationId) {
+        return jdbcClient.sql("""
+                UPDATE notification_recipients
+                SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP),
+                    read_at = COALESCE(read_at, CURRENT_TIMESTAMP)
+                WHERE recipient_user_id = :userId
+                  AND notification_id = :notificationId
+                  AND deleted_at IS NULL
+                """)
+                .param("userId", userId)
+                .param("notificationId", notificationId)
+                .update();
+    }
+
+    public long createNotification(long senderUserId, String title, String body) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO notifications (sender_user_id, title, body)
+                VALUES (:senderUserId, :title, :body)
+                """)
+                .param("senderUserId", senderUserId)
+                .param("title", title)
+                .param("body", body)
+                .update(keyHolder, "notification_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public void createNotificationRecipient(long notificationId, long recipientUserId) {
+        jdbcClient.sql("""
+                INSERT INTO notification_recipients (notification_id, recipient_user_id)
+                VALUES (:notificationId, :recipientUserId)
+                ON DUPLICATE KEY UPDATE
+                    deleted_at = NULL,
+                    read_at = NULL
+                """)
+                .param("notificationId", notificationId)
+                .param("recipientUserId", recipientUserId)
+                .update();
+    }
+
     public TodaySummary findTodaySummary(long userId) {
         return new TodaySummary(
                 firstTitle("SELECT topic FROM curriculum_schedules WHERE class_date = CURRENT_DATE() ORDER BY start_time LIMIT 1"),

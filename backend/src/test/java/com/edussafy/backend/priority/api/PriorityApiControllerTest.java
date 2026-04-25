@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +26,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
@@ -617,6 +619,18 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.items[0].id").value(3))
                 .andExpect(jsonPath("$.items[0].read").value(true))
                 .andExpect(jsonPath("$.unreadCount").value(0));
+    }
+
+    @Test
+    void notificationDeleteReturnsUnreadCount() throws Exception {
+        given(priorityApiService.deleteNotification(9L))
+                .willReturn(new NotificationDeleteResponse(9L, true, 1L));
+
+        mockMvc.perform(delete("/api/notifications/9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(9))
+                .andExpect(jsonPath("$.deleted").value(true))
+                .andExpect(jsonPath("$.unreadCount").value(1));
     }
 
     @Test

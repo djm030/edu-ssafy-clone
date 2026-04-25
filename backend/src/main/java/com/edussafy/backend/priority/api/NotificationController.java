@@ -1,5 +1,6 @@
 package com.edussafy.backend.priority.api;
 
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsResponse;
@@ -7,6 +8,7 @@ import com.edussafy.backend.priority.service.PriorityApiService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,5 +43,10 @@ public class NotificationController {
     @PatchMapping("/notifications/read-all")
     public NotificationsReadAllResponse markAllRead() {
         return priorityApiService.markAllNotificationsRead();
+    }
+
+    @DeleteMapping("/notifications/{notificationId}")
+    public NotificationDeleteResponse deleteNotification(@PathVariable @Min(1) long notificationId) {
+        return priorityApiService.deleteNotification(notificationId);
     }
 }

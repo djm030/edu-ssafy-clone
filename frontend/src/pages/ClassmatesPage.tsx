@@ -36,8 +36,8 @@ function ClassmatesPage() {
     setNotificationMessage('');
 
     try {
-      await sendClassmateNotification(classmate.id);
-      setNotificationMessage(`${classmate.name}님에게 알림을 보냈습니다.`);
+      const response = await sendClassmateNotification(classmate.id);
+      setNotificationMessage(`${classmate.name}님에게 알림을 보냈습니다.${response.id ? ` 알림번호: ${response.id}` : ''}`);
     } catch (error) {
       setNotificationMessage(getErrorMessage(error));
     } finally {

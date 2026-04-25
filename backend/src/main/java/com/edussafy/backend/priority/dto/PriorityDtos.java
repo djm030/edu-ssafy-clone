@@ -121,6 +121,9 @@ public final class PriorityDtos {
     public record NotificationsReadAllResponse(List<NotificationItem> items, long unreadCount) {
     }
 
+    public record NotificationDeleteResponse(long id, boolean deleted, long unreadCount) {
+    }
+
     public record NotificationItem(long id, String title, String body, OffsetDateTime createdAt, boolean read) {
     }
 

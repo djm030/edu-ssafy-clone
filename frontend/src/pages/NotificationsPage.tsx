@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../api/app';
+import { deleteNotification, getNotifications, markAllNotificationsRead, markNotificationRead } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -18,6 +18,7 @@ function NotificationsPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [updatingAll, setUpdatingAll] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
@@ -42,7 +43,7 @@ function NotificationsPage() {
   const unreadCount = useMemo(() => items.filter((item) => !item.read).length, [items]);
 
   const handleMarkRead = (notification: NotificationItem) => {
-    if (notification.read || updatingId !== null || updatingAll) return;
+    if (notification.read || updatingId !== null || deletingId !== null || updatingAll) return;
     setUpdatingId(notification.id);
     setActionMessage('');
     markNotificationRead(notification.id)
@@ -59,7 +60,7 @@ function NotificationsPage() {
   };
 
   const handleMarkAllRead = () => {
-    if (unreadCount === 0 || updatingId !== null || updatingAll) return;
+    if (unreadCount === 0 || updatingId !== null || deletingId !== null || updatingAll) return;
     setUpdatingAll(true);
     setActionMessage('');
     markAllNotificationsRead()
@@ -81,6 +82,24 @@ function NotificationsPage() {
       });
   };
 
+  const handleDelete = (notification: NotificationItem) => {
+    if (deletingId !== null || updatingId !== null || updatingAll) return;
+    setDeletingId(notification.id);
+    setActionMessage('');
+    deleteNotification(notification.id)
+      .then((response) => {
+        setItems((current) => current.filter((item) => item.id !== response.id));
+        setActionMessage(`알림을 삭제했습니다. 남은 미확인 알림 ${response.unreadCount}건`);
+        if (items.length === 1) setLoadState('empty');
+      })
+      .catch((error) => {
+        setActionMessage(getErrorMessage(error));
+      })
+      .finally(() => {
+        setDeletingId(null);
+      });
+  };
+
   return (
     <section className="page">
       <PageHeader eyebrow="MY CAMPUS" title="알림함" description="공지, 학습, Quest, 설문 알림을 모아 확인합니다." />
@@ -88,7 +107,7 @@ function NotificationsPage() {
         <section className="stat-card">
           <span>읽지 않은 알림</span>
           <strong>{unreadCount}건</strong>
-          <button className="ghost-button" disabled={unreadCount === 0 || updatingAll || updatingId !== null} onClick={handleMarkAllRead} type="button">
+          <button className="ghost-button" disabled={unreadCount === 0 || updatingAll || updatingId !== null || deletingId !== null} onClick={handleMarkAllRead} type="button">
             {updatingAll ? '전체 처리 중...' : '모두 읽음 처리'}
           </button>
         </section>
@@ -118,6 +137,9 @@ function NotificationsPage() {
                     {updatingId === item.id ? '처리 중...' : '읽음 처리'}
                   </button>
                 ) : null}
+                <button className="ghost-button" disabled={deletingId === item.id} onClick={() => handleDelete(item)} type="button">
+                  {deletingId === item.id ? '삭제 중...' : '삭제'}
+                </button>
               </div>
             </article>
           ))}

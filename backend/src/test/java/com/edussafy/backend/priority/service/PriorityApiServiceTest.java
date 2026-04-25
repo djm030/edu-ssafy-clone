@@ -13,10 +13,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
@@ -90,9 +92,32 @@ class PriorityApiServiceTest {
 
     @Test
     void createsClassmateNotificationWithDefaults() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        NotificationItem storedNotification = new NotificationItem(
+                123L,
+                "Classmate contact request",
+                "Let's study together!",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p2Repository.findClassmates(1L)).willReturn(List.of(new ClassmateItem(
+                7L,
+                "Classmate",
+                "classmate@ssafy.com",
+                "learner",
+                "member",
+                "Seoul",
+                "12th",
+                "Java",
+                "Seoul Java 1"
+        )));
+        given(repository.createNotification(1L, "Classmate contact request", "Let's study together!")).willReturn(123L);
+        given(repository.findNotification(7L, 123L)).willReturn(Optional.of(storedNotification));
         PriorityApiService service = new PriorityApiService(
-                mock(PriorityApiRepository.class),
-                mock(PriorityP2Repository.class),
+                repository,
+                p2Repository,
                 mock(PriorityP3Repository.class)
         );
 
@@ -101,15 +126,16 @@ class PriorityApiServiceTest {
                 new ClassmateNotificationRequest(null, null)
         );
 
-        assertThat(response.item().id()).isEqualTo(900_007L);
+        assertThat(response.item().id()).isEqualTo(123L);
         assertThat(response.item().recipientUserId()).isEqualTo(7L);
         assertThat(response.item().type()).isEqualTo("contact_request");
         assertThat(response.item().message()).isEqualTo("Let's study together!");
         assertThat(response.item().status()).isEqualTo("sent");
-        assertThat(response.item().notification()).isNotNull();
-        assertThat(response.item().notification().id()).isEqualTo(900_007L);
+        assertThat(response.item().notification()).isEqualTo(storedNotification);
         assertThat(response.item().notification().body()).isEqualTo("Let's study together!");
-        assertThat(response.item().demo()).isTrue();
+        assertThat(response.item().demo()).isFalse();
+        verify(repository).createNotification(1L, "Classmate contact request", "Let's study together!");
+        verify(repository).createNotificationRecipient(123L, 7L);
     }
 
     @Test
@@ -151,6 +177,27 @@ class PriorityApiServiceTest {
         assertThat(response.items()).containsExactly(read);
         assertThat(response.unreadCount()).isZero();
         verify(repository).markAllNotificationsRead(1L);
+    }
+
+    @Test
+    void deletesNotificationForCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        NotificationItem item = new NotificationItem(8L, "알림", "확인 필요", OffsetDateTime.parse("2026-04-25T09:00:00+09:00"), false);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findNotification(1L, 8L)).willReturn(Optional.of(item));
+        given(repository.countUnreadNotifications(1L)).willReturn(1L);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        NotificationDeleteResponse response = service.deleteNotification(8L);
+
+        assertThat(response.id()).isEqualTo(8L);
+        assertThat(response.deleted()).isTrue();
+        assertThat(response.unreadCount()).isEqualTo(1L);
+        verify(repository).deleteNotification(1L, 8L);
     }
 
     @Test

@@ -105,6 +105,12 @@ export interface NotificationsReadAllResult {
   unreadCount: number;
 }
 
+export interface NotificationDeleteResult {
+  id: number;
+  deleted: boolean;
+  unreadCount: number;
+}
+
 export interface CurriculumWeek {
   id: number;
   week: number;

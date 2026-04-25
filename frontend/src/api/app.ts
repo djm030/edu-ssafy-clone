@@ -27,6 +27,7 @@ import type {
   LoginResponse,
   RoleAccess,
   NotificationItem,
+  NotificationDeleteResult,
   NotificationReadResult,
   NotificationsReadAllResult,
   QnaDraft,
@@ -418,6 +419,17 @@ export function markAllNotificationsRead(): Promise<NotificationsReadAllResult> 
   }));
 }
 
+export function deleteNotification(notificationId: number): Promise<NotificationDeleteResult> {
+  return fetchJson<NotificationDeleteResult>(`/api/notifications/${notificationId}`, {
+    fallback: () => ({
+      id: notificationId,
+      deleted: true,
+      unreadCount: Math.max(0, mockNotifications.filter((notification) => !notification.read && notification.id !== notificationId).length),
+    }),
+    method: 'DELETE',
+  });
+}
+
 export function getCurriculum(): Promise<{ items: CurriculumWeek[] }> {
   return fetchJson<{ items: BackendCurriculumItem[] }>('/api/learning/curriculum', {
     fallback: () => ({ items: mockCurriculumWeeks }),
@@ -763,13 +775,13 @@ export function updateProfile(draft: ProfileEditDraft): Promise<{ profile: Profi
   });
 }
 
-export function sendClassmateNotification(userId: number): Promise<{ status: string }> {
-  return fetchJson<{ status?: string; item?: { status?: string } }>(`/api/community/classmates/${userId}/notifications`, {
+export function sendClassmateNotification(userId: number): Promise<{ id?: number; status: string }> {
+  return fetchJson<{ status?: string; item?: { id?: number; status?: string } }>(`/api/community/classmates/${userId}/notifications`, {
     body: JSON.stringify({}),
     fallback: () => ({ status: 'sent' }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
-  }).then((response) => ({ status: response.status || response.item?.status || 'sent' }));
+  }).then((response) => ({ id: response.item?.id, status: response.status || response.item?.status || 'sent' }));
 }
 
 

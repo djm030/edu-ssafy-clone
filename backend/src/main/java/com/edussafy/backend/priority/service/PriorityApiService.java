@@ -23,6 +23,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
@@ -303,6 +304,14 @@ public class PriorityApiService {
         List<NotificationItem> items = safe(() -> repository.findNotifications(user.id(), 20, 0), List.of());
         long unreadCount = repository.countUnreadNotifications(user.id());
         return new NotificationsReadAllResponse(items, unreadCount);
+    }
+
+    public NotificationDeleteResponse deleteNotification(long notificationId) {
+        UserProfile user = currentUser();
+        repository.findNotification(user.id(), notificationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found."));
+        repository.deleteNotification(user.id(), notificationId);
+        return new NotificationDeleteResponse(notificationId, true, repository.countUnreadNotifications(user.id()));
     }
 
     public CurriculumResponse curriculum() {
@@ -603,6 +612,11 @@ public class PriorityApiService {
             long recipientUserId,
             ClassmateNotificationRequest request
     ) {
+        UserProfile user = currentUser();
+        p2Repository.findClassmates(user.id()).stream()
+                .filter(classmate -> classmate.id() == recipientUserId)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Classmate not found."));
         String type = normalizeWithDefault(
                 request == null ? null : request.type(),
                 DEFAULT_CLASSMATE_NOTIFICATION_TYPE
@@ -611,15 +625,11 @@ public class PriorityApiService {
                 request == null ? null : request.message(),
                 DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE
         );
-        long notificationId = 900_000L + recipientUserId;
-        OffsetDateTime createdAt = OffsetDateTime.now();
-        NotificationItem notification = new NotificationItem(
-                notificationId,
-                "Classmate contact request",
-                message,
-                createdAt,
-                false
-        );
+        String title = "Classmate contact request";
+        long notificationId = repository.createNotification(user.id(), title, message);
+        repository.createNotificationRecipient(notificationId, recipientUserId);
+        NotificationItem notification = repository.findNotification(recipientUserId, notificationId)
+                .orElse(new NotificationItem(notificationId, title, message, OffsetDateTime.now(), false));
 
         return new ClassmateNotificationResponse(new ClassmateNotificationItem(
                 notificationId,
@@ -627,9 +637,9 @@ public class PriorityApiService {
                 type,
                 message,
                 "sent",
-                createdAt,
+                notification.createdAt(),
                 notification,
-                true
+                false
         ));
     }
 
