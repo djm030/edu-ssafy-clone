@@ -2,6 +2,7 @@ package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
@@ -39,6 +40,11 @@ public class AttendanceController {
         return priorityApiService.attendanceAppeals();
     }
 
+    @GetMapping("/attendance/appeals/pending")
+    public AttendanceAppealsResponse pendingAppeals() {
+        return priorityApiService.pendingAttendanceAppeals();
+    }
+
     @PostMapping("/attendance/appeals")
     @ResponseStatus(HttpStatus.CREATED)
     public AttendanceAppealResponse appeal(@Valid @RequestBody AttendanceAppealRequest request) {
@@ -48,5 +54,13 @@ public class AttendanceController {
     @PatchMapping("/attendance/appeals/{appealId}/cancel")
     public AttendanceAppealResponse cancelAppeal(@PathVariable @Min(1) long appealId) {
         return priorityApiService.cancelAttendanceAppeal(appealId);
+    }
+
+    @PatchMapping("/attendance/appeals/{appealId}/resolve")
+    public AttendanceAppealResponse resolveAppeal(
+            @PathVariable @Min(1) long appealId,
+            @Valid @RequestBody AttendanceAppealResolveRequest request
+    ) {
+        return priorityApiService.resolveAttendanceAppeal(appealId, request);
     }
 }

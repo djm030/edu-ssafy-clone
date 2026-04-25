@@ -131,17 +131,19 @@ function AttendanceAppealsPanel({
             <span role="columnheader">요청 상태</span>
             <span role="columnheader">사유</span>
             <span role="columnheader">상태</span>
+            <span role="columnheader">처리 결과</span>
             <span role="columnheader">관리</span>
           </div>
           {appeals.map((appeal) => (
             <div className="simple-row" key={appeal.id} role="row">
               <span role="cell">#{appeal.id}</span>
-              <span role="cell">{appeal.attendanceRecordId}</span>
-              <span role="cell">{appeal.requestedStatus || '-'}</span>
+              <span role="cell">{appeal.recordDate || `기록 #${appeal.attendanceRecordId}`}</span>
+              <span role="cell">{attendanceStatusLabel(appeal.requestedStatus)}</span>
               <span role="cell">{appeal.reason || '-'}</span>
               <span role="cell">
                 <StatusPill tone={appealStatusTone(appeal.status)}>{appealStatusLabel(appeal.status)}</StatusPill>
               </span>
+              <span role="cell">{appealResolutionSummary(appeal)}</span>
               <span role="cell">
                 {appeal.status === 'requested' ? (
                   <button
@@ -231,6 +233,19 @@ function appealStatusTone(status: string) {
   if (status === 'rejected') return 'red';
   if (status === 'canceled') return 'gray';
   return 'blue';
+}
+
+function attendanceStatusLabel(status?: string | null) {
+  return status ? (statusLabel[status as AttendanceRecord['status']] ?? status) : '-';
+}
+
+function appealResolutionSummary(appeal: AttendanceAppeal) {
+  if (appeal.status === 'requested') return '처리 대기';
+  const resolvedStatus = attendanceStatusLabel(appeal.resolvedStatus);
+  const by = appeal.resolvedByName ? ` · ${appeal.resolvedByName}` : '';
+  const at = appeal.resolvedAt ? ` · ${appeal.resolvedAt.slice(0, 10)}` : '';
+  const comment = appeal.resolutionComment ? ` · ${appeal.resolutionComment}` : '';
+  return `${resolvedStatus}${by}${at}${comment}`;
 }
 
 export default AttendancePage;

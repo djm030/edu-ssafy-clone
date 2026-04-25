@@ -109,6 +109,13 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record AttendanceAppealResolveRequest(
+            @NotBlank @Size(max = 50) String status,
+            @Size(max = 50) String resolvedStatus,
+            @Size(max = 1000) String comment
+    ) {
+    }
+
     public record AttendanceAppealResponse(AttendanceAppealItem item) {
     }
 
@@ -123,8 +130,25 @@ public final class PriorityDtos {
             String requestedStatus,
             String status,
             OffsetDateTime requestedAt,
+            LocalDate recordDate,
+            String resolvedStatus,
+            OffsetDateTime resolvedAt,
+            String resolutionComment,
+            String resolvedByName,
             boolean demo
     ) {
+        public AttendanceAppealItem(
+                long id,
+                long attendanceRecordId,
+                String type,
+                String reason,
+                String requestedStatus,
+                String status,
+                OffsetDateTime requestedAt,
+                boolean demo
+        ) {
+            this(id, attendanceRecordId, type, reason, requestedStatus, status, requestedAt, null, null, null, null, null, demo);
+        }
     }
 
     public record NotificationsResponse(List<NotificationItem> items, PageMeta page) {

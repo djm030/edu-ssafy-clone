@@ -3,6 +3,7 @@ package com.edussafy.backend.priority.service;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
@@ -123,6 +124,7 @@ public class PriorityApiService {
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
     private static final Set<String> ATTENDANCE_APPEAL_TYPES = Set.of("check_in", "check_out", "status_change", "other");
     private static final Set<String> ATTENDANCE_STATUSES = Set.of("present", "late", "absent", "early_leave", "excused");
+    private static final Set<String> ATTENDANCE_APPEAL_DECISIONS = Set.of("approved", "rejected");
     private static final Set<String> CLOSED_ATTENDANCE_APPEAL_STATUSES = Set.of("rejected", "canceled");
     private static final int SUPPORT_ATTACHMENT_MAX_BYTES = 2 * 1024 * 1024;
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
@@ -277,6 +279,14 @@ public class PriorityApiService {
         return new AttendanceAppealsResponse(safe(() -> repository.findAttendanceAppeals(user.id()), List.of()));
     }
 
+    public AttendanceAppealsResponse pendingAttendanceAppeals() {
+        UserProfile user = currentUser();
+        if (!canResolveAttendanceAppeals(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance appeal resolution permission is required.");
+        }
+        return new AttendanceAppealsResponse(safe(repository::findPendingAttendanceAppealsForStaff, List.of()));
+    }
+
     @Transactional
     public AttendanceAppealResponse createAttendanceAppeal(AttendanceAppealRequest request) {
         UserProfile user = currentUser();
@@ -317,8 +327,68 @@ public class PriorityApiService {
                         "canceled",
                         existing.requestedAt(),
                         false
-                ));
+        ));
         return new AttendanceAppealResponse(canceled);
+    }
+
+    @Transactional
+    public AttendanceAppealResponse resolveAttendanceAppeal(
+            long attendanceAppealId,
+            AttendanceAppealResolveRequest request
+    ) {
+        UserProfile user = currentUser();
+        if (!canResolveAttendanceAppeals(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Attendance appeal resolution permission is required.");
+        }
+
+        AttendanceAppealItem existing = repository.findAttendanceAppealForStaff(attendanceAppealId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attendance appeal not found."));
+        if (!"requested".equals(existing.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only requested attendance appeals can be resolved.");
+        }
+
+        String decision = normalizeAttendanceAppealDecision(request.status());
+        String resolvedStatus = null;
+        if ("approved".equals(decision)) {
+            String requestedStatus = normalizeNullable(request.resolvedStatus());
+            if (requestedStatus == null) {
+                requestedStatus = normalizeNullable(existing.requestedStatus());
+            }
+            if (requestedStatus == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Approved attendance appeal requires a resolved status.");
+            }
+            resolvedStatus = normalizeAttendanceStatus(requestedStatus, requestedStatus);
+        }
+        String comment = normalizeWithDefault(
+                request.comment(),
+                "approved".equals(decision) ? "Attendance appeal approved." : "Attendance appeal rejected."
+        );
+
+        int updated = repository.resolveAttendanceAppeal(user.id(), attendanceAppealId, decision, resolvedStatus, comment);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Attendance appeal could not be resolved.");
+        }
+        if ("approved".equals(decision)) {
+            repository.updateAttendanceRecordStatusFromAppeal(attendanceAppealId, resolvedStatus);
+        }
+
+        AttendanceAppealItem resolved = repository.findAttendanceAppealForStaff(attendanceAppealId)
+                .orElse(new AttendanceAppealItem(
+                        existing.id(),
+                        existing.attendanceRecordId(),
+                        existing.type(),
+                        existing.reason(),
+                        existing.requestedStatus(),
+                        decision,
+                        existing.requestedAt(),
+                        existing.recordDate(),
+                        resolvedStatus,
+                        OffsetDateTime.now(ZoneOffset.ofHours(9)),
+                        comment,
+                        user.name(),
+                        false
+                ));
+        return new AttendanceAppealResponse(resolved);
     }
 
     public NotificationsResponse notifications(int page, int size) {
@@ -822,6 +892,11 @@ public class PriorityApiService {
         return "coach".equals(role) || "admin".equals(role);
     }
 
+    private boolean canResolveAttendanceAppeals(UserProfile user) {
+        String role = normalizeAccessRole(user.role());
+        return "coach".equals(role) || "admin".equals(role);
+    }
+
     private List<SupportTicketMessageItem> attachSupportAttachments(List<SupportTicketMessageItem> messages) {
         if (messages.isEmpty()) {
             return messages;
@@ -921,6 +996,14 @@ public class PriorityApiService {
         String normalized = normalizeWithDefault(value, defaultStatus).toLowerCase(Locale.ROOT);
         if (!ATTENDANCE_STATUSES.contains(normalized)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported requested attendance status.");
+        }
+        return normalized;
+    }
+
+    private String normalizeAttendanceAppealDecision(String value) {
+        String normalized = normalizeWithDefault(value, "rejected").toLowerCase(Locale.ROOT);
+        if (!ATTENDANCE_APPEAL_DECISIONS.contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported attendance appeal decision.");
         }
         return normalized;
     }

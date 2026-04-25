@@ -17,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -177,23 +178,12 @@ public class PriorityApiRepository {
     }
 
     public Optional<AttendanceAppealItem> findAttendanceAppeal(long attendanceAppealId) {
-        return jdbcClient.sql("""
-                SELECT attendance_appeal_id, attendance_record_id, appeal_type_code, reason,
-                       requested_status_code, approval_status_code, requested_at
-                FROM attendance_appeals
-                WHERE attendance_appeal_id = :attendanceAppealId
-                """)
+        return jdbcClient.sql(attendanceAppealSelect("""
+                WHERE aa.attendance_appeal_id = :attendanceAppealId
+                LIMIT 1
+                """))
                 .param("attendanceAppealId", attendanceAppealId)
-                .query((rs, rowNum) -> new AttendanceAppealItem(
-                        rs.getLong("attendance_appeal_id"),
-                        rs.getLong("attendance_record_id"),
-                        rs.getString("appeal_type_code"),
-                        rs.getString("reason"),
-                        rs.getString("requested_status_code"),
-                        rs.getString("approval_status_code"),
-                        toOffset(rs.getTimestamp("requested_at")),
-                        false
-                ))
+                .query(this::mapAttendanceAppeal)
                 .optional();
     }
 
@@ -218,12 +208,33 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public List<AttendanceAppealItem> findPendingAttendanceAppealsForStaff() {
+        return jdbcClient.sql(attendanceAppealSelect("""
+                WHERE aa.approval_status_code = 'requested'
+                ORDER BY aa.requested_at ASC, aa.attendance_appeal_id ASC
+                """))
+                .query(this::mapAttendanceAppeal)
+                .list();
+    }
+
+    public Optional<AttendanceAppealItem> findAttendanceAppealForStaff(long attendanceAppealId) {
+        return jdbcClient.sql(attendanceAppealSelect("""
+                WHERE aa.attendance_appeal_id = :attendanceAppealId
+                LIMIT 1
+                """))
+                .param("attendanceAppealId", attendanceAppealId)
+                .query(this::mapAttendanceAppeal)
+                .optional();
+    }
+
     public int cancelAttendanceAppeal(long userId, long attendanceAppealId) {
         return jdbcClient.sql("""
                 UPDATE attendance_appeals aa
                 JOIN attendance_records ar ON ar.attendance_record_id = aa.attendance_record_id
                 SET aa.approval_status_code = 'canceled',
-                    aa.resolved_at = CURRENT_TIMESTAMP
+                    aa.resolved_at = CURRENT_TIMESTAMP,
+                    aa.resolved_by_user_id = :userId,
+                    aa.resolution_comment = 'Canceled by requester.'
                 WHERE ar.user_id = :userId
                   AND aa.attendance_appeal_id = :attendanceAppealId
                   AND aa.approval_status_code = 'requested'
@@ -233,12 +244,53 @@ public class PriorityApiRepository {
                 .update();
     }
 
+    public int resolveAttendanceAppeal(
+            long resolverUserId,
+            long attendanceAppealId,
+            String approvalStatus,
+            String resolvedStatus,
+            String resolutionComment
+    ) {
+        return jdbcClient.sql("""
+                UPDATE attendance_appeals
+                SET approval_status_code = :approvalStatus,
+                    resolved_status_code = :resolvedStatus,
+                    resolved_at = CURRENT_TIMESTAMP,
+                    resolved_by_user_id = :resolverUserId,
+                    resolution_comment = :resolutionComment
+                WHERE attendance_appeal_id = :attendanceAppealId
+                  AND approval_status_code = 'requested'
+                """)
+                .param("approvalStatus", approvalStatus)
+                .param("resolvedStatus", resolvedStatus)
+                .param("resolverUserId", resolverUserId)
+                .param("resolutionComment", resolutionComment)
+                .param("attendanceAppealId", attendanceAppealId)
+                .update();
+    }
+
+    public int updateAttendanceRecordStatusFromAppeal(long attendanceAppealId, String attendanceStatus) {
+        return jdbcClient.sql("""
+                UPDATE attendance_records ar
+                JOIN attendance_appeals aa ON aa.attendance_record_id = ar.attendance_record_id
+                SET ar.attendance_status_code = :attendanceStatus,
+                    ar.approval_type_code = 'appeal'
+                WHERE aa.attendance_appeal_id = :attendanceAppealId
+                """)
+                .param("attendanceStatus", attendanceStatus)
+                .param("attendanceAppealId", attendanceAppealId)
+                .update();
+    }
+
     private String attendanceAppealSelect(String suffix) {
         return """
                 SELECT aa.attendance_appeal_id, aa.attendance_record_id, aa.appeal_type_code, aa.reason,
-                       aa.requested_status_code, aa.approval_status_code, aa.requested_at
+                       aa.requested_status_code, aa.approval_status_code, aa.requested_at,
+                       ar.attendance_date, aa.resolved_status_code, aa.resolved_at,
+                       aa.resolution_comment, resolver.name AS resolved_by_name
                 FROM attendance_appeals aa
                 JOIN attendance_records ar ON ar.attendance_record_id = aa.attendance_record_id
+                LEFT JOIN users resolver ON resolver.user_id = aa.resolved_by_user_id
                 """ + suffix;
     }
 
@@ -251,6 +303,11 @@ public class PriorityApiRepository {
                 rs.getString("requested_status_code"),
                 rs.getString("approval_status_code"),
                 toOffset(rs.getTimestamp("requested_at")),
+                toLocalDate(rs, "attendance_date"),
+                rs.getString("resolved_status_code"),
+                toOffset(rs.getTimestamp("resolved_at")),
+                rs.getString("resolution_comment"),
+                rs.getString("resolved_by_name"),
                 false
         );
     }
@@ -662,6 +719,10 @@ public class PriorityApiRepository {
     private LocalTime nullableTime(ResultSet rs, String columnName) throws SQLException {
         Time value = rs.getTime(columnName);
         return value == null ? null : value.toLocalTime();
+    }
+
+    private LocalDate toLocalDate(ResultSet rs, String columnName) throws SQLException {
+        return rs.getDate(columnName).toLocalDate();
     }
 
     private OffsetDateTime toOffset(Timestamp timestamp) {

@@ -18,6 +18,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
@@ -71,6 +72,7 @@ import com.edussafy.backend.priority.security.RoleAccessInterceptor;
 import com.edussafy.backend.priority.security.RoleAccessWebConfig;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -369,6 +371,59 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.id").value(101))
                 .andExpect(jsonPath("$.item.status").value("canceled"))
                 .andExpect(jsonPath("$.item.demo").value(false));
+    }
+
+    @Test
+    void attendanceAppealPendingAndResolveExposeStaffWorkflow() throws Exception {
+        AttendanceAppealItem pending = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "requested",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                LocalDate.of(2026, 4, 23),
+                null,
+                null,
+                null,
+                null,
+                false
+        );
+        AttendanceAppealItem approved = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "approved",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                LocalDate.of(2026, 4, 23),
+                "present",
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00"),
+                "출석으로 정정했습니다.",
+                "Demo Manager",
+                false
+        );
+        given(priorityApiService.pendingAttendanceAppeals()).willReturn(new AttendanceAppealsResponse(List.of(pending)));
+        given(priorityApiService.resolveAttendanceAppeal(eq(101L), any(AttendanceAppealResolveRequest.class)))
+                .willReturn(new AttendanceAppealResponse(approved));
+
+        mockMvc.perform(get("/api/attendance/appeals/pending")
+                        .session(sessionFor(2L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(101))
+                .andExpect(jsonPath("$.items[0].recordDate").value("2026-04-23"))
+                .andExpect(jsonPath("$.items[0].status").value("requested"));
+        mockMvc.perform(patch("/api/attendance/appeals/101/resolve")
+                        .session(sessionFor(2L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"approved\",\"comment\":\"출석으로 정정했습니다.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.status").value("approved"))
+                .andExpect(jsonPath("$.item.resolvedStatus").value("present"))
+                .andExpect(jsonPath("$.item.resolutionComment").value("출석으로 정정했습니다."))
+                .andExpect(jsonPath("$.item.resolvedByName").value("Demo Manager"));
     }
 
     @Test

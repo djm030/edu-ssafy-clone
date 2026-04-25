@@ -275,7 +275,18 @@ export interface AttendanceAppeal {
   requestedStatus?: string | null;
   status: string;
   requestedAt?: string | null;
+  recordDate?: string | null;
+  resolvedStatus?: string | null;
+  resolvedAt?: string | null;
+  resolutionComment?: string | null;
+  resolvedByName?: string | null;
   demo?: boolean;
+}
+
+export interface AttendanceAppealResolveDraft {
+  status: 'approved' | 'rejected';
+  resolvedStatus?: string;
+  comment?: string;
 }
 
 export interface QuestSubmissionDraft {

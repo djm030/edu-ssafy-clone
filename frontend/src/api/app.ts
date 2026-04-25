@@ -18,6 +18,7 @@ import type {
   AttendanceAppeal,
   AttendanceRecord,
   AttendanceAppealDraft,
+  AttendanceAppealResolveDraft,
   BoardPostDraft,
   Classmate,
   CurriculumWeek,
@@ -735,9 +736,35 @@ export function getAttendanceAppeals(): Promise<{ items: AttendanceAppeal[] }> {
   });
 }
 
+export function getPendingAttendanceAppeals(): Promise<{ items: AttendanceAppeal[] }> {
+  return fetchJson<{ items: AttendanceAppeal[] }>('/api/attendance/appeals/pending', {
+    fallback: () => ({ items: [] }),
+  });
+}
+
 export function cancelAttendanceAppeal(appealId: number): Promise<AttendanceAppeal> {
   return fetchJson<ItemResponse<AttendanceAppeal>>(`/api/attendance/appeals/${appealId}/cancel`, {
     fallback: () => ({ item: { id: appealId, attendanceRecordId: 0, type: 'status_change', reason: '', status: 'canceled' } }),
+    method: 'PATCH',
+  }).then((response) => response.item);
+}
+
+export function resolveAttendanceAppeal(appealId: number, draft: AttendanceAppealResolveDraft): Promise<AttendanceAppeal> {
+  return fetchJson<ItemResponse<AttendanceAppeal>>(`/api/attendance/appeals/${appealId}/resolve`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({
+      item: {
+        id: appealId,
+        attendanceRecordId: 0,
+        type: 'status_change',
+        reason: '',
+        requestedStatus: draft.resolvedStatus,
+        status: draft.status,
+        resolvedStatus: draft.status === 'approved' ? draft.resolvedStatus : undefined,
+        resolutionComment: draft.comment,
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
     method: 'PATCH',
   }).then((response) => response.item);
 }

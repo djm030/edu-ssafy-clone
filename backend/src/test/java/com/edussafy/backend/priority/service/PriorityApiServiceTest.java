@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
@@ -714,6 +715,76 @@ class PriorityApiServiceTest {
 
         assertThat(response.item()).isEqualTo(canceled);
         verify(repository).cancelAttendanceAppeal(1L, 101L);
+    }
+
+    @Test
+    void staffApprovesAttendanceAppealAndUpdatesRecordStatus() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        AttendanceAppealItem requested = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "requested",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                LocalDate.of(2026, 4, 23),
+                null,
+                null,
+                null,
+                null,
+                false
+        );
+        AttendanceAppealItem approved = new AttendanceAppealItem(
+                101L,
+                7L,
+                "status_change",
+                "QR failed",
+                "present",
+                "approved",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                LocalDate.of(2026, 4, 23),
+                "present",
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00"),
+                "출석으로 정정했습니다.",
+                "Demo Manager",
+                false
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        given(repository.findAttendanceAppealForStaff(101L)).willReturn(Optional.of(requested), Optional.of(approved));
+        given(repository.resolveAttendanceAppeal(2L, 101L, "approved", "present", "출석으로 정정했습니다.")).willReturn(1);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AttendanceAppealResponse response = service.resolveAttendanceAppeal(
+                101L,
+                new AttendanceAppealResolveRequest("approved", null, "출석으로 정정했습니다.")
+        );
+
+        assertThat(response.item()).isEqualTo(approved);
+        verify(repository).resolveAttendanceAppeal(2L, 101L, "approved", "present", "출석으로 정정했습니다.");
+        verify(repository).updateAttendanceRecordStatusFromAppeal(101L, "present");
+    }
+
+    @Test
+    void learnerCannotResolveAttendanceAppeal() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThatThrownBy(() -> service.resolveAttendanceAppeal(
+                101L,
+                new AttendanceAppealResolveRequest("approved", "present", "OK")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("403");
     }
 
     @Test
