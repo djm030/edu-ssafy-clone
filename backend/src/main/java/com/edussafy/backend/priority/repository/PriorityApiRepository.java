@@ -44,9 +44,27 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public Optional<UserProfile> findUserById(long userId) {
+        return userSql("WHERE u.user_id = :userId AND u.deleted_at IS NULL ORDER BY u.user_id ASC LIMIT 1")
+                .param("userId", userId)
+                .query(this::mapUser)
+                .optional();
+    }
+
     public Optional<UserProfile> findDefaultUser() {
         return userSql("WHERE u.deleted_at IS NULL ORDER BY u.user_id ASC LIMIT 1")
                 .query(this::mapUser)
+                .optional();
+    }
+
+    public Optional<String> findPasswordHash(long userId) {
+        return jdbcClient.sql("""
+                SELECT password_hash
+                FROM users
+                WHERE user_id = :userId AND deleted_at IS NULL
+                """)
+                .param("userId", userId)
+                .query(String.class)
                 .optional();
     }
 

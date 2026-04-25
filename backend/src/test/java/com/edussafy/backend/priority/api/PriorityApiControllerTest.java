@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -327,6 +328,34 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.email").value("student@ssafy.com"))
                 .andExpect(jsonPath("$.profile.trackName").value("Java"));
+    }
+
+    @Test
+    void profileUpdateReturnsPersistedProfileShape() throws Exception {
+        given(priorityApiService.updateProfile(any())).willReturn(new ProfileResponse(new ProfileDetails(
+                1L, "Updated Student", "student@ssafy.com", "learner", "SSAFY-12-0001",
+                "Seoul", "12th", "Java", "Seoul Java 1", "06234", "서울시 강남구", "101호",
+                "010-1111-2222", "010-3333-4444", true
+        )));
+
+        mockMvc.perform(put("/api/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Updated Student",
+                                  "zipCode": "06234",
+                                  "addressLine1": "서울시 강남구",
+                                  "addressLine2": "101호",
+                                  "mobilePhone": "010-1111-2222",
+                                  "emergencyPhone": "010-3333-4444",
+                                  "marketingOptIn": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profile.name").value("Updated Student"))
+                .andExpect(jsonPath("$.profile.learnerNo").value("SSAFY-12-0001"))
+                .andExpect(jsonPath("$.profile.mobilePhone").value("010-1111-2222"))
+                .andExpect(jsonPath("$.profile.marketingOptIn").value(true));
     }
 
     @Test
