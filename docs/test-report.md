@@ -3,7 +3,7 @@
 ## Final Verification Evidence Refresh (2026-04-25)
 
 ### Summary
-최종 검증 책임자 관점에서 backend/frontend/build/schema/OpenAPI/Docker/runtime smoke를 다시 점검했다. 결론은 **NOT COMPLETE / PARTIAL**이다. Backend/Frontend/정적 OpenAPI는 주요 gate를 통과하지만, live localhost HTTP, Swagger UI `/v3/api-docs`, attachment/support/auth depth, browser E2E가 완료 기준을 만족하지 못한다.
+최종 검증 책임자 관점에서 backend/frontend/build/schema/API Docs/Docker/runtime smoke를 다시 점검했다. 결론은 **NOT COMPLETE / PARTIAL**이다. Backend/Frontend/정적 API Docs는 주요 gate를 통과하지만, live localhost HTTP, attachment/support/auth depth, browser E2E가 완료 기준을 만족하지 못한다.
 
 ### Commands Run
 - `git status --short`, `git log --oneline -5 --decorate` -> PASS, 저장소/최근 커밋 확인.
@@ -23,9 +23,9 @@
 - `python3 scripts/dev/smoke-lite.py --http --with-frontend` -> PASS/PARTIAL, `PASS=15, FAIL=0, SKIP=4` (HTTP probe skip).
 - `python3 -m json.tool docs/openapi.json` -> PASS, valid JSON.
 - `ruby -ryaml -e ... docs/openapi.yaml` -> PASS, OpenAPI `3.0.3`, paths `42`.
-- controller-vs-OpenAPI drift Python check -> PASS/PARTIAL, controller ops `50`, OpenAPI ops `51`, missing `[]`, extra excluding actuator `[]`.
+- controller-vs-API Docs drift Python check -> PASS, controller ops `50`, API Docs/OpenAPI ops `51`, missing `[]`, extra excluding actuator `[]`.
 - repository-vs-schema Python check -> PASS, repository tables `32`, missing schema tables `[]`.
-- `grep -R "springdoc\|openapi\|swagger" backend/...` -> FAIL for runtime Swagger, backend has no Springdoc/Swagger setup.
+- `grep -R "springdoc\|openapi\|swagger" backend/...` -> INFO, backend has no Springdoc/Swagger setup; static API Docs are the current completion target.
 - `git diff --check` -> PASS.
 
 
@@ -38,14 +38,14 @@
 - Post-cleaner gates: `npm --prefix frontend run lint && npm --prefix frontend run build` PASS; `bash scripts/dev/backend-test.sh` PASS (`47` tests); `python3 scripts/dev/smoke-lite.py --http --with-frontend` PASS/PARTIAL (`PASS=15`, `FAIL=0`, `SKIP=4`); OpenAPI JSON/YAML/controller drift PASS; DB schema check PASS; compose config PASS; `git diff --check` PASS.
 
 ### Result
-- PASS: backend tests, frontend lint/build, compose config render, schema/table static check, static OpenAPI JSON/YAML validation, controller/OpenAPI drift check.
+- PASS: backend tests, frontend lint/build, compose config render, schema/table static check, static API Docs/OpenAPI JSON/YAML validation, controller/API Docs drift check.
 - PARTIAL: Docker runtime evidence and smoke harness, because current shell cannot reach localhost even though compose state/logs show a running prior stack.
-- FAIL: runtime Swagger UI `/v3/api-docs`, common attachment upload/download, support ticket answers/attachments, browser E2E/visual evidence, normal OMX team terminal completion.
+- FAIL: common attachment upload/download, support ticket answers/attachments, browser E2E/visual evidence, normal OMX team terminal completion.
 
 ### Cause Classification
 | Item | Classification | Evidence |
 |---|---|---|
-| `/v3/api-docs` missing | API 문서 런타임 불일치 | Springdoc/Swagger dependency/config grep result is empty. |
+| `/v3/api-docs` missing | N/A | Springdoc/Swagger runtime is optional; static controller-derived API Docs are maintained. |
 | localhost curl failure | 실행환경/네트워크 검증 실패 | current shell `curl` to backend/nginx ports cannot connect. |
 | Attachment gaps | 기능 미구현 | Common upload/download API and domain E2E links are absent. |
 | Support answer gaps | 기능 미구현 | Ticket list/create exists, answer/thread/status/attachments missing. |

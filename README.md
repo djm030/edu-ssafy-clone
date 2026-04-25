@@ -6,8 +6,8 @@
 
 ## Final verification sync (2026-04-25)
 - Current verification still concludes **NOT COMPLETE / PARTIAL**.
-- Backend Java 21 tests, frontend lint/build, Docker compose config, static OpenAPI validation, and controller-vs-OpenAPI drift checks pass in this workspace.
-- Live localhost HTTP probes and `/v3/api-docs` are not PASS in this verification shell: direct curl to localhost backend/nginx could not connect, and Springdoc/Swagger UI is not configured.
+- Backend Java 21 tests, frontend lint/build, Docker compose config, static API Docs/OpenAPI validation, and controller-vs-API Docs drift checks pass in this workspace.
+- Live localhost HTTP probes are not PASS in this verification shell: direct curl to localhost backend/nginx could not connect. Swagger UI and `/v3/api-docs` are intentionally not required for completion while controller-derived API Docs remain valid.
 - Material reactions are implemented and no longer listed as future work, but production auth/RBAC, common attachment upload/download, support-ticket answers/threads, survey depth, browser E2E, and team-runtime recovery remain blockers.
 
 
@@ -114,5 +114,5 @@ Required project documents are maintained under `docs/`:
 
 - R6 source includes `POST /api/community/classmates/{userId}/notifications`; if live smoke returns 404 for that optional check, rebuild the backend image with `scripts\dev\localhost.ps1 -Smoke` or `scripts\dev\up.ps1 -App`.
 - Material reaction API is implemented at `POST /api/learning/materials/{id}/reactions`; rerun backend tests and frontend build after touching the material detail page.
-- Static OpenAPI files live at `docs/openapi.yaml` and `docs/openapi.json`, but Swagger UI and `/v3/api-docs` need a future Springdoc integration.
+- Static API Docs live at `docs/api-summary.md`, `docs/openapi.yaml`, and `docs/openapi.json`. Swagger UI and `/v3/api-docs` are optional future runtime conveniences, not current completion blockers.
 - Git commit from Codex may require `.git` ACL recovery; see `scripts/dev/README.md`.

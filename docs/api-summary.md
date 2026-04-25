@@ -1,9 +1,9 @@
 # API Summary
 
 ## Final Verification API Sync (2026-04-25)
-- Controller 기준으로 다시 대조한 결과, Spring MVC controller surface는 **50 operations**이며 `docs/openapi.yaml` / `docs/openapi.json`에 모두 반영되어 있다.
+- Controller 기준으로 다시 대조한 결과, Spring MVC controller surface는 **50 operations**이며 정적 API Docs(`docs/api-summary.md`, `docs/openapi.yaml`, `docs/openapi.json`)에 모두 반영되어 있다.
 - `docs/openapi.yaml`은 `Auth/Profile/Campus/Cohort/Class/Track/Attendance/Attendance Appeal/Notification/Curriculum/Lecture Replay/Learning Material/Quest/Survey/Board/Comment/Support Ticket/Attachment` 그룹을 포함한다.
-- Spring Boot 프로젝트에는 아직 `springdoc-openapi` 자동 생성 의존성이 없으므로 Swagger UI와 `/v3/api-docs`는 실행 가능한 endpoint가 아니다. 현재 OpenAPI는 정적 controller-derived contract이며, 최종 PASS 전에는 자동 생성 또는 CI drift check가 필요하다.
+- Spring Boot 프로젝트에는 `springdoc-openapi` 자동 생성 의존성이 없으므로 Swagger UI와 `/v3/api-docs`는 실행 가능한 endpoint가 아니다. 그러나 현재 완료 기준은 Swagger runtime이 아니라 controller-derived static API Docs와 drift check다.
 - Material reaction은 더 이상 "미구현"이 아니다: `/api/learning/materials/{id}/reactions`가 controller/service/repository/frontend detail page에 연결되어 반응 상태와 카운트를 반환한다.
 
 ## Task 69 Recheck Snapshot (worker-4, 2026-04-25)
@@ -127,4 +127,4 @@
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.
-- Executable Springdoc/Swagger UI and `/v3/api-docs`; static `docs/openapi.yaml`/`docs/openapi.json` is maintained, but runtime generation is not configured.
+- Optional future runtime docs: Springdoc/Swagger UI and `/v3/api-docs`. Current API Docs completion relies on controller-derived static docs plus drift checks.

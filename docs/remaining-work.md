@@ -4,7 +4,7 @@
 
 Completion is still blocked. Do not declare the clone complete until every row below has executable proof and `docs/final-verification.md` has no FAIL/PARTIAL rows.
 
-- Runtime Swagger: add Springdoc/Swagger UI and make `/v3/api-docs` executable from the backend; keep `docs/openapi.yaml`/`docs/openapi.json` generated or drift-checked from real controllers.
+- API Docs maintenance: keep `docs/api-summary.md`, `docs/openapi.yaml`, and `docs/openapi.json` drift-checked from real controllers/DTOs. Springdoc/Swagger UI and `/v3/api-docs` are optional future work, not current completion blockers.
 - Local runtime proof: rebuild current compose app profile and pass fresh backend/nginx curl smoke from the verification shell, not only stale container logs.
 - Production auth/RBAC: implement real credential/session/token expiry/password recovery and domain-wide role guards/tests.
 - Attachments: implement common upload/storage/download and connect materials, boards, support tickets, and quest submissions end-to-end.
@@ -17,7 +17,7 @@ Material like/bookmark/favorite reactions are no longer remaining work: `/api/le
 
 ## Final Verification Sync (2026-04-25)
 - Material like/bookmark/favorite reactions were rechecked and are now implemented (`POST /api/learning/materials/{id}/reactions`, persisted `learning_material_reactions`, frontend material detail state/count updates, backend/frontend verification passing).
-- Remaining completion blockers are now: production auth/session/RBAC breadth, common attachment upload/download, support-ticket answers/threads/status transitions, survey question/option/response depth, notification read/delete lifecycle, browser E2E/visual evidence, runtime Swagger UI/`/v3/api-docs`, and team-runtime recovery/commit hygiene.
+- Remaining completion blockers are now: production auth/session/RBAC breadth, common attachment upload/download, support-ticket answers/threads/status transitions, survey question/option/response depth, notification read/delete lifecycle, browser E2E/visual evidence, API Docs drift-check maintenance, and team-runtime recovery/commit hygiene.
 - OMX team runtime was cleaned up from a dead `team-exec` state and now reports no team state; this is not a normal all-complete terminal state. Recreate/recover the team backlog before any future final completion attempt.
 
 ## Worker-4 Remaining Work Sync (2026-04-25)

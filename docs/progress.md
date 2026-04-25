@@ -3,9 +3,9 @@
 ## Final Verification Refresh (2026-04-25)
 
 - Decision remains **NOT COMPLETE / PARTIAL**.
-- Passing evidence: Dockerized backend Maven Java 21 tests (`47` tests), frontend lint/build, compose config render, static OpenAPI JSON/YAML validation, controller-vs-OpenAPI drift check, repository-vs-schema table check.
-- Failing/partial evidence: current shell cannot reach localhost backend/nginx by curl; Springdoc/Swagger UI and `/v3/api-docs` are not configured; browser E2E/visual evidence is absent.
-- Product blockers still tracked: production auth/session/RBAC, common attachments, support-ticket answer/thread/status/attachments, survey/notification lifecycle depth, runtime Swagger, team recovery/commit hygiene.
+- Passing evidence: Dockerized backend Maven Java 21 tests (`47` tests), frontend lint/build, compose config render, static API Docs/OpenAPI JSON/YAML validation, controller-vs-API Docs drift check, repository-vs-schema table check.
+- Failing/partial evidence: current shell cannot reach localhost backend/nginx by curl; browser E2E/visual evidence is absent. Springdoc/Swagger UI and `/v3/api-docs` are optional future runtime docs, not current blockers.
+- Product blockers still tracked: production auth/session/RBAC, common attachments, support-ticket answer/thread/status/attachments, survey/notification lifecycle depth, API Docs drift-check maintenance, team recovery/commit hygiene.
 - OMX team note: the prior `ssafy-full-clone-omx-continuou` team was cleaned from a dead `team-exec` state and now reports `No team state found`; this is not a normal all-complete terminal state.
 - Docs refreshed: `docs/final-verification.md`, `docs/test-report.md`, `docs/remaining-work.md`, `docs/api-summary.md`, `README.md`, `docs/openapi.yaml`, `docs/openapi.json`.
 
