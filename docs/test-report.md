@@ -1,5 +1,9 @@
 # Test Report
 
+## Nginx Reverse Proxy Config Verification (2026-04-26 KST)
+- Added a backend regression test that reads `infra/nginx/conf.d/default.conf` and guards API/actuator backend proxying, frontend fallback, health check, forwarded headers, and baseline security headers.
+
+
 ## Production Profile Config Verification (2026-04-26 KST)
 - Added `application-prod.yml` with secret environment variables required without defaults, secure/strict session cookie defaults, and noop password login disabled.
 - Added a focused config regression test to guard the production profile.
