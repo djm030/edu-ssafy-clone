@@ -32,6 +32,7 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             long postId,
             Long parentCommentId,
             String content,
+            Long authorUserId,
             String authorName,
             OffsetDateTime createdAt,
             List<BoardCommentItem> replies

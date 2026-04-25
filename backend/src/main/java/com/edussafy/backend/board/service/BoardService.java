@@ -255,6 +255,7 @@ public class BoardService {
         if (existing.postId() != postId) {
             throw new BoardPostNotFoundException(postId);
         }
+        requireCommentMutationAllowed(existing);
         int updated = boardRepository.updateComment(postId, commentId, request.content().trim());
         if (updated == 0) {
             throw new BoardPostNotFoundException(postId);
@@ -283,6 +284,7 @@ public class BoardService {
         if (existing.postId() != postId) {
             throw new BoardPostNotFoundException(postId);
         }
+        requireCommentMutationAllowed(existing);
         int deleted = boardRepository.deleteComment(postId, commentId);
         if (deleted == 0) {
             throw new BoardPostNotFoundException(postId);
@@ -377,6 +379,7 @@ public class BoardService {
                     comment.postId(),
                     comment.parentCommentId(),
                     comment.content(),
+                    comment.authorUserId(),
                     comment.authorName(),
                     comment.createdAt(),
                     new ArrayList<>()
@@ -415,6 +418,20 @@ public class BoardService {
         }
         if (!Objects.equals(post.authorUserId(), actorUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "게시글 작성자만 수정하거나 삭제할 수 있습니다.");
+        }
+    }
+
+
+    private void requireCommentMutationAllowed(BoardCommentItem comment) {
+        Long actorUserId = currentBoardActorUserId();
+        if (actorUserId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        if (isBoardModerator()) {
+            return;
+        }
+        if (!Objects.equals(comment.authorUserId(), actorUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "댓글 작성자만 수정하거나 삭제할 수 있습니다.");
         }
     }
 

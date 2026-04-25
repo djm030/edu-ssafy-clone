@@ -180,6 +180,7 @@ export interface BoardCommentItem {
   postId: number;
   parentCommentId?: number | null;
   content: string;
+  authorUserId?: number | null;
   authorName?: string;
   createdAt?: string;
   replies?: BoardCommentItem[];

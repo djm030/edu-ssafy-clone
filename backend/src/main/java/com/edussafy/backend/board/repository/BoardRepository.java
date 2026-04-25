@@ -357,7 +357,7 @@ public class BoardRepository {
     public Optional<BoardCommentItem> findComment(long commentId) {
         return jdbcClient.sql("""
                 SELECT bc.board_comment_id, bc.board_post_id, bc.parent_comment_id, bc.content,
-                       COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
+                       bc.author_user_id, COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
                 FROM board_comments bc
                 LEFT JOIN users u ON u.user_id = bc.author_user_id
                 WHERE bc.board_comment_id = :commentId
@@ -394,7 +394,7 @@ public class BoardRepository {
     public List<BoardCommentItem> findComments(long postId) {
         return jdbcClient.sql("""
                 SELECT bc.board_comment_id, bc.board_post_id, bc.parent_comment_id, bc.content,
-                       COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
+                       bc.author_user_id, COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
                 FROM board_comments bc
                 LEFT JOIN users u ON u.user_id = bc.author_user_id
                 WHERE bc.board_post_id = :postId

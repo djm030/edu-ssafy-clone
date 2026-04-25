@@ -42,7 +42,7 @@ class BoardServiceTest {
     void getPostAttachesPersistedComments() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
-        BoardCommentItem comment = new BoardCommentItem(44L, 10L, null, "Persisted comment", "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem comment = new BoardCommentItem(44L, 10L, null, "Persisted comment", 7L, "Demo Student", OffsetDateTime.now(), List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findComments(10L)).willReturn(List.of(comment));
@@ -59,8 +59,8 @@ class BoardServiceTest {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
         OffsetDateTime now = OffsetDateTime.now();
-        BoardCommentItem parent = new BoardCommentItem(44L, 10L, null, "Persisted comment", "Demo Student", now, List.of());
-        BoardCommentItem reply = new BoardCommentItem(45L, 10L, 44L, "Nested reply", "Demo Manager", now, List.of());
+        BoardCommentItem parent = new BoardCommentItem(44L, 10L, null, "Persisted comment", 7L, "Demo Student", now, List.of());
+        BoardCommentItem reply = new BoardCommentItem(45L, 10L, 44L, "Nested reply", 8L, "Demo Manager", now, List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findComments(10L)).willReturn(List.of(parent, reply));
@@ -213,7 +213,7 @@ class BoardServiceTest {
     void createCommentRequiresBoardPostAndPersists() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
-        BoardCommentItem comment = new BoardCommentItem(44L, 10L, null, "Nice", "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem comment = new BoardCommentItem(44L, 10L, null, "Nice", 7L, "Demo Student", OffsetDateTime.now(), List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
@@ -234,8 +234,8 @@ class BoardServiceTest {
     void createReplyPersistsParentCommentId() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
-        BoardCommentItem parent = new BoardCommentItem(44L, 10L, null, "Question", "Demo Student", OffsetDateTime.now(), List.of());
-        BoardCommentItem reply = new BoardCommentItem(45L, 10L, 44L, "Reply", "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem parent = new BoardCommentItem(44L, 10L, null, "Question", 7L, "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem reply = new BoardCommentItem(45L, 10L, 44L, "Reply", 7L, "Demo Student", OffsetDateTime.now(), List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findComment(44L)).willReturn(Optional.of(parent));
@@ -255,11 +255,12 @@ class BoardServiceTest {
     void updateAndDeleteCommentRequireBoardPostAndPersist() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
-        BoardCommentItem existing = new BoardCommentItem(44L, 10L, null, "Before", "Demo Student", OffsetDateTime.now(), List.of());
-        BoardCommentItem updated = new BoardCommentItem(44L, 10L, null, "After", "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem existing = new BoardCommentItem(44L, 10L, null, "Before", 7L, "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem updated = new BoardCommentItem(44L, 10L, null, "After", 7L, "Demo Student", OffsetDateTime.now(), List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findComment(44L)).willReturn(Optional.of(existing), Optional.of(updated), Optional.of(updated));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
         given(repository.updateComment(10L, 44L, "After")).willReturn(1);
         given(repository.deleteComment(10L, 44L)).willReturn(1);
         BoardService service = new BoardService(repository);
@@ -276,6 +277,64 @@ class BoardServiceTest {
         assertThat(deleteResponse.item().demo()).isFalse();
         verify(repository).updateComment(10L, 44L, "After");
         verify(repository).deleteComment(10L, 44L);
+    }
+
+    @Test
+    void updateCommentRejectsNonAuthorInWebRequest() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Original", List.of());
+        BoardCommentItem existing = new BoardCommentItem(44L, 10L, null, "Before", 7L, "Demo Student", OffsetDateTime.now(), List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
+        given(repository.findComment(44L)).willReturn(Optional.of(existing));
+        BoardService service = new BoardService(repository);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(AuthSession.CURRENT_USER_ID, 8L);
+        request.setSession(session);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        try {
+            assertThatThrownBy(() -> service.updateComment(
+                    "free",
+                    10L,
+                    44L,
+                    new BoardCommentCreateRequest(null, "After")
+            ))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("403")
+                    .hasMessageContaining("댓글 작성자만");
+            verify(repository, never()).updateComment(10L, 44L, "After");
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void deleteCommentAllowsModeratorInWebRequest() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Original", List.of());
+        BoardCommentItem existing = new BoardCommentItem(44L, 10L, null, "Before", 7L, "Demo Student", OffsetDateTime.now(), List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
+        given(repository.findComment(44L)).willReturn(Optional.of(existing));
+        given(repository.deleteComment(10L, 44L)).willReturn(1);
+        BoardService service = new BoardService(repository);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(AuthSession.CURRENT_USER_ID, 8L);
+        request.setSession(session);
+        request.setAttribute("currentRole", "coach");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        try {
+            BoardCommentDeleteResponse response = service.deleteComment("free", 10L, 44L);
+
+            assertThat(response.item().deleted()).isTrue();
+            verify(repository).deleteComment(10L, 44L);
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
     @Test
