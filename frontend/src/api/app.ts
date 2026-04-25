@@ -22,6 +22,7 @@ import type {
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
+  LearningMaterialViewResult,
   LoginResponse,
   RoleAccess,
   NotificationItem,
@@ -430,6 +431,28 @@ export function getLearningMaterial(id: number): Promise<LearningMaterial | unde
   return fetchJson<ItemResponse<BackendMaterialItem> | undefined>(`/api/learning/materials/${id}`, {
     fallback: () => (fallbackMaterial ? { item: fallbackMaterial } : undefined),
   }).then((response) => (response?.item ? toLearningMaterial(response.item) : undefined));
+}
+
+export function recordLearningMaterialView(id: number): Promise<LearningMaterialViewResult> {
+  const fallbackMaterial = mockMaterials.find((material) => material.id === id) || mockMaterials[0] || {
+    authorName: 'SSAFY',
+    createdAt: '-',
+    id,
+    title: 'Learning Material',
+    type: 'file' as const,
+    viewCount: 0,
+  };
+
+  return fetchJson<ItemResponse<BackendMaterialItem>>(`/api/learning/materials/${id}/views`, {
+    method: 'POST',
+    fallback: () => ({
+      item: {
+        ...fallbackMaterial,
+        id,
+        viewCount: (fallbackMaterial?.viewCount ?? 0) + 1,
+      },
+    }),
+  }).then((response) => ({ item: toLearningMaterial(response.item) }));
 }
 
 export function getQuests(): Promise<{ items: QuestItem[] }> {

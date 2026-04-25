@@ -13,6 +13,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
@@ -142,6 +145,47 @@ class PriorityApiServiceTest {
         assertThat(response.items()).containsExactly(read);
         assertThat(response.unreadCount()).isZero();
         verify(repository).markAllNotificationsRead(1L);
+    }
+
+    @Test
+    void recordsMaterialViewAndReturnsUpdatedMaterialWithResources() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        MaterialItem updated = new MaterialItem(
+                15L,
+                "Spring REST Docs",
+                "file",
+                "API 문서 실습",
+                "/materials/rest-docs.pdf",
+                6,
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00"),
+                List.of()
+        );
+        MaterialResourceItem resource = new MaterialResourceItem(
+                30L,
+                15L,
+                "file",
+                "rest-docs.pdf",
+                "inline",
+                "/materials/rest-docs.pdf",
+                1
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.incrementMaterialViewCount(15L)).willReturn(1);
+        given(p3Repository.findMaterial(15L)).willReturn(Optional.of(updated));
+        given(p3Repository.findMaterialResources(15L)).willReturn(List.of(resource));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        MaterialViewResponse response = service.recordMaterialView(15L);
+
+        assertThat(response.item().id()).isEqualTo(15L);
+        assertThat(response.item().viewCount()).isEqualTo(6);
+        assertThat(response.item().resources()).containsExactly(resource);
+        verify(p3Repository).incrementMaterialViewCount(15L);
     }
 
     @Test

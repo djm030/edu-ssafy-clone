@@ -155,6 +155,9 @@ public final class PriorityDtos {
     public record MaterialDetailResponse(MaterialItem item) {
     }
 
+    public record MaterialViewResponse(MaterialItem item) {
+    }
+
     public record MaterialResourcesResponse(List<MaterialResourceItem> items) {
     }
 

@@ -200,6 +200,10 @@ export interface LearningMaterial {
   fileName?: string;
 }
 
+export interface LearningMaterialViewResult {
+  item: LearningMaterial;
+}
+
 export interface QuestItem {
   id: number;
   title: string;

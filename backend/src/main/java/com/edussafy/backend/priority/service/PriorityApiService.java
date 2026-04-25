@@ -19,6 +19,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
@@ -286,6 +287,19 @@ public class PriorityApiService {
                 .map(material -> material.withResources(safe(() -> p3Repository.findMaterialResources(id), List.of())))
                 .orElse(fallbackMaterial(id)), fallbackMaterial(id));
         return new MaterialDetailResponse(item);
+    }
+
+    @Transactional
+    public MaterialViewResponse recordMaterialView(long id) {
+        currentUser();
+        int updatedRows = p3Repository.incrementMaterialViewCount(id);
+        if (updatedRows == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found.");
+        }
+        MaterialItem item = p3Repository.findMaterial(id)
+                .map(material -> material.withResources(safe(() -> p3Repository.findMaterialResources(id), List.of())))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material not found."));
+        return new MaterialViewResponse(item);
     }
 
     public MaterialResourcesResponse materialResources(long id) {

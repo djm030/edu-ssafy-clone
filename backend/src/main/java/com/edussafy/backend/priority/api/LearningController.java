@@ -3,6 +3,7 @@ package com.edussafy.backend.priority.api;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -49,6 +51,11 @@ public class LearningController {
     @GetMapping("/materials/{id}")
     public MaterialDetailResponse material(@PathVariable Long id) {
         return priorityApiService.material(id);
+    }
+
+    @PostMapping("/materials/{id}/views")
+    public MaterialViewResponse recordMaterialView(@PathVariable Long id) {
+        return priorityApiService.recordMaterialView(id);
     }
 
     @GetMapping("/materials/{id}/resources")

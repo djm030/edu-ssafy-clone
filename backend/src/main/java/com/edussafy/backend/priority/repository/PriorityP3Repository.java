@@ -72,6 +72,16 @@ public class PriorityP3Repository {
                 .list();
     }
 
+    public int incrementMaterialViewCount(long materialId) {
+        return jdbcClient.sql("""
+                UPDATE learning_materials
+                SET view_count = COALESCE(view_count, 0) + 1
+                WHERE learning_material_id = :materialId
+                """)
+                .param("materialId", materialId)
+                .update();
+    }
+
     public Optional<QuestItem> findQuest(long userId, long questId) {
         return jdbcClient.sql("""
                 SELECT qe.quest_evaluation_id, qe.title, qe.quest_type_code, qe.task_classification_code,
