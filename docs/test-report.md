@@ -1,5 +1,11 @@
 # Test Report
 
+## Survey Creation REST Docs Verification (2026-04-26 KST)
+- Added Spring REST Docs coverage for `POST /api/surveys` request/response fields and generated the `survey-create` snippet from a focused MVC test.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=SurveyRestDocsTest test` -> PASS, Tests run: 1, Failures: 0, Errors: 0, Skipped: 0.
+- `docker compose config` -> PASS.
+
+
 ## Survey Creation Feature Verification (2026-04-26 KST)
 - Implemented `POST /api/surveys` for coach/admin survey creation with persisted survey, first question, and choice options.
 - Added backend controller/service tests for staff creation and learner forbidden behavior.

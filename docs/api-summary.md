@@ -9,7 +9,7 @@
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, common binary file upload/download across all attachment domains, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage.
+- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, common binary file upload/download across all attachment domains, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -40,6 +40,7 @@
 | `/api/quests/{id}` | GET | path `id` | `{ item/quest }` quest detail | Yes (demo) | `/quest/:id`, `/quest/:id/submit` |
 | `/api/quests/{id}/submissions` | POST | path `id`, body `{ content, attachmentUrl? }` | created submission `{ item }` | Yes (demo) | `/quest/:id/submit` |
 | `/api/surveys` | GET | `page`, `size` optional | `{ items, page }` survey list | Yes (demo) | `/survey` |
+| `/api/surveys` | POST | body `{ title, category, required, status, startAt, endAt, questions[] }` | created survey `{ item }` | Coach/Admin | `/survey` manager form |
 | `/api/surveys/{id}` | GET | path `id` | `{ item/survey }` survey detail | Yes (demo) | `/survey/:id`, `/survey/:id/respond` |
 | `/api/surveys/{id}/responses` | POST | path `id`, body `{ answers: [{ questionId, answerText, optionIds }] }` | created survey response `{ item }` | Yes (demo) | `/survey/:id/respond` |
 | `/api/boards/{boardCode}/categories` | GET | path `boardCode` | `{ items }` board categories | Yes (demo) | `/community/free`, `/help/notice`, `/help/faq`, `/help/qna` |
@@ -52,6 +53,9 @@
 | `/api/support/tickets` | POST | body `{ title, content, category }` | created support ticket `{ item }` | Yes (demo) | `/help/qna/new` |
 | `/api/health` | GET | none | `{ status: "UP" }` | No | smoke/ops only |
 | `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
+
+## Spring REST Docs Coverage (2026-04-26 KST)
+- `survey-create`: documents `POST /api/surveys` request fields for survey metadata, first question, and choice options plus the persisted `{ item }` response shape.
 
 ## Task 66 API Documentation Status (2026-04-24)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
