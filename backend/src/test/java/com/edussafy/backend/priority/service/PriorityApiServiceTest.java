@@ -46,6 +46,7 @@ import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
+import com.edussafy.backend.priority.security.AuthSession;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -226,7 +227,8 @@ class PriorityApiServiceTest {
         try {
             service.login(new LoginRequest("manager@ssafy.com", "password"));
 
-            assertThat(request.getSession(false).getAttribute("edussafy.currentUserId")).isEqualTo(2L);
+            assertThat(request.getSession(false).getAttribute(AuthSession.CURRENT_USER_ID)).isEqualTo(2L);
+            assertThat(request.getSession(false).getMaxInactiveInterval()).isEqualTo(AuthSession.MAX_INACTIVE_SECONDS);
             assertThat(service.me().user().email()).isEqualTo("manager@ssafy.com");
         } finally {
             RequestContextHolder.resetRequestAttributes();

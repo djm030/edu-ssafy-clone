@@ -55,17 +55,24 @@ import com.edussafy.backend.priority.dto.PriorityDtos.TodaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserSummary;
+import com.edussafy.backend.priority.repository.PriorityApiRepository;
+import com.edussafy.backend.priority.security.AuthSession;
 import com.edussafy.backend.priority.security.RoleAccessInterceptor;
 import com.edussafy.backend.priority.security.RoleAccessWebConfig;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 @WebMvcTest({
         AuthController.class,
@@ -76,7 +83,8 @@ import org.springframework.test.web.servlet.MockMvc;
         QuestSurveyController.class,
         SupportController.class,
         CommunityController.class,
-        ProfileController.class
+        ProfileController.class,
+        AdminCampusController.class
 })
 @Import({RoleAccessInterceptor.class, RoleAccessWebConfig.class})
 class PriorityApiControllerTest {
@@ -84,12 +92,39 @@ class PriorityApiControllerTest {
     private static final UserProfile USER = new UserProfile(
             1L, "Demo Learner", "student@ssafy.com", "learner", "Seoul", "12", "Java"
     );
+    private static final UserProfile COACH_USER = new UserProfile(
+            2L, "Demo Manager", "manager@ssafy.com", "manager", "Seoul", "12", "Java"
+    );
+    private static final UserProfile ADMIN_USER = new UserProfile(
+            3L, "Demo Admin", "admin@ssafy.com", "admin", "Seoul", "12", "Java"
+    );
 
     @Autowired
+    private WebApplicationContext context;
+
     private MockMvc mockMvc;
 
     @MockBean
     private PriorityApiService priorityApiService;
+
+    @MockBean
+    private PriorityApiRepository priorityApiRepository;
+
+    @BeforeEach
+    void setUpAuthenticatedMvc() {
+        given(priorityApiRepository.findUserById(1L)).willReturn(Optional.of(USER));
+        given(priorityApiRepository.findUserById(2L)).willReturn(Optional.of(COACH_USER));
+        given(priorityApiRepository.findUserById(3L)).willReturn(Optional.of(ADMIN_USER));
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .defaultRequest(get("/").session(sessionFor(1L)))
+                .build();
+    }
+
+    private static MockHttpSession sessionFor(long userId) {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(AuthSession.CURRENT_USER_ID, userId);
+        return session;
+    }
 
     @Test
     void loginReturnsDemoUser() throws Exception {
@@ -160,6 +195,17 @@ class PriorityApiControllerTest {
     }
 
     @Test
+    void protectedApiReturnsUnauthorizedWithoutSession() throws Exception {
+        MockMvc unauthenticatedMvc = MockMvcBuilders.webAppContextSetup(context).build();
+
+        unauthenticatedMvc.perform(get("/api/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+
+        verifyNoInteractions(priorityApiService);
+    }
+
+    @Test
     void learnerCannotSendClassmateNotification() throws Exception {
         mockMvc.perform(post("/api/community/classmates/7/notifications")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -168,6 +214,18 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
 
         verifyNoInteractions(priorityApiService);
+    }
+
+    @Test
+    void adminCampusStructureRequiresAdminRole() throws Exception {
+        mockMvc.perform(get("/api/admin/campus-structure"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        mockMvc.perform(get("/api/admin/campus-structure")
+                        .session(sessionFor(3L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.campuses[0].name").value("서울"));
     }
 
     @Test
@@ -370,6 +428,7 @@ class PriorityApiControllerTest {
                 .willReturn(new SupportTicketMessageCreateResponse(message, updated));
 
         mockMvc.perform(post("/api/support/tickets/55/answers")
+                        .session(sessionFor(2L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"We checked it.\"}"))
                 .andExpect(status().isCreated())
@@ -447,7 +506,7 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
         mockMvc.perform(post("/api/community/classmates/7/notifications")
-                        .header(RoleAccessInterceptor.ROLE_HEADER, "coach")
+                        .session(sessionFor(2L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"type\":\"contact_request\",\"message\":\"Let's study together?\"}"))
                 .andExpect(status().isCreated())

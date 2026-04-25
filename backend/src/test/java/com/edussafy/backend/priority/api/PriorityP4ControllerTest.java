@@ -25,11 +25,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest({
-        AttendanceController.class,
-        ProfileController.class,
-        QuestSurveyController.class
-})
+@WebMvcTest(
+        value = {
+                AttendanceController.class,
+                ProfileController.class,
+                QuestSurveyController.class
+        },
+        properties = "edussafy.auth.interceptor.enabled=false"
+)
 class PriorityP4ControllerTest {
 
     @Autowired

@@ -34,7 +34,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(BoardController.class)
+@WebMvcTest(value = BoardController.class, properties = "edussafy.auth.interceptor.enabled=false")
 class BoardControllerTest {
 
     @Autowired

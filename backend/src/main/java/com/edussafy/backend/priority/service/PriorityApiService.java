@@ -69,6 +69,7 @@ import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
+import com.edussafy.backend.priority.security.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.security.MessageDigest;
@@ -105,7 +106,6 @@ public class PriorityApiService {
     private static final TodaySummary EMPTY_TODAY = new TodaySummary(null, null, null);
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_TYPE = "contact_request";
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
-    private static final String SESSION_USER_ID = "edussafy.currentUserId";
     private static final Set<String> ATTENDANCE_APPEAL_TYPES = Set.of("check_in", "check_out", "status_change", "other");
     private static final Set<String> ATTENDANCE_STATUSES = Set.of("present", "late", "absent", "early_leave", "excused");
     private static final Set<String> CLOSED_ATTENDANCE_APPEAL_STATUSES = Set.of("rejected", "canceled");
@@ -606,24 +606,14 @@ public class PriorityApiService {
             return Optional.empty();
         }
 
-        Object userId = session.getAttribute(SESSION_USER_ID);
-        if (userId instanceof Number number) {
-            return Optional.of(number.longValue());
-        }
-        if (userId instanceof String text && !text.isBlank()) {
-            try {
-                return Optional.of(Long.parseLong(text));
-            } catch (NumberFormatException exception) {
-                return Optional.empty();
-            }
-        }
-        return Optional.empty();
+        return AuthSession.currentUserId(session);
     }
 
     private void storeCurrentUserId(long userId) {
         HttpSession session = currentSession(true);
         if (session != null) {
-            session.setAttribute(SESSION_USER_ID, userId);
+            session.setMaxInactiveInterval(AuthSession.MAX_INACTIVE_SECONDS);
+            session.setAttribute(AuthSession.CURRENT_USER_ID, userId);
         }
     }
 

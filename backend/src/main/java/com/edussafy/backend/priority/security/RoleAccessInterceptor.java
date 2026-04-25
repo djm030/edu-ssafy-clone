@@ -1,20 +1,26 @@
 package com.edussafy.backend.priority.security;
 
 import com.edussafy.backend.board.dto.ErrorResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
+import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
+@ConditionalOnProperty(prefix = "edussafy.auth.interceptor", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class RoleAccessInterceptor implements HandlerInterceptor {
 
     public static final String AUTH_HEADER = "X-Demo-Auth";
@@ -24,22 +30,24 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
             "/api/health",
             "/api/auth/login"
     );
-    private static final Map<String, List<AccessRule>> METHOD_RULES = Map.of(
-            "POST", List.of(
-                    new AccessRule("/api/community/classmates/", Set.of("coach", "admin"))
-            )
+    private static final List<AccessRule> ACCESS_RULES = List.of(
+            new AccessRule("*", "/api/admin/", null, Set.of("admin")),
+            new AccessRule("POST", "/api/community/classmates/", "/notifications", Set.of("coach", "admin")),
+            new AccessRule("POST", "/api/support/tickets/", "/answers", Set.of("coach", "admin"))
     );
 
     private final ObjectMapper objectMapper;
+    private final PriorityApiRepository repository;
 
-    public RoleAccessInterceptor(ObjectMapper objectMapper) {
+    public RoleAccessInterceptor(ObjectMapper objectMapper, PriorityApiRepository repository) {
         this.objectMapper = objectMapper;
+        this.repository = repository;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String path = request.getRequestURI();
-        if (!path.startsWith("/api") || PUBLIC_PATHS.contains(path)) {
+        if (!path.startsWith("/api") || PUBLIC_PATHS.contains(path) || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
 
@@ -48,16 +56,44 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        String role = normalizeRole(request.getHeader(ROLE_HEADER));
-        boolean denied = METHOD_RULES.getOrDefault(request.getMethod(), List.of()).stream()
-                .anyMatch(rule -> rule.matches(path) && !rule.allowedRoles().contains(role));
+        Optional<Long> sessionUserId = AuthSession.currentUserId(request.getSession(false));
+        if (sessionUserId.isEmpty()) {
+            writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "로그인이 필요한 화면입니다.");
+            return false;
+        }
+
+        Optional<UserProfile> user = findSessionUser(sessionUserId.get());
+        if (user.isEmpty()) {
+            invalidateSession(request.getSession(false));
+            writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "세션 사용자 정보를 찾을 수 없습니다.");
+            return false;
+        }
+
+        String role = normalizeRole(user.get().role());
+        boolean denied = ACCESS_RULES.stream()
+                .anyMatch(rule -> rule.matches(request.getMethod(), path) && !rule.allowedRoles().contains(role));
         if (denied) {
             writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다.");
             return false;
         }
 
+        request.setAttribute("currentUserId", user.get().id());
         request.setAttribute("currentRole", role);
         return true;
+    }
+
+    private Optional<UserProfile> findSessionUser(long userId) {
+        try {
+            return repository.findUserById(userId);
+        } catch (DataAccessException exception) {
+            return Optional.empty();
+        }
+    }
+
+    private void invalidateSession(HttpSession session) {
+        if (session != null) {
+            session.invalidate();
+        }
     }
 
     private String normalizeRole(String value) {
@@ -84,9 +120,11 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         objectMapper.writeValue(response.getWriter(), ErrorResponse.of(code, message));
     }
 
-    private record AccessRule(String pathPrefix, Set<String> allowedRoles) {
-        boolean matches(String path) {
-            return path.startsWith(pathPrefix) && path.endsWith("/notifications");
+    private record AccessRule(String method, String pathPrefix, String pathSuffix, Set<String> allowedRoles) {
+        boolean matches(String requestMethod, String path) {
+            boolean methodMatches = "*".equals(method) || method.equalsIgnoreCase(requestMethod);
+            boolean pathMatches = path.startsWith(pathPrefix) && (pathSuffix == null || path.endsWith(pathSuffix));
+            return methodMatches && pathMatches;
         }
     }
 }
