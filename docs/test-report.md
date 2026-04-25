@@ -1,5 +1,10 @@
 # Test Report
 
+## Role Access Matrix Verification (2026-04-26 KST)
+- Added focused interceptor tests for public health, missing-session JSON errors, authenticated learner reads, and protected mutation role gates for survey creation, attendance resolve, classmate notifications, support answers, and admin campus structure.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=RoleAccessInterceptorTest test` -> PASS, Tests run: 17, Failures: 0, Errors: 0, Skipped: 0.
+
+
 ## Survey Creation REST Docs Verification (2026-04-26 KST)
 - Added Spring REST Docs coverage for `POST /api/surveys` request/response fields and generated the `survey-create` snippet from a focused MVC test.
 - `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=SurveyRestDocsTest test` -> PASS, Tests run: 1, Failures: 0, Errors: 0, Skipped: 0.
