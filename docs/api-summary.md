@@ -8,7 +8,7 @@
 
 ## Task 69 Recheck Snapshot (worker-4, 2026-04-25)
 - API 표는 endpoint/method/request/response/auth/frontend-screen 컬럼을 유지하고 있다.
-- 본 문서는 현재 구현된 컨트롤러 surface와 frontend 연결 화면 기준으로 유지되며, 미구현 depth는 `docs/remaining-work.md`와 신규 task 125-130으로 추적한다.
+- 본 문서는 현재 구현된 컨트롤러 surface와 frontend 연결 화면 기준으로 유지되며, 미구현 depth는 `docs/remaining-work.md`와 최종 검증 문서에서 추적한다. 현재 OMX team state는 cleanup 이후 존재하지 않으므로 task id만으로 완료를 판정하지 않는다.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)

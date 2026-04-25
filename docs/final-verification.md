@@ -1,168 +1,169 @@
 # Final Verification
 
-## Worker-4 Final Verification Sync Note (2026-04-25)
-- 현재 상태는 여전히 NOT READY이며, FAIL/PARTIAL/UNKNOWN 항목이 존재한다.
-- 미완성 항목은 task 125-130으로 즉시 확장되었고, 해당 task 증거 없이 PASS 전환/최종 완료 선언을 금지한다.
-
-
 Date: 2026-04-25
 Role: final verification owner
 Decision: **NOT COMPLETE / PARTIAL**
 
-## 0. 2026-04-25 worker-2 추가 재검증 업데이트
-
-이 문서의 기존 내용 중 환경 차단(UNKNOWN)으로 기록된 일부 항목을 worker-2에서 추가 재검증했다.
-
-- `python3 scripts/dev/smoke-lite.py --http --with-frontend` 실행 결과: **FAIL 0 / PASS 19 / SKIP 0**
-- `curl http://localhost/nginx-health` → 200
-- `curl http://localhost/api/health` → 200 (`{"status":"UP"}`)
-- `curl http://localhost:8080/actuator/health` → 200 (`{"status":"UP"}`)
-- `docker compose --profile app build backend` 성공 (Dockerized Maven test/build 경로 통과)
-- `npm --prefix frontend run lint`, `npm --prefix frontend run build` 통과
-
-즉, 현재 호스트 기준으로는 live smoke와 frontend 검증, backend docker build/test 경로의 핵심 게이트가 실행 가능하며 PASS 근거가 확보되었다.
-다만 제품 완성도(첨부파일/문의답변/권한 depth/E2E 등) 기준은 여전히 PARTIAL이다.
+이 문서는 파일 존재 여부가 아니라 실제 코드, 빌드/테스트, Docker 설정, API/OpenAPI 정합성, frontend 연결, 문서 최신성을 기준으로 다시 작성한 최종 검증 결과다. 완료 금지 조건이 남아 있으므로 SSAFY 풀 클론은 완료로 선언할 수 없다.
 
 ## 1. 최종 검증 요약
 
-이번 검증은 "문서 존재"가 아니라 실제 실행/빌드/정합성 근거 중심으로 재수행했다.
+- Backend: Spring Boot controller/service/repository 구조와 테스트가 존재하며 Dockerized Java 21 Maven 테스트가 통과한다.
+- Frontend: React/Vite 앱, route table, API client가 존재하며 lint/build가 통과한다.
+- DB schema: backend repository가 사용하는 SQL table 32개가 `docs/revised_schema_mysql8.sql`에 모두 존재한다.
+- Docker/env: `compose.yml` app profile config는 렌더링되고 `docker compose ps`는 기존 실행 컨테이너를 healthy로 표시한다. 다만 현재 검증 셸에서 localhost 직접 curl은 연결 실패하므로 live HTTP를 PASS로 판정하지 않는다.
+- API/OpenAPI: `docs/openapi.yaml`/`docs/openapi.json`은 controller-derived static spec로 갱신되었고 controller 50 operations와 불일치가 없다. 단, Springdoc/Swagger UI와 `/v3/api-docs` runtime endpoint는 아직 구현되어 있지 않다.
+- Product completeness: 첨부파일, 문의 답변/첨부, production auth/session/RBAC, 설문/알림/support depth, browser E2E/visual 검증이 남아 있다.
+- OMX team runtime: native subagent 확인 결과 이전 team-exec 런타임은 dead worker 상태에서 cleanup되어 현재 `No team state found`다. 이는 정상 all-complete terminal state가 아니므로 완료 근거가 아니다.
 
-- 확인 완료: 저장소 구조, 최근 커밋, 문서 존재/상태, API/DB 정합성 정적 점검, frontend lint/build, compose 설정 렌더링.
-- 부분/차단: backend 재빌드/재테스트, docker compose live up/ps/build, localhost HTTP smoke는 현재 실행 환경 제약으로 재검증 불가.
-- 결론: SSAFY 풀 클론은 여전히 **완료 아님(PARTIAL)**. 기능 깊이(인증/RBAC/첨부/문의·설문 워크플로우/E2E)가 남아 있고, 핵심 런타임 검증도 이번 환경에서 완료되지 않았다.
+## 2. 실행한 명령어와 결과
 
-### 팀 상태(2026-04-25 재확인)
+| 순서 | 명령 | 결과 |
+|---:|---|---|
+| 1 | `git status --short`, `git status --branch --short` | PASS. 작업 전/후 상태 확인. 현재 브랜치 `main...origin/main [ahead 91+]`. |
+| 2 | `git log --oneline -5 --decorate` | PASS. 최근 커밋 확인. |
+| 3 | `omx team status ssafy-full-clone-omx-continuou` | NOT PASS. `No team state found`; 이전 dead team cleanup 이후 정상 완료 상태가 아님. |
+| 4 | `docker compose -f compose.yml --profile app config --services` | PASS. `mysql`, `rabbitmq`, `redis`, `backend`, `frontend`, `nginx`. |
+| 5 | `docker compose -f compose.yml --profile app config --quiet` | PASS. compose render 오류 없음. |
+| 6 | `docker compose -f compose.yml --profile app ps` | PARTIAL. 컨테이너는 healthy로 보이나 기존 11시간 전 runtime이며 일부 port/name은 현재 compose 기본값과 달라 stale-stack 가능성이 있다. |
+| 7 | `docker compose -f compose.yml --profile app logs --tail=40 backend nginx` | PARTIAL. backend Java 21 startup, MySQL/RabbitMQ 연결, Nginx API GET 200 로그 확인. |
+| 8 | `curl -fsS --max-time 3 http://127.0.0.1:8080/actuator/health` | FAIL. 현재 검증 셸에서 `Couldn't connect to server`. |
+| 9 | `curl -fsS --max-time 3 http://127.0.0.1/nginx-health` / `/api/health` | FAIL. 현재 검증 셸에서 localhost 연결 실패. |
+| 10 | `bash scripts/dev/backend-test.sh --help` | PASS. backend Dockerized Maven helper syntax/help 확인. |
+| 11 | `bash scripts/dev/backend-test.sh --skip-cache` | PASS. Dockerized Maven Java 21 test; `Tests run: 47, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`. |
+| 12 | `docker run --rm -v .../backend:/workspace -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test` | PASS. 직접 Dockerized Maven test도 47 tests PASS. |
+| 13 | `npm --prefix frontend run lint` | PASS. ESLint 통과. |
+| 14 | `npm --prefix frontend run build` | PASS. TypeScript/Vite build 통과. |
+| 15 | `python3 scripts/dev/smoke-lite.py --with-frontend` | PASS/PARTIAL. 정적 + frontend smoke `PASS=15, FAIL=0, SKIP=1`. |
+| 16 | `python3 scripts/dev/smoke-lite.py --http --with-frontend` | PASS/PARTIAL. `PASS=15, FAIL=0, SKIP=4`; HTTP probe는 현재 localhost 접근 제한/연결 실패로 skip. |
+| 17 | `python3 -m json.tool docs/openapi.json` | PASS. `openapi-json-valid`. |
+| 18 | `ruby -ryaml -e ... docs/openapi.yaml` | PASS. OpenAPI `3.0.3`, paths `42`. |
+| 19 | controller-vs-OpenAPI Python drift check | PASS/PARTIAL. controller ops `50`, OpenAPI ops `51`(actuator 포함), missing `[]`, extra excluding actuator `[]`. Runtime `/v3/api-docs`는 별도 FAIL. |
+| 20 | repository-vs-schema Python check | PASS. repository tables `32`, `missing_in_schema=[]`. |
+| 21 | `grep -R "springdoc\|openapi\|swagger" backend/...` | FAIL for runtime Swagger. Springdoc/Swagger 설정 없음. |
+| 22 | `git diff --check` | PASS. whitespace error 없음. |
 
-`omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json`
 
-| 항목 | 값 |
-|---|---:|
-| total tasks | 116 |
-| pending | 114 |
-| in_progress | 2 |
-| completed | 0 |
-| failed | 0 |
+## 2.1 Mandatory ai-slop-cleaner pass
 
-판정: 팀 태스크가 대량 pending 상태이므로 완료 선언 조건을 충족하지 않는다.
+- Skill/mode: `ai-slop-cleaner`, standard mode.
+- Scope source: `.omx/ralph/changed-files.txt`.
+- Bounded scope: README, backend priority DTO/service/test, frontend API/material detail page, backend-test helper, API/final/progress/remaining/test docs, OpenAPI YAML/JSON.
+- Behavior lock before cleanup: backend 47 tests, frontend lint/build, smoke-lite, OpenAPI drift/schema checks.
+- Cleanup plan: remove stale completion/task wording, avoid widening beyond listed files, preserve behavior and generated OpenAPI contracts.
+- Cleanup performed: corrected stale `task 125-130` / active-team references in docs/API summary and clarified that `No team state found` is not a completion state. No behavior-changing code refactor was made in this pass.
+- Post-cleaner verification: reran frontend lint/build, `bash scripts/dev/backend-test.sh`, smoke-lite, OpenAPI validation/drift, schema check, compose config, and `git diff --check`; all executable gates stayed green, with HTTP probes still skipped by sandbox network restrictions.
 
-## 2. 실행한 명령어
-
-```bash
-pwd
-ls -la
-git status --short
-git log --oneline -n 20 --decorate
-
-rg -n "@(RequestMapping|GetMapping|PostMapping|PutMapping|PatchMapping|DeleteMapping)" backend/src/main/java/com/edussafy/backend -g"*.java"
-sed -n '1,280p' frontend/src/App.tsx
-sed -n '1,240p' docs/api-summary.md
-
-python3 (endpoint 매핑 vs 문서 비교 스크립트)
-python3 (repository SQL table vs docs/revised_schema_mysql8.sql 비교 스크립트)
-
-node -v
-npm -v
-npm --prefix frontend run lint
-npm --prefix frontend run build
-
-which mvn
-which pwsh
-which powershell
-
-python3 (docker.sock unix socket connect 테스트)
-python3 (localhost /nginx-health,/actuator/health,/api/me 등 HTTP smoke)
-
-docker compose -f compose.yml config
-docker compose -f compose.yml --profile app config
-
-python3 scripts/dev/smoke-lite.py --http --with-frontend
-git diff --check
-```
-
-## 3. 테스트 결과
+## 3. 테스트 결과 요약
 
 | Gate | Result | Evidence |
 |---|---:|---|
-| 저장소 구조 확인 | PASS | `backend/`, `frontend/`, `docs/`, `scripts/`, `compose*.yml` 확인. |
-| 최근 커밋 확인 | PASS | `git log --oneline -n 20` 확인. |
-| 문서 존재 확인 | PASS | README + `docs/progress.md`, `architecture.md`, `api-summary.md`, `test-report.md`, `remaining-work.md`, `final-verification.md` 존재. |
-| API surface 정적 점검 | PASS | backend controller 기준 49개 endpoint 매핑 확인. |
-| DB schema-Repository 정합성 | PASS | repository 사용 31개 table가 `docs/revised_schema_mysql8.sql`에 모두 존재(`missing_in_schema=0`). |
-| Compose 설정 렌더링 | PASS | `docker compose ... config`, `--profile app config` 통과. |
-| Frontend lint | PASS | `npm --prefix frontend run lint` 통과. |
-| Frontend build | PASS | `npm --prefix frontend run build` 통과. |
-| Backend 테스트 재실행 | UNKNOWN | `mvn` 미설치 + Docker socket connect `PermissionError(1, 'Operation not permitted')`로 dockerized Maven 재실행 불가. |
-| Docker live up/ps/build | UNKNOWN | Docker daemon 접근 권한 제약(`Operation not permitted`)으로 재검증 불가. |
-| Local HTTP smoke | UNKNOWN | localhost 요청이 모두 `[Errno 1] Operation not permitted`로 차단됨. |
-| PowerShell smoke harness | UNKNOWN | `pwsh`/`powershell` 미설치. |
-| 신규 smoke-lite harness | PASS(정적) / SKIP(HTTP) | `python3 scripts/dev/smoke-lite.py --http --with-frontend` => FAIL 0, PASS 15, SKIP 4. |
+| 저장소 구조 확인 | PASS | `backend/`, `frontend/`, `docs/`, `scripts/`, `infra/`, `compose*.yml` 확인. |
+| 최근 커밋 확인 | PASS | `git log --oneline -5 --decorate` 확인. |
+| 문서 존재 확인 | PASS | README 및 필수 docs 파일 존재. |
+| Backend build/test | PASS | Dockerized Maven Java 21, 47 tests PASS. |
+| Frontend lint/build | PASS | `npm --prefix frontend run lint`, `npm --prefix frontend run build` PASS. |
+| DB schema 정합성 | PASS | repository 사용 table 32개가 revised schema에 모두 존재. |
+| Docker compose config | PASS | app profile services 렌더링 및 `config --quiet` PASS. |
+| Docker/live runtime | PARTIAL | `ps`/logs는 healthy와 API 200 흔적을 보이나 현재 셸 localhost curl 실패. |
+| HTTP smoke | PARTIAL | smoke-lite 정적/frontend PASS, HTTP probe skip/fail due current local connectivity. |
+| OpenAPI static docs | PASS | YAML/JSON valid, controller drift missing/extra 없음. |
+| Swagger UI `/v3/api-docs` | FAIL | Springdoc/Swagger runtime dependency/config 없음. |
+| Browser E2E/visual | FAIL | 자동 브라우저 E2E/시각 검증 증거 없음. |
+| Team/runtime completion | FAIL | 이전 team-exec는 dead worker cleanup 후 state 유실; 정상 완료 아님. |
 
-## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
+## 4. 기능별 PASS / PARTIAL / FAIL / UNKNOWN 표
 
 | 핵심 기능 | 판정 | 근거 |
 |---|---:|---|
-| 인증/인가 | PARTIAL | login/me/role API 및 interceptor는 있으나 demo-session 중심, production auth/session/token 미완료. |
-| 사용자 프로필 | PARTIAL | 조회/수정 API 및 화면 존재, 권한·영속성·검증 depth 미흡. |
-| 캠퍼스/기수/반/트랙 | PARTIAL | admin CRUD endpoint/코드 존재, 이번 환경에서 live API 재검증 불가. |
-| 출석 조회 | PARTIAL | endpoint/UI 존재, live 검증 차단 및 상세 정책 검증 부족. |
-| 출석 이의신청 | PARTIAL | 제출 endpoint/UI 존재, 상태 이력·승인 workflow depth 부족. |
-| 알림 발송/수신/읽음 | PARTIAL | 목록/클래스메이트 발송 endpoint 존재, durable lifecycle 부족. |
-| 커리큘럼 일정 | PARTIAL | endpoint/UI 존재, 권한·진도·필터 depth 부족. |
-| 강의 다시보기 | PARTIAL | endpoint/UI 존재, 접근 제어/학습 상태 추적 부족. |
-| 학습자료 | PARTIAL | list/detail/viewer/resource surface 존재, 실첨부·반응·권한 depth 부족. |
-| 학습자료 리소스 | PARTIAL | resources endpoint 존재, 다운로드/권한/실데이터 검증 부족. |
-| 첨부파일 | FAIL | 공통 업로드/저장/다운로드 end-to-end가 미완료. |
-| 학습자료 반응 | PASS | `/api/learning/materials/{id}/reactions` 토글 + `learning_material_reactions` 영속화 + 목록/상세 반응 카운트/활성값 노출 + 프론트 상세 반응 버튼 연동 구현 및 backend/frontend 테스트 통과. |
-| 퀘스트/평가 | PARTIAL | list/detail/submit surface 존재, 평가/채점/첨부 depth 부족. |
-| 퀘스트 제출 상태 | PARTIAL | submit status 필드는 있으나 lifecycle/grade 검증 부족. |
-| 설문 생성/조회 | PARTIAL | list/detail/respond surface 존재, 생성·운영 depth 부족. |
-| 설문 문항/선택지 | PARTIAL | schema는 있으나 API/서비스 depth 미완료. |
-| 설문 응답 저장 | PARTIAL | respond endpoint 존재, 중복/정합성 정책 및 live 검증 부족. |
-| 게시판 | PARTIAL | list/detail/write/edit/delete/comment/reaction/attachment endpoint 존재, live 재검증 불가. |
-| 게시글 | PARTIAL | CRUD surface 존재, 권한/운영 정책 검증 부족. |
-| 댓글/대댓글 | PARTIAL | 댓글 생성 존재, 대댓글 thread depth 미완료. |
-| 게시글 첨부파일 | PARTIAL | attachment-link endpoint 존재, 실제 파일 업/다운로드 end-to-end 미완료. |
-| 게시글 반응 | PARTIAL | reaction toggle endpoint 존재, 운영 정책·권한 검증 부족. |
-| 1:1 문의 | PARTIAL | ticket list/create surface 존재, thread형 대화 depth 부족. |
-| 문의 답변 | FAIL | 답변/상태전환 workflow 미완료. |
-| 문의 첨부파일 | FAIL | ticket attachment end-to-end 미완료. |
-| 권한별 접근 제어 | PARTIAL | admin prefix + 일부 method rule 존재, 도메인 전반 role matrix 부족. |
-| 에러 처리 | PARTIAL | 공통 에러 응답/프론트 fallback 처리 존재, mutation/권한 edge-case 검증 부족. |
-| 로컬 실행 | UNKNOWN | 이번 환경에서 docker daemon/localhost 접근 제한으로 재검증 불가. |
-| 테스트 | PARTIAL | frontend lint/build 및 정적 smoke는 통과, backend 재실행/E2E/live smoke는 차단. |
-| 문서 최신화 | PASS | 본 문서를 최신 근거로 갱신함. |
+| 인증/인가 | PARTIAL | demo login/current-user/role API와 일부 interceptor는 있으나 production credential, token/session, expiry, password recovery, 전 도메인 RBAC가 부족하다. |
+| 사용자 프로필 | PARTIAL | profile 조회/수정 API와 화면은 있으나 권한·검증·영속 정책 depth가 부족하다. |
+| 캠퍼스/기수/반/트랙 | PARTIAL | admin CRUD와 schema 연동은 구현되어 있으나 현재 live HTTP 재검증과 전체 운영 UX/RBAC depth가 부족하다. |
+| 출석 조회 | PARTIAL | records endpoint/UI는 있으나 live HTTP와 상세 정책 검증이 부족하다. |
+| 출석 이의신청 | PARTIAL | submit surface는 있으나 승인/반려/status history workflow가 부족하다. |
+| 알림 발송/수신/읽음 | PARTIAL | 목록/클래스메이트 발송 surface는 있으나 read/delete/persistence/recipient lifecycle이 부족하다. |
+| 커리큘럼 일정 | PARTIAL | list/API/UI는 있으나 필터/진도/권한 depth가 부족하다. |
+| 강의 다시보기 | PARTIAL | list/API/UI는 있으나 replay 권한, progress, 실제 media access 검증이 부족하다. |
+| 학습자료 | PARTIAL | list/detail/resource surface와 frontend 연결은 있으나 첨부 업/다운로드와 viewer fidelity가 부족하다. |
+| 학습자료 리소스 | PARTIAL | resources endpoint는 있으나 실제 파일 다운로드/권한/실데이터 검증이 부족하다. |
+| 첨부파일 | FAIL | 공통 upload/storage/download API와 domain end-to-end 연결이 미완료다. |
+| 학습자료 반응 | PASS | `/api/learning/materials/{id}/reactions`, `learning_material_reactions`, frontend detail state/count 연결, backend/frontend tests/build PASS. |
+| 퀘스트/평가 | PARTIAL | list/detail/submit surface는 있으나 grading/result/attachment depth가 부족하다. |
+| 퀘스트 제출 상태 | PARTIAL | submission surface는 있으나 lifecycle/status/채점 검증이 부족하다. |
+| 설문 생성/조회 | PARTIAL | list/detail/respond는 있으나 생성/운영/admin workflow와 persistence depth가 부족하다. |
+| 설문 문항/선택지 | PARTIAL | schema/DTO 일부는 있으나 full question/options API·검증이 부족하다. |
+| 설문 응답 저장 | PARTIAL | respond endpoint는 있으나 중복 제출, 정합성, 통계/조회 검증이 부족하다. |
+| 게시판 | PARTIAL | list/detail/write/edit/delete/comment/reaction/attachment metadata surface는 있으나 live HTTP/current RBAC/browser 검증이 부족하다. |
+| 게시글 | PARTIAL | CRUD surface는 있으나 owner/moderator/admin 정책 검증이 부족하다. |
+| 댓글/대댓글 | PARTIAL | 댓글 생성은 있으나 대댓글/thread depth가 부족하다. |
+| 게시글 첨부파일 | PARTIAL | attachment metadata link는 있으나 실제 파일 upload/download end-to-end가 없다. |
+| 게시글 반응 | PARTIAL | reaction toggle은 있으나 권한/중복/운영 정책 live 검증이 부족하다. |
+| 1:1 문의 | PARTIAL | ticket list/create는 있으나 thread형 대화, 상태전이, 담당자 UX가 부족하다. |
+| 문의 답변 | FAIL | 답변 작성/조회/상태전환 workflow가 없다. |
+| 문의 첨부파일 | FAIL | ticket attachment upload/download end-to-end가 없다. |
+| 권한별 접근 제어 | PARTIAL | admin campus guard 등 일부 존재, 전체 domain role matrix와 401/403 테스트가 부족하다. |
+| 에러 처리 | PARTIAL | 공통 error response와 frontend fallback은 있으나 mutation/permission edge-case 검증이 부족하다. |
+| 로컬 실행 | PARTIAL | compose config와 container health/log evidence는 있으나 현재 검증 셸의 localhost curl이 실패한다. |
+| 테스트 | PARTIAL | backend unit/controller 47 tests, frontend lint/build, smoke-lite는 있으나 browser E2E/live HTTP/visual 검증이 부족하다. |
+| 문서 최신화 | PARTIAL | 본 문서/API summary/remaining work는 갱신했지만 completion blockers가 남아 있고 runtime Swagger 문서가 없다. |
+| Swagger/OpenAPI 문서 생성 및 실제 API와의 일치 여부 | PARTIAL | static YAML/JSON은 controller와 일치하지만 Swagger UI와 `/v3/api-docs` runtime endpoint가 없다. |
 
-## 5. 발견한 문제
+## 5. Swagger / OpenAPI 검증 결과
 
-1. backend 재검증 차단: `mvn` 미설치 + Docker socket 접근이 `Operation not permitted`.
-2. live smoke 차단: localhost HTTP 호출이 sandbox 정책으로 차단(`Operation not permitted`).
-3. 기존 smoke harness가 PowerShell 중심이라 macOS/비-PowerShell 환경에서 바로 실행 불가.
-4. `.git/index.lock` 생성이 `Operation not permitted`로 차단되어 본 환경에서는 `git add`/`git commit` 수행이 불가.
-5. 기능 완성도 관점 주요 미완: production auth/session/RBAC 확장, 첨부파일 E2E, 학습자료 반응, 문의 답변/첨부, browser E2E.
+### 생성/갱신 산출물
 
-## 6. 즉시 수정한 내용
+- `docs/openapi.yaml`: controller-derived static OpenAPI 3.0.3 문서.
+- `docs/openapi.json`: YAML에서 생성한 JSON 문서이며 `python3 -m json.tool` 검증 통과.
+- `docs/api-summary.md`: controller operation 수, 필수 API 그룹, runtime Swagger 미구현 상태를 반영.
 
-1. `scripts/dev/smoke-lite.py` 추가
-   - PowerShell 의존 없이 실행 가능한 cross-platform 최소 smoke harness 추가.
-   - 수행 항목: 필수 파일 존재, backend endpoint surface 정적 점검, compose config 렌더링, 선택적 frontend lint/build, 선택적 localhost HTTP probe.
-2. `docs/final-verification.md` 갱신
-   - 이번 재검증 결과와 환경 제약(차단 사유)을 반영해 판정 근거 업데이트.
-3. 커밋 시도
-   - `git add`/`git commit`을 시도했지만 `.git/index.lock` 생성 PermissionError로 차단되어 커밋은 미완료 상태로 남음.
+### 일치 여부
 
-## 7. 남은 작업
+- Controller operations: 50
+- OpenAPI operations: 51 (`/actuator/health` 포함)
+- OpenAPI에서 누락된 controller operation: 없음
+- Controller에 없는 extra operation: 없음 (`/actuator/health` 제외)
+- 필수 그룹 반영: Auth, Profile, Campus/Cohort/Class/Track, Attendance, Attendance Appeal, Notification, Curriculum, Lecture Replay, Learning Material, Quest, Survey, Board, Comment, Support Ticket, Attachment metadata group 검토 반영.
 
-1. Java 21 기준 backend 테스트 재실행 가능 환경 확보(maven wrapper 도입 또는 CI 표준 경로 고정).
-2. Docker live smoke 재검증 가능한 권한 환경에서 `compose up/ps` + 핵심 HTTP smoke 재실행.
-3. 인증/세션/token expiry/password recovery 실구현.
-4. 도메인 전반 서버측 RBAC 확장 및 role matrix 테스트 추가.
-5. 공통 첨부파일 upload/download API 및 board/material/support/quest 연동.
-6. 학습자료 반응(좋아요/북마크 등) 구현.
-7. 문의 thread/답변/상태전환/첨부 구현.
-8. Browser E2E + 시각 검증 자동화 및 CI 증거 확보.
+### 판정
 
-## 8. 최종 판단
+- Static OpenAPI 문서: **PASS**
+- Swagger UI 및 `/v3/api-docs`: **FAIL**
+- 전체 OpenAPI 항목: **PARTIAL**
+
+## 6. 발견한 문제
+
+1. `/v3/api-docs`와 Swagger UI가 없다. Springdoc 의존성/설정이 없고 정적 문서만 존재한다.
+2. 현재 검증 셸에서 localhost direct curl이 실패한다. Compose `ps`/logs는 healthy와 API 200 흔적을 보여도 live HTTP를 PASS로 볼 수 없다.
+3. 공통 attachment upload/download가 없어 첨부파일 관련 도메인이 FAIL/PARTIAL이다.
+4. 문의 답변/문의 첨부 workflow가 없다.
+5. production auth/session/token/RBAC breadth가 부족하다.
+6. 설문 질문/선택지/응답 저장 depth와 알림 read/delete lifecycle이 부족하다.
+7. Browser E2E/visual 검증이 없어 화면 접근성/상호작용 fidelity를 최종 PASS로 볼 수 없다.
+8. OMX team runtime은 dead worker cleanup 이후 state가 없으며, 정상 완료 상태가 아니다.
+9. 과거 자동 checkpoint/merge 커밋이 많아 최종 release 전 semantic Lore commit hygiene 점검이 필요하다.
+
+## 7. 즉시 수정한 내용
+
+- `frontend/src/pages/MaterialDetailPage.tsx`: material reaction count/state prop wiring과 TypeScript build 오류를 수정했다.
+- `scripts/dev/backend-test.sh`: repo root 계산과 empty docker arg 처리 오류를 수정해 Dockerized Maven helper가 실행되도록 했다.
+- `docs/openapi.yaml`: 실제 controller 기준 static OpenAPI 문서로 갱신했다.
+- `docs/openapi.json`: `docs/openapi.yaml` 기준 JSON을 생성하고 유효성 검증했다.
+- `docs/api-summary.md`, `README.md`, `docs/remaining-work.md`: material reaction 완료와 runtime Swagger 미구현 상태를 반영했다.
+- `docs/final-verification.md`, `docs/test-report.md`, `docs/progress.md`: 최종 검증 근거와 불합격 조건을 갱신했다.
+
+## 8. 남은 작업
+
+1. Springdoc/OpenAPI runtime 통합: Swagger UI와 `/v3/api-docs` endpoint를 실제 backend에서 제공하고 CI drift check에 연결한다.
+2. Local runtime 재검증: current compose defaults 기준으로 clean `docker compose --profile app up -d --build`, `curl` smoke, Nginx/backend health를 재실행한다.
+3. Production auth/session/RBAC: credential verification, session/token persistence, expiry, password recovery, role matrix tests를 구현한다.
+4. Common attachments: upload/storage/download API와 material/board/support/quest submission 연결을 구현한다.
+5. Support tickets: answers, threaded messages, status transitions, attachment workflow를 구현한다.
+6. Surveys/notifications: question/options/response depth, duplicate/validation policy, notification read/delete/send lifecycle을 구현한다.
+7. Browser E2E/visual: 핵심 화면과 API 연결을 Playwright 등으로 검증하고 CI evidence를 남긴다.
+8. OMX/team recovery: dead team cleanup 이후 backlog를 재생성/정리하고, auto-checkpoint 커밋을 semantic Lore commit으로 정리한다.
+
+## 9. 최종 판단
 
 **완료로 판정할 수 없다.**
 
-현재 상태는 "실행 가능한 부분 구조 + 일부 검증 통과" 단계이며, 핵심 기능의 실서비스 완성도와 live 실행 근거가 모두 PASS 기준을 만족하지 못한다. 따라서 SSAFY 풀 클론은 **NOT COMPLETE / PARTIAL**이다.
+이 저장소는 backend/frontend 빌드와 일부 API 기능이 실제로 동작하는 runnable partial clone이지만, FAIL/PARTIAL 항목이 남아 있고 Swagger runtime, attachment, support answer, production auth/RBAC, live HTTP, E2E 증거가 부족하다. 따라서 SSAFY 풀 클론은 현재 **NOT COMPLETE / PARTIAL**이다.

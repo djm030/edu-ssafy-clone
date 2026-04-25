@@ -1,13 +1,13 @@
 # eduSSAFY Clone Coding
 
-## Worker-4 status sync (2026-04-25)
-- Team backlog has been re-synced with explicit follow-up tasks 125-130 for unresolved auth, attachment/reaction, survey/support depth, and E2E/CI closure.
-- Project remains **NOT READY** until those tasks and remaining-work gates are closed with fresh verification evidence.
+## Final verification status sync (2026-04-25)
+- The prior OMX team runtime was cleaned up from a dead `team-exec` state and now reports `No team state found`; this is **not** a normal all-complete state.
+- Project remains **NOT READY** until `docs/remaining-work.md` is empty of required blockers and `docs/final-verification.md` has no FAIL/PARTIAL rows.
 
 ## Final verification sync (2026-04-25)
 - Current verification still concludes **NOT COMPLETE / PARTIAL**.
 - Backend Java 21 tests, frontend lint/build, Docker compose config, static OpenAPI validation, and controller-vs-OpenAPI drift checks pass in this workspace.
-- Live localhost HTTP probes and `/v3/api-docs` are not PASS in this sandbox: localhost network calls return `Operation not permitted`, and Springdoc/Swagger UI is not configured.
+- Live localhost HTTP probes and `/v3/api-docs` are not PASS in this verification shell: direct curl to localhost backend/nginx could not connect, and Springdoc/Swagger UI is not configured.
 - Material reactions are implemented and no longer listed as future work, but production auth/RBAC, common attachment upload/download, support-ticket answers/threads, survey depth, browser E2E, and team-runtime recovery remain blockers.
 
 

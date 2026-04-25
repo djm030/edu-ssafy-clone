@@ -1,5 +1,20 @@
 # Remaining Work
 
+## Final Verification Refresh (2026-04-25)
+
+Completion is still blocked. Do not declare the clone complete until every row below has executable proof and `docs/final-verification.md` has no FAIL/PARTIAL rows.
+
+- Runtime Swagger: add Springdoc/Swagger UI and make `/v3/api-docs` executable from the backend; keep `docs/openapi.yaml`/`docs/openapi.json` generated or drift-checked from real controllers.
+- Local runtime proof: rebuild current compose app profile and pass fresh backend/nginx curl smoke from the verification shell, not only stale container logs.
+- Production auth/RBAC: implement real credential/session/token expiry/password recovery and domain-wide role guards/tests.
+- Attachments: implement common upload/storage/download and connect materials, boards, support tickets, and quest submissions end-to-end.
+- Support tickets: implement answer/thread/status transition/attachment workflows.
+- Survey/notification depth: implement full questions/options/response validation and notification read/delete/send lifecycle.
+- Browser E2E/visual: add automated browser flow evidence for the required screens and API-linked interactions.
+- OMX recovery/commit hygiene: prior team runtime reports `No team state found` after dead worker cleanup; reconcile backlog and rewrite/squash runtime checkpoint commits into semantic Lore commits before final release.
+
+Material like/bookmark/favorite reactions are no longer remaining work: `/api/learning/materials/{id}/reactions` is implemented with persisted state/counts and frontend detail wiring.
+
 ## Final Verification Sync (2026-04-25)
 - Material like/bookmark/favorite reactions were rechecked and are now implemented (`POST /api/learning/materials/{id}/reactions`, persisted `learning_material_reactions`, frontend material detail state/count updates, backend/frontend verification passing).
 - Remaining completion blockers are now: production auth/session/RBAC breadth, common attachment upload/download, support-ticket answers/threads/status transitions, survey question/option/response depth, notification read/delete lifecycle, browser E2E/visual evidence, runtime Swagger UI/`/v3/api-docs`, and team-runtime recovery/commit hygiene.
@@ -13,7 +28,7 @@
 ## Final Verification Recheck (2026-04-24)
 - Runnable gates improved: backend Maven tests, frontend lint/build, Docker image build, Compose startup, and basic local HTTP smoke now pass.
 - Still not complete: production auth/session/RBAC, common attachments, durable notification/support/survey/material workflows, board edit/delete/permissions, browser E2E/visual fidelity, and team task drain remain open.
-- OMX team state checked during worker-1 recheck: total=136, completed=70, pending=63, in_progress=3, failed=0; do not shut down or declare all-PASS until these are resolved or explicitly reconciled.
+- Historical OMX team state from worker-1 recheck: total=136, completed=70, pending=63, in_progress=3, failed=0. 2026-04-25 final verification later observed `No team state found` after cleanup, so this backlog must be explicitly reconciled before any all-PASS declaration.
 
 
 ## Task 95 Required Work Check (worker-4, 2026-04-24)
@@ -82,7 +97,7 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 
 ## Task-backed Continuation Map (worker-5, 2026-04-25)
 The partial/gap checklist above is represented by concrete OMX follow-up tasks so the team can continue without treating the project as complete.
-Note: prior 문서에 기록된 `117-130` 묶음은 이 라운드에서 `117-124`로 정리/재발급되었고, 현재 팀 state에서 활성 상태로 존재한다.
+Historical note: prior 문서에 기록된 `117-130` / `117-124` task 묶음은 당시 team state 기준이다. 2026-04-25 최종 검증 기준 현재 team state는 cleanup 이후 `No team state found`이므로, task id 활성 여부만으로 완료를 판정하지 않는다.
 
 | Task IDs | Area | Purpose |
 |---|---|---|
