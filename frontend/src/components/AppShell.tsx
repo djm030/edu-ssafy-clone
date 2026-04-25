@@ -70,6 +70,15 @@ function AppShell({
   user,
 }: AppShellProps) {
   const sessionExpiryText = formatSessionExpiry(sessionExpiresAt);
+  const isDeniedNavItem = (path: string) => Boolean(
+    roleAccess?.deniedRoutes.some((route) => path === route || path.startsWith(`${route}/`))
+  );
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !isDeniedNavItem(item.path)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="app-shell">
@@ -78,7 +87,7 @@ function AppShell({
           eduSSAFY
         </button>
         <nav aria-label="주요 메뉴">
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div className="nav-section" key={section.title}>
               <p>{section.title}</p>
               {section.items.map((item) => (

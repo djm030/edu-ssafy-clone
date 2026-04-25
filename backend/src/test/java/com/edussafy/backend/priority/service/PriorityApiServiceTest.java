@@ -93,6 +93,23 @@ class PriorityApiServiceTest {
     }
 
     @Test
+    void exposesCoachRoleWithAdminRouteDenied() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        RoleAccessResponse response = service.currentRoleAccess();
+
+        assertThat(response.role()).isEqualTo("coach");
+        assertThat(response.permissions()).contains("support:answer", "board:moderate");
+        assertThat(response.deniedRoutes()).containsExactly("/admin");
+    }
+
+    @Test
     void createsClassmateNotificationWithDefaults() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
         PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);

@@ -150,7 +150,11 @@ public class PriorityApiService {
             ),
             "admin", List.of("*")
     );
-    private static final List<String> LEARNER_DENIED_ROUTES = List.of("/admin", "/coach/reviews", "/management");
+    private static final Map<String, List<String>> ROLE_DENIED_ROUTES = Map.of(
+            "learner", List.of("/admin", "/coach/reviews", "/management"),
+            "coach", List.of("/admin"),
+            "admin", List.of()
+    );
 
     private final PriorityApiRepository repository;
     private final PriorityP2Repository p2Repository;
@@ -203,7 +207,7 @@ public class PriorityApiService {
         return new RoleAccessResponse(
                 role,
                 ROLE_PERMISSIONS.getOrDefault(role, ROLE_PERMISSIONS.get("learner")),
-                "learner".equals(role) ? LEARNER_DENIED_ROUTES : List.of()
+                ROLE_DENIED_ROUTES.getOrDefault(role, ROLE_DENIED_ROUTES.get("learner"))
         );
     }
 
