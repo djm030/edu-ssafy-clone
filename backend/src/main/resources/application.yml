@@ -26,3 +26,9 @@ server:
   error:
     whitelabel:
       enabled: false
+
+
+edussafy:
+  auth:
+    password:
+      allow-noop: ${EDUSSAFY_AUTH_ALLOW_NOOP_PASSWORDS:false}

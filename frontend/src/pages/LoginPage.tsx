@@ -14,7 +14,7 @@ function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(initialMessage || '세션이 만료되었거나 로그인이 필요한 경우 다시 로그인해 주세요.');
-  const [credentialHint, setCredentialHint] = useState('seed 계정: student@ssafy.com / password');
+  const [credentialHint, setCredentialHint] = useState('발급된 교육생 계정 정보로 로그인하세요.');
 
   useEffect(() => {
     if (initialMessage) setMessage(initialMessage);
@@ -32,7 +32,7 @@ function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
       onLogin(response.user);
     } catch (error) {
       setMessage(getErrorMessage(error));
-      setCredentialHint('등록된 사용자만 로그인할 수 있습니다. seed 계정: student@ssafy.com / password');
+      setCredentialHint('등록된 사용자만 로그인할 수 있습니다. 계정 정보는 운영자에게 문의하세요.');
     } finally {
       setSubmitting(false);
     }

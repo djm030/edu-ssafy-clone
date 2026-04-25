@@ -90,6 +90,7 @@ class PriorityApiServiceTest {
     private static final UserProfile STAFF_USER = new UserProfile(
             2L, "Demo Manager", "manager@ssafy.com", "manager", "Seoul", "12th", "Java"
     );
+    private static final String PASSWORD_SHA256 = "{sha256}5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8";
 
     @Test
     void exposesLearnerRolePermissionsByDefault() {
@@ -423,10 +424,10 @@ class PriorityApiServiceTest {
     }
 
     @Test
-    void checksProfilePasswordAgainstStoredNoopHash() {
+    void checksProfilePasswordAgainstStoredSha256Hash() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
-        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of(PASSWORD_SHA256));
         PriorityApiService service = new PriorityApiService(
                 repository,
                 mock(PriorityP2Repository.class),
@@ -438,6 +439,23 @@ class PriorityApiServiceTest {
 
         assertThat(valid.valid()).isTrue();
         assertThat(invalid.valid()).isFalse();
+    }
+
+
+    @Test
+    void rejectsLegacyNoopPasswordHashByDefault() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        PasswordCheckResponse response = service.passwordCheck(new PasswordCheckRequest("password"));
+
+        assertThat(response.valid()).isFalse();
     }
 
     @Test
@@ -452,7 +470,7 @@ class PriorityApiServiceTest {
         request.setSession(anonymousSession);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         given(repository.findUserByEmail("manager@ssafy.com")).willReturn(Optional.of(manager));
-        given(repository.findPasswordHash(2L)).willReturn(Optional.of("{noop}password"));
+        given(repository.findPasswordHash(2L)).willReturn(Optional.of(PASSWORD_SHA256));
         given(repository.findUserById(2L)).willReturn(Optional.of(manager));
         PriorityApiService service = new PriorityApiService(
                 repository,
@@ -504,7 +522,7 @@ class PriorityApiServiceTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         given(repository.findUserByEmail("student@ssafy.com")).willReturn(Optional.of(USER));
-        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of(PASSWORD_SHA256));
         PriorityApiService service = new PriorityApiService(
                 repository,
                 mock(PriorityP2Repository.class),
@@ -662,7 +680,7 @@ class PriorityApiServiceTest {
                 true
         );
         given(repository.findUserById(1L)).willReturn(Optional.of(USER));
-        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of(PASSWORD_SHA256));
         given(p2Repository.findProfile(1L)).willReturn(Optional.of(current));
         given(p2Repository.updateProfile(1L, profileRequest, true)).willReturn(Optional.of(updated));
         PriorityApiService service = new PriorityApiService(
@@ -696,7 +714,7 @@ class PriorityApiServiceTest {
         AuthSession.markProfileVerified(request.getSession(), java.time.Instant.now());
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         given(repository.findUserById(1L)).willReturn(Optional.of(USER));
-        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of(PASSWORD_SHA256));
         given(repository.updatePasswordHash(1L, "{sha256}05bef02ed98c2079162d4a8870bd88b66f587a90c57ae10a8502254c75cac717"))
                 .willReturn(1);
         PriorityApiService service = new PriorityApiService(
@@ -728,7 +746,7 @@ class PriorityApiServiceTest {
         request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         given(repository.findUserById(1L)).willReturn(Optional.of(USER));
-        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of(PASSWORD_SHA256));
         PriorityApiService service = new PriorityApiService(
                 repository,
                 mock(PriorityP2Repository.class),

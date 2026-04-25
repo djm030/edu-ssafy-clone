@@ -14,9 +14,9 @@ ON DUPLICATE KEY UPDATE domain_type = VALUES(domain_type);
 
 INSERT INTO users (email, password_hash, learner_no, name, role_code)
 VALUES
-  ('student@ssafy.com', '{noop}password', 'SSAFY-12-0001', 'Demo Student', 'student'),
-  ('manager@ssafy.com', '{noop}password', 'SSAFY-12-9001', 'Demo Manager', 'manager'),
-  ('classmate@ssafy.com', '{noop}password', 'SSAFY-12-0002', 'Demo Classmate', 'student')
+  ('student@ssafy.com', '{sha256}5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'SSAFY-12-0001', 'Demo Student', 'student'),
+  ('manager@ssafy.com', '{sha256}5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'SSAFY-12-9001', 'Demo Manager', 'manager'),
+  ('classmate@ssafy.com', '{sha256}5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'SSAFY-12-0002', 'Demo Classmate', 'student')
 ON DUPLICATE KEY UPDATE
   password_hash = VALUES(password_hash),
   name = VALUES(name),

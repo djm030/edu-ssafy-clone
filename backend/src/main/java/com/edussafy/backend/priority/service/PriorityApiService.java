@@ -107,6 +107,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -168,6 +169,9 @@ public class PriorityApiService {
     private final PriorityApiRepository repository;
     private final PriorityP2Repository p2Repository;
     private final PriorityP3Repository p3Repository;
+
+    @Value("${edussafy.auth.password.allow-noop:false}")
+    private boolean allowNoopPasswordHash;
 
     public PriorityApiService(
             PriorityApiRepository repository,
@@ -1113,16 +1117,26 @@ public class PriorityApiService {
             return false;
         }
         if (storedHash.startsWith("{noop}")) {
-            return rawPassword.equals(storedHash.substring("{noop}".length()));
+            return allowNoopPasswordHash && constantTimeEquals(rawPassword, storedHash.substring("{noop}".length()));
         }
         if (storedHash.startsWith("{sha256}")) {
-            return passwordHashForStorage(rawPassword).equals(storedHash);
+            return constantTimeEquals(passwordHashForStorage(rawPassword), storedHash);
         }
-        return rawPassword.equals(storedHash);
+        return false;
     }
 
     private String passwordHashForStorage(String rawPassword) {
         return "{sha256}" + sha256Hex(rawPassword.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private boolean constantTimeEquals(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                left.getBytes(StandardCharsets.UTF_8),
+                right.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     private List<MaterialItem> attachResources(List<MaterialItem> materials) {
