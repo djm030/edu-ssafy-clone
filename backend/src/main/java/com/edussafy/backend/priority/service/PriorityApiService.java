@@ -85,6 +85,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -185,7 +186,11 @@ public class PriorityApiService {
     public PasswordCheckResponse passwordCheck(PasswordCheckRequest request) {
         UserProfile user = currentUser();
         String storedHash = safe(() -> repository.findPasswordHash(user.id()).orElse(null), null);
-        return new PasswordCheckResponse(passwordMatches(request.password(), storedHash));
+        boolean valid = passwordMatches(request.password(), storedHash);
+        if (valid) {
+            markProfileVerified();
+        }
+        return new PasswordCheckResponse(valid);
     }
 
     public RoleAccessResponse currentRoleAccess() {
@@ -651,6 +656,7 @@ public class PriorityApiService {
     }
 
     public ProfileResponse updateProfile(ProfileUpdateRequest request) {
+        requireProfileVerification();
         UserProfile user = currentUser();
         ProfileDetails current = safe(() -> p2Repository.findProfile(user.id()).orElse(profileFromUser(user)),
                 profileFromUser(user));
@@ -675,6 +681,7 @@ public class PriorityApiService {
                 () -> p2Repository.updateProfile(user.id(), request, merged.marketingOptIn()).orElse(merged),
                 merged
         );
+        clearProfileVerification();
         return new ProfileResponse(persisted);
     }
 
@@ -711,6 +718,27 @@ public class PriorityApiService {
         if (session != null) {
             session.invalidate();
         }
+    }
+
+    private void markProfileVerified() {
+        HttpSession session = currentSession(false);
+        if (session != null && AuthSession.currentUserId(session).isPresent()) {
+            AuthSession.markProfileVerified(session, Instant.now());
+        }
+    }
+
+    private void requireProfileVerification() {
+        HttpSession session = currentSession(false);
+        if (session == null || AuthSession.currentUserId(session).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        if (!AuthSession.profileVerified(session, Instant.now())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "회원정보 수정 전 비밀번호 확인이 필요합니다.");
+        }
+    }
+
+    private void clearProfileVerification() {
+        AuthSession.clearProfileVerification(currentSession(false));
     }
 
     private HttpSession currentSession(boolean create) {

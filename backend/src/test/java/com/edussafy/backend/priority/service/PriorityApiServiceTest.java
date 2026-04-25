@@ -314,6 +314,9 @@ class PriorityApiServiceTest {
     void persistsProfileUpdateAndReturnsStoredProfile() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
         PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         ProfileDetails current = new ProfileDetails(
                 1L,
                 "Demo Student",
@@ -357,7 +360,8 @@ class PriorityApiServiceTest {
                 "010-3333-4444",
                 true
         );
-        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findUserById(1L)).willReturn(Optional.of(USER));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.of("{noop}password"));
         given(p2Repository.findProfile(1L)).willReturn(Optional.of(current));
         given(p2Repository.updateProfile(1L, profileRequest, true)).willReturn(Optional.of(updated));
         PriorityApiService service = new PriorityApiService(
@@ -366,12 +370,52 @@ class PriorityApiServiceTest {
                 mock(PriorityP3Repository.class)
         );
 
-        ProfileResponse response = service.updateProfile(profileRequest);
+        try {
+            PasswordCheckResponse passwordCheck = service.passwordCheck(new PasswordCheckRequest("password"));
+            assertThat(passwordCheck.valid()).isTrue();
+            assertThat(request.getSession().getAttribute(AuthSession.PROFILE_VERIFIED_UNTIL)).isNotNull();
 
-        verify(p2Repository).updateProfile(1L, profileRequest, true);
-        assertThat(response.profile().name()).isEqualTo("Updated Student");
-        assertThat(response.profile().zipCode()).isEqualTo("06234");
-        assertThat(response.profile().marketingOptIn()).isTrue();
+            ProfileResponse response = service.updateProfile(profileRequest);
+
+            assertThat(request.getSession().getAttribute(AuthSession.PROFILE_VERIFIED_UNTIL)).isNull();
+            verify(p2Repository).updateProfile(1L, profileRequest, true);
+            assertThat(response.profile().name()).isEqualTo("Updated Student");
+            assertThat(response.profile().zipCode()).isEqualTo("06234");
+            assertThat(response.profile().marketingOptIn()).isTrue();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void rejectsProfileUpdateWithoutRecentPasswordVerification() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+        ProfileUpdateRequest profileRequest = new ProfileUpdateRequest(
+                "Updated Student",
+                "06234",
+                "서울시 강남구",
+                "101호",
+                "010-1111-2222",
+                "010-3333-4444",
+                true
+        );
+
+        try {
+            assertThatThrownBy(() -> service.updateProfile(profileRequest))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("403")
+                    .hasMessageContaining("회원정보 수정 전 비밀번호 확인이 필요합니다.");
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
     @Test

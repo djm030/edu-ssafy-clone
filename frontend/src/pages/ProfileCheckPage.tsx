@@ -4,7 +4,11 @@ import { getErrorMessage } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
 
-function ProfileCheckPage() {
+interface ProfileCheckPageProps {
+  onVerified: () => void;
+}
+
+function ProfileCheckPage({ onVerified }: ProfileCheckPageProps) {
   const [password, setPassword] = useState('');
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
@@ -19,6 +23,7 @@ function ProfileCheckPage() {
       const response = await checkProfilePassword(password);
       setResult(response.verified ? 'success' : 'error');
       setMessage(response.verified ? '비밀번호가 확인되었습니다.' : '비밀번호가 일치하지 않습니다.');
+      if (response.verified) onVerified();
     } catch (error) {
       setResult('error');
       setMessage(getErrorMessage(error));

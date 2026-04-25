@@ -175,7 +175,7 @@ function App() {
   };
 
   const accessDenied = isDeniedPath(path, roleAccess);
-  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path, roleAccess);
+  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path, roleAccess, navigate);
 
   if (path === '/login') {
     return <LoginPage message={accessMessage} onLogin={(nextUser) => { setUser(nextUser); setAccessMessage(''); navigate('/'); }} />;
@@ -200,7 +200,7 @@ function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
   return Boolean(roleAccess?.deniedRoutes.some((route) => path === route || path.startsWith(`${route}/`)));
 }
 
-function renderPage(path: string, roleAccess?: RoleAccess) {
+function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: (nextPath: string) => void) {
   const match = (pattern: RegExp) => path.match(pattern);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
@@ -222,7 +222,7 @@ function renderPage(path: string, roleAccess?: RoleAccess) {
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
   if (path === '/learning/replays') return <ReplaysPage />;
-  if (path === '/profile/check') return <ProfileCheckPage />;
+  if (path === '/profile/check') return <ProfileCheckPage onVerified={() => navigate('/profile/edit')} />;
   if (path === '/profile/edit') return <ProfileEditPage />;
   if (path === '/community/classmates') return <ClassmatesPage />;
   if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage />;

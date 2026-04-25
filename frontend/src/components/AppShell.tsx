@@ -88,7 +88,7 @@ function AppShell({ accessError, children, currentPath, onLogout, onNavigate, ro
             </span>
           </div>
           <div className="topbar-actions">
-            <button className="ghost-button" onClick={() => onNavigate('/profile/edit')} type="button">
+            <button className="ghost-button" onClick={() => onNavigate('/profile/check')} type="button">
               회원정보
             </button>
             <button className="ghost-button" onClick={onLogout} type="button">

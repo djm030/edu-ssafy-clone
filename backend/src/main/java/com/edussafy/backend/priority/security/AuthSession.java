@@ -1,12 +1,15 @@
 package com.edussafy.backend.priority.security;
 
 import jakarta.servlet.http.HttpSession;
+import java.time.Instant;
 import java.util.Optional;
 
 public final class AuthSession {
 
     public static final String CURRENT_USER_ID = "edussafy.currentUserId";
+    public static final String PROFILE_VERIFIED_UNTIL = "edussafy.profileVerifiedUntil";
     public static final int MAX_INACTIVE_SECONDS = 60 * 60 * 2;
+    public static final int PROFILE_VERIFICATION_TTL_SECONDS = 10 * 60;
 
     private AuthSession() {
     }
@@ -28,5 +31,39 @@ public final class AuthSession {
             }
         }
         return Optional.empty();
+    }
+
+    public static boolean profileVerified(HttpSession session, Instant now) {
+        if (session == null || now == null) {
+            return false;
+        }
+
+        Object expiresAt = session.getAttribute(PROFILE_VERIFIED_UNTIL);
+        if (expiresAt instanceof Number number) {
+            return number.longValue() > now.toEpochMilli();
+        }
+        if (expiresAt instanceof String text && !text.isBlank()) {
+            try {
+                return Long.parseLong(text) > now.toEpochMilli();
+            } catch (NumberFormatException exception) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public static void markProfileVerified(HttpSession session, Instant now) {
+        if (session != null && now != null) {
+            session.setAttribute(
+                    PROFILE_VERIFIED_UNTIL,
+                    now.plusSeconds(PROFILE_VERIFICATION_TTL_SECONDS).toEpochMilli()
+            );
+        }
+    }
+
+    public static void clearProfileVerification(HttpSession session) {
+        if (session != null) {
+            session.removeAttribute(PROFILE_VERIFIED_UNTIL);
+        }
     }
 }
