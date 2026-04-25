@@ -271,17 +271,19 @@ class PriorityApiControllerTest {
     }
 
     @Test
-    void supportTicketCreateReturnsDemoRegistration() throws Exception {
+    void supportTicketCreateReturnsPersistedRegistration() throws Exception {
         given(priorityApiService.createSupportTicket(any())).willReturn(new SupportTicketCreateResponse(
-                new SupportTicketItem(0L, "Need help", "open", null, null, null, 1L, null)
+                new SupportTicketItem(55L, "Need help", "open", null, null, null, 1L, null)
         ));
 
         mockMvc.perform(post("/api/support/tickets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Need help\",\"content\":\"Please check this.\"}"))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(55))
                 .andExpect(jsonPath("$.item.title").value("Need help"))
-                .andExpect(jsonPath("$.item.status").value("open"));
+                .andExpect(jsonPath("$.item.status").value("open"))
+                .andExpect(jsonPath("$.item.messageCount").value(1));
     }
 
     @Test

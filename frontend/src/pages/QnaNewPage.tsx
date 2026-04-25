@@ -3,6 +3,7 @@ import { createSupportTicket } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
+import type { SupportTicketItem } from '../types';
 
 function QnaNewPage() {
   const [title, setTitle] = useState('');
@@ -10,16 +11,19 @@ function QnaNewPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('문의 내용을 작성한 뒤 등록해 주세요.');
+  const [createdTicket, setCreatedTicket] = useState<SupportTicketItem>();
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setResult('idle');
+    setCreatedTicket(undefined);
 
     try {
       const response = await createSupportTicket({ title, content });
+      setCreatedTicket(response);
       setResult('success');
-      setMessage(`문의가 등록되었습니다. 접수 번호: ${response.id} · 상태: ${response.status}`);
+      setMessage(`문의가 등록되었습니다. 접수 번호: ${response.id} · 상태: ${supportStatusLabel(response.status)}`);
       setTitle('');
       setContent('');
     } catch (error) {
@@ -48,10 +52,23 @@ function QnaNewPage() {
             {result === 'success' ? '등록완료' : result === 'error' ? '오류' : '대기'}
           </StatusPill>
           <p>{message}</p>
+          {createdTicket ? (
+            <p className="muted-text">
+              초기 문의 메시지 {createdTicket.messageCount || 1}건이 함께 저장되었습니다.
+            </p>
+          ) : null}
         </div>
       </section>
     </section>
   );
+}
+
+function supportStatusLabel(status: string): string {
+  if (status === 'open') return '접수';
+  if (status === 'waiting_user') return '사용자 응답 대기';
+  if (status === 'answered') return '답변 완료';
+  if (status === 'closed') return '종료';
+  return status;
 }
 
 export default QnaNewPage;

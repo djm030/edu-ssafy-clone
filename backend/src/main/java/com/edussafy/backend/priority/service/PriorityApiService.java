@@ -335,17 +335,16 @@ public class PriorityApiService {
         return new SupportTicketsResponse(items, pageMeta(page, size, total));
     }
 
+    @Transactional
     public SupportTicketCreateResponse createSupportTicket(SupportTicketCreateRequest request) {
-        SupportTicketItem item = new SupportTicketItem(
-                0L,
-                request.title().trim(),
-                "open",
-                null,
-                null,
-                null,
-                1L,
-                null
-        );
+        UserProfile user = currentUser();
+        String title = request.title().trim();
+        String content = request.content().trim();
+
+        long ticketId = p2Repository.createSupportTicket(user.id(), title);
+        p2Repository.createSupportTicketMessage(ticketId, user.id(), content);
+        SupportTicketItem item = p2Repository.findSupportTicket(user.id(), ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket not found."));
         return new SupportTicketCreateResponse(item);
     }
 

@@ -277,6 +277,17 @@ export interface SupportTicketDraft {
   content: string;
 }
 
+export interface SupportTicketItem {
+  id: number;
+  title: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+  closedAt?: string | null;
+  messageCount?: number;
+  latestMessageAt?: string | null;
+}
+
 export interface AdminCampusStructure {
   campuses: AdminCampusItem[];
   cohorts: AdminCohortItem[];

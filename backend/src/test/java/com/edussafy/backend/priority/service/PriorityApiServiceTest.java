@@ -25,6 +25,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyQuestionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
@@ -361,6 +364,41 @@ class PriorityApiServiceTest {
         ))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
+    }
+
+    @Test
+    void persistsSupportTicketWithInitialUserMessage() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        SupportTicketItem stored = new SupportTicketItem(
+                55L,
+                "Need help",
+                "open",
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                null,
+                1L,
+                OffsetDateTime.now()
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p2Repository.createSupportTicket(1L, "Need help")).willReturn(55L);
+        given(p2Repository.createSupportTicketMessage(55L, 1L, "Please check this.")).willReturn(66L);
+        given(p2Repository.findSupportTicket(1L, 55L)).willReturn(Optional.of(stored));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        SupportTicketCreateResponse response = service.createSupportTicket(
+                new SupportTicketCreateRequest(" Need help ", " Please check this. ")
+        );
+
+        assertThat(response.item().id()).isEqualTo(55L);
+        assertThat(response.item().status()).isEqualTo("open");
+        assertThat(response.item().messageCount()).isEqualTo(1L);
+        verify(p2Repository).createSupportTicket(1L, "Need help");
+        verify(p2Repository).createSupportTicketMessage(55L, 1L, "Please check this.");
     }
 
     private SurveyDetail surveyDetail(long id) {

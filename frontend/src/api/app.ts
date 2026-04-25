@@ -32,6 +32,7 @@ import type {
   ProfileEditDraft,
   ProfileDetails,
   SupportTicketDraft,
+  SupportTicketItem,
   SurveyResponseDraft,
   SurveyItem,
 } from '../types';
@@ -468,10 +469,10 @@ export function createQna(draft: QnaDraft): Promise<{ id: number; title: string 
   }).then((response) => response.item);
 }
 
-export function createSupportTicket(draft: SupportTicketDraft): Promise<{ id: number; title: string; status: string }> {
-  return fetchJson<ItemResponse<{ id: number; title: string; status: string }>>('/api/support/tickets', {
+export function createSupportTicket(draft: SupportTicketDraft): Promise<SupportTicketItem> {
+  return fetchJson<ItemResponse<SupportTicketItem>>('/api/support/tickets', {
     body: JSON.stringify(draft),
-    fallback: () => ({ item: { id: Date.now(), title: draft.title, status: 'open' } }),
+    fallback: () => ({ item: { id: Date.now(), title: draft.title, status: 'open', messageCount: 1 } }),
     headers: {
       'Content-Type': 'application/json',
     },

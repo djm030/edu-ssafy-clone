@@ -11,6 +11,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.jdbc.core.GeneratedKeyHolder;
+import org.springframework.jdbc.core.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -54,17 +56,61 @@ public class PriorityP2Repository {
                 .param("userId", userId)
                 .param("limit", limit)
                 .param("offset", offset)
-                .query((rs, rowNum) -> new SupportTicketItem(
-                        rs.getLong("support_ticket_id"),
-                        rs.getString("title"),
-                        rs.getString("status_code"),
-                        toOffset(rs.getTimestamp("created_at")),
-                        toOffset(rs.getTimestamp("updated_at")),
-                        toOffset(rs.getTimestamp("closed_at")),
-                        rs.getLong("message_count"),
-                        toOffset(rs.getTimestamp("latest_message_at"))
-                ))
+                .query(this::mapSupportTicket)
                 .list();
+    }
+
+    public Optional<SupportTicketItem> findSupportTicket(long userId, long ticketId) {
+        return jdbcClient.sql("""
+                SELECT st.support_ticket_id, st.title, st.status_code, st.created_at, st.updated_at, st.closed_at,
+                       COALESCE(messages.message_count, 0) AS message_count,
+                       messages.latest_message_at
+                FROM support_tickets st
+                LEFT JOIN (
+                    SELECT support_ticket_id, COUNT(*) AS message_count, MAX(created_at) AS latest_message_at
+                    FROM support_ticket_messages
+                    GROUP BY support_ticket_id
+                ) messages ON messages.support_ticket_id = st.support_ticket_id
+                WHERE st.requester_user_id = :userId AND st.support_ticket_id = :ticketId
+                """)
+                .param("userId", userId)
+                .param("ticketId", ticketId)
+                .query(this::mapSupportTicket)
+                .optional();
+    }
+
+    public long createSupportTicket(long userId, String title) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO support_tickets (requester_user_id, title, status_code)
+                VALUES (:userId, :title, 'open')
+                """)
+                .param("userId", userId)
+                .param("title", title)
+                .update(keyHolder, "support_ticket_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public long createSupportTicketMessage(long ticketId, long senderUserId, String content) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO support_ticket_messages (
+                    support_ticket_id,
+                    sender_user_id,
+                    message_type_code,
+                    content
+                )
+                VALUES (:ticketId, :senderUserId, 'user_message', :content)
+                """)
+                .param("ticketId", ticketId)
+                .param("senderUserId", senderUserId)
+                .param("content", content)
+                .update(keyHolder, "support_ticket_message_id");
+
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
     }
 
     public List<ClassmateItem> findClassmates(long userId) {
@@ -198,6 +244,19 @@ public class PriorityP2Repository {
                 rs.getString("mobile_phone"),
                 rs.getString("emergency_phone"),
                 rs.getBoolean("marketing_opt_in")
+        );
+    }
+
+    private SupportTicketItem mapSupportTicket(ResultSet rs, int rowNum) throws SQLException {
+        return new SupportTicketItem(
+                rs.getLong("support_ticket_id"),
+                rs.getString("title"),
+                rs.getString("status_code"),
+                toOffset(rs.getTimestamp("created_at")),
+                toOffset(rs.getTimestamp("updated_at")),
+                toOffset(rs.getTimestamp("closed_at")),
+                rs.getLong("message_count"),
+                toOffset(rs.getTimestamp("latest_message_at"))
         );
     }
 
