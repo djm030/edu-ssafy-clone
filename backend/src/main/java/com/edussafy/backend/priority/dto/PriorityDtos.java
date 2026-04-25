@@ -112,6 +112,12 @@ public final class PriorityDtos {
     public record NotificationsResponse(List<NotificationItem> items, PageMeta page) {
     }
 
+    public record NotificationReadResponse(NotificationItem item, long unreadCount) {
+    }
+
+    public record NotificationsReadAllResponse(List<NotificationItem> items, long unreadCount) {
+    }
+
     public record NotificationItem(long id, String title, String body, OffsetDateTime createdAt, boolean read) {
     }
 

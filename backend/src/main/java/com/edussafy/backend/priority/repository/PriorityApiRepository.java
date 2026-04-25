@@ -23,8 +23,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.jdbc.core.GeneratedKeyHolder;
-import org.springframework.jdbc.core.KeyHolder;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -252,10 +252,7 @@ public class PriorityApiRepository {
     }
 
     public List<NotificationItem> findNotifications(long userId, int limit, int offset) {
-        return jdbcClient.sql("""
-                SELECT n.notification_id, n.title, n.body, n.created_at, nr.read_at
-                FROM notification_recipients nr
-                JOIN notifications n ON n.notification_id = nr.notification_id
+        return notificationSql("""
                 WHERE nr.recipient_user_id = :userId AND nr.deleted_at IS NULL
                 ORDER BY n.created_at DESC, n.notification_id DESC
                 LIMIT :limit OFFSET :offset
@@ -263,14 +260,46 @@ public class PriorityApiRepository {
                 .param("userId", userId)
                 .param("limit", limit)
                 .param("offset", offset)
-                .query((rs, rowNum) -> new NotificationItem(
-                        rs.getLong("notification_id"),
-                        rs.getString("title"),
-                        rs.getString("body"),
-                        toOffset(rs.getTimestamp("created_at")),
-                        rs.getTimestamp("read_at") != null
-                ))
+                .query(this::mapNotification)
                 .list();
+    }
+
+    public Optional<NotificationItem> findNotification(long userId, long notificationId) {
+        return notificationSql("""
+                WHERE nr.recipient_user_id = :userId
+                  AND n.notification_id = :notificationId
+                  AND nr.deleted_at IS NULL
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("notificationId", notificationId)
+                .query(this::mapNotification)
+                .optional();
+    }
+
+    public void markNotificationRead(long userId, long notificationId) {
+        jdbcClient.sql("""
+                UPDATE notification_recipients
+                SET read_at = COALESCE(read_at, CURRENT_TIMESTAMP)
+                WHERE recipient_user_id = :userId
+                  AND notification_id = :notificationId
+                  AND deleted_at IS NULL
+                """)
+                .param("userId", userId)
+                .param("notificationId", notificationId)
+                .update();
+    }
+
+    public void markAllNotificationsRead(long userId) {
+        jdbcClient.sql("""
+                UPDATE notification_recipients
+                SET read_at = COALESCE(read_at, CURRENT_TIMESTAMP)
+                WHERE recipient_user_id = :userId
+                  AND deleted_at IS NULL
+                  AND read_at IS NULL
+                """)
+                .param("userId", userId)
+                .update();
     }
 
     public TodaySummary findTodaySummary(long userId) {
@@ -463,6 +492,24 @@ public class PriorityApiRepository {
                 rs.getString("cohort_name"),
                 rs.getString("track_name")
         );
+    }
+
+    private NotificationItem mapNotification(ResultSet rs, int rowNum) throws SQLException {
+        return new NotificationItem(
+                rs.getLong("notification_id"),
+                rs.getString("title"),
+                rs.getString("body"),
+                toOffset(rs.getTimestamp("created_at")),
+                rs.getTimestamp("read_at") != null
+        );
+    }
+
+    private JdbcClient.StatementSpec notificationSql(String suffix) {
+        return jdbcClient.sql("""
+                SELECT n.notification_id, n.title, n.body, n.created_at, nr.read_at
+                FROM notification_recipients nr
+                JOIN notifications n ON n.notification_id = nr.notification_id
+                """ + suffix);
     }
 
     private SqlParts materialWhere(String keyword, String type) {

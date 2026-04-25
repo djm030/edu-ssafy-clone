@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,6 +20,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
@@ -446,6 +450,36 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.email").value("student@ssafy.com"))
                 .andExpect(jsonPath("$.profile.trackName").value("Java"));
+    }
+
+    @Test
+    void notificationReadReturnsUpdatedItem() throws Exception {
+        given(priorityApiService.markNotificationRead(9L))
+                .willReturn(new NotificationReadResponse(
+                        new NotificationItem(9L, "공지 확인", "알림 본문", null, true),
+                        2L
+                ));
+
+        mockMvc.perform(patch("/api/notifications/9/read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(9))
+                .andExpect(jsonPath("$.item.read").value(true))
+                .andExpect(jsonPath("$.unreadCount").value(2));
+    }
+
+    @Test
+    void notificationReadAllReturnsUpdatedItems() throws Exception {
+        given(priorityApiService.markAllNotificationsRead())
+                .willReturn(new NotificationsReadAllResponse(
+                        List.of(new NotificationItem(3L, "전체 확인", "알림 본문", null, true)),
+                        0L
+                ));
+
+        mockMvc.perform(patch("/api/notifications/read-all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(3))
+                .andExpect(jsonPath("$.items[0].read").value(true))
+                .andExpect(jsonPath("$.unreadCount").value(0));
     }
 
     @Test

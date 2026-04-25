@@ -21,6 +21,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.PageMeta;
@@ -234,6 +236,29 @@ public class PriorityApiService {
                 ? List.of()
                 : safe(() -> repository.findNotifications(user.id(), size, offset(page, size)), List.of());
         return new NotificationsResponse(items, pageMeta(page, size, total));
+    }
+
+    @Transactional
+    public NotificationReadResponse markNotificationRead(long notificationId) {
+        UserProfile user = currentUser();
+        NotificationItem existing = repository.findNotification(user.id(), notificationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found."));
+        if (!existing.read()) {
+            repository.markNotificationRead(user.id(), notificationId);
+        }
+        NotificationItem updated = repository.findNotification(user.id(), notificationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found."));
+        long unreadCount = repository.countUnreadNotifications(user.id());
+        return new NotificationReadResponse(updated, unreadCount);
+    }
+
+    @Transactional
+    public NotificationsReadAllResponse markAllNotificationsRead() {
+        UserProfile user = currentUser();
+        repository.markAllNotificationsRead(user.id());
+        List<NotificationItem> items = safe(() -> repository.findNotifications(user.id(), 20, 0), List.of());
+        long unreadCount = repository.countUnreadNotifications(user.id());
+        return new NotificationsReadAllResponse(items, unreadCount);
     }
 
     public CurriculumResponse curriculum() {

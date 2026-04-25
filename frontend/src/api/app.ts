@@ -25,6 +25,8 @@ import type {
   LoginResponse,
   RoleAccess,
   NotificationItem,
+  NotificationReadResult,
+  NotificationsReadAllResult,
   QnaDraft,
   QuestItem,
   QuestSubmissionDraft,
@@ -359,6 +361,35 @@ export function getNotifications(): Promise<{ items: NotificationItem[] }> {
   return fetchJson<{ items: BackendNotificationItem[] }>('/api/notifications', {
     fallback: () => ({ items: mockNotifications }),
   }).then((response) => ({ items: response.items.map(toNotificationItem) }));
+}
+
+export function markNotificationRead(notificationId: number): Promise<NotificationReadResult> {
+  return fetchJson<{ item: BackendNotificationItem; unreadCount: number }>(`/api/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+    fallback: () => {
+      const item = mockNotifications.find((notification) => notification.id === notificationId);
+      return {
+        item: { ...(item || mockNotifications[0]), id: notificationId, read: true },
+        unreadCount: Math.max(0, mockNotifications.filter((notification) => !notification.read && notification.id !== notificationId).length),
+      };
+    },
+  }).then((response) => ({
+    item: toNotificationItem(response.item),
+    unreadCount: response.unreadCount,
+  }));
+}
+
+export function markAllNotificationsRead(): Promise<NotificationsReadAllResult> {
+  return fetchJson<{ items: BackendNotificationItem[]; unreadCount: number }>('/api/notifications/read-all', {
+    method: 'PATCH',
+    fallback: () => ({
+      items: mockNotifications.map((notification) => ({ ...notification, read: true })),
+      unreadCount: 0,
+    }),
+  }).then((response) => ({
+    items: response.items.map(toNotificationItem),
+    unreadCount: response.unreadCount,
+  }));
 }
 
 export function getCurriculum(): Promise<{ items: CurriculumWeek[] }> {

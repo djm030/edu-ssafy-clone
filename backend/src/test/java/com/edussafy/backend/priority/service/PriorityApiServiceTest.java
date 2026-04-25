@@ -13,6 +13,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
@@ -98,6 +101,47 @@ class PriorityApiServiceTest {
         assertThat(response.item().notification().id()).isEqualTo(900_007L);
         assertThat(response.item().notification().body()).isEqualTo("Let's study together!");
         assertThat(response.item().demo()).isTrue();
+    }
+
+    @Test
+    void marksNotificationReadAndReturnsUnreadCount() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        NotificationItem unread = new NotificationItem(8L, "알림", "확인 필요", OffsetDateTime.parse("2026-04-25T09:00:00+09:00"), false);
+        NotificationItem read = new NotificationItem(8L, "알림", "확인 필요", OffsetDateTime.parse("2026-04-25T09:00:00+09:00"), true);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findNotification(1L, 8L)).willReturn(Optional.of(unread), Optional.of(read));
+        given(repository.countUnreadNotifications(1L)).willReturn(2L);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        NotificationReadResponse response = service.markNotificationRead(8L);
+
+        assertThat(response.item().read()).isTrue();
+        assertThat(response.unreadCount()).isEqualTo(2L);
+        verify(repository).markNotificationRead(1L, 8L);
+    }
+
+    @Test
+    void marksAllNotificationsReadAndReturnsLatestItems() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        NotificationItem read = new NotificationItem(10L, "전체 알림", "모두 확인됨", OffsetDateTime.parse("2026-04-25T09:00:00+09:00"), true);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findNotifications(1L, 20, 0)).willReturn(List.of(read));
+        given(repository.countUnreadNotifications(1L)).willReturn(0L);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        NotificationsReadAllResponse response = service.markAllNotificationsRead();
+
+        assertThat(response.items()).containsExactly(read);
+        assertThat(response.unreadCount()).isZero();
+        verify(repository).markAllNotificationsRead(1L);
     }
 
     @Test

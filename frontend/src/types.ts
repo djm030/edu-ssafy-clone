@@ -95,6 +95,16 @@ export interface NotificationItem {
   read: boolean;
 }
 
+export interface NotificationReadResult {
+  item: NotificationItem;
+  unreadCount: number;
+}
+
+export interface NotificationsReadAllResult {
+  items: NotificationItem[];
+  unreadCount: number;
+}
+
 export interface CurriculumWeek {
   id: number;
   week: number;
