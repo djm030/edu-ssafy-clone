@@ -55,14 +55,21 @@ import com.edussafy.backend.priority.dto.PriorityDtos.UserSummary;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PriorityApiService {
@@ -70,15 +77,12 @@ public class PriorityApiService {
     private static final UserProfile DEMO_USER = new UserProfile(
             1L, "Demo Learner", "student@ssafy.com", "learner", "Seoul", "12", "Java"
     );
-    private static final ProfileDetails DEMO_PROFILE = new ProfileDetails(
-            1L, "Demo Learner", "student@ssafy.com", "learner", null,
-            "Seoul", "12", "Java", null, null, null, null, null, null, false
-    );
     private static final LevelSummary DEMO_LEVEL = new LevelSummary(1, 0, 1000, 0, null);
     private static final AttendanceSummary EMPTY_ATTENDANCE = new AttendanceSummary(0, 0, 0, true);
     private static final TodaySummary EMPTY_TODAY = new TodaySummary(null, null, null);
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_TYPE = "contact_request";
     private static final String DEFAULT_CLASSMATE_NOTIFICATION_MESSAGE = "Let's study together!";
+    private static final String SESSION_USER_ID = "edussafy.currentUserId";
     private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "learner", List.of(
                     "dashboard:read",
@@ -122,8 +126,17 @@ public class PriorityApiService {
     }
 
     public UserResponse login(LoginRequest request) {
-        UserProfile user = safe(() -> repository.findUserByEmail(request.email()).orElse(demoUser(request.email())),
-                demoUser(request.email()));
+        Optional<UserProfile> persistedUser = safe(() -> repository.findUserByEmail(request.email()), Optional.empty());
+        UserProfile user = persistedUser.orElse(demoUser(request.email()));
+        String storedPasswordHash = persistedUser
+                .map(profile -> safe(() -> repository.findPasswordHash(profile.id()).orElse(null), null))
+                .orElse("{noop}password");
+
+        if (!passwordMatches(request.password(), storedPasswordHash)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+        }
+
+        storeCurrentUserId(user.id());
         return new UserResponse(user);
     }
 
@@ -132,7 +145,9 @@ public class PriorityApiService {
     }
 
     public PasswordCheckResponse passwordCheck(PasswordCheckRequest request) {
-        return new PasswordCheckResponse(!request.password().isBlank());
+        UserProfile user = currentUser();
+        String storedHash = safe(() -> repository.findPasswordHash(user.id()).orElse(null), null);
+        return new PasswordCheckResponse(passwordMatches(request.password(), storedHash));
     }
 
     public RoleAccessResponse currentRoleAccess() {
@@ -146,6 +161,7 @@ public class PriorityApiService {
     }
 
     public AuthActionResponse logout() {
+        clearCurrentSession();
         return new AuthActionResponse(true, "Logged out.");
     }
 
@@ -349,7 +365,7 @@ public class PriorityApiService {
         UserProfile user = currentUser();
         ProfileDetails current = safe(() -> p2Repository.findProfile(user.id()).orElse(profileFromUser(user)),
                 profileFromUser(user));
-        return new ProfileResponse(new ProfileDetails(
+        ProfileDetails merged = new ProfileDetails(
                 current.id(),
                 request.name().trim(),
                 current.email(),
@@ -365,11 +381,65 @@ public class PriorityApiService {
                 normalizeNullable(request.mobilePhone()),
                 normalizeNullable(request.emergencyPhone()),
                 request.marketingOptIn() != null ? request.marketingOptIn() : current.marketingOptIn()
-        ));
+        );
+        ProfileDetails persisted = safe(
+                () -> p2Repository.updateProfile(user.id(), request, merged.marketingOptIn()).orElse(merged),
+                merged
+        );
+        return new ProfileResponse(persisted);
     }
 
     private UserProfile currentUser() {
+        Optional<Long> sessionUserId = currentSessionUserId();
+        if (sessionUserId.isPresent()) {
+            Optional<UserProfile> sessionUser = safe(() -> repository.findUserById(sessionUserId.get()), Optional.empty());
+            if (sessionUser.isPresent()) {
+                return sessionUser.get();
+            }
+        }
         return safe(() -> repository.findDefaultUser().orElse(DEMO_USER), DEMO_USER);
+    }
+
+    private Optional<Long> currentSessionUserId() {
+        HttpSession session = currentSession(false);
+        if (session == null) {
+            return Optional.empty();
+        }
+
+        Object userId = session.getAttribute(SESSION_USER_ID);
+        if (userId instanceof Number number) {
+            return Optional.of(number.longValue());
+        }
+        if (userId instanceof String text && !text.isBlank()) {
+            try {
+                return Optional.of(Long.parseLong(text));
+            } catch (NumberFormatException exception) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+
+    private void storeCurrentUserId(long userId) {
+        HttpSession session = currentSession(true);
+        if (session != null) {
+            session.setAttribute(SESSION_USER_ID, userId);
+        }
+    }
+
+    private void clearCurrentSession() {
+        HttpSession session = currentSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+    }
+
+    private HttpSession currentSession(boolean create) {
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+            HttpServletRequest request = attributes.getRequest();
+            return request.getSession(create);
+        }
+        return null;
     }
 
     private String normalizeAccessRole(String role) {
@@ -387,9 +457,6 @@ public class PriorityApiService {
     }
 
     private ProfileDetails profileFromUser(UserProfile user) {
-        if (user.id() == DEMO_PROFILE.id()) {
-            return DEMO_PROFILE;
-        }
         return new ProfileDetails(
                 user.id(),
                 user.name(),
@@ -407,6 +474,19 @@ public class PriorityApiService {
                 null,
                 false
         );
+    }
+
+    private boolean passwordMatches(String rawPassword, String storedHash) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            return false;
+        }
+        if (storedHash == null || storedHash.isBlank()) {
+            return "password".equals(rawPassword);
+        }
+        if (storedHash.startsWith("{noop}")) {
+            return rawPassword.equals(storedHash.substring("{noop}".length()));
+        }
+        return rawPassword.equals(storedHash);
     }
 
     private List<MaterialItem> attachResources(List<MaterialItem> materials) {

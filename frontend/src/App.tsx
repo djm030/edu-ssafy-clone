@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AUTH_REQUIRED_EVENT, FORBIDDEN_EVENT } from './api/client';
 import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
-import { getCurrentRoleAccess, logout } from './api/app';
+import { getCurrentRoleAccess, getMe, logout } from './api/app';
 import { getErrorMessage } from './api/client';
 import { mockUser } from './data/mockData';
 import AdminCampusPage from './pages/AdminCampusPage';
@@ -134,6 +134,23 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
+
+    getMe()
+      .then((response) => {
+        if (!cancelled) setUser(response.user);
+      })
+      .catch((error) => {
+        if (cancelled || getCurrentPath() === '/login') return;
+        setAccessMessage(getErrorMessage(error));
+        window.history.replaceState({}, '', '/login');
+        setPath('/login');
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     getCurrentRoleAccess()
       .then((access) => {
         if (!cancelled) {
@@ -148,7 +165,10 @@ function App() {
   }, [user.email]);
 
   const handleLogout = () => {
-    logout().catch((error) => console.warn(`[auth] logout fallback navigation: ${getErrorMessage(error)}`));
+    logout()
+      .catch((error) => console.warn(`[auth] logout fallback navigation: ${getErrorMessage(error)}`))
+      .finally(() => setUser(mockUser));
+    setRoleAccess(undefined);
     navigate('/login');
   };
 

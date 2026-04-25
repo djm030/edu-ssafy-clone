@@ -9,7 +9,7 @@ interface LoginPageProps {
 }
 
 function LoginPage({ message: initialMessage, onLogin }: LoginPageProps) {
-  const [email, setEmail] = useState('student@ssafy.com');
+  const [email, setEmail] = useState(() => localStorage.getItem('eduSSAFY.email') || 'student@ssafy.com');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
