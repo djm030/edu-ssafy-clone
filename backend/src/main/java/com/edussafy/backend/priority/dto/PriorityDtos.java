@@ -25,6 +25,13 @@ public final class PriorityDtos {
     public record PasswordCheckResponse(boolean valid) {
     }
 
+    public record ProfileEditAuthorizationResponse(
+            boolean verified,
+            OffsetDateTime verifiedUntil,
+            int ttlSeconds
+    ) {
+    }
+
     public record AuthActionResponse(boolean success, String message) {
     }
 

@@ -34,22 +34,27 @@ public final class AuthSession {
     }
 
     public static boolean profileVerified(HttpSession session, Instant now) {
-        if (session == null || now == null) {
-            return false;
+        Optional<Instant> verifiedUntil = profileVerifiedUntil(session);
+        return now != null && verifiedUntil.isPresent() && verifiedUntil.get().isAfter(now);
+    }
+
+    public static Optional<Instant> profileVerifiedUntil(HttpSession session) {
+        if (session == null) {
+            return Optional.empty();
         }
 
         Object expiresAt = session.getAttribute(PROFILE_VERIFIED_UNTIL);
         if (expiresAt instanceof Number number) {
-            return number.longValue() > now.toEpochMilli();
+            return Optional.of(Instant.ofEpochMilli(number.longValue()));
         }
         if (expiresAt instanceof String text && !text.isBlank()) {
             try {
-                return Long.parseLong(text) > now.toEpochMilli();
+                return Optional.of(Instant.ofEpochMilli(Long.parseLong(text)));
             } catch (NumberFormatException exception) {
-                return false;
+                return Optional.empty();
             }
         }
-        return false;
+        return Optional.empty();
     }
 
     public static void markProfileVerified(HttpSession session, Instant now) {

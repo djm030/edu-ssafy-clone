@@ -540,6 +540,12 @@ export function checkProfilePassword(password: string): Promise<{ verified: bool
   }).then((response) => ({ verified: Boolean(response.verified ?? response.valid) }));
 }
 
+export function getProfileEditAuthorization(): Promise<{ verified: boolean; verifiedUntil?: string | null; ttlSeconds: number }> {
+  return fetchJson<{ verified: boolean; verifiedUntil?: string | null; ttlSeconds: number }>('/api/profile/edit-authorization', {
+    fallback: () => ({ verified: true, verifiedUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(), ttlSeconds: 600 }),
+  });
+}
+
 export function getProfile(): Promise<ProfileDetails> {
   return fetchJson<{ profile: ProfileDetails }>('/api/profile', {
     fallback: () => ({

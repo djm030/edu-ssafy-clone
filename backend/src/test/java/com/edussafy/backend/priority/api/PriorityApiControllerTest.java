@@ -41,6 +41,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.PageMeta;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
@@ -265,6 +266,21 @@ class PriorityApiControllerTest {
                         .content("{\"password\":\"password\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true));
+    }
+
+    @Test
+    void profileEditAuthorizationReturnsVerificationWindow() throws Exception {
+        given(priorityApiService.profileEditAuthorization()).willReturn(new ProfileEditAuthorizationResponse(
+                true,
+                OffsetDateTime.parse("2026-04-25T16:00:00Z"),
+                600
+        ));
+
+        mockMvc.perform(get("/api/profile/edit-authorization"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.verified").value(true))
+                .andExpect(jsonPath("$.verifiedUntil").value("2026-04-25T16:00:00Z"))
+                .andExpect(jsonPath("$.ttlSeconds").value(600));
     }
 
     @Test

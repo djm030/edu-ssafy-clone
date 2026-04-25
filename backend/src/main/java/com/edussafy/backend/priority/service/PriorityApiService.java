@@ -34,6 +34,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PageMeta;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
@@ -199,6 +200,22 @@ public class PriorityApiService {
             markProfileVerified();
         }
         return new PasswordCheckResponse(valid);
+    }
+
+    public ProfileEditAuthorizationResponse profileEditAuthorization() {
+        HttpSession session = currentSession(false);
+        if (session == null || AuthSession.currentUserId(session).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        Instant now = Instant.now();
+        Optional<Instant> verifiedUntil = AuthSession.profileVerifiedUntil(session)
+                .filter(expiresAt -> expiresAt.isAfter(now));
+        return new ProfileEditAuthorizationResponse(
+                verifiedUntil.isPresent(),
+                verifiedUntil.map(expiresAt -> OffsetDateTime.ofInstant(expiresAt, ZoneOffset.UTC)).orElse(null),
+                AuthSession.PROFILE_VERIFICATION_TTL_SECONDS
+        );
     }
 
     public RoleAccessResponse currentRoleAccess() {

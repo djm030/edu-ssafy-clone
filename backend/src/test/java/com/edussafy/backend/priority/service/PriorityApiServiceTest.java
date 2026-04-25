@@ -26,6 +26,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllRespon
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
@@ -399,6 +400,51 @@ class PriorityApiServiceTest {
                     .isInstanceOf(ResponseStatusException.class)
                     .hasMessageContaining("401");
             assertThat(request.getSession(false)).isNull();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void profileEditAuthorizationReportsVerifiedWindow() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        AuthSession.markProfileVerified(request.getSession(), java.time.Instant.now());
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        PriorityApiService service = new PriorityApiService(
+                mock(PriorityApiRepository.class),
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            ProfileEditAuthorizationResponse response = service.profileEditAuthorization();
+
+            assertThat(response.verified()).isTrue();
+            assertThat(response.ttlSeconds()).isEqualTo(AuthSession.PROFILE_VERIFICATION_TTL_SECONDS);
+            assertThat(response.verifiedUntil()).isNotNull();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void profileEditAuthorizationRequiresVerifiedSession() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute(AuthSession.CURRENT_USER_ID, 1L);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        PriorityApiService service = new PriorityApiService(
+                mock(PriorityApiRepository.class),
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            ProfileEditAuthorizationResponse response = service.profileEditAuthorization();
+
+            assertThat(response.verified()).isFalse();
+            assertThat(response.verifiedUntil()).isNull();
+            assertThat(response.ttlSeconds()).isEqualTo(AuthSession.PROFILE_VERIFICATION_TTL_SECONDS);
         } finally {
             RequestContextHolder.resetRequestAttributes();
         }

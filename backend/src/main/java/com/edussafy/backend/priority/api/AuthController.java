@@ -5,6 +5,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
@@ -53,5 +54,10 @@ public class AuthController {
     @PostMapping("/profile/password-check")
     public PasswordCheckResponse passwordCheck(@Valid @RequestBody PasswordCheckRequest request) {
         return priorityApiService.passwordCheck(request);
+    }
+
+    @GetMapping("/profile/edit-authorization")
+    public ProfileEditAuthorizationResponse profileEditAuthorization() {
+        return priorityApiService.profileEditAuthorization();
     }
 }

@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { getProfile, updateProfile } from '../api/app';
+import { getProfile, getProfileEditAuthorization, updateProfile } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -39,14 +39,24 @@ function ProfileEditPage() {
   useEffect(() => {
     let ignore = false;
 
-    getProfile()
-      .then((nextProfile) => {
+    getProfileEditAuthorization()
+      .then((authorization) => {
         if (ignore) return;
+        if (!authorization.verified) {
+          setLoadError('회원정보 수정 전 비밀번호 확인이 필요합니다. 상단의 회원정보 버튼으로 다시 확인해 주세요.');
+          setLoadState('error');
+          return Promise.reject(new Error('profile edit authorization required'));
+        }
+        return getProfile();
+      })
+      .then((nextProfile) => {
+        if (ignore || !nextProfile) return;
         applyProfile(nextProfile);
         setLoadState('loaded');
       })
       .catch((error) => {
         if (ignore) return;
+        if (error instanceof Error && error.message === 'profile edit authorization required') return;
         setLoadError(getErrorMessage(error));
         setLoadState('error');
       });
