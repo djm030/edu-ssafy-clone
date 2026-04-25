@@ -207,14 +207,15 @@ public class BoardRepository {
         return key == null ? 0L : key.longValue();
     }
 
-    public long createComment(long postId, Long authorUserId, String content) {
+    public long createComment(long postId, Long authorUserId, Long parentCommentId, String content) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql("""
-                INSERT INTO board_comments (board_post_id, author_user_id, content)
-                VALUES (:postId, :authorUserId, :content)
+                INSERT INTO board_comments (board_post_id, author_user_id, parent_comment_id, content)
+                VALUES (:postId, :authorUserId, :parentCommentId, :content)
                 """)
                 .param("postId", postId)
                 .param("authorUserId", authorUserId)
+                .param("parentCommentId", parentCommentId)
                 .param("content", content)
                 .update(keyHolder, "board_comment_id");
 
@@ -224,7 +225,7 @@ public class BoardRepository {
 
     public Optional<BoardCommentItem> findComment(long commentId) {
         return jdbcClient.sql("""
-                SELECT bc.board_comment_id, bc.board_post_id, bc.content,
+                SELECT bc.board_comment_id, bc.board_post_id, bc.parent_comment_id, bc.content,
                        COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
                 FROM board_comments bc
                 LEFT JOIN users u ON u.user_id = bc.author_user_id
@@ -237,12 +238,15 @@ public class BoardRepository {
 
     public List<BoardCommentItem> findComments(long postId) {
         return jdbcClient.sql("""
-                SELECT bc.board_comment_id, bc.board_post_id, bc.content,
+                SELECT bc.board_comment_id, bc.board_post_id, bc.parent_comment_id, bc.content,
                        COALESCE(u.name, 'Unknown') AS author_name, bc.created_at
                 FROM board_comments bc
                 LEFT JOIN users u ON u.user_id = bc.author_user_id
                 WHERE bc.board_post_id = :postId
-                ORDER BY bc.created_at ASC, bc.board_comment_id ASC
+                ORDER BY COALESCE(bc.parent_comment_id, bc.board_comment_id) ASC,
+                         CASE WHEN bc.parent_comment_id IS NULL THEN 0 ELSE 1 END ASC,
+                         bc.created_at ASC,
+                         bc.board_comment_id ASC
                 """)
                 .param("postId", postId)
                 .query(this::mapComment)
@@ -320,9 +324,11 @@ public class BoardRepository {
         return new BoardCommentItem(
                 rs.getLong("board_comment_id"),
                 rs.getLong("board_post_id"),
+                nullableLong(rs, "parent_comment_id"),
                 rs.getString("content"),
                 rs.getString("author_name"),
-                toOffsetDateTime(rs.getTimestamp("created_at"))
+                toOffsetDateTime(rs.getTimestamp("created_at")),
+                List.of()
         );
     }
 

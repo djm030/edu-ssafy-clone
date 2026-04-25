@@ -20,7 +20,10 @@ import com.edussafy.backend.board.error.BoardNotFoundException;
 import com.edussafy.backend.board.error.BoardPostNotFoundException;
 import com.edussafy.backend.board.error.InvalidBoardQueryException;
 import com.edussafy.backend.board.repository.BoardRepository;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -57,7 +60,7 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         BoardPostDetail post = boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
-        return new BoardPostDetailResponse(withComments(post, boardRepository.findComments(postId)));
+        return new BoardPostDetailResponse(withComments(post, nestComments(boardRepository.findComments(postId))));
     }
 
     @Transactional
@@ -97,15 +100,17 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        validateParentComment(postId, request.parentCommentId());
 
         Long authorUserId = boardRepository.findDefaultAuthorUserId().orElse(null);
-        long commentId = boardRepository.createComment(postId, authorUserId, request.content().trim());
+        long commentId = boardRepository.createComment(postId, authorUserId, request.parentCommentId(), request.content().trim());
         BoardCommentItem created = boardRepository.findComment(commentId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
 
         return new BoardCommentCreateResponse(new BoardCommentCreatedItem(
                 created.id(),
                 created.postId(),
+                created.parentCommentId(),
                 created.content(),
                 created.authorName(),
                 created.createdAt(),
@@ -148,6 +153,42 @@ public class BoardService {
         if (categoryId != null && !boardRepository.existsCategory(boardId, categoryId)) {
             throw new InvalidBoardQueryException("INVALID_CATEGORY", "categoryId must belong to the selected board.");
         }
+    }
+
+    private void validateParentComment(long postId, Long parentCommentId) {
+        if (parentCommentId == null) {
+            return;
+        }
+        BoardCommentItem parent = boardRepository.findComment(parentCommentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        if (parent.postId() != postId) {
+            throw new BoardPostNotFoundException(postId);
+        }
+    }
+
+    private List<BoardCommentItem> nestComments(List<BoardCommentItem> flatComments) {
+        Map<Long, BoardCommentItem> byId = new LinkedHashMap<>();
+        for (BoardCommentItem comment : flatComments) {
+            byId.put(comment.id(), new BoardCommentItem(
+                    comment.id(),
+                    comment.postId(),
+                    comment.parentCommentId(),
+                    comment.content(),
+                    comment.authorName(),
+                    comment.createdAt(),
+                    new ArrayList<>()
+            ));
+        }
+
+        List<BoardCommentItem> roots = new ArrayList<>();
+        for (BoardCommentItem comment : byId.values()) {
+            if (comment.parentCommentId() != null && byId.containsKey(comment.parentCommentId())) {
+                byId.get(comment.parentCommentId()).replies().add(comment);
+            } else {
+                roots.add(comment);
+            }
+        }
+        return roots;
     }
 
     private BoardPostDetail withComments(BoardPostDetail post, List<BoardCommentItem> comments) {

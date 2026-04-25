@@ -164,9 +164,11 @@ export interface BoardPostListItem {
 export interface BoardCommentItem {
   id: number;
   postId: number;
+  parentCommentId?: number | null;
   content: string;
   authorName?: string;
   createdAt?: string;
+  replies?: BoardCommentItem[];
 }
 
 export interface BoardPostListResponse {

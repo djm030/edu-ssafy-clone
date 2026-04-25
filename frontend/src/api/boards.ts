@@ -90,16 +90,23 @@ export function createPost(boardCode: BoardCode, draft: BoardPostDraft): Promise
   }).then((response) => response.item);
 }
 
-export function createComment(boardCode: BoardCode, postId: number, content: string): Promise<BoardCommentItem> {
+export function createComment(
+  boardCode: BoardCode,
+  postId: number,
+  content: string,
+  parentCommentId?: number,
+): Promise<BoardCommentItem> {
   return fetchJson<BoardCommentCreateResponse>(`/api/boards/${boardCode}/posts/${postId}/comments`, {
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, parentCommentId }),
     fallback: () => ({
       item: {
         id: Date.now(),
         postId,
+        parentCommentId: parentCommentId ?? null,
         content,
         authorName: '로컬 데모',
         createdAt: new Date().toISOString(),
+        replies: [],
       },
     }),
     headers: { 'Content-Type': 'application/json' },

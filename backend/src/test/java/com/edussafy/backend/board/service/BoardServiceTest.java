@@ -25,7 +25,7 @@ class BoardServiceTest {
     void getPostAttachesPersistedComments() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
-        BoardCommentItem comment = new BoardCommentItem(44L, 10L, "Persisted comment", "Demo Student", OffsetDateTime.now());
+        BoardCommentItem comment = new BoardCommentItem(44L, 10L, null, "Persisted comment", "Demo Student", OffsetDateTime.now(), List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findComments(10L)).willReturn(List.of(comment));
@@ -35,6 +35,26 @@ class BoardServiceTest {
 
         assertThat(response.comments()).containsExactly(comment);
         assertThat(response.engagement().commentCount()).isEqualTo(0);
+    }
+
+    @Test
+    void getPostNestsPersistedCommentReplies() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Original", List.of());
+        OffsetDateTime now = OffsetDateTime.now();
+        BoardCommentItem parent = new BoardCommentItem(44L, 10L, null, "Persisted comment", "Demo Student", now, List.of());
+        BoardCommentItem reply = new BoardCommentItem(45L, 10L, 44L, "Nested reply", "Demo Manager", now, List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
+        given(repository.findComments(10L)).willReturn(List.of(parent, reply));
+        BoardService service = new BoardService(repository);
+
+        BoardPostDetail response = service.getPost("free", 10L).post();
+
+        assertThat(response.comments()).hasSize(1);
+        assertThat(response.comments().getFirst().id()).isEqualTo(44L);
+        assertThat(response.comments().getFirst().replies()).hasSize(1);
+        assertThat(response.comments().getFirst().replies().getFirst().parentCommentId()).isEqualTo(44L);
     }
 
     @Test
@@ -60,21 +80,42 @@ class BoardServiceTest {
     void createCommentRequiresBoardPostAndPersists() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail post = detail(10L, "Original", List.of());
-        BoardCommentItem comment = new BoardCommentItem(44L, 10L, "Nice", "Demo Student", OffsetDateTime.now());
+        BoardCommentItem comment = new BoardCommentItem(44L, 10L, null, "Nice", "Demo Student", OffsetDateTime.now(), List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
         given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
-        given(repository.createComment(10L, 7L, "Nice")).willReturn(44L);
+        given(repository.createComment(10L, 7L, null, "Nice")).willReturn(44L);
         given(repository.findComment(44L)).willReturn(Optional.of(comment));
         BoardService service = new BoardService(repository);
 
-        BoardCommentCreateResponse response = service.createComment("free", 10L, new BoardCommentCreateRequest(" Nice "));
+        BoardCommentCreateResponse response = service.createComment("free", 10L, new BoardCommentCreateRequest(null, " Nice "));
 
         assertThat(response.item().id()).isEqualTo(44L);
         assertThat(response.item().postId()).isEqualTo(10L);
         assertThat(response.item().content()).isEqualTo("Nice");
         assertThat(response.item().demo()).isFalse();
-        verify(repository).createComment(10L, 7L, "Nice");
+        verify(repository).createComment(10L, 7L, null, "Nice");
+    }
+
+    @Test
+    void createReplyPersistsParentCommentId() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Original", List.of());
+        BoardCommentItem parent = new BoardCommentItem(44L, 10L, null, "Question", "Demo Student", OffsetDateTime.now(), List.of());
+        BoardCommentItem reply = new BoardCommentItem(45L, 10L, 44L, "Reply", "Demo Student", OffsetDateTime.now(), List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 10L)).willReturn(Optional.of(post));
+        given(repository.findComment(44L)).willReturn(Optional.of(parent));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
+        given(repository.createComment(10L, 7L, 44L, "Reply")).willReturn(45L);
+        given(repository.findComment(45L)).willReturn(Optional.of(reply));
+        BoardService service = new BoardService(repository);
+
+        BoardCommentCreateResponse response = service.createComment("free", 10L, new BoardCommentCreateRequest(44L, " Reply "));
+
+        assertThat(response.item().id()).isEqualTo(45L);
+        assertThat(response.item().parentCommentId()).isEqualTo(44L);
+        verify(repository).createComment(10L, 7L, 44L, "Reply");
     }
 
     private BoardPostDetail detail(long id, String title, List<BoardCommentItem> comments) {

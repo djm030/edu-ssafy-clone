@@ -1,6 +1,7 @@
 package com.edussafy.backend.board.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 
@@ -31,7 +32,7 @@ public final class BoardWriteDtos {
     ) {
     }
 
-    public record BoardCommentCreateRequest(@NotBlank @Size(max = 4000) String content) {
+    public record BoardCommentCreateRequest(@Positive Long parentCommentId, @NotBlank @Size(max = 4000) String content) {
     }
 
     public record BoardCommentCreateResponse(BoardCommentCreatedItem item) {
@@ -40,6 +41,7 @@ public final class BoardWriteDtos {
     public record BoardCommentCreatedItem(
             long id,
             long postId,
+            Long parentCommentId,
             String content,
             String authorName,
             OffsetDateTime createdAt,

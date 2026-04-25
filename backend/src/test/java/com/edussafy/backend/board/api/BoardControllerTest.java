@@ -151,7 +151,7 @@ class BoardControllerTest {
     @Test
     void createCommentReturnsPersistedShapeAndReactionKeepsDemoShape() throws Exception {
         given(boardService.createComment(eq("free"), eq(10L), any())).willReturn(new BoardCommentCreateResponse(
-                new BoardCommentCreatedItem(44L, 10L, "Comment", "Demo Learner", null, false)
+                new BoardCommentCreatedItem(44L, 10L, 40L, "Comment", "Demo Learner", null, false)
         ));
         given(boardService.createReaction(eq("free"), eq(10L), any())).willReturn(new BoardReactionCreateResponse(
                 new BoardReactionCreatedItem(10L, "like", true, true)
@@ -159,10 +159,11 @@ class BoardControllerTest {
 
         mockMvc.perform(post("/api/boards/free/posts/10/comments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"content\":\"Comment\"}"))
+                        .content("{\"parentCommentId\":40,\"content\":\"Comment\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.id").value(44))
                 .andExpect(jsonPath("$.item.postId").value(10))
+                .andExpect(jsonPath("$.item.parentCommentId").value(40))
                 .andExpect(jsonPath("$.item.demo").value(false));
         mockMvc.perform(post("/api/boards/free/posts/10/reactions")
                         .contentType(MediaType.APPLICATION_JSON)

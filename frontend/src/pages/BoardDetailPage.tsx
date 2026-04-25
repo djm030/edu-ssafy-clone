@@ -85,7 +85,10 @@ function DetailContent({ boardCode, post, listPath }: { boardCode: BoardCode; po
 function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPostListItem }) {
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<BoardCommentItem[]>(post.comments ?? []);
+  const [replyContent, setReplyContent] = useState('');
+  const [replyParentId, setReplyParentId] = useState<number>();
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [submittingReply, setSubmittingReply] = useState(false);
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [message, setMessage] = useState('댓글을 등록하면 서버에 저장됩니다.');
@@ -93,6 +96,8 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
   useEffect(() => {
     setComments(post.comments ?? []);
     setComment('');
+    setReplyContent('');
+    setReplyParentId(undefined);
     setMessage('댓글을 등록하면 서버에 저장됩니다.');
   }, [post.id, post.comments]);
 
@@ -105,13 +110,33 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
     setMessage('댓글을 등록하는 중입니다.');
     try {
       const created = await createComment(boardCode, post.id, content);
-      setComments((items) => [...items, created]);
+      setComments((items) => [...items, { ...created, replies: created.replies ?? [] }]);
       setComment('');
       setMessage('댓글이 등록되었습니다.');
     } catch (error) {
       setMessage(getErrorMessage(error));
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const submitReply = async (event: FormEvent<HTMLFormElement>, parentId: number) => {
+    event.preventDefault();
+    const content = replyContent.trim();
+    if (!content) return;
+
+    setSubmittingReply(true);
+    setMessage('답글을 등록하는 중입니다.');
+    try {
+      const created = await createComment(boardCode, post.id, content, parentId);
+      setComments((items) => appendReply(items, parentId, { ...created, replies: created.replies ?? [] }));
+      setReplyContent('');
+      setReplyParentId(undefined);
+      setMessage('답글이 등록되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
@@ -132,23 +157,104 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
       </form>
       <p className="form-message" aria-live="polite">{message}</p>
       <section aria-label="댓글 목록">
-        <h3>댓글 {comments.length || post.commentCount || 0}</h3>
+        <h3>댓글 {totalCommentCount(comments) || post.commentCount || 0}</h3>
         {comments.length === 0 ? (
           <p className="muted-text">등록된 댓글이 없습니다.</p>
         ) : (
-          <ul className="info-list">
-            {comments.map((item) => (
-              <li key={item.id}>
-                <strong>{item.authorName || '익명'}</strong>
-                <span>{item.content}</span>
-                <small>{formatDate(item.createdAt)}</small>
-              </li>
-            ))}
-          </ul>
+          <CommentList
+            comments={comments}
+            replyContent={replyContent}
+            replyParentId={replyParentId}
+            submittingReply={submittingReply}
+            onReplyContentChange={setReplyContent}
+            onReplySubmit={submitReply}
+            onReplyToggle={(commentId) => {
+              setReplyParentId((current) => (current === commentId ? undefined : commentId));
+              setReplyContent('');
+            }}
+          />
         )}
       </section>
     </section>
   );
+}
+
+function CommentList({
+  comments,
+  replyContent,
+  replyParentId,
+  submittingReply,
+  onReplyContentChange,
+  onReplySubmit,
+  onReplyToggle,
+}: {
+  comments: BoardCommentItem[];
+  replyContent: string;
+  replyParentId?: number;
+  submittingReply: boolean;
+  onReplyContentChange: (value: string) => void;
+  onReplySubmit: (event: FormEvent<HTMLFormElement>, parentId: number) => Promise<void>;
+  onReplyToggle: (commentId: number) => void;
+}) {
+  return (
+    <ul className="info-list">
+      {comments.map((item) => (
+        <li key={item.id}>
+          <strong>{item.authorName || '익명'}</strong>
+          <span>{item.content}</span>
+          <small>{formatDate(item.createdAt)}</small>
+          <button className="ghost-button" type="button" onClick={() => onReplyToggle(item.id)}>
+            {replyParentId === item.id ? '답글 취소' : '답글'}
+          </button>
+          {replyParentId === item.id ? (
+            <form className="comment-form" onSubmit={(event) => { void onReplySubmit(event, item.id); }}>
+              <label className="visually-hidden" htmlFor={`reply-${item.id}`}>답글</label>
+              <input
+                disabled={submittingReply}
+                id={`reply-${item.id}`}
+                onChange={(event) => onReplyContentChange(event.target.value)}
+                placeholder="답글을 입력하세요"
+                required
+                value={replyContent}
+              />
+              <button className="ghost-button" disabled={submittingReply} type="submit">
+                {submittingReply ? '등록 중' : '답글 등록'}
+              </button>
+            </form>
+          ) : null}
+          {item.replies?.length ? (
+            <div className="detail-info">
+              <CommentList
+                comments={item.replies}
+                replyContent={replyContent}
+                replyParentId={replyParentId}
+                submittingReply={submittingReply}
+                onReplyContentChange={onReplyContentChange}
+                onReplySubmit={onReplySubmit}
+                onReplyToggle={onReplyToggle}
+              />
+            </div>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function appendReply(comments: BoardCommentItem[], parentId: number, reply: BoardCommentItem): BoardCommentItem[] {
+  return comments.map((item) => {
+    if (item.id === parentId) {
+      return { ...item, replies: [...(item.replies ?? []), reply] };
+    }
+    if (item.replies?.length) {
+      return { ...item, replies: appendReply(item.replies, parentId, reply) };
+    }
+    return item;
+  });
+}
+
+function totalCommentCount(comments: BoardCommentItem[]): number {
+  return comments.reduce((total, item) => total + 1 + totalCommentCount(item.replies ?? []), 0);
 }
 
 function formatDate(value?: string): string {
