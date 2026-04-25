@@ -1,12 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { createSupportTicketMessage, getSupportTicket } from '../api/app';
+import { createSupportTicketAnswer, createSupportTicketMessage, getSupportTicket } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
 import type { LoadState, SupportTicketDetail, SupportTicketMessageItem } from '../types';
 
-function QnaDetailPage({ ticketId }: { ticketId: number }) {
+function QnaDetailPage({ canAnswerSupport = false, ticketId }: { canAnswerSupport?: boolean; ticketId: number }) {
   const [ticket, setTicket] = useState<SupportTicketDetail>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -38,21 +38,27 @@ function QnaDetailPage({ ticketId }: { ticketId: number }) {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="문의 상세를 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="문의 내역을 찾을 수 없습니다." message="목록에서 다시 선택해 주세요." /> : null}
-      {ticket ? <TicketContent ticket={ticket} onTicketChange={setTicket} /> : null}
+      {ticket ? <TicketContent canAnswerSupport={canAnswerSupport} ticket={ticket} onTicketChange={setTicket} /> : null}
     </section>
   );
 }
 
 function TicketContent({
+  canAnswerSupport,
   onTicketChange,
   ticket,
 }: {
+  canAnswerSupport: boolean;
   onTicketChange: (ticket: SupportTicketDetail) => void;
   ticket: SupportTicketDetail;
 }) {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState('추가 문의를 남기면 스레드에 바로 저장됩니다.');
+  const [message, setMessage] = useState(canAnswerSupport ? '운영 답변을 등록하면 문의 상태가 답변 완료로 변경됩니다.' : '추가 문의를 남기면 스레드에 바로 저장됩니다.');
+
+  useEffect(() => {
+    setMessage(canAnswerSupport ? '운영 답변을 등록하면 문의 상태가 답변 완료로 변경됩니다.' : '추가 문의를 남기면 스레드에 바로 저장됩니다.');
+  }, [canAnswerSupport, ticket.id]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -62,14 +68,16 @@ function TicketContent({
     setSubmitting(true);
     setMessage('메시지를 저장하는 중입니다.');
     try {
-      const response = await createSupportTicketMessage(ticket.id, { content: trimmed });
+      const response = canAnswerSupport
+        ? await createSupportTicketAnswer(ticket.id, { content: trimmed })
+        : await createSupportTicketMessage(ticket.id, { content: trimmed });
       onTicketChange({
         ...ticket,
         ...response.ticket,
         messages: [...ticket.messages, response.item],
       });
       setContent('');
-      setMessage('메시지가 등록되었습니다.');
+      setMessage(canAnswerSupport ? '운영 답변이 등록되었습니다.' : '메시지가 등록되었습니다.');
     } catch (error) {
       setMessage(getErrorMessage(error));
     } finally {
@@ -108,12 +116,12 @@ function TicketContent({
             disabled={submitting}
             id={`support-message-${ticket.id}`}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="추가 문의 내용을 입력하세요"
+            placeholder={canAnswerSupport ? '운영 답변을 입력하세요' : '추가 문의 내용을 입력하세요'}
             required
             value={content}
           />
           <button className="ghost-button" disabled={submitting} type="submit">
-            {submitting ? '저장 중' : '메시지 등록'}
+            {submitting ? '저장 중' : canAnswerSupport ? '답변 등록' : '메시지 등록'}
           </button>
         </form>
       )}

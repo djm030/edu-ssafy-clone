@@ -333,19 +333,32 @@ public class PriorityApiService {
 
     public SupportTicketsResponse supportTickets(int page, int size) {
         UserProfile user = currentUser();
-        long total = safe(() -> p2Repository.countSupportTickets(user.id()), 0L);
+        boolean supportStaff = canAnswerSupport(user);
+        long total = supportStaff
+                ? safe(p2Repository::countAllSupportTickets, 0L)
+                : safe(() -> p2Repository.countSupportTickets(user.id()), 0L);
         List<SupportTicketItem> items = total == 0
                 ? List.of()
-                : safe(() -> p2Repository.findSupportTickets(user.id(), size, offset(page, size)), List.of());
+                : safe(
+                        () -> supportStaff
+                                ? p2Repository.findAllSupportTickets(size, offset(page, size))
+                                : p2Repository.findSupportTickets(user.id(), size, offset(page, size)),
+                        List.of()
+                );
         return new SupportTicketsResponse(items, pageMeta(page, size, total));
     }
 
     public SupportTicketDetailResponse supportTicket(long ticketId) {
         UserProfile user = currentUser();
-        SupportTicketItem ticket = p2Repository.findSupportTicket(user.id(), ticketId)
+        boolean supportStaff = canAnswerSupport(user);
+        SupportTicketItem ticket = (supportStaff
+                ? p2Repository.findSupportTicketForStaff(ticketId)
+                : p2Repository.findSupportTicket(user.id(), ticketId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket not found."));
         List<SupportTicketMessageItem> messages = safe(
-                () -> p2Repository.findSupportTicketMessages(user.id(), ticketId),
+                () -> supportStaff
+                        ? p2Repository.findSupportTicketMessagesForStaff(ticketId)
+                        : p2Repository.findSupportTicketMessages(user.id(), ticketId),
                 List.of()
         );
         return new SupportTicketDetailResponse(SupportTicketDetail.from(ticket, messages));
@@ -382,6 +395,31 @@ public class PriorityApiService {
         SupportTicketMessageItem message = p2Repository.findSupportTicketMessage(user.id(), ticket.id(), messageId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket message not found."));
         SupportTicketItem updatedTicket = p2Repository.findSupportTicket(user.id(), ticket.id()).orElse(ticket);
+        return new SupportTicketMessageCreateResponse(message, updatedTicket);
+    }
+
+    @Transactional
+    public SupportTicketMessageCreateResponse createSupportTicketAnswer(
+            long ticketId,
+            SupportTicketMessageRequest request
+    ) {
+        UserProfile user = currentUser();
+        if (!canAnswerSupport(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Support answer permission is required.");
+        }
+
+        SupportTicketItem ticket = p2Repository.findSupportTicketForStaff(ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket not found."));
+        if ("closed".equals(ticket.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Closed support ticket cannot receive answers.");
+        }
+
+        String content = request.content().trim();
+        long messageId = p2Repository.createSupportTicketMessage(ticket.id(), user.id(), "admin_reply", content);
+        p2Repository.markSupportTicketAnswered(ticket.id());
+        SupportTicketMessageItem message = p2Repository.findSupportTicketMessageForStaff(ticket.id(), messageId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support answer not found."));
+        SupportTicketItem updatedTicket = p2Repository.findSupportTicketForStaff(ticket.id()).orElse(ticket);
         return new SupportTicketMessageCreateResponse(message, updatedTicket);
     }
 
@@ -521,10 +559,18 @@ public class PriorityApiService {
         if ("student".equals(normalized)) {
             return "learner";
         }
+        if ("manager".equals(normalized) || "instructor".equals(normalized)) {
+            return "coach";
+        }
         if (ROLE_PERMISSIONS.containsKey(normalized)) {
             return normalized;
         }
         return "learner";
+    }
+
+    private boolean canAnswerSupport(UserProfile user) {
+        String role = normalizeAccessRole(user.role());
+        return "coach".equals(role) || "admin".equals(role);
     }
 
     private boolean isAttendanceAppealAvailable(AttendanceRecordItem record) {

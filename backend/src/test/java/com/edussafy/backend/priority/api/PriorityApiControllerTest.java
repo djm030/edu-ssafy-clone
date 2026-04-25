@@ -338,6 +338,30 @@ class PriorityApiControllerTest {
     }
 
     @Test
+    void supportTicketAnswerCreateReturnsPersistedAdminReply() throws Exception {
+        SupportTicketItem updated = new SupportTicketItem(55L, "Need help", "answered", null, null, null, 2L, null);
+        SupportTicketMessageItem message = new SupportTicketMessageItem(
+                68L,
+                55L,
+                2L,
+                "Demo Manager",
+                "admin_reply",
+                "We checked it.",
+                null
+        );
+        given(priorityApiService.createSupportTicketAnswer(eq(55L), any()))
+                .willReturn(new SupportTicketMessageCreateResponse(message, updated));
+
+        mockMvc.perform(post("/api/support/tickets/55/answers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"We checked it.\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.type").value("admin_reply"))
+                .andExpect(jsonPath("$.item.senderName").value("Demo Manager"))
+                .andExpect(jsonPath("$.ticket.status").value("answered"));
+    }
+
+    @Test
     void supportTicketCreateValidatesBody() throws Exception {
         mockMvc.perform(post("/api/support/tickets")
                         .contentType(MediaType.APPLICATION_JSON)

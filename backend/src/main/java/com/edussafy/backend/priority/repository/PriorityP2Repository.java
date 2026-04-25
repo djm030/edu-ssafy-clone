@@ -39,6 +39,15 @@ public class PriorityP2Repository {
                 .single();
     }
 
+    public long countAllSupportTickets() {
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM support_tickets
+                """)
+                .query(Long.class)
+                .single();
+    }
+
     public List<SupportTicketItem> findSupportTickets(long userId, int limit, int offset) {
         return jdbcClient.sql("""
                 SELECT st.support_ticket_id, st.title, st.status_code, st.created_at, st.updated_at, st.closed_at,
@@ -55,6 +64,26 @@ public class PriorityP2Repository {
                 LIMIT :limit OFFSET :offset
                 """)
                 .param("userId", userId)
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapSupportTicket)
+                .list();
+    }
+
+    public List<SupportTicketItem> findAllSupportTickets(int limit, int offset) {
+        return jdbcClient.sql("""
+                SELECT st.support_ticket_id, st.title, st.status_code, st.created_at, st.updated_at, st.closed_at,
+                       COALESCE(messages.message_count, 0) AS message_count,
+                       messages.latest_message_at
+                FROM support_tickets st
+                LEFT JOIN (
+                    SELECT support_ticket_id, COUNT(*) AS message_count, MAX(created_at) AS latest_message_at
+                    FROM support_ticket_messages
+                    GROUP BY support_ticket_id
+                ) messages ON messages.support_ticket_id = st.support_ticket_id
+                ORDER BY st.updated_at DESC, st.support_ticket_id DESC
+                LIMIT :limit OFFSET :offset
+                """)
                 .param("limit", limit)
                 .param("offset", offset)
                 .query(this::mapSupportTicket)
@@ -80,6 +109,24 @@ public class PriorityP2Repository {
                 .optional();
     }
 
+    public Optional<SupportTicketItem> findSupportTicketForStaff(long ticketId) {
+        return jdbcClient.sql("""
+                SELECT st.support_ticket_id, st.title, st.status_code, st.created_at, st.updated_at, st.closed_at,
+                       COALESCE(messages.message_count, 0) AS message_count,
+                       messages.latest_message_at
+                FROM support_tickets st
+                LEFT JOIN (
+                    SELECT support_ticket_id, COUNT(*) AS message_count, MAX(created_at) AS latest_message_at
+                    FROM support_ticket_messages
+                    GROUP BY support_ticket_id
+                ) messages ON messages.support_ticket_id = st.support_ticket_id
+                WHERE st.support_ticket_id = :ticketId
+                """)
+                .param("ticketId", ticketId)
+                .query(this::mapSupportTicket)
+                .optional();
+    }
+
     public List<SupportTicketMessageItem> findSupportTicketMessages(long userId, long ticketId) {
         return jdbcClient.sql("""
                 SELECT stm.support_ticket_message_id, stm.support_ticket_id, stm.sender_user_id,
@@ -92,6 +139,21 @@ public class PriorityP2Repository {
                 ORDER BY stm.created_at ASC, stm.support_ticket_message_id ASC
                 """)
                 .param("userId", userId)
+                .param("ticketId", ticketId)
+                .query(this::mapSupportTicketMessage)
+                .list();
+    }
+
+    public List<SupportTicketMessageItem> findSupportTicketMessagesForStaff(long ticketId) {
+        return jdbcClient.sql("""
+                SELECT stm.support_ticket_message_id, stm.support_ticket_id, stm.sender_user_id,
+                       COALESCE(u.name, 'Unknown') AS sender_name,
+                       stm.message_type_code, stm.content, stm.created_at
+                FROM support_ticket_messages stm
+                LEFT JOIN users u ON u.user_id = stm.sender_user_id
+                WHERE stm.support_ticket_id = :ticketId
+                ORDER BY stm.created_at ASC, stm.support_ticket_message_id ASC
+                """)
                 .param("ticketId", ticketId)
                 .query(this::mapSupportTicketMessage)
                 .list();
@@ -110,6 +172,22 @@ public class PriorityP2Repository {
                   AND stm.support_ticket_message_id = :messageId
                 """)
                 .param("userId", userId)
+                .param("ticketId", ticketId)
+                .param("messageId", messageId)
+                .query(this::mapSupportTicketMessage)
+                .optional();
+    }
+
+    public Optional<SupportTicketMessageItem> findSupportTicketMessageForStaff(long ticketId, long messageId) {
+        return jdbcClient.sql("""
+                SELECT stm.support_ticket_message_id, stm.support_ticket_id, stm.sender_user_id,
+                       COALESCE(u.name, 'Unknown') AS sender_name,
+                       stm.message_type_code, stm.content, stm.created_at
+                FROM support_ticket_messages stm
+                LEFT JOIN users u ON u.user_id = stm.sender_user_id
+                WHERE stm.support_ticket_id = :ticketId
+                  AND stm.support_ticket_message_id = :messageId
+                """)
                 .param("ticketId", ticketId)
                 .param("messageId", messageId)
                 .query(this::mapSupportTicketMessage)
@@ -159,6 +237,18 @@ public class PriorityP2Repository {
         jdbcClient.sql("""
                 UPDATE support_tickets
                 SET status_code = 'open',
+                    closed_at = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE support_ticket_id = :ticketId
+                """)
+                .param("ticketId", ticketId)
+                .update();
+    }
+
+    public void markSupportTicketAnswered(long ticketId) {
+        jdbcClient.sql("""
+                UPDATE support_tickets
+                SET status_code = 'answered',
                     closed_at = NULL,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE support_ticket_id = :ticketId

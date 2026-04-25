@@ -175,7 +175,7 @@ function App() {
   };
 
   const accessDenied = isDeniedPath(path, roleAccess);
-  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path);
+  const page = accessDenied ? <UnauthorizedPage onGoHome={() => navigate('/')} path={path} /> : renderPage(path, roleAccess);
 
   if (path === '/login') {
     return <LoginPage message={accessMessage} onLogin={(nextUser) => { setUser(nextUser); setAccessMessage(''); navigate('/'); }} />;
@@ -200,7 +200,7 @@ function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
   return Boolean(roleAccess?.deniedRoutes.some((route) => path === route || path.startsWith(`${route}/`)));
 }
 
-function renderPage(path: string) {
+function renderPage(path: string, roleAccess?: RoleAccess) {
   const match = (pattern: RegExp) => path.match(pattern);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
@@ -226,11 +226,11 @@ function renderPage(path: string) {
   if (path === '/profile/edit') return <ProfileEditPage />;
   if (path === '/community/classmates') return <ClassmatesPage />;
   if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage />;
-  if (path === '/help/qna') return <QnaListPage />;
+  if (path === '/help/qna') return <QnaListPage canAnswerSupport={canAnswerSupport(roleAccess)} />;
   if (path === '/quest') return <QuestPage />;
   if (path === '/survey') return <SurveyPage />;
   if (path === '/help/qna/new') return <QnaNewPage />;
-  if (qnaTicketMatch) return <QnaDetailPage ticketId={Number(qnaTicketMatch[1])} />;
+  if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;
   if (surveyRespondMatch) return <SurveyRespondPage surveyId={Number(surveyRespondMatch[1])} />;
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;
@@ -243,6 +243,10 @@ function renderPage(path: string) {
   if (boardScreens[path]) return <BoardListPage config={boardScreens[path]} key={path} />;
 
   return <DashboardPage />;
+}
+
+function canAnswerSupport(roleAccess?: RoleAccess): boolean {
+  return Boolean(roleAccess?.permissions.includes('*') || roleAccess?.permissions.includes('support:answer'));
 }
 
 export default App;

@@ -531,6 +531,34 @@ export function createSupportTicketMessage(
   });
 }
 
+export function createSupportTicketAnswer(
+  ticketId: number,
+  draft: SupportTicketMessageDraft,
+): Promise<{ item: SupportTicketMessageItem; ticket: SupportTicketItem }> {
+  return fetchJson<{ item: SupportTicketMessageItem; ticket: SupportTicketItem }>(`/api/support/tickets/${ticketId}/answers`, {
+    body: JSON.stringify(draft),
+    fallback: () => ({
+      item: {
+        id: Date.now(),
+        ticketId,
+        senderName: '운영진',
+        type: 'admin_reply',
+        content: draft.content,
+        createdAt: new Date().toISOString(),
+      },
+      ticket: {
+        id: ticketId,
+        title: '1:1 문의',
+        status: 'answered',
+        messageCount: 1,
+        latestMessageAt: new Date().toISOString(),
+      },
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  });
+}
+
 export function createFreePost(draft: BoardPostDraft): Promise<{ id: number; title: string }> {
   return fetchJson<ItemResponse<{ id: number; title: string }>>('/api/boards/free/posts', {
     body: JSON.stringify(draft),

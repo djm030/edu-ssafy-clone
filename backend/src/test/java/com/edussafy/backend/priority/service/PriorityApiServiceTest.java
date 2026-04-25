@@ -52,6 +52,9 @@ class PriorityApiServiceTest {
     private static final UserProfile USER = new UserProfile(
             1L, "Demo Student", "student@ssafy.com", "learner", "Seoul", "12th", "Java"
     );
+    private static final UserProfile STAFF_USER = new UserProfile(
+            2L, "Demo Manager", "manager@ssafy.com", "manager", "Seoul", "12th", "Java"
+    );
 
     @Test
     void exposesLearnerRolePermissionsByDefault() {
@@ -496,6 +499,79 @@ class PriorityApiServiceTest {
         assertThat(response.ticket().messageCount()).isEqualTo(2L);
         assertThat(response.ticket().status()).isEqualTo("open");
         verify(p2Repository).markSupportTicketOpen(55L);
+    }
+
+    @Test
+    void persistsSupportTicketAnswerAsAdminReply() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        OffsetDateTime now = OffsetDateTime.now();
+        SupportTicketItem existing = new SupportTicketItem(
+                55L,
+                "Need help",
+                "open",
+                now,
+                now,
+                null,
+                1L,
+                now
+        );
+        SupportTicketItem answered = new SupportTicketItem(
+                55L,
+                "Need help",
+                "answered",
+                now,
+                now,
+                null,
+                2L,
+                now
+        );
+        SupportTicketMessageItem storedAnswer = new SupportTicketMessageItem(
+                68L,
+                55L,
+                2L,
+                "Demo Manager",
+                "admin_reply",
+                "We checked it.",
+                now
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        given(p2Repository.findSupportTicketForStaff(55L)).willReturn(Optional.of(existing), Optional.of(answered));
+        given(p2Repository.createSupportTicketMessage(55L, 2L, "admin_reply", "We checked it.")).willReturn(68L);
+        given(p2Repository.findSupportTicketMessageForStaff(55L, 68L)).willReturn(Optional.of(storedAnswer));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        SupportTicketMessageCreateResponse response = service.createSupportTicketAnswer(
+                55L,
+                new SupportTicketMessageRequest(" We checked it. ")
+        );
+
+        assertThat(response.item()).isEqualTo(storedAnswer);
+        assertThat(response.ticket().status()).isEqualTo("answered");
+        verify(p2Repository).markSupportTicketAnswered(55L);
+    }
+
+    @Test
+    void rejectsSupportTicketAnswerForLearner() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThatThrownBy(() -> service.createSupportTicketAnswer(
+                55L,
+                new SupportTicketMessageRequest("Learner cannot answer.")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("403");
     }
 
     private SurveyDetail surveyDetail(long id) {

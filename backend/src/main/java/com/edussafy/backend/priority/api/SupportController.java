@@ -59,4 +59,13 @@ public class SupportController {
     ) {
         return priorityApiService.createSupportTicketMessage(ticketId, request);
     }
+
+    @PostMapping("/tickets/{ticketId}/answers")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SupportTicketMessageCreateResponse createTicketAnswer(
+            @PathVariable @Min(1) long ticketId,
+            @Valid @RequestBody SupportTicketMessageRequest request
+    ) {
+        return priorityApiService.createSupportTicketAnswer(ticketId, request);
+    }
 }

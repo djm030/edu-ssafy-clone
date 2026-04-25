@@ -6,7 +6,7 @@ import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
 import type { LoadState, SupportTicketItem } from '../types';
 
-function QnaListPage() {
+function QnaListPage({ canAnswerSupport = false }: { canAnswerSupport?: boolean }) {
   const [tickets, setTickets] = useState<SupportTicketItem[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -34,7 +34,11 @@ function QnaListPage() {
 
   return (
     <section className="page">
-      <PageHeader eyebrow="HELP DESK" title="1:1 문의" description="내 문의 내역과 답변 상태를 확인합니다." />
+      <PageHeader
+        eyebrow="HELP DESK"
+        title={canAnswerSupport ? '1:1 문의 답변' : '1:1 문의'}
+        description={canAnswerSupport ? '교육생 문의를 확인하고 운영 답변을 등록합니다.' : '내 문의 내역과 답변 상태를 확인합니다.'}
+      />
       <div className="action-row">
         <a className="primary-action" href="/help/qna/new">문의 등록</a>
       </div>

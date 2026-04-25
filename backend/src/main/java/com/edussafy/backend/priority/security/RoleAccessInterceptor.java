@@ -68,6 +68,9 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         if ("student".equals(normalized)) {
             return "learner";
         }
+        if ("manager".equals(normalized) || "instructor".equals(normalized)) {
+            return "coach";
+        }
         if (Set.of("learner", "coach", "admin").contains(normalized)) {
             return normalized;
         }
