@@ -35,6 +35,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitReques
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyResponseSubmitResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveySavedAnswerItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
@@ -50,6 +51,7 @@ import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
 import com.edussafy.backend.priority.security.AuthSession;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -748,6 +750,9 @@ class PriorityApiServiceTest {
 
         assertThat(response.item()).isEqualTo(attachment);
         assertThat(response.message().attachments()).containsExactly(attachment);
+        SupportTicketAttachmentDownload download = service.downloadSupportTicketMessageAttachment(55L, 67L, 77L);
+        assertThat(download.item()).isEqualTo(attachment);
+        assertThat(download.content()).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
         verify(p2Repository).linkSupportTicketMessageAttachment(67L, 77L);
     }
 

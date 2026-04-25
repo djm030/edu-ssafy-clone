@@ -688,6 +688,10 @@ export function createSupportTicketMessageAttachment(
   );
 }
 
+export function supportTicketAttachmentDownloadUrl(ticketId: number, messageId: number, attachmentId: number): string {
+  return `/api/support/tickets/${ticketId}/messages/${messageId}/attachments/${attachmentId}`;
+}
+
 export function createFreePost(draft: BoardPostDraft): Promise<{ id: number; title: string }> {
   return fetchJson<ItemResponse<{ id: number; title: string }>>('/api/boards/free/posts', {
     body: JSON.stringify(draft),

@@ -4,6 +4,7 @@ import {
   createSupportTicketMessage,
   createSupportTicketMessageAttachment,
   getSupportTicket,
+  supportTicketAttachmentDownloadUrl,
 } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
@@ -182,7 +183,7 @@ function MessageThread({
             <StatusPill tone={item.type === 'admin_reply' ? 'green' : 'blue'}>{messageTypeLabel(item.type)}</StatusPill>
             <span>{item.content}</span>
             <small>{formatDate(item.createdAt)}</small>
-            <AttachmentList attachments={item.attachments ?? []} />
+            <AttachmentList attachments={item.attachments ?? []} messageId={item.id} ticketId={ticketId} />
             {ticketStatus === 'closed' || (!canAnswerSupport && item.type !== 'user_message') ? null : (
               <AttachmentUploader message={item} onUploaded={onMessageChange} ticketId={ticketId} />
             )}
@@ -193,7 +194,15 @@ function MessageThread({
   );
 }
 
-function AttachmentList({ attachments }: { attachments: SupportTicketAttachmentItem[] }) {
+function AttachmentList({
+  attachments,
+  messageId,
+  ticketId,
+}: {
+  attachments: SupportTicketAttachmentItem[];
+  messageId: number;
+  ticketId: number;
+}) {
   if (attachments.length === 0) {
     return <span className="muted-text">첨부파일 없음</span>;
   }
@@ -202,7 +211,11 @@ function AttachmentList({ attachments }: { attachments: SupportTicketAttachmentI
     <ul className="info-list" aria-label="첨부파일">
       {attachments.map((attachment) => (
         <li key={attachment.id}>
-          <strong>{attachment.filename}</strong>
+          <strong>
+            <a download href={supportTicketAttachmentDownloadUrl(ticketId, messageId, attachment.id)}>
+              {attachment.filename}
+            </a>
+          </strong>
           <span>{attachment.mimeType || 'application/octet-stream'} · {formatFileSize(attachment.fileSize)}</span>
         </li>
       ))}

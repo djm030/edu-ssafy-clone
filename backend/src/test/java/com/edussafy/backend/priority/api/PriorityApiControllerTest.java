@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,6 +45,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetail;
@@ -63,6 +66,7 @@ import com.edussafy.backend.priority.security.AuthSession;
 import com.edussafy.backend.priority.security.RoleAccessInterceptor;
 import com.edussafy.backend.priority.security.RoleAccessWebConfig;
 import com.edussafy.backend.priority.service.PriorityApiService;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -510,6 +514,32 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.id").value(77))
                 .andExpect(jsonPath("$.item.filename").value("error.png"))
                 .andExpect(jsonPath("$.message.attachments[0].id").value(77));
+    }
+
+    @Test
+    void supportTicketAttachmentDownloadReturnsStoredBytes() throws Exception {
+        SupportTicketAttachmentItem attachment = new SupportTicketAttachmentItem(
+                77L,
+                67L,
+                "error.png",
+                "support/tickets/55/messages/67/abc-error.png",
+                "/support/tickets/55/messages/67/attachments/abc",
+                "image/png",
+                5L,
+                "abc",
+                null
+        );
+        given(priorityApiService.downloadSupportTicketMessageAttachment(55L, 67L, 77L))
+                .willReturn(new SupportTicketAttachmentDownload(attachment, "hello".getBytes(StandardCharsets.UTF_8)));
+
+        mockMvc.perform(get("/api/support/tickets/55/messages/67/attachments/77"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "image/png"))
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        "attachment; filename=\"=?UTF-8?Q?error.png?=\"; filename*=UTF-8''error.png"
+                ))
+                .andExpect(content().bytes("hello".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test

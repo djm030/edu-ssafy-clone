@@ -45,6 +45,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketDetail;
@@ -76,6 +77,11 @@ import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyRespo
 import com.edussafy.backend.priority.security.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
@@ -564,8 +570,27 @@ public class PriorityApiService {
         p2Repository.linkSupportTicketMessageAttachment(message.id(), attachmentId);
         SupportTicketAttachmentItem attachment = p2Repository.findSupportTicketMessageAttachment(message.id(), attachmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support attachment not found."));
+        storeSupportAttachment(attachment, fileBytes);
         List<SupportTicketAttachmentItem> attachments = p2Repository.findSupportTicketMessageAttachments(List.of(message.id()));
         return new SupportTicketAttachmentCreateResponse(attachment, message.withAttachments(attachments));
+    }
+
+    public SupportTicketAttachmentDownload downloadSupportTicketMessageAttachment(
+            long ticketId,
+            long messageId,
+            long attachmentId
+    ) {
+        UserProfile user = currentUser();
+        boolean supportStaff = canAnswerSupport(user);
+        SupportTicketMessageItem message = (supportStaff
+                ? p2Repository.findSupportTicketMessageForStaff(ticketId, messageId)
+                : p2Repository.findSupportTicketMessage(user.id(), ticketId, messageId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support ticket message not found."));
+        SupportTicketAttachmentItem attachment = p2Repository.findSupportTicketMessageAttachment(message.id(), attachmentId)
+                .filter(item -> item.messageId() == message.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Support attachment not found."));
+
+        return new SupportTicketAttachmentDownload(attachment, readSupportAttachment(attachment));
     }
 
     public ClassmatesResponse classmates() {
@@ -747,6 +772,36 @@ public class PriorityApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment filename is required.");
         }
         return normalized.length() <= 255 ? normalized : normalized.substring(0, 255);
+    }
+
+    private void storeSupportAttachment(SupportTicketAttachmentItem attachment, byte[] content) {
+        Path path = supportAttachmentPath(attachment);
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Support attachment could not be stored.", exception);
+        }
+    }
+
+    private byte[] readSupportAttachment(SupportTicketAttachmentItem attachment) {
+        try {
+            return Files.readAllBytes(supportAttachmentPath(attachment));
+        } catch (NoSuchFileException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Support attachment file was not found.", exception);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Support attachment could not be read.", exception);
+        }
+    }
+
+    private Path supportAttachmentPath(SupportTicketAttachmentItem attachment) {
+        String storageKey = normalizeWithDefault(attachment.storageKey(), "support/attachments/%d".formatted(attachment.id()));
+        Path root = Path.of(System.getProperty("java.io.tmpdir"), "edussafy-attachments").toAbsolutePath().normalize();
+        Path path = root.resolve(storageKey).normalize();
+        if (!path.startsWith(root)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment storage key is invalid.");
+        }
+        return path;
     }
 
     private String sha256Hex(byte[] content) {

@@ -423,6 +423,12 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record SupportTicketAttachmentDownload(
+            SupportTicketAttachmentItem item,
+            byte[] content
+    ) {
+    }
+
     public record ClassmatesResponse(List<ClassmateItem> items) {
     }
 
