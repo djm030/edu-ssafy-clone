@@ -1,5 +1,10 @@
 # Test Report
 
+## Production Profile Config Verification (2026-04-26 KST)
+- Added `application-prod.yml` with secret environment variables required without defaults, secure/strict session cookie defaults, and noop password login disabled.
+- Added a focused config regression test to guard the production profile.
+
+
 ## Role Access Matrix Verification (2026-04-26 KST)
 - Added focused interceptor tests for public health, missing-session JSON errors, authenticated learner reads, and protected mutation role gates for survey creation, attendance resolve, classmate notifications, support answers, and admin campus structure.
 - `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=RoleAccessInterceptorTest test` -> PASS, Tests run: 17, Failures: 0, Errors: 0, Skipped: 0.

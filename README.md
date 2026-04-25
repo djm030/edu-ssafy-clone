@@ -44,6 +44,13 @@ Demo login:
 
 Session/cookie hardening defaults are controlled through `.env`:
 
+
+Production profile notes:
+
+- Keep `SPRING_PROFILES_ACTIVE=docker` for the bundled local Compose demo.
+- For production-like deployments set `SPRING_PROFILES_ACTIVE=prod` and provide `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_RABBITMQ_USERNAME`, and `SPRING_RABBITMQ_PASSWORD`; the prod profile intentionally has no secret fallbacks.
+- The prod profile defaults session cookies to `Secure` and `SameSite=Strict`; override only when a trusted HTTPS edge/proxy policy requires a different value.
+
 - `EDUSSAFY_AUTH_ALLOW_NOOP_PASSWORDS=false` keeps legacy plaintext-style demo hashes disabled.
 - `SERVER_SERVLET_SESSION_TIMEOUT=30m` aligns the servlet container with the app session TTL.
 - Set `SERVER_SERVLET_SESSION_COOKIE_SECURE=true` when serving through HTTPS.

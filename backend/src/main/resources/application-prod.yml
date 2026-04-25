@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  rabbitmq:
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${SERVER_SERVLET_SESSION_COOKIE_SECURE:true}
+        same-site: ${SERVER_SERVLET_SESSION_COOKIE_SAME_SITE:strict}
+
+edussafy:
+  auth:
+    password:
+      allow-noop: false
