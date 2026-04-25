@@ -89,7 +89,7 @@
                             <backend>html</backend>
                             <doctype>book</doctype>
                             <sourceDirectory>${project.basedir}/src/docs/asciidoc</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-docs</outputDirectory>
+                            <outputDirectory>${project.build.outputDirectory}/static/docs/api</outputDirectory>
                             <attributes>
                                 <snippets>${project.build.directory}/generated-snippets</snippets>
                             </attributes>

@@ -17,10 +17,17 @@ mvn -B test
 mvn -B prepare-package
 ```
 
+Then start the backend and open:
+
+```text
+http://localhost:8080/docs/api/index.html
+```
+
 ## Outputs
 
 - Snippets: `backend/target/generated-snippets/`
-- HTML page: `backend/target/generated-docs/index.html` after `prepare-package` or `package`
+- Packaged HTML page: `backend/target/classes/static/docs/api/index.html` after `prepare-package` or `package`
+- Server URL after starting the backend from that build output: `http://localhost:8080/docs/api/index.html`
 - Source: `backend/src/docs/asciidoc/index.adoc`
 - Tests: `backend/src/test/java/com/edussafy/backend/docs/ApiRestDocsTest.java`
 
