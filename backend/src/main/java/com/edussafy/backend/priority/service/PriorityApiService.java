@@ -920,7 +920,7 @@ public class PriorityApiService {
             return false;
         }
         if (storedHash == null || storedHash.isBlank()) {
-            return "password".equals(rawPassword);
+            return false;
         }
         if (storedHash.startsWith("{noop}")) {
             return rawPassword.equals(storedHash.substring("{noop}".length()));

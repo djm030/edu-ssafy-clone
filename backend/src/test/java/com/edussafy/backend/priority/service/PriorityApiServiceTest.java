@@ -336,6 +336,29 @@ class PriorityApiServiceTest {
     }
 
     @Test
+    void loginRejectsUserWithoutStoredPasswordHash() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        given(repository.findUserByEmail("student@ssafy.com")).willReturn(Optional.of(USER));
+        given(repository.findPasswordHash(1L)).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        try {
+            assertThatThrownBy(() -> service.login(new LoginRequest("student@ssafy.com", "password")))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("401");
+            assertThat(request.getSession(false)).isNull();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
     void loginRejectsUnknownEmailWithoutCreatingDemoSession() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
         MockHttpServletRequest request = new MockHttpServletRequest();
