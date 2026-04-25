@@ -96,6 +96,7 @@ class BoardControllerTest {
                 new CategorySummary(1L, "General"),
                 "Notice title",
                 "Notice content",
+                1L,
                 "Admin",
                 null,
                 null,

@@ -9,6 +9,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -29,6 +30,13 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidBoardQuery(InvalidBoardQueryException exception) {
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(exception.code(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException exception) {
+        HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
+        return ResponseEntity.status(status)
+                .body(ErrorResponse.of(status.name(), exception.getReason()));
     }
 
     @ExceptionHandler({

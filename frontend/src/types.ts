@@ -170,6 +170,7 @@ export interface BoardPostListItem {
   isPinned?: boolean;
   isNew?: boolean;
   content?: string;
+  authorUserId?: number | null;
   comments?: BoardCommentItem[];
   attachments?: BoardAttachmentItem[];
 }

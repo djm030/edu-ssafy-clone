@@ -11,6 +11,7 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             CategorySummary category,
             String title,
             String content,
+            Long authorUserId,
             String authorName,
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt,

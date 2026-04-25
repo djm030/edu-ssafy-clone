@@ -1,9 +1,11 @@
 package com.edussafy.backend.board.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
@@ -23,10 +25,16 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.CategorySummary;
 import com.edussafy.backend.board.repository.BoardRepository;
+import com.edussafy.backend.priority.security.AuthSession;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 class BoardServiceTest {
 
@@ -93,6 +101,7 @@ class BoardServiceTest {
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.existsCategory(1L, 4L)).willReturn(true);
         given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(existing), Optional.of(updated));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
         given(repository.updatePost(1L, 33L, 4L, "Updated", "Changed body")).willReturn(1);
         BoardService service = new BoardService(repository);
 
@@ -106,11 +115,41 @@ class BoardServiceTest {
     }
 
     @Test
+    void updatePostRejectsNonAuthorInWebRequest() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail existing = detail(33L, "Before", List.of());
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.existsCategory(1L, 4L)).willReturn(true);
+        given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(existing));
+        BoardService service = new BoardService(repository);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(AuthSession.CURRENT_USER_ID, 8L);
+        request.setSession(session);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        try {
+            assertThatThrownBy(() -> service.updatePost(
+                    "free",
+                    33L,
+                    new BoardPostCreateRequest(4L, "Updated", "Changed body")
+            ))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("403")
+                    .hasMessageContaining("게시글 작성자만");
+            verify(repository, never()).updatePost(1L, 33L, 4L, "Updated", "Changed body");
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
     void deletePostRequiresBoardPostAndDeletes() {
         BoardRepository repository = mock(BoardRepository.class);
         BoardPostDetail existing = detail(33L, "Before", List.of());
         given(repository.findBoardId("free")).willReturn(Optional.of(1L));
         given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(existing));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
         given(repository.deletePost(1L, 33L)).willReturn(1);
         BoardService service = new BoardService(repository);
 
@@ -274,6 +313,7 @@ class BoardServiceTest {
                 new CategorySummary(4L, "General"),
                 title,
                 content,
+                7L,
                 "Demo Student",
                 OffsetDateTime.now(),
                 OffsetDateTime.now(),

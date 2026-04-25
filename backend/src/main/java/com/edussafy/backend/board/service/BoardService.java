@@ -36,9 +36,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import com.edussafy.backend.priority.security.AuthSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class BoardService {
@@ -84,7 +92,7 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         validateCategory(boardId, request.categoryId());
 
-        Long authorUserId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        Long authorUserId = currentBoardActorUserId();
         long postId = boardRepository.createPost(
                 boardId,
                 request.categoryId(),
@@ -111,8 +119,9 @@ public class BoardService {
     public BoardPostUpdateResponse updatePost(String boardCode, long postId, BoardPostCreateRequest request) {
         long boardId = requireBoardId(boardCode);
         validateCategory(boardId, request.categoryId());
-        boardRepository.findPostDetail(boardId, postId)
+        BoardPostDetail existing = boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        requirePostMutationAllowed(existing);
 
         int updated = boardRepository.updatePost(
                 boardId,
@@ -142,8 +151,9 @@ public class BoardService {
     @Transactional
     public BoardPostDeleteResponse deletePost(String boardCode, long postId) {
         long boardId = requireBoardId(boardCode);
-        boardRepository.findPostDetail(boardId, postId)
+        BoardPostDetail existing = boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        requirePostMutationAllowed(existing);
         int deleted = boardRepository.deletePost(boardId, postId);
         if (deleted == 0) {
             throw new BoardPostNotFoundException(postId);
@@ -214,7 +224,7 @@ public class BoardService {
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
         validateParentComment(postId, request.parentCommentId());
 
-        Long authorUserId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        Long authorUserId = currentBoardActorUserId();
         long commentId = boardRepository.createComment(postId, authorUserId, request.parentCommentId(), request.content().trim());
         BoardCommentItem created = boardRepository.findComment(commentId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
@@ -290,7 +300,7 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
-        Long userId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        Long userId = currentBoardActorUserId();
         String type = request.type().trim().toLowerCase();
         if (userId != null) {
             boardRepository.createReaction(postId, userId, type);
@@ -312,7 +322,7 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
-        Long userId = boardRepository.findDefaultAuthorUserId().orElse(null);
+        Long userId = currentBoardActorUserId();
         String normalizedType = StringUtils.hasText(type) ? type.trim().toLowerCase() : "like";
         if (userId != null) {
             boardRepository.deleteReaction(postId, userId, normalizedType);
@@ -384,6 +394,38 @@ public class BoardService {
         return roots;
     }
 
+
+    private Long currentBoardActorUserId() {
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+            HttpServletRequest request = attributes.getRequest();
+            HttpSession session = request.getSession(false);
+            return AuthSession.currentUserId(session)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."));
+        }
+        return boardRepository.findDefaultAuthorUserId().orElse(null);
+    }
+
+    private void requirePostMutationAllowed(BoardPostDetail post) {
+        Long actorUserId = currentBoardActorUserId();
+        if (actorUserId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        if (isBoardModerator()) {
+            return;
+        }
+        if (!Objects.equals(post.authorUserId(), actorUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "게시글 작성자만 수정하거나 삭제할 수 있습니다.");
+        }
+    }
+
+    private boolean isBoardModerator() {
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+            Object role = attributes.getRequest().getAttribute("currentRole");
+            return "coach".equals(role) || "admin".equals(role);
+        }
+        return false;
+    }
+
     private String normalizedOrNull(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
@@ -403,6 +445,7 @@ public class BoardService {
                 post.category(),
                 post.title(),
                 post.content(),
+                post.authorUserId(),
                 post.authorName(),
                 post.createdAt(),
                 post.updatedAt(),

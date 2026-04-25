@@ -152,6 +152,7 @@ public class BoardRepository {
                     c.category_name,
                     p.title,
                     p.content,
+                    p.author_user_id,
                     COALESCE(u.name, 'Unknown') AS author_name,
                     p.created_at,
                     p.updated_at,
@@ -483,6 +484,7 @@ public class BoardRepository {
                 category,
                 rs.getString("title"),
                 rs.getString("content"),
+                nullableLong(rs, "author_user_id"),
                 rs.getString("author_name"),
                 toOffsetDateTime(rs.getTimestamp("created_at")),
                 toOffsetDateTime(rs.getTimestamp("updated_at")),
@@ -505,6 +507,7 @@ public class BoardRepository {
                 rs.getLong("board_post_id"),
                 nullableLong(rs, "parent_comment_id"),
                 rs.getString("content"),
+                nullableLong(rs, "author_user_id"),
                 rs.getString("author_name"),
                 toOffsetDateTime(rs.getTimestamp("created_at")),
                 List.of()
