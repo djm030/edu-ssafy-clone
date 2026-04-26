@@ -275,6 +275,20 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("deadlineLabel");
     }
 
+    @Test
+    void pledgesPageExposesOriginalTextAndAgreementEvidence() throws IOException {
+        String pledgesPage = Files.readString(Path.of("..", "frontend", "src", "pages", "PledgesPage.tsx"));
+
+        assertThat(pledgesPage)
+                .contains("PledgeDetailView")
+                .contains("서약서 원문 재열람")
+                .contains("PledgeAgreementEvidencePanel")
+                .contains("동의 이력")
+                .contains("동의 버전 스냅샷")
+                .contains("versionSnapshot")
+                .contains("excerpt(item.content)");
+    }
+
 
     @Test
     void elearningPageExposesOperationalSummaryAndMeta() throws IOException {

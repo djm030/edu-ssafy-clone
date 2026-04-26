@@ -836,3 +836,20 @@ h2 {
   display: grid;
   gap: 4px;
 }
+
+.pledge-detail-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.pledge-content-box {
+  background: #f8fafc;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  color: #1f2933;
+  line-height: 1.75;
+  max-height: 360px;
+  overflow: auto;
+  padding: 16px;
+  white-space: pre-wrap;
+}
