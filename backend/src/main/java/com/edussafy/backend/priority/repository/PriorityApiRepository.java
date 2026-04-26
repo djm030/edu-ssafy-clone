@@ -29,6 +29,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestListSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
@@ -2018,10 +2019,71 @@ public class PriorityApiRepository {
     }
 
     public long countQuests(long userId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM quest_evaluations").query(Long.class).single();
+        return countQuests(userId, null, null);
+    }
+
+    public long countQuests(long userId, String status, String keyword) {
+        SqlParts parts = questWhere(userId, status, keyword);
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM quest_evaluations qe
+                LEFT JOIN quest_submissions qs ON qs.quest_evaluation_id = qe.quest_evaluation_id
+                    AND qs.user_id = :userId
+                """ + parts.whereClause())
+                .params(parts.params())
+                .query(Long.class)
+                .single();
+    }
+
+    public QuestListSummary summarizeQuests(long userId, String keyword) {
+        SqlParts parts = questWhere(userId, null, keyword);
+        return jdbcClient.sql("""
+                SELECT
+                    COUNT(*) AS total_count,
+                    COALESCE(SUM(CASE
+                        WHEN (qs.quest_submission_id IS NULL
+                              OR COALESCE(qs.submit_status_code, '') NOT IN ('submitted', 'done'))
+                             AND COALESCE(qs.result_status_code, '') <> 'graded'
+                             AND (qe.end_at IS NULL OR qe.end_at >= CURRENT_TIMESTAMP) THEN 1
+                        ELSE 0
+                    END), 0) AS progress_count,
+                    COALESCE(SUM(CASE
+                        WHEN COALESCE(qs.submit_status_code, '') IN ('submitted', 'done')
+                             AND COALESCE(qs.result_status_code, '') <> 'graded' THEN 1
+                        ELSE 0
+                    END), 0) AS submitted_count,
+                    COALESCE(SUM(CASE WHEN COALESCE(qs.result_status_code, '') = 'graded' THEN 1 ELSE 0 END), 0) AS graded_count,
+                    COALESCE(SUM(CASE
+                        WHEN (qs.quest_submission_id IS NULL
+                              OR COALESCE(qs.submit_status_code, '') NOT IN ('submitted', 'done'))
+                             AND COALESCE(qs.result_status_code, '') <> 'graded'
+                             AND qe.end_at < CURRENT_TIMESTAMP THEN 1
+                        ELSE 0
+                    END), 0) AS overdue_count
+                FROM quest_evaluations qe
+                LEFT JOIN quest_submissions qs ON qs.quest_evaluation_id = qe.quest_evaluation_id
+                    AND qs.user_id = :userId
+                """ + parts.whereClause())
+                .params(parts.params())
+                .query((rs, rowNum) -> new QuestListSummary(
+                        rs.getLong("total_count"),
+                        rs.getLong("progress_count"),
+                        rs.getLong("submitted_count"),
+                        rs.getLong("graded_count"),
+                        rs.getLong("overdue_count")
+                ))
+                .single();
     }
 
     public List<QuestItem> findQuests(long userId, int limit, int offset) {
+        return findQuests(userId, null, null, limit, offset);
+    }
+
+    public List<QuestItem> findQuests(long userId, String status, String keyword, int limit, int offset) {
+        SqlParts parts = questWhere(userId, status, keyword);
+        Map<String, Object> params = new java.util.HashMap<>(parts.params());
+        params.put("limit", limit);
+        params.put("offset", offset);
         return jdbcClient.sql("""
                 SELECT qe.quest_evaluation_id, qe.title, qe.quest_type_code, qe.task_classification_code,
                        qe.start_at, qe.end_at, qe.max_exp, qe.progress_status_code,
@@ -2029,12 +2091,11 @@ public class PriorityApiRepository {
                 FROM quest_evaluations qe
                 LEFT JOIN quest_submissions qs ON qs.quest_evaluation_id = qe.quest_evaluation_id
                     AND qs.user_id = :userId
+                """ + parts.whereClause() + """
                 ORDER BY COALESCE(qe.end_at, qe.start_at) DESC, qe.quest_evaluation_id DESC
                 LIMIT :limit OFFSET :offset
                 """)
-                .param("userId", userId)
-                .param("limit", limit)
-                .param("offset", offset)
+                .params(params)
                 .query((rs, rowNum) -> new QuestItem(
                         rs.getLong("quest_evaluation_id"),
                         rs.getString("title"),
@@ -2250,6 +2311,44 @@ public class PriorityApiRepository {
                 toOffset(rs.getTimestamp("agreed_at")),
                 rs.getString("version_snapshot")
         );
+    }
+
+    private SqlParts questWhere(long userId, String status, String keyword) {
+        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("userId", userId);
+        if (StringUtils.hasText(keyword)) {
+            where.append("""
+                     AND (LOWER(qe.title) LIKE :keyword
+                       OR LOWER(COALESCE(qe.quest_type_code, '')) LIKE :keyword
+                       OR LOWER(COALESCE(qe.task_classification_code, '')) LIKE :keyword)
+                    """);
+            params.put("keyword", "%" + keyword.trim().toLowerCase() + "%");
+        }
+        if (StringUtils.hasText(status)) {
+            switch (status.trim().toLowerCase()) {
+                case "progress" -> where.append("""
+                         AND (qs.quest_submission_id IS NULL
+                              OR COALESCE(qs.submit_status_code, '') NOT IN ('submitted', 'done'))
+                         AND COALESCE(qs.result_status_code, '') <> 'graded'
+                         AND (qe.end_at IS NULL OR qe.end_at >= CURRENT_TIMESTAMP)
+                        """);
+                case "submitted" -> where.append("""
+                         AND COALESCE(qs.submit_status_code, '') IN ('submitted', 'done')
+                         AND COALESCE(qs.result_status_code, '') <> 'graded'
+                        """);
+                case "graded" -> where.append(" AND COALESCE(qs.result_status_code, '') = 'graded'");
+                case "overdue" -> where.append("""
+                         AND (qs.quest_submission_id IS NULL
+                              OR COALESCE(qs.submit_status_code, '') NOT IN ('submitted', 'done'))
+                         AND COALESCE(qs.result_status_code, '') <> 'graded'
+                         AND qe.end_at < CURRENT_TIMESTAMP
+                        """);
+                default -> {
+                }
+            }
+        }
+        return new SqlParts(where.toString(), params);
     }
 
     private SqlParts elearningProgressWhere(long userId, String status, String keyword) {

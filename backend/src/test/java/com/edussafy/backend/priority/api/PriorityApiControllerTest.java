@@ -2,6 +2,7 @@ package com.edussafy.backend.priority.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -104,6 +105,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeReque
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestListFilters;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestListSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
@@ -706,7 +709,8 @@ class PriorityApiControllerTest {
         given(priorityApiService.notifications(1, 20)).willReturn(new NotificationsResponse(List.of(), page));
         given(priorityApiService.materials(eq("spring"), eq("file"), eq(1), eq(20)))
                 .willReturn(new MaterialsResponse(List.of(), page));
-        given(priorityApiService.quests(1, 20)).willReturn(new QuestsResponse(List.of(), page));
+        given(priorityApiService.quests(eq(1), eq(20), isNull(), isNull()))
+                .willReturn(new QuestsResponse(List.of(), page, new QuestListSummary(0, 0, 0, 0, 0), new QuestListFilters(null, null)));
         given(priorityApiService.surveys(1, 20)).willReturn(new SurveysResponse(List.of(), page));
         given(priorityApiService.supportTickets(1, 20)).willReturn(new SupportTicketsResponse(List.of(), page));
 
@@ -730,7 +734,20 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.items").isArray());
         mockMvc.perform(get("/api/quests"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page.totalPages").value(0));
+                .andExpect(jsonPath("$.page.totalPages").value(0))
+                .andExpect(jsonPath("$.summary.totalCount").value(0));
+        given(priorityApiService.quests(eq(1), eq(20), eq("graded"), eq("algo")))
+                .willReturn(new QuestsResponse(
+                        List.of(),
+                        page,
+                        new QuestListSummary(3, 1, 1, 1, 0),
+                        new QuestListFilters("graded", "algo")
+                ));
+        mockMvc.perform(get("/api/quests?status=graded&keyword=algo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.gradedCount").value(1))
+                .andExpect(jsonPath("$.filters.status").value("graded"))
+                .andExpect(jsonPath("$.filters.keyword").value("algo"));
         mockMvc.perform(get("/api/surveys"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());

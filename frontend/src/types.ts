@@ -595,14 +595,38 @@ export interface MaterialResourceAttachmentResult {
   resource: LearningMaterialResource;
 }
 
+export type QuestStatus = 'progress' | 'submitted' | 'done' | 'graded' | 'overdue';
+
+export interface QuestListSummary {
+  totalCount: number;
+  progressCount: number;
+  submittedCount: number;
+  gradedCount: number;
+  overdueCount: number;
+}
+
+export interface QuestListFilters {
+  status?: string | null;
+  keyword?: string | null;
+}
+
+export interface QuestListResponse {
+  items: QuestItem[];
+  summary: QuestListSummary;
+  filters?: QuestListFilters;
+}
+
 export interface QuestItem {
   id: number;
   title: string;
   startsAt: string;
   endsAt: string;
-  status: 'progress' | 'done' | 'graded';
+  status: QuestStatus;
   description?: string;
   tasks?: string[];
+  submitStatus?: string | null;
+  resultStatus?: string | null;
+  maxExp?: number | null;
 }
 
 export interface SurveyItem {

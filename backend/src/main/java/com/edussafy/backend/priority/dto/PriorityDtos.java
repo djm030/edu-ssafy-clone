@@ -774,7 +774,24 @@ public final class PriorityDtos {
     ) {
     }
 
-    public record QuestsResponse(List<QuestItem> items, PageMeta page) {
+    public record QuestsResponse(
+            List<QuestItem> items,
+            PageMeta page,
+            QuestListSummary summary,
+            QuestListFilters filters
+    ) {
+    }
+
+    public record QuestListSummary(
+            long totalCount,
+            long progressCount,
+            long submittedCount,
+            long gradedCount,
+            long overdueCount
+    ) {
+    }
+
+    public record QuestListFilters(String status, String keyword) {
     }
 
     public record QuestDetailResponse(QuestItem item) {

@@ -85,6 +85,8 @@ import type {
   NotificationsReadAllResult,
   QnaDraft,
   QuestItem,
+  QuestListResponse,
+  QuestListSummary,
   RequiredStudyCompleteResult,
   RequiredStudyItem,
   QuestSubmissionAttachmentDraft,
@@ -624,7 +626,9 @@ function toLearningMaterial(item: BackendMaterialItem): LearningMaterial {
 
 function toQuestStatus(item: BackendQuestItem): QuestItem['status'] {
   if (item.resultStatus === 'graded' || item.status === 'graded') return 'graded';
-  if (item.submitStatus === 'submitted' || item.submitStatus === 'done' || item.status === 'done') return 'done';
+  if (item.status === 'overdue') return 'overdue';
+  if (item.submitStatus === 'submitted' || item.submitStatus === 'done' || item.status === 'done' || item.status === 'submitted') return 'submitted';
+  if (item.endAt && new Date(item.endAt).getTime() < Date.now() && !item.submitStatus) return 'overdue';
   return 'progress';
 }
 
@@ -637,6 +641,19 @@ function toQuestItem(item: BackendQuestItem): QuestItem {
     status: toQuestStatus(item),
     description: item.description || [item.type, item.classification].filter(Boolean).join(' · ') || undefined,
     tasks: item.tasks || (item.maxExp ? [`최대 EXP ${item.maxExp}`] : []),
+    submitStatus: item.submitStatus,
+    resultStatus: item.resultStatus,
+    maxExp: item.maxExp,
+  };
+}
+
+function toQuestListSummary(summary?: Partial<QuestListSummary> | null, items: QuestItem[] = []): QuestListSummary {
+  return {
+    totalCount: Number(summary?.totalCount ?? items.length),
+    progressCount: Number(summary?.progressCount ?? items.filter((item) => item.status === 'progress').length),
+    submittedCount: Number(summary?.submittedCount ?? items.filter((item) => item.status === 'submitted' || item.status === 'done').length),
+    gradedCount: Number(summary?.gradedCount ?? items.filter((item) => item.status === 'graded').length),
+    overdueCount: Number(summary?.overdueCount ?? items.filter((item) => item.status === 'overdue').length),
   };
 }
 
@@ -1400,10 +1417,23 @@ export function materialResourceAttachmentUrl(
   return `/api/learning/materials/${materialId}/resources/${resourceId}/attachments/${attachmentId}`;
 }
 
-export function getQuests(): Promise<{ items: QuestItem[] }> {
-  return fetchJson<{ items: BackendQuestItem[] }>('/api/quests', {
+export function getQuests(query: { status?: string; keyword?: string; page?: number; size?: number } = {}): Promise<QuestListResponse> {
+  const params = buildQuery({
+    status: query.status && query.status !== 'all' ? query.status : undefined,
+    keyword: query.keyword?.trim(),
+    page: query.page,
+    size: query.size,
+  });
+  return fetchJson<{ items: BackendQuestItem[]; summary?: QuestListSummary; filters?: { status?: string | null; keyword?: string | null } }>(`/api/quests${params}`, {
     fallback: () => ({ items: mockQuests }),
-  }).then((response) => ({ items: response.items.map(toQuestItem) }));
+  }).then((response) => {
+    const items = response.items.map(toQuestItem);
+    return {
+      items,
+      summary: toQuestListSummary(response.summary, items),
+      filters: response.filters,
+    };
+  });
 }
 
 export function getQuest(id: number): Promise<QuestItem | undefined> {

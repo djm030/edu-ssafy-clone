@@ -51,9 +51,11 @@ public class QuestSurveyController {
     @GetMapping("/quests")
     public QuestsResponse quests(
             @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword
     ) {
-        return priorityApiService.quests(page, size);
+        return priorityApiService.quests(page, size, status, keyword);
     }
 
     @GetMapping("/quests/{id}")

@@ -90,6 +90,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeReque
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestListSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
@@ -1322,6 +1324,39 @@ class PriorityApiServiceTest {
 
         assertThat(response.item()).isEqualTo(attachment);
         assertThat(response.content()).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void questsReturnFilteredStatusSummaryForCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        QuestItem quest = new QuestItem(
+                5L,
+                "Algorithm Quest",
+                "assignment",
+                "required",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-25T18:00:00+09:00"),
+                100,
+                "completed",
+                "submitted",
+                "pending"
+        );
+        QuestListSummary summary = new QuestListSummary(3, 1, 1, 1, 0);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countQuests(USER.id(), "submitted", "algo")).willReturn(1L);
+        given(repository.summarizeQuests(USER.id(), "algo")).willReturn(summary);
+        given(repository.findQuests(USER.id(), "submitted", "algo", 10, 0)).willReturn(List.of(quest));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), p3Repository);
+
+        QuestsResponse response = service.quests(1, 10, "done", "algo");
+
+        assertThat(response.items()).containsExactly(quest);
+        assertThat(response.summary().gradedCount()).isEqualTo(1);
+        assertThat(response.filters().status()).isEqualTo("submitted");
+        assertThat(response.filters().keyword()).isEqualTo("algo");
+        verify(repository).countQuests(USER.id(), "submitted", "algo");
+        verify(repository).findQuests(USER.id(), "submitted", "algo", 10, 0);
     }
 
     @Test

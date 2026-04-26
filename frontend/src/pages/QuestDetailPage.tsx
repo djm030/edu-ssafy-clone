@@ -7,9 +7,11 @@ import StatusPill from '../components/StatusPill';
 import type { LoadState, QuestItem, QuestSubmissionResult } from '../types';
 
 const statusMap = {
-  done: { label: '완료', tone: 'green' },
+  done: { label: '제출완료', tone: 'green' },
+  submitted: { label: '제출완료', tone: 'green' },
   graded: { label: '채점완료', tone: 'blue' },
   progress: { label: '진행중', tone: 'yellow' },
+  overdue: { label: '마감초과', tone: 'red' },
 } as const;
 
 function QuestDetailPage({ questId }: { questId: number }) {

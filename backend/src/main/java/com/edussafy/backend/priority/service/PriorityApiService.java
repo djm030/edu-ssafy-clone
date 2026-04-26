@@ -102,6 +102,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestListFilters;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestListSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
@@ -216,6 +218,7 @@ public class PriorityApiService {
     private static final Set<String> SURVEY_CATEGORIES = Set.of("satisfaction", "course", "lecture", "etc");
     private static final Set<String> SURVEY_STATUSES = Set.of("draft", "scheduled", "in_progress", "completed", "closed", "archived");
     private static final Set<String> ELEARNING_PROGRESS_STATUSES = Set.of("not_started", "in_progress", "completed");
+    private static final Set<String> QUEST_LIST_STATUSES = Set.of("progress", "submitted", "graded", "overdue");
     private static final Set<String> BOOKMARK_TARGET_TYPES = Set.of("material", "elearning", "replay");
     private static final Set<String> DOCUMENT_SUBMITTABLE_STATUSES = Set.of("not_submitted", "submitted", "rejected", "canceled");
     private static final Set<String> SURVEY_QUESTION_TYPES = Set.of(
@@ -1114,12 +1117,30 @@ public class PriorityApiService {
     }
 
     public QuestsResponse quests(int page, int size) {
+        return quests(page, size, null, null);
+    }
+
+    public QuestsResponse quests(int page, int size, String status, String keyword) {
         UserProfile user = currentUser();
-        long total = safe(() -> repository.countQuests(user.id()), 0L);
+        String normalizedStatus = normalizeQuestListStatus(status);
+        String normalizedKeyword = normalizeNullable(keyword);
+        long total = safe(() -> repository.countQuests(user.id(), normalizedStatus, normalizedKeyword), 0L);
+        QuestListSummary summary = safe(
+                () -> repository.summarizeQuests(user.id(), normalizedKeyword),
+                new QuestListSummary(0, 0, 0, 0, 0)
+        );
         List<QuestItem> items = total == 0
                 ? List.of()
-                : safe(() -> repository.findQuests(user.id(), size, offset(page, size)), List.of());
-        return new QuestsResponse(items, pageMeta(page, size, total));
+                : safe(
+                        () -> repository.findQuests(user.id(), normalizedStatus, normalizedKeyword, size, offset(page, size)),
+                        List.of()
+                );
+        return new QuestsResponse(
+                items,
+                pageMeta(page, size, total),
+                summary,
+                new QuestListFilters(normalizedStatus, normalizedKeyword)
+        );
     }
 
     public QuestDetailResponse quest(long id) {
@@ -1694,6 +1715,23 @@ public class PriorityApiService {
         String normalized = targetType.trim().toLowerCase(Locale.ROOT);
         if (!BOOKMARK_TARGET_TYPES.contains(normalized)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported bookmark target type.");
+        }
+        return normalized;
+    }
+
+    private String normalizeQuestListStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return null;
+        }
+        String normalized = status.trim().toLowerCase(Locale.ROOT);
+        if ("all".equals(normalized)) {
+            return null;
+        }
+        if ("done".equals(normalized)) {
+            return "submitted";
+        }
+        if (!QUEST_LIST_STATUSES.contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported quest status filter.");
         }
         return normalized;
     }
