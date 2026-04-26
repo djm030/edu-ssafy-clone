@@ -93,7 +93,7 @@ docker compose --profile app up -d --build
 | 문의 답변 | PASS | staff answer endpoint, status/message persistence, learner forbidden test 존재. |
 | 문의 첨부파일 | PASS | support message attachment metadata create와 stored byte download endpoint/tests 존재. |
 | 권한별 접근 제어 | PARTIAL | session auth와 admin/staff/owner guard, pending attendance staff gate, public readiness bypass, 핵심 mutation interceptor matrix test가 있으나 전체 도메인 조합의 브라우저/E2E 권한 검증은 부족하다. |
-| 에러 처리 | PARTIAL | Spring error response, invalid request tests, frontend loading/error/empty state가 있으나 모든 mutation/permission edge case는 E2E로 검증되지 않았다. |
+| 에러 처리 | PARTIAL | Spring error response, invalid request tests, static frontend loading/error/empty state smoke coverage가 있으나 모든 mutation/permission edge case는 브라우저 E2E로 검증되지 않았다. |
 | 로컬 실행 | PASS | app profile 컨테이너 6개가 healthy이고 backend/frontend/Nginx smoke가 통과했다. |
 | 테스트 | PASS | backend 111 tests, frontend lint/build, REST Docs/security headers tests 통과. Browser E2E는 별도 남은 작업으로 분리. |
 | 문서 최신화 | PASS | 이 문서, test report, remaining work, API summary가 2026-04-26 재검증 결과로 갱신됐다. |

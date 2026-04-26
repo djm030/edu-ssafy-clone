@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class FrontendRouteSmokeCoverageTest {
@@ -66,4 +67,30 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("match(/^\\/help\\/qna\\/tickets\\/(\\d+)$/)");
         assertThat(readinessPage).contains("screenSmokeRoutes.map");
     }
+    @Test
+    void priorityDataPagesExposeLoadingErrorAndEmptyStates() throws IOException {
+        Map<String, Path> pages = Map.of(
+                "attendance", Path.of("..", "frontend", "src", "pages", "AttendancePage.tsx"),
+                "board", Path.of("..", "frontend", "src", "components", "BoardListPage.tsx"),
+                "survey", Path.of("..", "frontend", "src", "pages", "SurveyPage.tsx"),
+                "notifications", Path.of("..", "frontend", "src", "pages", "NotificationsPage.tsx"),
+                "learning", Path.of("..", "frontend", "src", "pages", "MaterialsPage.tsx"),
+                "quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx"),
+                "support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx")
+        );
+
+        for (Map.Entry<String, Path> entry : pages.entrySet()) {
+            String source = Files.readString(entry.getValue());
+
+            assertThat(source)
+                    .as(entry.getKey() + " page imports shared data state component")
+                    .contains("DataState")
+                    .contains("LoadingRows");
+            assertThat(source)
+                    .as(entry.getKey() + " page handles error and empty load states")
+                    .contains("loadState === 'error'")
+                    .contains("loadState === 'empty'");
+        }
+    }
+
 }

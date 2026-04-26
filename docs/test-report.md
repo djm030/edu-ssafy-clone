@@ -1,5 +1,14 @@
 # Test Report
 
+## Frontend Data-State Smoke Coverage (2026-04-26 KST)
+- Added static smoke coverage that guards loading/error/empty states on priority data pages for attendance, board, survey, notifications, learning materials, quest, and support ticket lists.
+- This complements `/ops/readiness` route coverage without adding browser-test dependencies.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=FrontendRouteSmokeCoverageTest test` -> PASS.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 187 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Auth REST Docs Current User and Role Access (2026-04-26 KST)
 - Added Spring REST Docs snippets for `GET /api/me` and `GET /api/auth/roles/current` so production API docs cover session bootstrap and role/permission discovery.
 - The role access snippet documents the permission and denied route payload consumed by the frontend shell.
