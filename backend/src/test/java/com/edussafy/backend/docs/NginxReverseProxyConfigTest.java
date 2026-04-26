@@ -21,6 +21,7 @@ class NginxReverseProxyConfigTest {
         assertThat(config).contains("proxy_set_header X-Real-IP $remote_addr;");
         assertThat(config).contains("proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
         assertThat(config).contains("proxy_set_header X-Forwarded-Proto $scheme;");
+        assertThat(config).contains("proxy_set_header X-Request-Id $ssafy_request_id;");
     }
 
     @Test
@@ -41,5 +42,16 @@ class NginxReverseProxyConfigTest {
         assertThat(config).contains("add_header X-Frame-Options \"DENY\" always;");
         assertThat(config).contains("add_header Referrer-Policy \"strict-origin-when-cross-origin\" always;");
         assertThat(config).contains("add_header Permissions-Policy");
+        assertThat(config).contains("add_header X-Request-Id \"$ssafy_request_id\" always;");
+    }
+
+    @Test
+    void nginxAccessLogsIncludeRequestCorrelationFields() throws IOException {
+        String config = Files.readString(NGINX_CONF);
+
+        assertThat(config).contains("map $http_x_request_id $ssafy_request_id");
+        assertThat(config).contains("log_format ssafy_json escape=json");
+        assertThat(config).contains("\"requestId\":\"$ssafy_request_id\"");
+        assertThat(config).contains("access_log /var/log/nginx/access.log ssafy_json;");
     }
 }
