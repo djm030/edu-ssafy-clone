@@ -27,6 +27,7 @@ class FrontendRouteSmokeCoverageTest {
             "/mycampus/elearning/1",
             "/mycampus/bookmarks",
             "/mycampus/documents",
+            "/mycampus/documents/1",
             "/mycampus/pledges",
             "/mycampus/pledges/1",
             "/mycampus/ebooks",
@@ -101,6 +102,7 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/mycampus/elearning')");
         assertThat(app).contains("if (path === '/mycampus/bookmarks')");
         assertThat(app).contains("if (path === '/mycampus/documents')");
+        assertThat(app).contains("match(/^\\/mycampus\\/documents\\/(\\d+)$/)");
         assertThat(app).contains("if (path === '/mycampus/pledges')");
         assertThat(app).contains("if (path === '/mycampus/ebooks')");
         assertThat(app).contains("if (path === '/learning/required-studies')");
@@ -250,6 +252,27 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(types)
                 .contains("BookmarkSummary")
                 .contains("BookmarksResponse");
+    }
+
+    @Test
+    void documentsPageExposesSubmissionHistoryDetailRoute() throws IOException {
+        String app = Files.readString(APP_TSX);
+        String routes = Files.readString(ROUTES_TS);
+        String documentsPage = Files.readString(Path.of("..", "frontend", "src", "pages", "DocumentsPage.tsx"));
+
+        assertThat(routes)
+                .contains("id: 'document-detail'")
+                .contains("path: '/mycampus/documents/1'");
+        assertThat(app)
+                .contains("documentMatch")
+                .contains("<DocumentsPage requestId={Number(documentMatch[1])} />");
+        assertThat(documentsPage)
+                .contains("getDocumentRequest")
+                .contains("DocumentDetailPanel")
+                .contains("제출 상태 이력")
+                .contains("제출 파일 이력")
+                .contains("보완 요청/검토 의견")
+                .contains("deadlineLabel");
     }
 
 

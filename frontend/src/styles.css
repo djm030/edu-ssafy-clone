@@ -787,3 +787,52 @@ h2 {
   font-size: 12px;
   font-weight: 800;
 }
+
+.document-detail-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.helper-link {
+  color: #2d7d68;
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-decoration: none;
+}
+
+.timeline-list,
+.file-history-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline-list li,
+.file-history-list li {
+  align-items: center;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.timeline-list li.active {
+  border-color: #2d7d68;
+  box-shadow: inset 4px 0 0 #2d7d68;
+}
+
+.timeline-list span,
+.file-history-list span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.file-history-list li > div {
+  display: grid;
+  gap: 4px;
+}

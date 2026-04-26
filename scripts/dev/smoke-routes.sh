@@ -15,6 +15,7 @@ routes=(
   "/mycampus/elearning/1"
   "/mycampus/bookmarks"
   "/mycampus/documents"
+  "/mycampus/documents/1"
   "/mycampus/pledges"
   "/mycampus/pledges/1"
   "/mycampus/education-status"

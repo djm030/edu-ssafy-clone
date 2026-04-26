@@ -49,6 +49,7 @@ for route in \
   /mycampus/elearning \
   /mycampus/bookmarks \
   /mycampus/documents \
+  /mycampus/documents/1 \
   /mycampus/pledges \
   /mycampus/education-status \
   /mycampus/ebooks \

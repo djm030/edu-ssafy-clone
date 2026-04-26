@@ -261,6 +261,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   const elearningMatch = match(/^\/mycampus\/elearning\/(\d+)$/);
   const ebookMatch = match(/^\/mycampus\/ebooks\/(\d+)$/);
   const pledgeMatch = match(/^\/mycampus\/pledges\/(\d+)$/);
+  const documentMatch = match(/^\/mycampus\/documents\/(\d+)$/);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
   const requiredStudyMatch = match(/^\/learning\/required-studies\/(\d+)$/);
@@ -330,6 +331,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (meetingReviewMatch) return <MentoringMeetingResultsPage mode="review-detail" reviewId={Number(meetingReviewMatch[1])} />;
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (elearningMatch) return <ElearningDetailPage courseId={Number(elearningMatch[1])} />;
+  if (documentMatch) return <DocumentsPage requestId={Number(documentMatch[1])} />;
   if (pledgeMatch) return <PledgesPage pledgeId={Number(pledgeMatch[1])} />;
   if (ebookMatch) return <EbooksPage ebookId={Number(ebookMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;

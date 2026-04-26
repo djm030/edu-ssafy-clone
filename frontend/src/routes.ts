@@ -119,6 +119,7 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'elearning-detail', priority: 10, feature: '학습중 이러닝', path: '/mycampus/elearning/1', label: '학습중 이러닝 상세' },
   { id: 'bookmarks', priority: 11, feature: '찜한 목록', path: '/mycampus/bookmarks', label: '찜한 목록' },
   { id: 'documents', priority: 12, feature: '서류제출', path: '/mycampus/documents', label: '서류제출' },
+  { id: 'document-detail', priority: 12, feature: '서류제출 상세', path: '/mycampus/documents/1', label: '서류제출 상세' },
   { id: 'pledges', priority: 13, feature: '교육생 서약서', path: '/mycampus/pledges', label: '교육생 서약서' },
   { id: 'pledge-detail', priority: 13, feature: '교육생 서약서', path: '/mycampus/pledges/1', label: '교육생 서약서 상세' },
   { id: 'education-status', priority: 14, feature: '교육현황', path: '/mycampus/education-status', label: '교육현황' },
