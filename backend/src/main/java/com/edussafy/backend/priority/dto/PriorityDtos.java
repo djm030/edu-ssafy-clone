@@ -327,6 +327,119 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record DocumentRequestsResponse(List<DocumentRequestItem> items, PageMeta page) {
+    }
+
+    public record DocumentRequestDetailResponse(DocumentRequestDetail item) {
+    }
+
+    public record DocumentSubmissionResponse(DocumentRequestDetail item, DocumentSubmissionItem submission) {
+    }
+
+    public record DocumentSubmissionDeleteResponse(long requestId, long submissionId, boolean canceled) {
+    }
+
+    public record DocumentAttachmentDownload(DocumentAttachmentItem item, byte[] content) {
+    }
+
+    public record DocumentRequestItem(
+            long id,
+            String title,
+            String description,
+            String category,
+            boolean required,
+            String allowedExtensions,
+            long maxFileSizeBytes,
+            OffsetDateTime startsAt,
+            OffsetDateTime dueAt,
+            String status,
+            OffsetDateTime submittedAt,
+            String reviewComment,
+            List<DocumentAttachmentItem> attachments
+    ) {
+        public DocumentRequestItem withAttachments(List<DocumentAttachmentItem> attachments) {
+            return new DocumentRequestItem(
+                    id,
+                    title,
+                    description,
+                    category,
+                    required,
+                    allowedExtensions,
+                    maxFileSizeBytes,
+                    startsAt,
+                    dueAt,
+                    status,
+                    submittedAt,
+                    reviewComment,
+                    attachments
+            );
+        }
+    }
+
+    public record DocumentRequestDetail(
+            long id,
+            String title,
+            String description,
+            String category,
+            boolean required,
+            String allowedExtensions,
+            long maxFileSizeBytes,
+            OffsetDateTime startsAt,
+            OffsetDateTime dueAt,
+            String status,
+            OffsetDateTime submittedAt,
+            OffsetDateTime reviewedAt,
+            String reviewComment,
+            List<DocumentAttachmentItem> attachments
+    ) {
+        public DocumentRequestDetail withAttachments(List<DocumentAttachmentItem> attachments) {
+            return new DocumentRequestDetail(
+                    id,
+                    title,
+                    description,
+                    category,
+                    required,
+                    allowedExtensions,
+                    maxFileSizeBytes,
+                    startsAt,
+                    dueAt,
+                    status,
+                    submittedAt,
+                    reviewedAt,
+                    reviewComment,
+                    attachments
+            );
+        }
+    }
+
+    public record DocumentSubmissionItem(
+            long id,
+            long requestId,
+            String status,
+            OffsetDateTime submittedAt,
+            List<DocumentAttachmentItem> attachments
+    ) {
+    }
+
+    public record DocumentAttachmentItem(
+            long id,
+            long submissionId,
+            long requestId,
+            String filename,
+            String storageKey,
+            String mimeType,
+            long fileSize,
+            OffsetDateTime createdAt
+    ) {
+    }
+
+    public record DocumentSubmissionRequest(
+            @NotBlank @Size(max = 255) String filename,
+            @Size(max = 100) String mimeType,
+            @NotBlank @Size(max = 3_000_000) String contentBase64
+    ) {
+    }
+
     public record MaterialsResponse(List<MaterialItem> items, PageMeta page) {
     }
 

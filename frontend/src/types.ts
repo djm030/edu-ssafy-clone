@@ -212,6 +212,53 @@ export interface BookmarkDraft {
   targetId: number;
 }
 
+export type DocumentSubmissionStatus = 'not_submitted' | 'submitted' | 'rejected' | 'approved' | 'canceled';
+
+export interface DocumentAttachmentItem {
+  id: number;
+  submissionId: number;
+  requestId: number;
+  filename: string;
+  storageKey?: string | null;
+  mimeType?: string | null;
+  fileSize: number;
+  createdAt?: string | null;
+}
+
+export interface DocumentRequestItem {
+  id: number;
+  title: string;
+  description?: string | null;
+  category: string;
+  required: boolean;
+  allowedExtensions: string;
+  maxFileSizeBytes: number;
+  startsAt?: string | null;
+  dueAt?: string | null;
+  status: DocumentSubmissionStatus;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  reviewComment?: string | null;
+  attachments: DocumentAttachmentItem[];
+}
+
+export interface DocumentSubmissionDraft {
+  filename: string;
+  mimeType?: string;
+  contentBase64: string;
+}
+
+export interface DocumentSubmissionResult {
+  item: DocumentRequestItem;
+  submission: {
+    id: number;
+    requestId: number;
+    status: DocumentSubmissionStatus;
+    submittedAt?: string | null;
+    attachments: DocumentAttachmentItem[];
+  };
+}
+
 export interface Classmate {
   id: number;
   name: string;

@@ -13,6 +13,7 @@ import BookmarksPage from './pages/BookmarksPage';
 import ClassmatesPage from './pages/ClassmatesPage';
 import CurriculumPage from './pages/CurriculumPage';
 import DashboardPage from './pages/DashboardPage';
+import DocumentsPage from './pages/DocumentsPage';
 import ElearningDetailPage from './pages/ElearningDetailPage';
 import ElearningPage from './pages/ElearningPage';
 import LevelPage from './pages/LevelPage';
@@ -252,6 +253,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/notifications') return <NotificationsPage />;
   if (path === '/mycampus/elearning') return <ElearningPage />;
   if (path === '/mycampus/bookmarks') return <BookmarksPage />;
+  if (path === '/mycampus/documents') return <DocumentsPage />;
   if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;

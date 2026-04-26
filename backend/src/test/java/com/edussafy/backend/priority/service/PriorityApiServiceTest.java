@@ -30,6 +30,14 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionDeleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
@@ -394,6 +402,134 @@ class PriorityApiServiceTest {
         assertThatThrownBy(() -> service.deleteBookmark(404L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
+    }
+
+    @Test
+    void documentRequestsSubmitCancelAndDownloadUseCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        DocumentRequestItem listItem = new DocumentRequestItem(
+                9L,
+                "신분증 사본 제출",
+                "본인 확인 서류",
+                "identity",
+                true,
+                ".pdf,.jpg,.png",
+                2_097_152L,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                "not_submitted",
+                null,
+                null,
+                List.of()
+        );
+        DocumentRequestDetail before = new DocumentRequestDetail(
+                9L,
+                "신분증 사본 제출",
+                "본인 확인 서류",
+                "identity",
+                true,
+                ".pdf,.jpg,.png",
+                2_097_152L,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                "not_submitted",
+                null,
+                null,
+                null,
+                List.of()
+        );
+        DocumentAttachmentItem attachment = new DocumentAttachmentItem(
+                77L,
+                88L,
+                9L,
+                "identity.pdf",
+                "documents/test/identity.pdf",
+                "application/pdf",
+                5L,
+                OffsetDateTime.parse("2026-04-25T14:30:00+09:00")
+        );
+        DocumentRequestDetail after = new DocumentRequestDetail(
+                9L,
+                "신분증 사본 제출",
+                "본인 확인 서류",
+                "identity",
+                true,
+                ".pdf,.jpg,.png",
+                2_097_152L,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                "submitted",
+                OffsetDateTime.parse("2026-04-25T14:30:00+09:00"),
+                null,
+                null,
+                List.of(attachment)
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countDocumentRequests(USER.id())).willReturn(1L);
+        given(repository.findDocumentRequests(USER.id(), 20, 0)).willReturn(List.of(listItem));
+        given(repository.findDocumentAttachmentsByRequestIds(USER.id(), List.of(9L)))
+                .willReturn(List.of())
+                .willReturn(List.of(attachment))
+                .willReturn(List.of(attachment));
+        given(repository.findDocumentRequestDetail(USER.id(), 9L))
+                .willReturn(Optional.of(before))
+                .willReturn(Optional.of(after))
+                .willReturn(Optional.of(after));
+        given(repository.upsertDocumentSubmission(USER.id(), 9L)).willReturn(88L);
+        given(p2Repository.createOrFindAttachment(eq("identity.pdf"), anyString(), anyString(), eq("application/pdf"), eq(5L), anyString()))
+                .willReturn(77L);
+        given(repository.findDocumentAttachment(USER.id(), 88L, 77L)).willReturn(Optional.of(attachment));
+        given(repository.cancelDocumentSubmission(USER.id(), 9L, 88L)).willReturn(1);
+        PriorityApiService service = new PriorityApiService(repository, p2Repository, mock(PriorityP3Repository.class));
+
+        DocumentRequestsResponse list = service.documentRequests(1, 20);
+        DocumentSubmissionResponse submitted = service.submitDocument(
+                9L,
+                new DocumentSubmissionRequest("identity.pdf", "application/pdf", "aGVsbG8=")
+        );
+        DocumentAttachmentDownload download = service.downloadDocumentAttachment(88L, 77L);
+        DocumentSubmissionDeleteResponse canceled = service.cancelDocumentSubmission(9L, 88L);
+
+        assertThat(list.items()).hasSize(1);
+        assertThat(submitted.submission().attachments()).containsExactly(attachment);
+        assertThat(download.content()).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
+        assertThat(canceled.canceled()).isTrue();
+        verify(repository).linkDocumentSubmissionAttachment(88L, 77L);
+    }
+
+    @Test
+    void documentSubmitRejectsDisallowedExtensionBeforeAttachmentInsert() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        DocumentRequestDetail target = new DocumentRequestDetail(
+                9L,
+                "신분증 사본 제출",
+                "본인 확인 서류",
+                "identity",
+                true,
+                ".pdf",
+                2_097_152L,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                "not_submitted",
+                null,
+                null,
+                null,
+                List.of()
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findDocumentRequestDetail(USER.id(), 9L)).willReturn(Optional.of(target));
+        given(repository.findDocumentAttachmentsByRequestIds(USER.id(), List.of(9L))).willReturn(List.of());
+        PriorityApiService service = new PriorityApiService(repository, p2Repository, mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.submitDocument(
+                9L,
+                new DocumentSubmissionRequest("malware.exe", "application/octet-stream", "aGVsbG8=")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        verify(p2Repository, never()).createOrFindAttachment(anyString(), anyString(), anyString(), anyString(), anyLong(), anyString());
     }
 
     @Test

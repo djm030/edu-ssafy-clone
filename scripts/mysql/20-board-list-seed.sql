@@ -301,6 +301,47 @@ ON DUPLICATE KEY UPDATE
   thumbnail_url = VALUES(thumbnail_url),
   target_url = VALUES(target_url);
 
+INSERT INTO document_requests (title, description, category, required_yn, allowed_extensions, max_file_size_bytes, starts_at, due_at, active_yn, created_by)
+VALUES
+  ('신분증 사본 제출', '본인 확인을 위한 신분증 사본을 PDF 또는 이미지 파일로 제출합니다.', 'identity', TRUE, '.pdf,.jpg,.jpeg,.png', 2097152, '2026-04-01 09:00:00', '2026-05-10 18:00:00', TRUE, @manager_id),
+  ('통장 사본 제출', '장학 포인트 정산 계좌 확인용 통장 사본을 제출합니다.', 'scholarship', FALSE, '.pdf,.jpg,.jpeg,.png', 2097152, '2026-04-01 09:00:00', '2026-05-17 18:00:00', TRUE, @manager_id)
+ON DUPLICATE KEY UPDATE
+  description = VALUES(description),
+  category = VALUES(category),
+  required_yn = VALUES(required_yn),
+  allowed_extensions = VALUES(allowed_extensions),
+  max_file_size_bytes = VALUES(max_file_size_bytes),
+  starts_at = VALUES(starts_at),
+  due_at = VALUES(due_at),
+  active_yn = VALUES(active_yn);
+
+SET @identity_doc_id := (SELECT document_request_id FROM document_requests WHERE title = '신분증 사본 제출' LIMIT 1);
+
+INSERT INTO learner_document_submissions (document_request_id, user_id, status_code, submitted_at)
+VALUES (@identity_doc_id, @student_id, 'submitted', '2026-04-25 14:30:00')
+ON DUPLICATE KEY UPDATE
+  status_code = VALUES(status_code),
+  submitted_at = VALUES(submitted_at),
+  reviewed_at = NULL,
+  review_comment = NULL;
+
+SET @identity_submission_id := (
+  SELECT document_submission_id
+  FROM learner_document_submissions
+  WHERE document_request_id = @identity_doc_id
+    AND user_id = @student_id
+  LIMIT 1
+);
+
+INSERT INTO attachments (original_filename, storage_key, stored_path, mime_type, file_size, checksum_sha256)
+VALUES ('identity-sample.pdf', 'seed/documents/identity-sample.pdf', '/seed/documents/identity-sample.pdf', 'application/pdf', 1024, SHA2('identity-sample.pdf', 256))
+ON DUPLICATE KEY UPDATE original_filename = VALUES(original_filename);
+
+SET @identity_attachment_id := (SELECT attachment_id FROM attachments WHERE checksum_sha256 = SHA2('identity-sample.pdf', 256) LIMIT 1);
+
+INSERT IGNORE INTO learner_document_attachments (learner_document_submission_id, attachment_id)
+VALUES (@identity_submission_id, @identity_attachment_id);
+
 INSERT INTO quest_evaluations (content_scope_id, external_task_id, quest_type_code, task_classification_code, title, start_at, end_at, max_exp, progress_status_code)
 VALUES
   (@class_scope_id, 'quest-priority1-board-api', 'assignment', 'required', 'Implement board API', '2026-04-24 09:00:00', '2026-04-25 18:00:00', 100, 'in_progress'),

@@ -30,6 +30,9 @@ DROP TABLE IF EXISTS survey_responses;
 DROP TABLE IF EXISTS survey_options;
 DROP TABLE IF EXISTS survey_questions;
 DROP TABLE IF EXISTS surveys;
+DROP TABLE IF EXISTS learner_document_attachments;
+DROP TABLE IF EXISTS learner_document_submissions;
+DROP TABLE IF EXISTS document_requests;
 DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
 DROP TABLE IF EXISTS learner_bookmarks;
@@ -101,6 +104,7 @@ INSERT INTO code_groups (code_group, group_name, description) VALUES
   ('PROGRESS_STATUS', '진행 상태', NULL),
   ('ELEARNING_PROGRESS_STATUS', '이러닝 진행 상태', NULL),
   ('BOOKMARK_TARGET_TYPE', '찜 대상 유형', NULL),
+  ('DOCUMENT_SUBMISSION_STATUS', '교육생 서류 제출 상태', NULL),
   ('CURRICULUM_TYPE', '커리큘럼 유형', NULL),
   ('MATERIAL_TYPE', '학습자료 유형', NULL),
   ('RESOURCE_TYPE', '학습자료 리소스 유형', NULL),
@@ -166,6 +170,11 @@ INSERT INTO codes (code_group, code, code_name, sort_order) VALUES
   ('BOOKMARK_TARGET_TYPE', 'material', '학습자료', 1),
   ('BOOKMARK_TARGET_TYPE', 'elearning', '이러닝', 2),
   ('BOOKMARK_TARGET_TYPE', 'replay', '강의 다시보기', 3),
+  ('DOCUMENT_SUBMISSION_STATUS', 'not_submitted', '미제출', 1),
+  ('DOCUMENT_SUBMISSION_STATUS', 'submitted', '제출', 2),
+  ('DOCUMENT_SUBMISSION_STATUS', 'rejected', '반려', 3),
+  ('DOCUMENT_SUBMISSION_STATUS', 'approved', '승인', 4),
+  ('DOCUMENT_SUBMISSION_STATUS', 'canceled', '취소', 5),
   ('CURRICULUM_TYPE', 'lecture', '강의', 1),
   ('CURRICULUM_TYPE', 'practice', '실습', 2),
   ('CURRICULUM_TYPE', 'project', '프로젝트', 3),
@@ -803,6 +812,71 @@ CREATE TABLE learner_bookmarks (
   CONSTRAINT fk_learner_bookmarks_user
     FOREIGN KEY (user_id) REFERENCES users (user_id)
     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE document_requests (
+  document_request_id BIGINT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  category VARCHAR(100) NOT NULL DEFAULT 'general',
+  required_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  allowed_extensions VARCHAR(255) NOT NULL DEFAULT '.pdf,.jpg,.jpeg,.png',
+  max_file_size_bytes BIGINT NOT NULL DEFAULT 2097152,
+  starts_at DATETIME,
+  due_at DATETIME,
+  active_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by BIGINT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (document_request_id),
+  UNIQUE KEY uk_document_requests_title (title),
+  KEY idx_document_requests_active_due (active_yn, due_at),
+  CONSTRAINT chk_document_requests_file_size CHECK (max_file_size_bytes > 0),
+  CONSTRAINT fk_document_requests_created_by
+    FOREIGN KEY (created_by) REFERENCES users (user_id)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_document_submissions (
+  document_submission_id BIGINT NOT NULL AUTO_INCREMENT,
+  document_request_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  status_code_group VARCHAR(50) NOT NULL DEFAULT 'DOCUMENT_SUBMISSION_STATUS',
+  status_code VARCHAR(50) NOT NULL DEFAULT 'not_submitted',
+  submitted_at DATETIME,
+  reviewed_at DATETIME,
+  reviewed_by BIGINT,
+  review_comment VARCHAR(1000),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (document_submission_id),
+  UNIQUE KEY uk_learner_document_submissions_user_request (document_request_id, user_id),
+  KEY idx_learner_document_submissions_user_status (user_id, status_code, submitted_at),
+  CONSTRAINT chk_learner_document_submissions_status_group CHECK (status_code_group = 'DOCUMENT_SUBMISSION_STATUS'),
+  CONSTRAINT fk_learner_document_submissions_status
+    FOREIGN KEY (status_code_group, status_code) REFERENCES codes (code_group, code),
+  CONSTRAINT fk_learner_document_submissions_request
+    FOREIGN KEY (document_request_id) REFERENCES document_requests (document_request_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_learner_document_submissions_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_learner_document_submissions_reviewer
+    FOREIGN KEY (reviewed_by) REFERENCES users (user_id)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_document_attachments (
+  learner_document_submission_id BIGINT NOT NULL,
+  attachment_id BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (learner_document_submission_id, attachment_id),
+  UNIQUE KEY uk_learner_document_attachments_attachment (attachment_id),
+  CONSTRAINT fk_learner_document_attachments_submission
+    FOREIGN KEY (learner_document_submission_id) REFERENCES learner_document_submissions (document_submission_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_learner_document_attachments_attachment
+    FOREIGN KEY (attachment_id) REFERENCES attachments (attachment_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE learning_material_reactions (

@@ -14,6 +14,7 @@ routes=(
   "/mycampus/elearning"
   "/mycampus/elearning/1"
   "/mycampus/bookmarks"
+  "/mycampus/documents"
   "/mycampus/level"
   "/community/free"
   "/community/free/1"

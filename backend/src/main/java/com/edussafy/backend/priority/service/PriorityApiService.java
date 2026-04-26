@@ -25,6 +25,16 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionDeleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailResponse;
@@ -163,6 +173,7 @@ public class PriorityApiService {
     private static final Set<String> SURVEY_STATUSES = Set.of("draft", "scheduled", "in_progress", "completed", "closed", "archived");
     private static final Set<String> ELEARNING_PROGRESS_STATUSES = Set.of("not_started", "in_progress", "completed");
     private static final Set<String> BOOKMARK_TARGET_TYPES = Set.of("material", "elearning", "replay");
+    private static final Set<String> DOCUMENT_SUBMITTABLE_STATUSES = Set.of("not_submitted", "submitted", "rejected", "canceled");
     private static final Set<String> SURVEY_QUESTION_TYPES = Set.of(
             "single_choice", "multiple_choice", "short_text", "long_text", "score"
     );
@@ -601,6 +612,82 @@ public class PriorityApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bookmark not found.");
         }
         return new BookmarkDeleteResponse(bookmarkId, true);
+    }
+
+    public DocumentRequestsResponse documentRequests(int page, int size) {
+        UserProfile user = currentUser();
+        long total = safe(() -> repository.countDocumentRequests(user.id()), 0L);
+        List<DocumentRequestItem> items = total == 0
+                ? List.of()
+                : withDocumentAttachments(safe(() -> repository.findDocumentRequests(user.id(), size, offset(page, size)), List.of()), user.id());
+        return new DocumentRequestsResponse(items, pageMeta(page, size, total));
+    }
+
+    public DocumentRequestDetailResponse documentRequest(long requestId) {
+        UserProfile user = currentUser();
+        DocumentRequestDetail item = documentRequestWithAttachments(user.id(), requestId);
+        return new DocumentRequestDetailResponse(item);
+    }
+
+    @Transactional
+    public DocumentSubmissionResponse submitDocument(long requestId, DocumentSubmissionRequest request) {
+        UserProfile user = currentUser();
+        DocumentRequestDetail target = documentRequestWithAttachments(user.id(), requestId);
+        if (!DOCUMENT_SUBMITTABLE_STATUSES.contains(target.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reviewed documents cannot be resubmitted.");
+        }
+        if (target.dueAt() != null && target.dueAt().isBefore(OffsetDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document submission due date has passed.");
+        }
+
+        byte[] fileBytes = decodeAttachment(request.contentBase64(), "Document attachment");
+        String filename = sanitizeAttachmentFilename(request.filename(), "Document attachment");
+        validateDocumentAttachment(filename, fileBytes.length, target);
+        String mimeType = normalizeWithDefault(request.mimeType(), "application/octet-stream");
+        String checksum = sha256Hex(fileBytes);
+        long submissionId = repository.upsertDocumentSubmission(user.id(), requestId);
+        String storageKey = "documents/%d/submissions/%d/%s-%s".formatted(
+                requestId,
+                submissionId,
+                checksum.substring(0, 12),
+                filename
+        );
+        String storedPath = "/documents/%d/submissions/%d/attachments/%s".formatted(requestId, submissionId, checksum);
+        long attachmentId = p2Repository.createOrFindAttachment(
+                filename,
+                storageKey,
+                storedPath,
+                mimeType,
+                fileBytes.length,
+                checksum
+        );
+        repository.linkDocumentSubmissionAttachment(submissionId, attachmentId);
+        DocumentAttachmentItem attachment = repository.findDocumentAttachment(user.id(), submissionId, attachmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document attachment not found."));
+        storeDocumentAttachment(attachment, fileBytes);
+        DocumentRequestDetail updated = documentRequestWithAttachments(user.id(), requestId);
+        return new DocumentSubmissionResponse(
+                updated,
+                new DocumentSubmissionItem(submissionId, requestId, "submitted", updated.submittedAt(), updated.attachments())
+        );
+    }
+
+    @Transactional
+    public DocumentSubmissionDeleteResponse cancelDocumentSubmission(long requestId, long submissionId) {
+        UserProfile user = currentUser();
+        documentRequestWithAttachments(user.id(), requestId);
+        int updated = repository.cancelDocumentSubmission(user.id(), requestId, submissionId);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cancelable document submission not found.");
+        }
+        return new DocumentSubmissionDeleteResponse(requestId, submissionId, true);
+    }
+
+    public DocumentAttachmentDownload downloadDocumentAttachment(long submissionId, long attachmentId) {
+        UserProfile user = currentUser();
+        DocumentAttachmentItem attachment = repository.findDocumentAttachment(user.id(), submissionId, attachmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document attachment not found."));
+        return new DocumentAttachmentDownload(attachment, readDocumentAttachment(attachment));
     }
 
     public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {
@@ -1490,6 +1577,31 @@ public class PriorityApiService {
         return safeAttachmentPath(storageKey, "Learning material attachment");
     }
 
+    private void storeDocumentAttachment(DocumentAttachmentItem attachment, byte[] content) {
+        Path path = documentAttachmentPath(attachment);
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Document attachment could not be stored.", exception);
+        }
+    }
+
+    private byte[] readDocumentAttachment(DocumentAttachmentItem attachment) {
+        try {
+            return Files.readAllBytes(documentAttachmentPath(attachment));
+        } catch (NoSuchFileException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document attachment file was not found.", exception);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Document attachment could not be read.", exception);
+        }
+    }
+
+    private Path documentAttachmentPath(DocumentAttachmentItem attachment) {
+        String storageKey = normalizeWithDefault(attachment.storageKey(), "documents/attachments/%d".formatted(attachment.id()));
+        return safeAttachmentPath(storageKey, "Document attachment");
+    }
+
     private QuestSubmissionItem currentUserQuestSubmission(long userId, long questId, long submissionId) {
         p3Repository.findQuest(userId, questId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest not found."));
@@ -1635,6 +1747,50 @@ public class PriorityApiService {
         return materials.stream()
                 .map(material -> material.withResources(resources.getOrDefault(material.id(), List.of())))
                 .toList();
+    }
+
+    private List<DocumentRequestItem> withDocumentAttachments(List<DocumentRequestItem> requests, long userId) {
+        if (requests.isEmpty()) {
+            return requests;
+        }
+        List<Long> requestIds = requests.stream().map(DocumentRequestItem::id).toList();
+        Map<Long, List<DocumentAttachmentItem>> attachments = safe(
+                () -> repository.findDocumentAttachmentsByRequestIds(userId, requestIds).stream()
+                        .collect(Collectors.groupingBy(DocumentAttachmentItem::requestId)),
+                Map.of()
+        );
+        return requests.stream()
+                .map(request -> request.withAttachments(attachments.getOrDefault(request.id(), List.of())))
+                .toList();
+    }
+
+    private DocumentRequestDetail documentRequestWithAttachments(long userId, long requestId) {
+        DocumentRequestDetail item = repository.findDocumentRequestDetail(userId, requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document request not found."));
+        List<DocumentAttachmentItem> attachments = safe(
+                () -> repository.findDocumentAttachmentsByRequestIds(userId, List.of(requestId)),
+                List.of()
+        );
+        return item.withAttachments(attachments);
+    }
+
+    private void validateDocumentAttachment(String filename, long fileSize, DocumentRequestDetail target) {
+        if (target.maxFileSizeBytes() > 0 && fileSize > target.maxFileSizeBytes()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document attachment exceeds the request limit.");
+        }
+        String allowedExtensions = target.allowedExtensions();
+        if (!StringUtils.hasText(allowedExtensions)) {
+            return;
+        }
+        String normalizedFilename = filename.toLowerCase(Locale.ROOT);
+        boolean allowed = List.of(allowedExtensions.toLowerCase(Locale.ROOT).split(",")).stream()
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(extension -> extension.startsWith(".") ? extension : "." + extension)
+                .anyMatch(normalizedFilename::endsWith);
+        if (!allowed) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document attachment extension is not allowed.");
+        }
     }
 
     private MaterialItem fallbackMaterial(long id) {

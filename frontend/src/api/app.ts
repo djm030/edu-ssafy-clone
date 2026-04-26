@@ -27,6 +27,10 @@ import type {
   Classmate,
   CurriculumWeek,
   DashboardSummary,
+  DocumentAttachmentItem,
+  DocumentRequestItem,
+  DocumentSubmissionDraft,
+  DocumentSubmissionResult,
   ElearningProgressDetail,
   ElearningProgressItem,
   ElearningResumeResult,
@@ -115,6 +119,22 @@ type BackendBookmarkItem = Partial<BookmarkItem> & {
   targetType?: string | null;
   targetId?: number | null;
   createdAt?: string | null;
+};
+
+type BackendDocumentAttachmentItem = Partial<DocumentAttachmentItem> & {
+  submissionId?: number | null;
+  requestId?: number | null;
+  fileSize?: number | null;
+  createdAt?: string | null;
+};
+
+type BackendDocumentRequestItem = Partial<DocumentRequestItem> & {
+  maxFileSizeBytes?: number | null;
+  startsAt?: string | null;
+  dueAt?: string | null;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  attachments?: BackendDocumentAttachmentItem[];
 };
 
 type BackendMaterialResource = {
@@ -323,6 +343,43 @@ function toBookmarkItem(item: BackendBookmarkItem): BookmarkItem {
     thumbnailUrl: item.thumbnailUrl || undefined,
     targetUrl: item.targetUrl || undefined,
     createdAt: item.createdAt || undefined,
+  };
+}
+
+function toDocumentStatus(value?: string | null): DocumentRequestItem['status'] {
+  if (value === 'submitted' || value === 'rejected' || value === 'approved' || value === 'canceled') return value;
+  return 'not_submitted';
+}
+
+function toDocumentAttachmentItem(item: BackendDocumentAttachmentItem): DocumentAttachmentItem {
+  return {
+    id: Number(item.id),
+    submissionId: Number(item.submissionId),
+    requestId: Number(item.requestId),
+    filename: item.filename || '제출 파일',
+    storageKey: item.storageKey || undefined,
+    mimeType: item.mimeType || undefined,
+    fileSize: Number(item.fileSize ?? 0),
+    createdAt: item.createdAt || undefined,
+  };
+}
+
+function toDocumentRequestItem(item: BackendDocumentRequestItem): DocumentRequestItem {
+  return {
+    id: Number(item.id),
+    title: item.title || '서류 제출',
+    description: item.description || undefined,
+    category: item.category || 'general',
+    required: Boolean(item.required),
+    allowedExtensions: item.allowedExtensions || '.pdf,.jpg,.jpeg,.png',
+    maxFileSizeBytes: Number(item.maxFileSizeBytes ?? 0),
+    startsAt: item.startsAt || undefined,
+    dueAt: item.dueAt || undefined,
+    status: toDocumentStatus(item.status),
+    submittedAt: item.submittedAt || undefined,
+    reviewedAt: item.reviewedAt || undefined,
+    reviewComment: item.reviewComment || undefined,
+    attachments: (item.attachments || []).map(toDocumentAttachmentItem),
   };
 }
 
@@ -614,6 +671,36 @@ export function createBookmark(draft: BookmarkDraft): Promise<{ item: BookmarkIt
 
 export function deleteBookmark(bookmarkId: number): Promise<{ id: number; deleted: boolean }> {
   return fetchJson<{ id: number; deleted: boolean }>(`/api/me/bookmarks/${bookmarkId}`, { method: 'DELETE' });
+}
+
+export function getDocumentRequests(query: { page?: number; size?: number } = {}): Promise<{ items: DocumentRequestItem[] }> {
+  const params = buildQuery({ page: query.page, size: query.size });
+  return fetchJson<{ items: BackendDocumentRequestItem[] }>(`/api/documents/requests${params}`)
+    .then((response) => ({ items: response.items.map(toDocumentRequestItem) }));
+}
+
+export function getDocumentRequest(requestId: number): Promise<DocumentRequestItem> {
+  return fetchJson<ItemResponse<BackendDocumentRequestItem>>(`/api/documents/requests/${requestId}`)
+    .then((response) => toDocumentRequestItem(response.item));
+}
+
+export function submitDocument(requestId: number, draft: DocumentSubmissionDraft): Promise<DocumentSubmissionResult> {
+  return fetchJson<{ item: BackendDocumentRequestItem; submission: DocumentSubmissionResult['submission'] }>(`/api/documents/requests/${requestId}/submissions`, {
+    body: JSON.stringify(draft),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => ({
+    item: toDocumentRequestItem(response.item),
+    submission: {
+      ...response.submission,
+      status: toDocumentStatus(response.submission.status),
+      attachments: (response.submission.attachments || []).map(toDocumentAttachmentItem),
+    },
+  }));
+}
+
+export function cancelDocumentSubmission(requestId: number, submissionId: number): Promise<{ requestId: number; submissionId: number; canceled: boolean }> {
+  return fetchJson<{ requestId: number; submissionId: number; canceled: boolean }>(`/api/documents/requests/${requestId}/submissions/${submissionId}`, { method: 'DELETE' });
 }
 
 export function getElearningProgress(query: {

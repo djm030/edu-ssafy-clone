@@ -33,6 +33,15 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionDeleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailResponse;
@@ -109,6 +118,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
@@ -123,6 +133,7 @@ import org.springframework.web.context.WebApplicationContext;
         LearningController.class,
         ElearningController.class,
         BookmarkController.class,
+        DocumentController.class,
         QuestSurveyController.class,
         SupportController.class,
         CommunityController.class,
@@ -539,6 +550,80 @@ class PriorityApiControllerTest {
         mockMvc.perform(delete("/api/me/bookmarks/90"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deleted").value(true));
+    }
+
+    @Test
+    void documentEndpointsReturnSubmitCancelAndDownloadFlow() throws Exception {
+        PageMeta page = new PageMeta(1, 20, 1, 1);
+        DocumentAttachmentItem attachment = new DocumentAttachmentItem(
+                77L,
+                88L,
+                9L,
+                "identity.pdf",
+                "documents/9/submissions/88/identity.pdf",
+                "application/pdf",
+                5L,
+                OffsetDateTime.parse("2026-04-25T14:30:00+09:00")
+        );
+        DocumentRequestItem listItem = new DocumentRequestItem(
+                9L,
+                "신분증 사본 제출",
+                "본인 확인 서류",
+                "identity",
+                true,
+                ".pdf,.jpg,.png",
+                2_097_152L,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                "submitted",
+                OffsetDateTime.parse("2026-04-25T14:30:00+09:00"),
+                null,
+                List.of(attachment)
+        );
+        DocumentRequestDetail detail = new DocumentRequestDetail(
+                9L,
+                "신분증 사본 제출",
+                "본인 확인 서류",
+                "identity",
+                true,
+                ".pdf,.jpg,.png",
+                2_097_152L,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                "submitted",
+                OffsetDateTime.parse("2026-04-25T14:30:00+09:00"),
+                null,
+                null,
+                List.of(attachment)
+        );
+        given(priorityApiService.documentRequests(eq(1), eq(20))).willReturn(new DocumentRequestsResponse(List.of(listItem), page));
+        given(priorityApiService.documentRequest(9L)).willReturn(new DocumentRequestDetailResponse(detail));
+        given(priorityApiService.submitDocument(eq(9L), any())).willReturn(new DocumentSubmissionResponse(
+                detail,
+                new DocumentSubmissionItem(88L, 9L, "submitted", OffsetDateTime.parse("2026-04-25T14:30:00+09:00"), List.of(attachment))
+        ));
+        given(priorityApiService.cancelDocumentSubmission(9L, 88L)).willReturn(new DocumentSubmissionDeleteResponse(9L, 88L, true));
+        given(priorityApiService.downloadDocumentAttachment(88L, 77L)).willReturn(new DocumentAttachmentDownload(attachment, "hello".getBytes(StandardCharsets.UTF_8)));
+
+        mockMvc.perform(get("/api/documents/requests"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("신분증 사본 제출"))
+                .andExpect(jsonPath("$.items[0].attachments[0].filename").value("identity.pdf"));
+        mockMvc.perform(get("/api/documents/requests/9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.status").value("submitted"));
+        mockMvc.perform(post("/api/documents/requests/9/submissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"filename\":\"identity.pdf\",\"mimeType\":\"application/pdf\",\"contentBase64\":\"aGVsbG8=\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.submission.id").value(88));
+        mockMvc.perform(delete("/api/documents/requests/9/submissions/88"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canceled").value(true));
+        mockMvc.perform(get("/api/documents/submissions/88/attachments/77"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("identity.pdf")))
+                .andExpect(content().bytes("hello".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test

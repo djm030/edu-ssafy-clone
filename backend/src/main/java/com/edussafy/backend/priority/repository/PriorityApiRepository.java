@@ -6,6 +6,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
@@ -659,6 +662,203 @@ public class PriorityApiRepository {
                 .update();
     }
 
+    public long countDocumentRequests(long userId) {
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM document_requests dr
+                WHERE dr.active_yn = TRUE
+                  AND (dr.starts_at IS NULL OR dr.starts_at <= CURRENT_TIMESTAMP)
+                """)
+                .query(Long.class)
+                .single();
+    }
+
+    public List<DocumentRequestItem> findDocumentRequests(long userId, int limit, int offset) {
+        return jdbcClient.sql("""
+                SELECT
+                    dr.document_request_id,
+                    dr.title,
+                    dr.description,
+                    dr.category,
+                    dr.required_yn,
+                    dr.allowed_extensions,
+                    dr.max_file_size_bytes,
+                    dr.starts_at,
+                    dr.due_at,
+                    lds.document_submission_id,
+                    COALESCE(lds.status_code, 'not_submitted') AS status_code,
+                    lds.submitted_at,
+                    lds.review_comment
+                FROM document_requests dr
+                LEFT JOIN learner_document_submissions lds
+                    ON lds.document_request_id = dr.document_request_id
+                   AND lds.user_id = :userId
+                WHERE dr.active_yn = TRUE
+                  AND (dr.starts_at IS NULL OR dr.starts_at <= CURRENT_TIMESTAMP)
+                ORDER BY dr.required_yn DESC, dr.due_at ASC, dr.document_request_id ASC
+                LIMIT :limit OFFSET :offset
+                """)
+                .param("userId", userId)
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapDocumentRequestItem)
+                .list();
+    }
+
+    public Optional<DocumentRequestDetail> findDocumentRequestDetail(long userId, long requestId) {
+        return jdbcClient.sql("""
+                SELECT
+                    dr.document_request_id,
+                    dr.title,
+                    dr.description,
+                    dr.category,
+                    dr.required_yn,
+                    dr.allowed_extensions,
+                    dr.max_file_size_bytes,
+                    dr.starts_at,
+                    dr.due_at,
+                    lds.document_submission_id,
+                    COALESCE(lds.status_code, 'not_submitted') AS status_code,
+                    lds.submitted_at,
+                    lds.reviewed_at,
+                    lds.review_comment
+                FROM document_requests dr
+                LEFT JOIN learner_document_submissions lds
+                    ON lds.document_request_id = dr.document_request_id
+                   AND lds.user_id = :userId
+                WHERE dr.document_request_id = :requestId
+                  AND dr.active_yn = TRUE
+                  AND (dr.starts_at IS NULL OR dr.starts_at <= CURRENT_TIMESTAMP)
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("requestId", requestId)
+                .query(this::mapDocumentRequestDetail)
+                .optional();
+    }
+
+    public List<DocumentAttachmentItem> findDocumentAttachmentsByRequestIds(long userId, List<Long> requestIds) {
+        if (requestIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                SELECT
+                    lda.learner_document_submission_id AS document_submission_id,
+                    lds.document_request_id,
+                    a.attachment_id,
+                    a.original_filename,
+                    a.storage_key,
+                    a.mime_type,
+                    a.file_size,
+                    a.created_at
+                FROM learner_document_submissions lds
+                JOIN learner_document_attachments lda
+                    ON lda.learner_document_submission_id = lds.document_submission_id
+                JOIN attachments a ON a.attachment_id = lda.attachment_id
+                WHERE lds.user_id = :userId
+                  AND lds.document_request_id IN (:requestIds)
+                ORDER BY a.created_at ASC, a.attachment_id ASC
+                """)
+                .param("userId", userId)
+                .param("requestIds", requestIds)
+                .query(this::mapDocumentAttachment)
+                .list();
+    }
+
+    public long upsertDocumentSubmission(long userId, long requestId) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO learner_document_submissions (
+                    document_request_id,
+                    user_id,
+                    status_code,
+                    submitted_at,
+                    reviewed_at,
+                    reviewed_by,
+                    review_comment
+                )
+                VALUES (:requestId, :userId, 'submitted', CURRENT_TIMESTAMP, NULL, NULL, NULL)
+                ON DUPLICATE KEY UPDATE
+                    status_code = 'submitted',
+                    submitted_at = CURRENT_TIMESTAMP,
+                    reviewed_at = NULL,
+                    reviewed_by = NULL,
+                    review_comment = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                """)
+                .param("requestId", requestId)
+                .param("userId", userId)
+                .update(keyHolder, "document_submission_id");
+        Number key = keyHolder.getKey();
+        if (key != null) {
+            return key.longValue();
+        }
+        return jdbcClient.sql("""
+                SELECT document_submission_id
+                FROM learner_document_submissions
+                WHERE document_request_id = :requestId AND user_id = :userId
+                LIMIT 1
+                """)
+                .param("requestId", requestId)
+                .param("userId", userId)
+                .query(Long.class)
+                .single();
+    }
+
+    public void linkDocumentSubmissionAttachment(long submissionId, long attachmentId) {
+        jdbcClient.sql("""
+                INSERT IGNORE INTO learner_document_attachments (learner_document_submission_id, attachment_id)
+                VALUES (:submissionId, :attachmentId)
+                """)
+                .param("submissionId", submissionId)
+                .param("attachmentId", attachmentId)
+                .update();
+    }
+
+    public Optional<DocumentAttachmentItem> findDocumentAttachment(long userId, long submissionId, long attachmentId) {
+        return jdbcClient.sql("""
+                SELECT
+                    lda.learner_document_submission_id AS document_submission_id,
+                    lds.document_request_id,
+                    a.attachment_id,
+                    a.original_filename,
+                    a.storage_key,
+                    a.mime_type,
+                    a.file_size,
+                    a.created_at
+                FROM learner_document_attachments lda
+                JOIN learner_document_submissions lds
+                    ON lds.document_submission_id = lda.learner_document_submission_id
+                JOIN attachments a ON a.attachment_id = lda.attachment_id
+                WHERE lds.user_id = :userId
+                  AND lda.learner_document_submission_id = :submissionId
+                  AND lda.attachment_id = :attachmentId
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("submissionId", submissionId)
+                .param("attachmentId", attachmentId)
+                .query(this::mapDocumentAttachment)
+                .optional();
+    }
+
+    public int cancelDocumentSubmission(long userId, long requestId, long submissionId) {
+        return jdbcClient.sql("""
+                UPDATE learner_document_submissions
+                SET status_code = 'canceled',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = :userId
+                  AND document_request_id = :requestId
+                  AND document_submission_id = :submissionId
+                  AND reviewed_at IS NULL
+                  AND status_code IN ('submitted', 'rejected')
+                """)
+                .param("userId", userId)
+                .param("requestId", requestId)
+                .param("submissionId", submissionId)
+                .update();
+    }
+
     public long countElearningProgress(long userId, String status, String keyword) {
         SqlParts parts = elearningProgressWhere(userId, status, keyword);
         return jdbcClient.sql("""
@@ -1051,6 +1251,56 @@ public class PriorityApiRepository {
                 rs.getString("description"),
                 rs.getString("thumbnail_url"),
                 rs.getString("target_url")
+        );
+    }
+
+    private DocumentRequestItem mapDocumentRequestItem(ResultSet rs, int rowNum) throws SQLException {
+        return new DocumentRequestItem(
+                rs.getLong("document_request_id"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("category"),
+                rs.getBoolean("required_yn"),
+                rs.getString("allowed_extensions"),
+                rs.getLong("max_file_size_bytes"),
+                toOffset(rs.getTimestamp("starts_at")),
+                toOffset(rs.getTimestamp("due_at")),
+                rs.getString("status_code"),
+                toOffset(rs.getTimestamp("submitted_at")),
+                rs.getString("review_comment"),
+                List.of()
+        );
+    }
+
+    private DocumentRequestDetail mapDocumentRequestDetail(ResultSet rs, int rowNum) throws SQLException {
+        return new DocumentRequestDetail(
+                rs.getLong("document_request_id"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("category"),
+                rs.getBoolean("required_yn"),
+                rs.getString("allowed_extensions"),
+                rs.getLong("max_file_size_bytes"),
+                toOffset(rs.getTimestamp("starts_at")),
+                toOffset(rs.getTimestamp("due_at")),
+                rs.getString("status_code"),
+                toOffset(rs.getTimestamp("submitted_at")),
+                toOffset(rs.getTimestamp("reviewed_at")),
+                rs.getString("review_comment"),
+                List.of()
+        );
+    }
+
+    private DocumentAttachmentItem mapDocumentAttachment(ResultSet rs, int rowNum) throws SQLException {
+        return new DocumentAttachmentItem(
+                rs.getLong("attachment_id"),
+                rs.getLong("document_submission_id"),
+                rs.getLong("document_request_id"),
+                rs.getString("original_filename"),
+                rs.getString("storage_key"),
+                rs.getString("mime_type"),
+                rs.getLong("file_size"),
+                toOffset(rs.getTimestamp("created_at"))
         );
     }
 
