@@ -2064,3 +2064,41 @@ h2 {
   justify-content: center;
   padding: 10px 20px;
 }
+
+.external-service-boundary {
+  align-items: center;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 18px;
+}
+
+.external-service-boundary h2 {
+  margin: 0 0 8px;
+}
+
+.external-service-boundary p {
+  color: #667085;
+  margin: 0;
+}
+
+.external-service-boundary__stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+}
+
+.external-service-boundary__stats span {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  color: #475467;
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+}
+
+.external-service-boundary__stats strong {
+  color: #245db8;
+  font-size: 22px;
+}

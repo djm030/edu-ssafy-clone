@@ -217,3 +217,13 @@
     flex-direction: column;
   }
 }
+
+@media (max-width: 720px) {
+  .external-service-boundary {
+    grid-template-columns: 1fr;
+  }
+
+  .external-service-boundary__stats {
+    grid-template-columns: 1fr;
+  }
+}

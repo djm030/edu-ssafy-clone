@@ -54,10 +54,12 @@ function ExternalServicesPage() {
       {loadState === 'empty' ? <DataState title="등록된 외부 서비스가 없습니다." message="운영 설정이 완료되면 링크가 표시됩니다." /> : null}
       {actionMessage ? <p className="muted">{actionMessage}</p> : null}
       {loadState === 'loaded' ? (
-        <section className="grid-list">
+        <>
+          <ExternalServiceBoundaryPanel items={items} />
+          <section className="grid-list external-service-grid">
           {items.map((item) => (
             <article className="panel card" key={item.code}>
-              <StatusPill tone={isLaunchable(item) ? 'green' : 'gray'}>{isLaunchable(item) ? '사용 가능' : '비활성'}</StatusPill>
+              <StatusPill tone={isLaunchable(item) ? 'green' : 'gray'}>{serviceStatusLabel(item)}</StatusPill>
               <StatusPill tone={item.launchType === 'SSO_FORM' ? 'yellow' : 'blue'}>{launchLabel(item.launchType)}</StatusPill>
               <h2>{item.name}</h2>
               <p>{item.description}</p>
@@ -72,20 +74,57 @@ function ExternalServicesPage() {
                 </div>
                 <div>
                   <dt>열기 방식</dt>
-                  <dd>{item.openInNewWindow === false ? '현재 창 이동' : '새 창 열기'}</dd>
+                  <dd>{servicePolicyDetail(item)}</dd>
                 </div>
               </dl>
               {!isLaunchable(item) ? <p className="form-message">{item.disabledReason || '운영 설정 전까지 열 수 없습니다.'}</p> : null}
-              <span className="muted">접근 {item.accessCount}회 · 최근 {formatDateTime(item.lastAccessedAt)}</span>
+              <span className="muted">접근 로그 {item.accessCount}회 · 최근 {formatDateTime(item.lastAccessedAt)} · 실제 SSO 토큰 미발급</span>
               <button className="primary-action" disabled={!isLaunchable(item)} onClick={() => openService(item)} type="button">
                 {item.openInNewWindow === false ? '현재 창에서 열기' : '새 창으로 열기'}
               </button>
             </article>
           ))}
-        </section>
+          </section>
+        </>
       ) : null}
     </section>
   );
+}
+
+function ExternalServiceBoundaryPanel({ items }: { items: ExternalServiceItem[] }) {
+  const launchableCount = items.filter(isLaunchable).length;
+  const disabledCount = items.length - launchableCount;
+  const ssoCount = items.filter((item) => item.launchType === 'SSO_FORM').length;
+  const newWindowCount = items.filter((item) => item.openInNewWindow !== false).length;
+
+  return (
+    <section className="panel external-service-boundary" aria-label="외부 서비스 클론 경계와 실행 정책">
+      <div>
+        <p className="eyebrow">SSO BOUNDARY</p>
+        <h2>실제 SSO 토큰은 발급하지 않고 Launch URL과 접근 로그만 검증합니다.</h2>
+        <p>JOB SSAFY, SSAFY GIT, Meeting! SSAFY는 운영 설정이 없는 경우 비활성 상태로 표시하며 사용자가 누른 시점만 감사 로그로 남깁니다.</p>
+      </div>
+      <div className="external-service-boundary__stats">
+        <span><strong>{launchableCount}</strong>사용 가능</span>
+        <span><strong>{disabledCount}</strong>권한 없음/준비중</span>
+        <span><strong>{ssoCount}</strong>SSO 경계</span>
+        <span><strong>{newWindowCount}</strong>noopener 새 창</span>
+      </div>
+    </section>
+  );
+}
+
+function serviceStatusLabel(item: ExternalServiceItem): string {
+  if (isLaunchable(item)) return item.launchType === 'SSO_FORM' ? 'SSO Launch 가능' : '외부 링크 가능';
+  if (!item.enabled) return '권한 없음 또는 운영 비활성';
+  if (!item.url || item.url === '#' || item.url.toLowerCase().startsWith('#none')) return 'unconfigured URL';
+  return '외부 장애 또는 준비중';
+}
+
+function servicePolicyDetail(item: ExternalServiceItem): string {
+  const auth = item.requiresAuth === false ? '공개 링크' : '로그인 사용자 기준';
+  const windowPolicy = item.openInNewWindow === false ? '현재 창 이동' : '새 창 열기 + rel=noopener 정책';
+  return `${auth} · ${windowPolicy}`;
 }
 
 function isLaunchable(item: ExternalServiceItem): boolean {

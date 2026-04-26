@@ -493,6 +493,13 @@ class FrontendRouteSmokeCoverageTest {
         String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
 
         assertThat(externalPage)
+                .contains("ExternalServiceBoundaryPanel")
+                .contains("실제 SSO 토큰은 발급하지 않고")
+                .contains("serviceStatusLabel")
+                .contains("servicePolicyDetail")
+                .contains("rel=noopener 정책")
+                .contains("unconfigured URL")
+                .contains("접근 로그")
                 .contains("isLaunchable")
                 .contains("policyLabel")
                 .contains("disabledReason")
