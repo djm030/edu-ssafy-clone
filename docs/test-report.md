@@ -1,5 +1,12 @@
 # Test Report
 
+## Environment Example Guardrails (2026-04-26 KST)
+- Updated `.env.example` to use change-me placeholders instead of reusable development passwords and added production profile cookie/secret checklist comments.
+- Added a backend regression test that fails if the env example reintroduces `ssafy_dev_*` shared secret defaults or drops the production checklist.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=EnvironmentExampleConfigTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 172 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+
 ## Operations Readiness Domain Smoke Expansion (2026-04-26 KST)
 - Expanded the frontend `/ops/readiness` smoke runner to include notifications, learning materials, and learning replay list endpoints in addition to auth/session, profile, attendance, board, survey, quest, support, Nginx, backend health, and actuator checks.
 - `cd frontend && npm run build && npm run lint` -> PASS.

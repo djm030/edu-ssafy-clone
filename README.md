@@ -2,12 +2,12 @@
 
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.
 
-## Current project status (2026-04-24)
+## Current project status (2026-04-26)
 
-- Overall readiness: **NOT READY / PARTIAL**. The repository is a runnable full-stack clone scaffold, but it is not final full-clone complete.
-- Passing verification checks: Dockerized backend `mvn -B test` on Java 21, frontend `npm run lint`, frontend `npm run build`, Docker Compose config render/build, app-profile startup with healthy containers, and basic local HTTP smoke.
-- Blocked/unknown checks: PowerShell smoke because `pwsh`/`powershell` is unavailable on this macOS verification host; browser E2E/visual fidelity and live CI run evidence are still missing.
-- Major remaining product gaps: production auth/session/RBAC, durable notification/support/survey/material workflows, attachments, board edit/delete/permissions, browser E2E/visual verification, and final all-PASS verification.
+- Overall readiness: **PASS for the implemented local full-stack clone surface; production launch still requires live environment verification**.
+- Passing verification checks: Dockerized backend Maven tests on Java 21, frontend `npm run lint`, frontend `npm run build`, Docker Compose config rendering, Nginx/backend smoke contracts, Spring REST Docs snippets, and the `/ops/readiness` frontend smoke runner.
+- Blocked/unknown checks: browser E2E/visual fidelity, live CI evidence, and a latest-image rebuild against Docker Hub can still be environment-dependent.
+- Major remaining production gaps: real deployment secret management, browser E2E/visual verification, external observability wiring, and final live all-PASS evidence.
 - Source of truth for readiness: `docs/final-verification.md` and `docs/remaining-work.md`.
 
 ## Quick Start: localhost 전체 확인
@@ -16,7 +16,18 @@ PowerShell에서 저장소 루트로 이동한 뒤 실행합니다.
 
 ```powershell
 cd C:\Users\kwanyeol\Desktop\eduSSAFY-clone-coding
+Copy-Item .env.example .env
+# Edit .env and replace every change-me value.
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\dev\localhost.ps1 -Smoke -Open
+```
+
+macOS/Linux에서 빠르게 설정을 확인하려면:
+
+```bash
+cp .env.example .env
+$EDITOR .env # replace every change-me value
+docker compose config
+docker compose --profile app up -d --build
 ```
 
 Docker 권한 문제가 있으면 먼저 아래를 관리자 PowerShell에서 실행하고 Docker Desktop/Codex/터미널을 재시작하세요.
@@ -35,8 +46,7 @@ net localgroup docker-users "DESKTOP-KPGHMRC\CodexSandboxUsers" /add
 - Production readiness smoke screen: http://localhost/ops/readiness
 - Nginx health: http://localhost/nginx-health
 - RabbitMQ management: http://localhost:15672
-  - user: `ssafy`
-  - password: `ssafy_dev_password`
+  - user/password: `.env`의 `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS`
 
 Demo login:
 
