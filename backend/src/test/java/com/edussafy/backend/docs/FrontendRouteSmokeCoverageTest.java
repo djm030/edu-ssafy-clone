@@ -213,6 +213,12 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("joinEnabled")
                 .contains("disabledReason")
                 .contains("actionLabel")
+                .contains("LiveAccessSummaryPanel")
+                .contains("라이브 Meeting 상태 요약")
+                .contains("live-access-summary-grid")
+                .contains("Meeting 입장 정책")
+                .contains("입장 로그 저장 후 새 창으로 이동")
+                .contains("링크 준비중")
                 .contains("Meeting 입장 기록");
         assertThat(appApi)
                 .contains("hasLaunchableLiveUrl")

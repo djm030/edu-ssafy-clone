@@ -1400,6 +1400,50 @@ h2 {
 }
 
 
+.live-access-summary-panel {
+  margin-bottom: 18px;
+}
+
+.live-access-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.live-access-summary-card {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.live-access-summary-card span {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.live-access-summary-card strong {
+  color: #17458d;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.live-policy-row {
+  align-items: center;
+  background: #f9fafb;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  color: #475467;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+
 .ebook-readiness-panel {
   margin-bottom: 18px;
 }

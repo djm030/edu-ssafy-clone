@@ -153,6 +153,7 @@
     grid-template-columns: 1fr;
   }
 
+  .live-access-summary-grid,
   .ebook-readiness-grid,
   .education-achievement-grid,
   .level-kpi-row,
