@@ -374,8 +374,13 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(bookmarksPage)
                 .contains("BookmarkSummaryPanel")
                 .contains("찜한 목록 유형별 요약")
+                .contains("BookmarkDeleteConfirm")
+                .contains("bookmark-confirm-panel")
+                .contains("찜 해제 확인")
+                .contains("실패하면 기존 목록을 유지")
                 .contains("decrementBookmarkSummary")
                 .contains("summaryCount")
+                .contains("confirmTarget")
                 .contains("deletingId")
                 .contains("해제 중");
         assertThat(appApi)

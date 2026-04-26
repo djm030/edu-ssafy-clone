@@ -27,6 +27,7 @@ function BookmarksPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [mutationMessage, setMutationMessage] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<BookmarkItem | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -48,20 +49,25 @@ function BookmarksPage() {
     };
   }, [targetType]);
 
-  const removeBookmark = (bookmarkId: number) => {
-    if (deletingId !== null) return;
-    setDeletingId(bookmarkId);
+  const requestRemoveBookmark = (bookmarkId: number) => {
+    const target = items.find((item) => item.id === bookmarkId) ?? null;
+    setConfirmTarget(target);
+    setMutationMessage(target ? `${target.title} 찜 해제를 확인해 주세요.` : '삭제할 찜 항목을 찾지 못했습니다.');
+  };
+
+  const confirmRemoveBookmark = () => {
+    if (!confirmTarget || deletingId !== null) return;
+    const target = confirmTarget;
+    setDeletingId(target.id);
     setMutationMessage('찜을 해제하는 중입니다.');
-    deleteBookmark(bookmarkId)
+    deleteBookmark(target.id)
       .then(() => {
-        const removed = items.find((item) => item.id === bookmarkId);
-        const nextItems = items.filter((item) => item.id !== bookmarkId);
+        const nextItems = items.filter((item) => item.id !== target.id);
         setItems(nextItems);
-        if (removed) {
-          setSummary((current) => decrementBookmarkSummary(current, removed.targetType));
-        }
+        setSummary((current) => decrementBookmarkSummary(current, target.targetType));
         setLoadState(nextItems.length ? 'loaded' : 'empty');
         setMutationMessage('찜이 해제되었습니다.');
+        setConfirmTarget(null);
       })
       .catch((error) => setMutationMessage(getErrorMessage(error)))
       .finally(() => setDeletingId(null));
@@ -81,10 +87,18 @@ function BookmarksPage() {
       </div>
       {summary ? <BookmarkSummaryPanel summary={summary} /> : null}
       {mutationMessage ? <p className="helper-text" role="status">{mutationMessage}</p> : null}
+      {confirmTarget ? (
+        <BookmarkDeleteConfirm
+          disabled={deletingId !== null}
+          item={confirmTarget}
+          onCancel={() => { setConfirmTarget(null); setMutationMessage('찜 해제를 취소했습니다.'); }}
+          onConfirm={confirmRemoveBookmark}
+        />
+      ) : null}
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="찜한 목록을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="찜한 콘텐츠가 없습니다." message="학습자료나 이러닝 상세에서 찜을 추가해 보세요." /> : null}
-      {loadState === 'loaded' ? <BookmarkList items={items} deletingId={deletingId} onDelete={removeBookmark} /> : null}
+      {loadState === 'loaded' ? <BookmarkList items={items} deletingId={deletingId} onDelete={requestRemoveBookmark} /> : null}
     </section>
   );
 }
@@ -127,6 +141,24 @@ function decrementBookmarkSummary(summary: BookmarkSummary | undefined, targetTy
     elearningCount: targetType === 'elearning' ? Math.max(summary.elearningCount - 1, 0) : summary.elearningCount,
     replayCount: targetType === 'replay' ? Math.max(summary.replayCount - 1, 0) : summary.replayCount,
   };
+}
+
+function BookmarkDeleteConfirm({ disabled, item, onCancel, onConfirm }: { disabled: boolean; item: BookmarkItem; onCancel: () => void; onConfirm: () => void }) {
+  const target = targetLabels[item.targetType];
+
+  return (
+    <section className="bookmark-confirm-panel" aria-label="찜 해제 확인">
+      <div>
+        <StatusPill tone={target.tone}>{target.label}</StatusPill>
+        <strong>{item.title}</strong>
+        <p>이 항목의 찜을 해제하면 현재 탭 목록에서 제거됩니다. 실패하면 기존 목록을 유지합니다.</p>
+      </div>
+      <div className="button-row">
+        <button className="ghost-button" disabled={disabled} onClick={onCancel} type="button">취소</button>
+        <button className="primary-action" disabled={disabled} onClick={onConfirm} type="button">찜 해제 확인</button>
+      </div>
+    </section>
+  );
 }
 
 function BookmarkList({ items, deletingId, onDelete }: { items: BookmarkItem[]; deletingId: number | null; onDelete: (bookmarkId: number) => void }) {

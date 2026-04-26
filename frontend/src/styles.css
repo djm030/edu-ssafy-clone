@@ -758,6 +758,28 @@ h2 {
   font-weight: 700;
 }
 
+
+.bookmark-confirm-panel {
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.bookmark-confirm-panel > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.bookmark-confirm-panel p {
+  margin: 0;
+}
+
 .bookmark-summary-grid {
   display: grid;
   gap: 12px;
