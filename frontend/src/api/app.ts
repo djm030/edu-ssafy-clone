@@ -6,6 +6,8 @@ import {
   mockCurriculumWeeks,
   mockDashboard,
   mockMaterials,
+  mockMentoringMeetingApplications,
+  mockMentoringMeetings,
   mockMentoringNotices,
   mockMentoringQuestions,
   mockMentorStories,
@@ -48,6 +50,9 @@ import type {
   LiveSessionItem,
   LiveSessionJoinResult,
   LoginResponse,
+  MentoringMeetingApplicationItem,
+  MentoringMeetingItem,
+  MentoringMeetingsResponse,
   MentoringNoticeItem,
   MentoringNoticesResponse,
   MentoringQuestionDraft,
@@ -1016,6 +1021,52 @@ export function getMentoringNotice(noticeId: number): Promise<MentoringNoticeIte
   return fetchJson<{ item: MentoringNoticeItem }>(`/api/mentoring/notices/${noticeId}`, {
     fallback: () => ({ item: mockMentoringNotices.find((notice) => notice.id === noticeId) || mockMentoringNotices[0] }),
   }).then((response) => response.item);
+}
+
+export function getMentoringMeetings(query: { keyword?: string; page?: number; size?: number } = {}): Promise<MentoringMeetingsResponse> {
+  const keyword = query.keyword?.trim();
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ keyword, page, size });
+  return fetchJson<MentoringMeetingsResponse>(`/api/mentoring/meetings${params}`, {
+    fallback: () => {
+      const filtered = mockMentoringMeetings.filter((meeting) => {
+        if (!keyword) return true;
+        const lower = keyword.toLowerCase();
+        return meeting.title.toLowerCase().includes(lower) || meeting.description.toLowerCase().includes(lower) || meeting.topic.toLowerCase().includes(lower);
+      });
+      return {
+        items: filtered.slice((page - 1) * size, page * size),
+        page: { page, size, totalItems: filtered.length, totalPages: Math.ceil(filtered.length / size) },
+      };
+    },
+  });
+}
+
+export function getMentoringMeeting(meetingId: number): Promise<MentoringMeetingItem> {
+  return fetchJson<{ item: MentoringMeetingItem }>(`/api/mentoring/meetings/${meetingId}`, {
+    fallback: () => ({ item: mockMentoringMeetings.find((meeting) => meeting.id === meetingId) || mockMentoringMeetings[0] }),
+  }).then((response) => response.item);
+}
+
+export function applyMentoringMeeting(meetingId: number, motivation: string): Promise<MentoringMeetingApplicationItem> {
+  return fetchJson<{ item: MentoringMeetingApplicationItem }>(`/api/mentoring/meetings/${meetingId}/applications`, {
+    body: JSON.stringify({ motivation }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function cancelMentoringMeetingApplication(meetingId: number): Promise<MentoringMeetingApplicationItem> {
+  return fetchJson<{ item: MentoringMeetingApplicationItem }>(`/api/mentoring/meetings/${meetingId}/applications/me`, {
+    method: 'DELETE',
+  }).then((response) => response.item);
+}
+
+export function getMyMentoringMeetingApplications(): Promise<MentoringMeetingApplicationItem[]> {
+  return fetchJson<{ items: MentoringMeetingApplicationItem[] }>('/api/mentoring/meetings/applications/me', {
+    fallback: () => ({ items: mockMentoringMeetingApplications }),
+  }).then((response) => response.items);
 }
 
 export function getAcademicRules(query: { categoryId?: number; keyword?: string } = {}): Promise<AcademicRulesResponse> {

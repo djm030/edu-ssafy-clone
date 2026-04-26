@@ -65,6 +65,7 @@ for route in \
   /mentoring/stories \
   /mentoring/questions \
   /mentoring/notices \
+  /mentoring/meetings \
   /help/qna \
   /quest \
   /survey \
@@ -94,7 +95,8 @@ for api_path in \
   /api/help/academic-rules \
   /api/mentoring/stories \
   /api/mentoring/questions \
-  /api/mentoring/notices; do
+  /api/mentoring/notices \
+  /api/mentoring/meetings; do
   require_any_file_contains "$api_path" frontend/src/api/app.ts frontend/src/api/readiness.ts
 done
 
@@ -127,3 +129,4 @@ request GET "$BACKEND_URL/api/replays/all"
 request GET "$BACKEND_URL/api/quests?page=1&size=5"
 request GET "$BACKEND_URL/api/surveys?page=1&size=5"
 request GET "$BACKEND_URL/api/support/tickets?page=1&size=5"
+request GET "$BACKEND_URL/api/mentoring/meetings?page=1&size=5"

@@ -62,6 +62,7 @@ export const navSections: NavSection[] = [
       { path: '/mentoring/stories', label: '멘토 스토리' },
       { path: '/mentoring/questions', label: '멘토링 Q&A' },
       { path: '/mentoring/notices', label: '멘토링 공지사항' },
+      { path: '/mentoring/meetings', label: '간담회 신청' },
     ],
   },
   {
@@ -99,6 +100,9 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'mentoring-question-detail', priority: 22, feature: '멘토링 Q&A', path: '/mentoring/questions/1', label: '멘토링 Q&A 상세' },
   { id: 'mentoring-notices', priority: 23, feature: '멘토링 공지사항', path: '/mentoring/notices', label: '멘토링 공지 목록' },
   { id: 'mentoring-notice-detail', priority: 23, feature: '멘토링 공지사항', path: '/mentoring/notices/1', label: '멘토링 공지 상세' },
+  { id: 'mentoring-meetings', priority: 24, feature: '간담회 신청', path: '/mentoring/meetings', label: '간담회 목록' },
+  { id: 'mentoring-meeting-detail', priority: 24, feature: '간담회 신청', path: '/mentoring/meetings/1', label: '간담회 상세' },
+  { id: 'mentoring-meeting-applications', priority: 24, feature: '간담회 신청', path: '/mentoring/meetings/my-applications', label: '내 간담회 신청' },
   { id: 'support-list', priority: 5, feature: '1:1 문의', path: '/help/qna', label: '문의 목록' },
   { id: 'support-new', priority: 5, feature: '1:1 문의', path: '/help/qna/new', label: '문의 작성' },
   { id: 'support-detail', priority: 5, feature: '1:1 문의 답변', path: '/help/qna/tickets/1', label: '문의 상세' },

@@ -48,6 +48,9 @@ class FrontendRouteSmokeCoverageTest {
             "/mentoring/questions/1",
             "/mentoring/notices",
             "/mentoring/notices/1",
+            "/mentoring/meetings",
+            "/mentoring/meetings/1",
+            "/mentoring/meetings/my-applications",
             "/help/qna",
             "/help/qna/new",
             "/help/qna/tickets/1",
@@ -103,6 +106,9 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("match(/^\\/mentoring\\/questions\\/(\\d+)$/)");
         assertThat(app).contains("if (path === '/mentoring/notices')");
         assertThat(app).contains("match(/^\\/mentoring\\/notices\\/(\\d+)$/)");
+        assertThat(app).contains("if (path === '/mentoring/meetings')");
+        assertThat(app).contains("if (path === '/mentoring/meetings/my-applications')");
+        assertThat(app).contains("match(/^\\/mentoring\\/meetings\\/(\\d+)$/)");
         assertThat(app).contains("if (path === '/community/anonymous/write' || path === '/community/anonymous/new')");
         assertThat(app).contains("match(/^\\/community\\/anonymous\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
@@ -140,7 +146,8 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("academic-rules", Path.of("..", "frontend", "src", "pages", "AcademicRulesPage.tsx")),
                 Map.entry("mentor-stories", Path.of("..", "frontend", "src", "pages", "MentorStoriesPage.tsx")),
                 Map.entry("mentoring-questions", Path.of("..", "frontend", "src", "pages", "MentoringQuestionsPage.tsx")),
-                Map.entry("mentoring-notices", Path.of("..", "frontend", "src", "pages", "MentoringNoticesPage.tsx"))
+                Map.entry("mentoring-notices", Path.of("..", "frontend", "src", "pages", "MentoringNoticesPage.tsx")),
+                Map.entry("mentoring-meetings", Path.of("..", "frontend", "src", "pages", "MentoringMeetingsPage.tsx"))
         );
 
         for (Map.Entry<String, Path> entry : pages.entrySet()) {

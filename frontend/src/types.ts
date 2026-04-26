@@ -798,6 +798,43 @@ export interface MentoringNoticeItem {
   publishedAt?: string | null;
 }
 
+export type MentoringMeetingType = 'ONLINE' | 'OFFLINE';
+export type MentoringMeetingStatus = 'RECRUITING' | 'CLOSED' | 'DONE';
+export type MentoringMeetingApplicationStatus = 'APPLIED' | 'CANCELLED' | 'SELECTED' | 'REJECTED';
+
+export interface MentoringMeetingsResponse {
+  items: MentoringMeetingItem[];
+  page: PageMeta;
+}
+
+export interface MentoringMeetingItem {
+  id: number;
+  title: string;
+  description: string;
+  meetingType: MentoringMeetingType;
+  topic: string;
+  capacity: number;
+  appliedCount: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  applicationStartsAt?: string | null;
+  applicationEndsAt?: string | null;
+  status: MentoringMeetingStatus;
+  location?: string | null;
+  meetingUrl?: string | null;
+  myApplicationStatus?: MentoringMeetingApplicationStatus | null;
+  myMotivation?: string | null;
+}
+
+export interface MentoringMeetingApplicationItem {
+  meetingId: number;
+  meetingTitle: string;
+  status: MentoringMeetingApplicationStatus;
+  motivation: string;
+  appliedAt?: string | null;
+  cancelledAt?: string | null;
+}
+
 export interface AcademicRulesResponse {
   categories: AcademicRuleCategory[];
   keyword?: string | null;

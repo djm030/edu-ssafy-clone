@@ -532,6 +532,7 @@ VALUES
   ('mentor_story', 'Mentor Story', 'mentoring', 'public'),
   ('mentoring_qna', 'Mentoring Q&A', 'mentoring', 'authenticated'),
   ('mentoring_notice', 'Mentoring Notice', 'mentoring', 'public'),
+  ('mentoring_meeting', 'Mentoring Meeting', 'mentoring', 'authenticated'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -569,6 +570,10 @@ JOIN (
   SELECT 'mentoring_notice', '특강', 1
   UNION ALL
   SELECT 'mentoring_notice', '운영', 2
+  UNION ALL
+  SELECT 'mentoring_meeting', '커리어', 1
+  UNION ALL
+  SELECT 'mentoring_meeting', '포트폴리오', 2
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -616,6 +621,31 @@ JOIN (
   UNION ALL
   SELECT 'mentoring_notice', '운영', '4월 멘토링 Q&A 답변 운영 일정', '4월 멘토링 Q&A는 평일 오후에 순차 답변되며, 마감된 질문은 추가 답변이 제한됩니다.', FALSE, 16
   UNION ALL
+  SELECT 'mentoring_meeting', '커리어', '백엔드 커리어 간담회', '<!--MENTORING_MEETING
+ type=ONLINE
+ topic=커리어
+ capacity=20
+ startsAt=2026-05-01T19:00:00+09:00
+ endsAt=2026-05-01T20:30:00+09:00
+ applicationStartsAt=2026-04-01T00:00:00+09:00
+ applicationEndsAt=2099-12-31T23:59:59+09:00
+ location=온라인
+ meetingUrl=https://edu.ssafy.local/mentoring/backend-career
+ -->
+ 현업 멘토와 백엔드 커리어 준비 방향을 이야기합니다.', FALSE, 8
+  UNION ALL
+  SELECT 'mentoring_meeting', '포트폴리오', '프론트엔드 포트폴리오 오프라인 간담회', '<!--MENTORING_MEETING
+ type=OFFLINE
+ topic=포트폴리오
+ capacity=12
+ startsAt=2026-05-03T18:30:00+09:00
+ endsAt=2026-05-03T20:00:00+09:00
+ applicationStartsAt=2026-04-01T00:00:00+09:00
+ applicationEndsAt=2026-04-20T23:59:59+09:00
+ location=서울 캠퍼스
+ -->
+ 포트폴리오 화면 구성과 배포 경험 정리 방법을 나눕니다.', FALSE, 5
+  UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
 ) seed ON seed.board_code = b.board_code
 JOIN board_categories c
@@ -635,6 +665,7 @@ ON DUPLICATE KEY UPDATE original_filename = VALUES(original_filename);
 SET @free_post_id := (SELECT board_post_id FROM board_posts WHERE title = 'REST API study notes' LIMIT 1);
 SET @anonymous_post_id := (SELECT board_post_id FROM board_posts WHERE title = '익명 학습 고민 공유' LIMIT 1);
 SET @mentoring_qna_post_id := (SELECT board_post_id FROM board_posts WHERE title = '백엔드 프로젝트 경험을 어떻게 포트폴리오로 정리할까요?' LIMIT 1);
+SET @mentoring_meeting_post_id := (SELECT board_post_id FROM board_posts WHERE title = '프론트엔드 포트폴리오 오프라인 간담회' LIMIT 1);
 SET @attachment_id := (SELECT attachment_id FROM attachments WHERE checksum_sha256 = SHA2('rest-api-study.pdf', 256) LIMIT 1);
 
 INSERT IGNORE INTO board_post_attachments (board_post_id, attachment_id)
@@ -651,6 +682,15 @@ WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @anonymous_
 INSERT INTO board_comments (board_post_id, author_user_id, content)
 SELECT @mentoring_qna_post_id, @manager_id, '문제 상황, 본인 의사결정, 검증 결과를 한 흐름으로 정리하면 실무 역량이 잘 드러납니다.'
 WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @mentoring_qna_post_id);
+
+INSERT INTO board_comments (board_post_id, author_user_id, content)
+SELECT @mentoring_meeting_post_id, @student_id, '<!--MENTORING_MEETING_APPLICATION-->\n포트폴리오 개선 방향을 듣고 싶습니다.'
+WHERE NOT EXISTS (
+  SELECT 1 FROM board_comments
+  WHERE board_post_id = @mentoring_meeting_post_id
+    AND author_user_id = @student_id
+    AND content LIKE '<!--MENTORING_MEETING_APPLICATION-->%'
+);
 
 INSERT IGNORE INTO board_post_reactions (board_post_id, user_id, reaction_type_code)
 VALUES

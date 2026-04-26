@@ -8,6 +8,8 @@ import type {
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
+  MentoringMeetingApplicationItem,
+  MentoringMeetingItem,
   MentoringNoticeItem,
   MentoringQuestionItem,
   MentorStoryItem,
@@ -176,6 +178,53 @@ export const mockMentoringNotices: MentoringNoticeItem[] = [
     pinned: false,
     viewCount: 16,
     publishedAt: '2026-04-23T11:00:00+09:00',
+  },
+];
+
+export const mockMentoringMeetings: MentoringMeetingItem[] = [
+  {
+    id: 991,
+    title: '백엔드 커리어 간담회',
+    description: '현업 멘토와 백엔드 커리어 준비 방향을 이야기합니다.',
+    meetingType: 'ONLINE',
+    topic: '커리어',
+    capacity: 20,
+    appliedCount: 8,
+    startsAt: '2026-05-01T19:00:00+09:00',
+    endsAt: '2026-05-01T20:30:00+09:00',
+    applicationStartsAt: '2026-04-01T00:00:00+09:00',
+    applicationEndsAt: '2099-12-31T23:59:59+09:00',
+    status: 'RECRUITING',
+    location: '온라인',
+    meetingUrl: 'https://edu.ssafy.local/mentoring/backend-career',
+    myApplicationStatus: null,
+  },
+  {
+    id: 992,
+    title: '프론트엔드 포트폴리오 오프라인 간담회',
+    description: '포트폴리오 화면 구성과 배포 경험 정리 방법을 나눕니다.',
+    meetingType: 'OFFLINE',
+    topic: '포트폴리오',
+    capacity: 12,
+    appliedCount: 12,
+    startsAt: '2026-05-03T18:30:00+09:00',
+    endsAt: '2026-05-03T20:00:00+09:00',
+    applicationStartsAt: '2026-04-01T00:00:00+09:00',
+    applicationEndsAt: '2026-04-20T23:59:59+09:00',
+    status: 'CLOSED',
+    location: '서울 캠퍼스',
+    myApplicationStatus: 'APPLIED',
+    myMotivation: '포트폴리오 개선 방향을 듣고 싶습니다.',
+  },
+];
+
+export const mockMentoringMeetingApplications: MentoringMeetingApplicationItem[] = [
+  {
+    meetingId: 992,
+    meetingTitle: '프론트엔드 포트폴리오 오프라인 간담회',
+    status: 'APPLIED',
+    motivation: '포트폴리오 개선 방향을 듣고 싶습니다.',
+    appliedAt: '2026-04-12T10:00:00+09:00',
   },
 ];
 
