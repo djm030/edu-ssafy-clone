@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { loginAsDemoLearner } from './fixtures';
+import { loginAsDemoCoach, loginAsDemoLearner } from './fixtures';
 
 test('demo learner can log in and navigate priority screens', async ({ page }) => {
   await loginAsDemoLearner(page);
@@ -45,6 +45,17 @@ test('learner classmate screen blocks staff-only notification actions', async ({
   await expect(page.getByText('알림 보내기는 코치 또는 관리자 권한으로만 사용할 수 있습니다.')).toBeVisible();
   await expect(page.getByLabel('알림 메시지')).toBeDisabled();
   await expect(page.getByRole('button', { name: '알림 권한 없음' }).first()).toBeDisabled();
+});
+
+test('coach can send classmate notification from browser flow', async ({ page }) => {
+  await loginAsDemoCoach(page);
+  await page.goto('/community/classmates');
+
+  await expect(page.getByRole('heading', { name: '우리반 보기' })).toBeVisible();
+  await expect(page.getByLabel('알림 메시지')).toBeEnabled();
+  await page.getByLabel('알림 메시지').fill('오늘 라이브 입장 알림입니다.');
+  await page.getByRole('button', { name: '알림 보내기' }).first().click();
+  await expect(page.getByText('이교육생님에게 알림을 보냈습니다.')).toBeVisible();
 });
 
 test('demo learner can complete mycampus learning actions without real credentials', async ({ page }) => {

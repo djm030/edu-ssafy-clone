@@ -1,7 +1,44 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-export async function installApiFixture(page: Page) {
+type FixtureUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  campusName: string;
+  cohortName: string;
+  trackName: string;
+};
+
+type FixtureOptions = {
+  permissions?: string[];
+  user?: FixtureUser;
+};
+
+const learnerUser: FixtureUser = {
+  id: 1,
+  name: '김싸피',
+  email: 'student@ssafy.local',
+  role: 'learner',
+  campusName: '서울',
+  cohortName: '12기',
+  trackName: 'Java',
+};
+
+const coachUser: FixtureUser = {
+  id: 2,
+  name: '박코치',
+  email: 'coach@ssafy.local',
+  role: 'coach',
+  campusName: '서울',
+  cohortName: '12기',
+  trackName: 'Java',
+};
+
+export async function installApiFixture(page: Page, options: FixtureOptions = {}) {
+  const currentUser = options.user || learnerUser;
+  const permissions = options.permissions || ['learning:read', 'board:write'];
   const timestamp = '2026-04-26T09:00:00.000Z';
   const elearningItem = {
     courseId: 1,
@@ -84,10 +121,10 @@ export async function installApiFixture(page: Page) {
 
     const json = (body: unknown) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
     if (url.pathname === '/api/auth/login' || url.pathname === '/api/me') {
-      return json({ user: { id: 1, name: '김싸피', email: 'student@ssafy.local', role: 'learner', campusName: '서울', cohortName: '12기', trackName: 'Java' } });
+      return json({ user: currentUser });
     }
     if (url.pathname === '/api/auth/roles/current') {
-      return json({ role: 'learner', permissions: ['learning:read', 'board:write'], deniedRoutes: [] });
+      return json({ role: currentUser.role, permissions, deniedRoutes: [] });
     }
     if (url.pathname === '/api/auth/session') {
       return json({ authenticated: true, expiresAt: '2026-12-31T23:59:59.000Z', maxInactiveSeconds: 3600, secondsRemaining: 3600 });
@@ -100,6 +137,9 @@ export async function installApiFixture(page: Page) {
         ],
         summary: { totalCount: 2, learnerCount: 1, coachCount: 1, staffCount: 0 },
       });
+    }
+    if (url.pathname === '/api/community/classmates/7/notifications') {
+      return json({ status: 'sent', item: { id: 77, status: 'sent' } });
     }
     if (url.pathname === '/api/elearning/in-progress') {
       return json({ items: [elearningItem] });
@@ -182,6 +222,19 @@ export async function loginAsDemoLearner(page: Page) {
   await installApiFixture(page);
   await page.goto('/login');
   await page.getByLabel('이메일 또는 아이디').fill('student@ssafy.local');
+  await page.getByLabel('비밀번호').fill('password');
+  await page.getByRole('button', { name: '로그인' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('banner').getByRole('button', { name: '외부 서비스' })).toBeVisible();
+}
+
+export async function loginAsDemoCoach(page: Page) {
+  await installApiFixture(page, {
+    permissions: ['dashboard:read', 'notifications:send', 'learning:manage'],
+    user: coachUser,
+  });
+  await page.goto('/login');
+  await page.getByLabel('이메일 또는 아이디').fill('coach@ssafy.local');
   await page.getByLabel('비밀번호').fill('password');
   await page.getByRole('button', { name: '로그인' }).click();
   await expect(page).toHaveURL(/\/$/);

@@ -55,6 +55,8 @@ class CiWorkflowHardeningTest {
                 .contains("/learning/replays/my")
                 .contains("/community/classmates")
                 .contains("알림 권한 없음")
+                .contains("loginAsDemoCoach")
+                .contains("알림을 보냈습니다.")
                 .contains("서류 제출이 완료되었습니다.")
                 .contains("서약 동의가 저장되었습니다.")
                 .contains("without real EduSSAFY credentials")
