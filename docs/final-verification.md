@@ -61,7 +61,7 @@ docker compose --profile app up -d --build
 | Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
 | Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` stalled while loading Docker Hub metadata for base images and was cancelled; existing running app profile remained healthy. |
-| Browser E2E / visual | UNKNOWN | No Playwright/Cypress/visual baseline was available or executed. |
+| Screen route smoke / visual | PARTIAL | `/ops/readiness` now renders the priority 1~9 screen smoke manifest and `FrontendRouteSmokeCoverageTest` guards route coverage; Playwright/Cypress/visual baseline is still not executed. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
@@ -115,7 +115,7 @@ docker compose --profile app up -d --build
 1. 설문 관리자 CRUD는 구현됐고, 다음 단계는 브라우저 E2E와 OpenAPI 범위를 확장한다; survey create/update/delete REST Docs는 존재한다.
 2. material/quest까지 포함하는 공통 파일 업로드·다운로드·권한 모델을 통일한다.
 3. learner/coach/admin 전체 role matrix를 도메인별로 테스트한다.
-4. Playwright/Cypress 등 브라우저 E2E smoke와 핵심 화면 visual 검증을 추가한다.
+4. Playwright/Cypress 등 실제 브라우저 E2E smoke와 핵심 화면 visual 검증을 추가한다. 현재는 `/ops/readiness` route manifest와 정적 회귀 테스트까지만 존재한다.
 5. Docker base image metadata/pull 이슈가 없는 네트워크에서 `docker compose --profile app up -d --build`를 재실행해 최신 이미지 rebuild를 검증한다.
 6. Spring REST Docs/OpenAPI 산출물을 전체 mutation endpoint까지 확장한다.
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { navSections } from '../routes';
 import type { RoleAccess, UserProfile } from '../types';
 
 interface AppShellProps {
@@ -12,45 +13,6 @@ interface AppShellProps {
   onNavigate: (path: string) => void;
   onLogout: () => void;
 }
-
-const navSections = [
-  { title: '홈', items: [{ path: '/', label: '대시보드' }] },
-  { title: '운영', items: [{ path: '/ops/readiness', label: '운영 점검' }] },
-  { title: '관리', items: [{ path: '/admin/campus', label: '캠퍼스 관리' }] },
-  {
-    title: '마이캠퍼스',
-    items: [
-      { path: '/mycampus/attendance', label: '출석현황' },
-      { path: '/mycampus/level', label: '레벨/포인트' },
-      { path: '/mycampus/notifications', label: '알림함' },
-    ],
-  },
-  {
-    title: '학습',
-    items: [
-      { path: '/learning/curriculum', label: '커리큘럼' },
-      { path: '/learning/materials', label: '학습자료' },
-      { path: '/learning/replays', label: '강의 다시보기' },
-      { path: '/quest', label: 'Quest' },
-      { path: '/survey', label: '설문' },
-    ],
-  },
-  {
-    title: '소통',
-    items: [
-      { path: '/community/free', label: '자유게시판' },
-      { path: '/community/classmates', label: '우리반 보기' },
-    ],
-  },
-  {
-    title: '도움말',
-    items: [
-      { path: '/help/notice', label: '공지사항' },
-      { path: '/help/faq', label: 'FAQ' },
-      { path: '/help/qna', label: '1:1 문의' },
-    ],
-  },
-];
 
 function formatSessionExpiry(value?: string): string {
   if (!value) return '';

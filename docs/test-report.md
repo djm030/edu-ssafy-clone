@@ -1,5 +1,13 @@
 # Test Report
 
+## Frontend Screen Smoke Route Manifest (2026-04-26 KST)
+- Added a shared frontend route manifest for navigation and priority-domain screen smoke coverage, then rendered the smoke target list on `/ops/readiness`.
+- Added a backend regression test that guards required priority 1~9 screen paths and verifies the readiness page consumes the manifest.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=FrontendRouteSmokeCoverageTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 175 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+
 ## Environment Example Guardrails (2026-04-26 KST)
 - Updated `.env.example` to use change-me placeholders instead of reusable development passwords and added production profile cookie/secret checklist comments.
 - Added a backend regression test that fails if the env example reintroduces `ssafy_dev_*` shared secret defaults or drops the production checklist.

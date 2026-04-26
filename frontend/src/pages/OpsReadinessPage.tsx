@@ -3,6 +3,7 @@ import { runReadinessChecks, summarizeReadiness, type ReadinessCheckResult } fro
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
+import { screenSmokeRoutes } from '../routes';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -89,6 +90,29 @@ function OpsReadinessPage() {
                   <strong role="cell">{result.label}</strong>
                   <code role="cell">{result.target}</code>
                   <span role="cell">{result.message}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel" aria-labelledby="ops-screen-smoke">
+            <h2 id="ops-screen-smoke">화면 smoke 대상</h2>
+            <p className="muted">
+              우선순위 1~9 핵심 화면의 라우팅 진입점을 명시해 배포 전 브라우저/수동 smoke 범위를 누락 없이 확인합니다.
+            </p>
+            <div className="simple-table readiness-table" role="table" aria-label="화면 smoke 대상">
+              <div className="simple-table-row simple-table-head" role="row">
+                <span role="columnheader">우선순위</span>
+                <span role="columnheader">기능</span>
+                <span role="columnheader">화면</span>
+                <span role="columnheader">경로</span>
+              </div>
+              {screenSmokeRoutes.map((route) => (
+                <div className="simple-table-row" key={route.id} role="row">
+                  <span role="cell">#{route.priority}</span>
+                  <span role="cell">{route.feature}</span>
+                  <strong role="cell">{route.label}</strong>
+                  <a role="cell" href={route.path}>{route.path}</a>
                 </div>
               ))}
             </div>
