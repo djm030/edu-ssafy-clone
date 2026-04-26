@@ -8,7 +8,7 @@ Decision: **PARTIAL / PRODUCTION-HARDENING NOT COMPLETE**
 
 `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`를 TTY로 실행했지만 Docker/Maven 검증 단계에서 approval 대기와 장시간 `Working` 상태로 멈춰 직접 검증으로 전환했다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, 실행 중인 app profile 컨테이너 health, Nginx reverse proxy smoke가 통과했다.
 
-프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 다만 일부 공통 첨부파일의 실제 바이너리 업로드/다운로드, 전체 권한 행렬, 브라우저 E2E/visual 검증, 최신 이미지 rebuild 검증이 아직 완전하지 않아 “모든 기능이 실제 서비스 수준으로 완료”라고 판정하지 않는다.
+프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 다만 quest/board 일부 첨부파일의 실제 바이너리 업로드/다운로드, 전체 권한 행렬, 브라우저 E2E/visual 검증, 최신 이미지 rebuild 검증이 아직 완전하지 않아 “모든 기능이 실제 서비스 수준으로 완료”라고 판정하지 않는다.
 
 ## 2. 실행한 명령어
 
@@ -75,8 +75,8 @@ docker compose --profile app up -d --build
 | 커리큘럼 일정 | PASS | curriculum API, DB 조회, frontend curriculum page/client 존재. |
 | 강의 다시보기 | PASS | replay list API와 frontend replays page/client 존재. |
 | 학습자료 | PASS | material list/detail/view-count API, DB 조회, frontend list/detail/viewer 연결, tests 존재. |
-| 학습자료 리소스 | PASS | material resources API, DB 조회, viewer/detail 연결, tests 존재. |
-| 첨부파일 | PARTIAL | board/support attachment metadata 및 support byte download는 있으나 material/quest 공통 바이너리 업로드·다운로드까지 일관되게 검증되지는 않았다. |
+| 학습자료 리소스 | PASS | material resources API, DB 조회, detail resource listing, staff attachment upload/download, tests 존재. |
+| 첨부파일 | PARTIAL | support 및 material resource byte upload/download는 존재하나 board byte download와 quest submission attachment parity는 아직 부족하다. |
 | 학습자료 반응 | PASS | material like/bookmark create/delete, count/current-user state, tests 존재. |
 | 퀘스트/평가 | PASS | quest list/detail/submit API, DB upsert, frontend detail/submit/result state, tests 존재. |
 | 퀘스트 제출 상태 | PASS | current submission/result detail endpoint와 persisted status tests 존재. |
@@ -101,7 +101,7 @@ docker compose --profile app up -d --build
 
 1. `omx ralph` 실행은 TTY/approval/장시간 `Working` 문제로 완료되지 않았다. 최종 검증은 직접 명령 실행으로 대체했다.
 2. 현재 실행 중인 Compose app은 healthy이지만, `docker compose --profile app up -d --build`가 Docker Hub metadata 단계에서 멈춰 최신 이미지 rebuild 완료까지는 검증하지 못했다.
-3. 공통 첨부파일은 board/support에는 구현되어 있으나 material/quest까지 동일한 바이너리 업로드·다운로드 모델로 완성됐다고 볼 근거가 부족하다.
+3. 공통 첨부파일은 support/material resource에는 byte 업로드·다운로드가 구현됐으나 board byte download와 quest submission attachment parity까지 완성됐다고 볼 근거가 부족하다.
 4. 전체 권한 matrix와 브라우저 E2E/visual 검증이 없다.
 
 ## 6. 즉시 수정한 내용

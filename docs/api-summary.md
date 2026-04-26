@@ -4,12 +4,12 @@
 - Auth/session endpoints are verified as session-backed with hashed password login: `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/session`, `POST /api/auth/logout`.
 - Attendance appeals now include list, pending staff list, create, cancel, and resolve endpoints.
 - Notifications include list, read one, read all, delete, plus classmate notification send.
-- Learning materials include list/detail/resources/view-count and like/bookmark reaction create/delete.
+- Learning materials include list/detail/resources/view-count, staff resource attachment upload/download, and like/bookmark reaction create/delete.
 - Quests include list/detail/current submission/submission upsert.
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, common binary file upload/download across all attachment domains, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
+- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, quest/board binary download parity, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -36,6 +36,8 @@
 | `/api/learning/materials` | GET | `keyword`, `type`, `page`, `size` optional | `{ items, page }` materials | Yes (demo) | `/learning/materials` |
 | `/api/learning/materials/{id}` | GET | path `id` | `{ item/material }` material detail | Yes (demo) | `/learning/materials/:id` |
 | `/api/learning/materials/{id}/resources` | GET | path `id` | `{ items }` material resources | Yes (demo) | `/learning/materials/:id`, `/learning/materials/:id/viewer` |
+| `/api/learning/materials/{id}/resources/{resourceId}/attachments` | POST | staff path ids, body `{ filename, mimeType?, contentBase64 }` | created attachment `{ item, resource }` | Coach/Admin | frontend API client |
+| `/api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}` | GET | path ids | attachment bytes with content disposition | Yes (demo) | frontend API client/download URL helper |
 | `/api/quests` | GET | `page`, `size` optional | `{ items, page }` quest list | Yes (demo) | `/quest` |
 | `/api/quests/{id}` | GET | path `id` | `{ item/quest }` quest detail | Yes (demo) | `/quest/:id`, `/quest/:id/submit` |
 | `/api/quests/{id}/submissions` | POST | path `id`, body `{ content, attachmentUrl? }` | created submission `{ item }` | Yes (demo) | `/quest/:id/submit` |
@@ -83,6 +85,7 @@
 - `GET /api/notifications`
 - `GET /api/learning/curriculum`, `GET /api/learning/replays`
 - `GET /api/learning/materials`, `GET /api/learning/materials/{id}`, `GET /api/learning/materials/{id}/resources`
+- `POST /api/learning/materials/{id}/resources/{resourceId}/attachments`, `GET /api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}`
 - `GET /api/quests`, `GET /api/quests/{id}`, `POST /api/quests/{id}/submissions`
 - `GET /api/surveys`, `POST /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
@@ -115,7 +118,7 @@
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.
 - Material like/bookmark/favorite reactions.
-- Attachment upload/download APIs for materials, boards, tickets, and submissions.
+- Attachment upload/download APIs remain for quest submissions and board byte downloads; material resource and support ticket byte flows now exist.
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.

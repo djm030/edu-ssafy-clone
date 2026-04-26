@@ -25,8 +25,11 @@ import type {
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
+  LearningMaterialResource,
   LearningMaterialViewResult,
   LoginResponse,
+  MaterialResourceAttachmentDraft,
+  MaterialResourceAttachmentResult,
   RoleAccess,
   NotificationItem,
   NotificationDeleteResult,
@@ -95,9 +98,13 @@ type BackendReplayItem = Partial<ReplayItem> & {
 };
 
 type BackendMaterialResource = {
+  id?: number | null;
+  materialId?: number | null;
   title?: string | null;
   type?: string | null;
+  launchMode?: string | null;
   targetUrl?: string | null;
+  displayOrder?: number | null;
 };
 
 type BackendMaterialItem = Partial<LearningMaterial> & {
@@ -248,8 +255,21 @@ function toMaterialType(value?: string | null): LearningMaterial['type'] {
   return 'file';
 }
 
+function toLearningMaterialResource(item: BackendMaterialResource): LearningMaterialResource {
+  return {
+    id: Number(item.id ?? 0),
+    materialId: item.materialId == null ? undefined : Number(item.materialId),
+    type: item.type || 'file',
+    title: item.title || item.targetUrl || '학습자료 리소스',
+    launchMode: item.launchMode || undefined,
+    targetUrl: item.targetUrl || undefined,
+    displayOrder: item.displayOrder ?? undefined,
+  };
+}
+
 function toLearningMaterial(item: BackendMaterialItem): LearningMaterial {
   const firstResource = item.resources?.[0];
+  const resources = item.resources?.map(toLearningMaterialResource) || [];
 
   return {
     id: Number(item.id),
@@ -264,6 +284,7 @@ function toLearningMaterial(item: BackendMaterialItem): LearningMaterial {
     bookmarkCount: item.bookmarkCount ?? 0,
     liked: item.liked ?? false,
     bookmarked: item.bookmarked ?? false,
+    resources,
   };
 }
 
@@ -546,6 +567,29 @@ export function toggleLearningMaterialReaction(
       },
     }),
   }).then((response) => ({ item: toLearningMaterial(response.item) }));
+}
+
+export function createMaterialResourceAttachment(
+  materialId: number,
+  resourceId: number,
+  draft: MaterialResourceAttachmentDraft,
+): Promise<MaterialResourceAttachmentResult> {
+  return fetchJson<MaterialResourceAttachmentResult>(
+    `/api/learning/materials/${materialId}/resources/${resourceId}/attachments`,
+    {
+      body: JSON.stringify(draft),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    },
+  );
+}
+
+export function materialResourceAttachmentUrl(
+  materialId: number,
+  resourceId: number,
+  attachmentId: number,
+): string {
+  return `/api/learning/materials/${materialId}/resources/${resourceId}/attachments/${attachmentId}`;
 }
 
 export function getQuests(): Promise<{ items: QuestItem[] }> {

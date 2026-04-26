@@ -1,5 +1,15 @@
 # Test Report
 
+## Learning Material Resource Attachment Verification (2026-04-26 KST)
+- Implemented coach/admin `POST /api/learning/materials/{id}/resources/{resourceId}/attachments` using the shared `attachments` table plus `learning_material_resource_attachments` link table and local byte storage.
+- Implemented authenticated `GET /api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}` byte download with `Content-Disposition`.
+- Added frontend material resource rendering and API helpers for attachment upload/download URLs.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=PriorityApiServiceTest,PriorityApiControllerTest,RoleAccessInterceptorTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 153 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build` -> PASS, Vite transformed 71 modules.
+- `docker compose config` -> PASS.
+
+
 ## Frontend Production Readiness Smoke Screen (2026-04-26 KST)
 - Added `/ops/readiness` frontend screen that calls real Nginx/backend/session/domain endpoints and reports PASS/FAIL without mock fallback.
 - `cd frontend && npm run build` -> PASS, Vite transformed 71 modules.

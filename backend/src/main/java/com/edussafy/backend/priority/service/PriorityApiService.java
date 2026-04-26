@@ -21,6 +21,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
@@ -534,6 +538,65 @@ public class PriorityApiService {
         return new MaterialResourcesResponse(safe(() -> p3Repository.findMaterialResources(id), List.of()));
     }
 
+    @Transactional
+    public MaterialResourceAttachmentCreateResponse createMaterialResourceAttachment(
+            long materialId,
+            long resourceId,
+            MaterialResourceAttachmentRequest request
+    ) {
+        UserProfile user = currentUser();
+        if (!canManageLearning(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only staff can attach learning material resources.");
+        }
+        MaterialResourceItem resource = p3Repository.findMaterialResource(materialId, resourceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material resource not found."));
+
+        byte[] fileBytes = decodeAttachment(request.contentBase64(), "Learning material attachment");
+        String filename = sanitizeAttachmentFilename(request.filename(), "Learning material attachment");
+        String mimeType = normalizeWithDefault(request.mimeType(), "application/octet-stream");
+        String checksum = sha256Hex(fileBytes);
+        String storageKey = "learning/materials/%d/resources/%d/%s-%s".formatted(
+                materialId,
+                resourceId,
+                checksum.substring(0, 12),
+                filename
+        );
+        String storedPath = "/learning/materials/%d/resources/%d/attachments/%s".formatted(
+                materialId,
+                resourceId,
+                checksum
+        );
+
+        long attachmentId = p2Repository.createOrFindAttachment(
+                filename,
+                storageKey,
+                storedPath,
+                mimeType,
+                fileBytes.length,
+                checksum
+        );
+        p3Repository.linkMaterialResourceAttachment(resourceId, attachmentId);
+        MaterialResourceAttachmentItem attachment = p3Repository.findMaterialResourceAttachment(resourceId, attachmentId)
+                .filter(item -> item.materialId() == materialId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material attachment not found."));
+        storeMaterialResourceAttachment(attachment, fileBytes);
+        return new MaterialResourceAttachmentCreateResponse(attachment, resource);
+    }
+
+    public MaterialResourceAttachmentDownload downloadMaterialResourceAttachment(
+            long materialId,
+            long resourceId,
+            long attachmentId
+    ) {
+        currentUser();
+        p3Repository.findMaterialResource(materialId, resourceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material resource not found."));
+        MaterialResourceAttachmentItem attachment = p3Repository.findMaterialResourceAttachment(resourceId, attachmentId)
+                .filter(item -> item.materialId() == materialId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material attachment not found."));
+        return new MaterialResourceAttachmentDownload(attachment, readMaterialResourceAttachment(attachment));
+    }
+
     public QuestsResponse quests(int page, int size) {
         UserProfile user = currentUser();
         long total = safe(() -> repository.countQuests(user.id()), 0L);
@@ -1041,6 +1104,11 @@ public class PriorityApiService {
         return "coach".equals(role) || "admin".equals(role);
     }
 
+    private boolean canManageLearning(UserProfile user) {
+        String role = normalizeAccessRole(user.role());
+        return "coach".equals(role) || "admin".equals(role);
+    }
+
     private List<SupportTicketMessageItem> attachSupportAttachments(List<SupportTicketMessageItem> messages) {
         if (messages.isEmpty()) {
             return messages;
@@ -1060,24 +1128,32 @@ public class PriorityApiService {
     }
 
     private byte[] decodeSupportAttachment(String contentBase64) {
+        return decodeAttachment(contentBase64, "Support attachment");
+    }
+
+    private byte[] decodeAttachment(String contentBase64, String label) {
         try {
             byte[] decoded = Base64.getDecoder().decode(contentBase64.trim());
             if (decoded.length == 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment cannot be empty.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " cannot be empty.");
             }
             if (decoded.length > SUPPORT_ATTACHMENT_MAX_BYTES) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment exceeds the 2MB limit.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " exceeds the 2MB limit.");
             }
             return decoded;
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment content must be base64.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " content must be base64.");
         }
     }
 
     private String sanitizeAttachmentFilename(String filename) {
+        return sanitizeAttachmentFilename(filename, "Support attachment");
+    }
+
+    private String sanitizeAttachmentFilename(String filename, String label) {
         String normalized = filename.trim().replaceAll("[\\\\/\\p{Cntrl}]+", "_");
         if (normalized.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment filename is required.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " filename is required.");
         }
         return normalized.length() <= 255 ? normalized : normalized.substring(0, 255);
     }
@@ -1104,10 +1180,39 @@ public class PriorityApiService {
 
     private Path supportAttachmentPath(SupportTicketAttachmentItem attachment) {
         String storageKey = normalizeWithDefault(attachment.storageKey(), "support/attachments/%d".formatted(attachment.id()));
+        return safeAttachmentPath(storageKey, "Support attachment");
+    }
+
+    private void storeMaterialResourceAttachment(MaterialResourceAttachmentItem attachment, byte[] content) {
+        Path path = materialResourceAttachmentPath(attachment);
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Learning material attachment could not be stored.", exception);
+        }
+    }
+
+    private byte[] readMaterialResourceAttachment(MaterialResourceAttachmentItem attachment) {
+        try {
+            return Files.readAllBytes(materialResourceAttachmentPath(attachment));
+        } catch (NoSuchFileException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Learning material attachment file was not found.", exception);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Learning material attachment could not be read.", exception);
+        }
+    }
+
+    private Path materialResourceAttachmentPath(MaterialResourceAttachmentItem attachment) {
+        String storageKey = normalizeWithDefault(attachment.storageKey(), "learning/materials/resources/attachments/%d".formatted(attachment.id()));
+        return safeAttachmentPath(storageKey, "Learning material attachment");
+    }
+
+    private Path safeAttachmentPath(String storageKey, String label) {
         Path root = Path.of(System.getProperty("java.io.tmpdir"), "edussafy-attachments").toAbsolutePath().normalize();
         Path path = root.resolve(storageKey).normalize();
         if (!path.startsWith(root)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Support attachment storage key is invalid.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " storage key is invalid.");
         }
         return path;
     }

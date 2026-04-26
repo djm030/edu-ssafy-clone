@@ -252,6 +252,39 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record MaterialResourceAttachmentRequest(
+            @NotBlank @Size(max = 255) String filename,
+            @Size(max = 100) String mimeType,
+            @NotBlank @Size(max = 3_000_000) String contentBase64
+    ) {
+    }
+
+    public record MaterialResourceAttachmentItem(
+            long id,
+            long resourceId,
+            long materialId,
+            String filename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            long fileSize,
+            String checksumSha256,
+            OffsetDateTime createdAt
+    ) {
+    }
+
+    public record MaterialResourceAttachmentCreateResponse(
+            MaterialResourceAttachmentItem item,
+            MaterialResourceItem resource
+    ) {
+    }
+
+    public record MaterialResourceAttachmentDownload(
+            MaterialResourceAttachmentItem item,
+            byte[] content
+    ) {
+    }
+
     public record QuestsResponse(List<QuestItem> items, PageMeta page) {
     }
 

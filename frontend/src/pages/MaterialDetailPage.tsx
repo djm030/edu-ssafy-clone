@@ -99,6 +99,28 @@ function MaterialContent({ material }: { material: LearningMaterial }) {
         </div>
       </dl>
       <div className="detail-body">{currentMaterial.description || '자료 설명이 없습니다.'}</div>
+      <section className="resource-list" aria-label="학습자료 리소스">
+        <h3>자료 리소스</h3>
+        {currentMaterial.resources && currentMaterial.resources.length > 0 ? (
+          <ul>
+            {currentMaterial.resources.map((resource) => (
+              <li key={resource.id || resource.title}>
+                <div>
+                  <strong>{resource.title}</strong>
+                  <span>{resource.type}{resource.launchMode ? ` · ${resource.launchMode}` : ''}</span>
+                </div>
+                {resource.targetUrl ? (
+                  <a className="ghost-button" href={resource.targetUrl} rel="noreferrer" target="_blank">
+                    열기
+                  </a>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>등록된 리소스가 없습니다.</p>
+        )}
+      </section>
       <div className="action-row" aria-label="학습자료 반응">
         <button
           className={currentMaterial.liked ? 'primary-action' : 'ghost-button'}

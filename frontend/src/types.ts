@@ -231,10 +231,45 @@ export interface LearningMaterial {
   bookmarkCount?: number;
   liked?: boolean;
   bookmarked?: boolean;
+  resources?: LearningMaterialResource[];
 }
 
 export interface LearningMaterialViewResult {
   item: LearningMaterial;
+}
+
+export interface LearningMaterialResource {
+  id: number;
+  materialId?: number;
+  type: string;
+  title: string;
+  launchMode?: string;
+  targetUrl?: string;
+  displayOrder?: number;
+}
+
+export interface MaterialResourceAttachmentDraft {
+  filename: string;
+  mimeType?: string;
+  contentBase64: string;
+}
+
+export interface MaterialResourceAttachmentItem {
+  id: number;
+  resourceId: number;
+  materialId: number;
+  filename: string;
+  storageKey?: string;
+  storedPath?: string;
+  mimeType?: string;
+  fileSize: number;
+  checksumSha256?: string;
+  createdAt?: string;
+}
+
+export interface MaterialResourceAttachmentResult {
+  item: MaterialResourceAttachmentItem;
+  resource: LearningMaterialResource;
 }
 
 export interface QuestItem {

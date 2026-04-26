@@ -35,7 +35,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllRespon
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourcesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsResponse;
@@ -493,6 +497,80 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/learning/materials/5/resources"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void learningMaterialResourceAttachmentCreateRequiresStaffRole() throws Exception {
+        mockMvc.perform(post("/api/learning/materials/5/resources/30/attachments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"filename\":\"rest-docs.pdf\",\"mimeType\":\"application/pdf\",\"contentBase64\":\"aGVsbG8=\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(priorityApiService);
+    }
+
+    @Test
+    void learningMaterialResourceAttachmentCreateReturnsPersistedMetadata() throws Exception {
+        MaterialResourceItem resource = new MaterialResourceItem(
+                30L,
+                5L,
+                "file",
+                "rest-docs.pdf",
+                "download",
+                "/materials/rest-docs.pdf",
+                1
+        );
+        MaterialResourceAttachmentItem attachment = new MaterialResourceAttachmentItem(
+                77L,
+                30L,
+                5L,
+                "rest-docs.pdf",
+                "learning/materials/5/resources/30/abc-rest-docs.pdf",
+                "/learning/materials/5/resources/30/attachments/abc",
+                "application/pdf",
+                5L,
+                "abc",
+                null
+        );
+        given(priorityApiService.createMaterialResourceAttachment(eq(5L), eq(30L), any()))
+                .willReturn(new MaterialResourceAttachmentCreateResponse(attachment, resource));
+
+        mockMvc.perform(post("/api/learning/materials/5/resources/30/attachments")
+                        .session(sessionFor(2L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"filename\":\"rest-docs.pdf\",\"mimeType\":\"application/pdf\",\"contentBase64\":\"aGVsbG8=\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(77))
+                .andExpect(jsonPath("$.item.filename").value("rest-docs.pdf"))
+                .andExpect(jsonPath("$.resource.id").value(30));
+    }
+
+    @Test
+    void learningMaterialResourceAttachmentDownloadReturnsStoredBytes() throws Exception {
+        MaterialResourceAttachmentItem attachment = new MaterialResourceAttachmentItem(
+                77L,
+                30L,
+                5L,
+                "rest-docs.pdf",
+                "learning/materials/5/resources/30/abc-rest-docs.pdf",
+                "/learning/materials/5/resources/30/attachments/abc",
+                "application/pdf",
+                5L,
+                "abc",
+                null
+        );
+        given(priorityApiService.downloadMaterialResourceAttachment(5L, 30L, 77L))
+                .willReturn(new MaterialResourceAttachmentDownload(attachment, "hello".getBytes(StandardCharsets.UTF_8)));
+
+        mockMvc.perform(get("/api/learning/materials/5/resources/30/attachments/77"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        "attachment; filename=\"=?UTF-8?Q?rest-docs.pdf?=\"; filename*=UTF-8''rest-docs.pdf"
+                ))
+                .andExpect(content().bytes("hello".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test

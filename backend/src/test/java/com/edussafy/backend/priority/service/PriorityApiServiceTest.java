@@ -2,6 +2,7 @@ package com.edussafy.backend.priority.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +26,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialViewResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
@@ -73,6 +78,8 @@ import com.edussafy.backend.priority.repository.PriorityP2Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository;
 import com.edussafy.backend.priority.repository.PriorityP3Repository.SurveyResponsePersistence;
 import com.edussafy.backend.priority.security.AuthSession;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -381,6 +388,124 @@ class PriorityApiServiceTest {
         assertThat(deleted.item().liked()).isFalse();
         verify(p3Repository).createMaterialReaction(15L, USER.id(), "like");
         verify(p3Repository).deleteMaterialReaction(15L, USER.id(), "like");
+    }
+
+    @Test
+    void staffCreatesLearningMaterialResourceAttachment() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        MaterialResourceItem resource = new MaterialResourceItem(
+                30L,
+                15L,
+                "file",
+                "rest-docs.pdf",
+                "download",
+                "/materials/rest-docs.pdf",
+                1
+        );
+        MaterialResourceAttachmentItem attachment = new MaterialResourceAttachmentItem(
+                77L,
+                30L,
+                15L,
+                "rest-docs.pdf",
+                "learning/materials/15/resources/30/checksum-rest-docs.pdf",
+                "/learning/materials/15/resources/30/attachments/checksum",
+                "application/pdf",
+                5L,
+                "checksum",
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00")
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        given(p3Repository.findMaterialResource(15L, 30L)).willReturn(Optional.of(resource));
+        given(p2Repository.createOrFindAttachment(
+                eq("rest-docs.pdf"),
+                anyString(),
+                anyString(),
+                eq("application/pdf"),
+                eq(5L),
+                anyString()
+        )).willReturn(77L);
+        given(p3Repository.findMaterialResourceAttachment(30L, 77L)).willReturn(Optional.of(attachment));
+        PriorityApiService service = new PriorityApiService(repository, p2Repository, p3Repository);
+
+        MaterialResourceAttachmentCreateResponse response = service.createMaterialResourceAttachment(
+                15L,
+                30L,
+                new MaterialResourceAttachmentRequest("rest-docs.pdf", "application/pdf", "aGVsbG8=")
+        );
+
+        assertThat(response.item().id()).isEqualTo(77L);
+        assertThat(response.item().filename()).isEqualTo("rest-docs.pdf");
+        assertThat(response.resource()).isEqualTo(resource);
+        verify(p3Repository).linkMaterialResourceAttachment(30L, 77L);
+    }
+
+    @Test
+    void learnerCannotCreateLearningMaterialResourceAttachment() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        PriorityApiService service = new PriorityApiService(repository, p2Repository, p3Repository);
+
+        assertThatThrownBy(() -> service.createMaterialResourceAttachment(
+                15L,
+                30L,
+                new MaterialResourceAttachmentRequest("rest-docs.pdf", "application/pdf", "aGVsbG8=")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("403");
+
+        verify(p2Repository, never()).createOrFindAttachment(
+                anyString(),
+                anyString(),
+                anyString(),
+                anyString(),
+                anyLong(),
+                anyString()
+        );
+    }
+
+    @Test
+    void downloadsLearningMaterialResourceAttachmentForAuthenticatedUser() throws Exception {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        MaterialResourceItem resource = new MaterialResourceItem(
+                30L,
+                15L,
+                "file",
+                "rest-docs.pdf",
+                "download",
+                "/materials/rest-docs.pdf",
+                1
+        );
+        MaterialResourceAttachmentItem attachment = new MaterialResourceAttachmentItem(
+                77L,
+                30L,
+                15L,
+                "rest-docs.pdf",
+                "learning/materials/15/resources/30/test-download-rest-docs.pdf",
+                "/learning/materials/15/resources/30/attachments/test-download",
+                "application/pdf",
+                5L,
+                "test-download",
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00")
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findMaterialResource(15L, 30L)).willReturn(Optional.of(resource));
+        given(p3Repository.findMaterialResourceAttachment(30L, 77L)).willReturn(Optional.of(attachment));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), p3Repository);
+        Path storedFile = Path.of(System.getProperty("java.io.tmpdir"), "edussafy-attachments")
+                .resolve(attachment.storageKey())
+                .normalize();
+        Files.createDirectories(storedFile.getParent());
+        Files.writeString(storedFile, "hello", StandardCharsets.UTF_8);
+
+        MaterialResourceAttachmentDownload response = service.downloadMaterialResourceAttachment(15L, 30L, 77L);
+
+        assertThat(response.item()).isEqualTo(attachment);
+        assertThat(response.content()).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.edussafy.backend.priority.repository;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
@@ -111,6 +112,59 @@ public class PriorityP3Repository {
                         rs.getInt("display_order")
                 ))
                 .list();
+    }
+
+    public Optional<MaterialResourceItem> findMaterialResource(long materialId, long resourceId) {
+        return jdbcClient.sql("""
+                SELECT learning_material_resource_id, learning_material_id, resource_type_code,
+                       resource_title, launch_mode_code, target_url, display_order
+                FROM learning_material_resources
+                WHERE learning_material_id = :materialId
+                  AND learning_material_resource_id = :resourceId
+                """)
+                .param("materialId", materialId)
+                .param("resourceId", resourceId)
+                .query((rs, rowNum) -> mapMaterialResource(rs))
+                .optional();
+    }
+
+    public void linkMaterialResourceAttachment(long resourceId, long attachmentId) {
+        jdbcClient.sql("""
+                INSERT IGNORE INTO learning_material_resource_attachments (
+                    learning_material_resource_id,
+                    attachment_id
+                )
+                VALUES (:resourceId, :attachmentId)
+                """)
+                .param("resourceId", resourceId)
+                .param("attachmentId", attachmentId)
+                .update();
+    }
+
+    public Optional<MaterialResourceAttachmentItem> findMaterialResourceAttachment(long resourceId, long attachmentId) {
+        return jdbcClient.sql("""
+                SELECT
+                    a.attachment_id,
+                    lmra.learning_material_resource_id,
+                    lmr.learning_material_id,
+                    a.original_filename,
+                    a.storage_key,
+                    a.stored_path,
+                    a.mime_type,
+                    a.file_size,
+                    a.checksum_sha256,
+                    a.created_at
+                FROM learning_material_resource_attachments lmra
+                JOIN learning_material_resources lmr
+                    ON lmr.learning_material_resource_id = lmra.learning_material_resource_id
+                JOIN attachments a ON a.attachment_id = lmra.attachment_id
+                WHERE lmra.learning_material_resource_id = :resourceId
+                  AND a.attachment_id = :attachmentId
+                """)
+                .param("resourceId", resourceId)
+                .param("attachmentId", attachmentId)
+                .query((rs, rowNum) -> mapMaterialResourceAttachment(rs))
+                .optional();
     }
 
     public int incrementMaterialViewCount(long materialId) {
@@ -568,6 +622,33 @@ public class PriorityP3Repository {
                 rs.getBoolean("completed_yn"),
                 rs.getLong("question_count"),
                 List.of()
+        );
+    }
+
+    private MaterialResourceItem mapMaterialResource(ResultSet rs) throws SQLException {
+        return new MaterialResourceItem(
+                rs.getLong("learning_material_resource_id"),
+                rs.getLong("learning_material_id"),
+                rs.getString("resource_type_code"),
+                rs.getString("resource_title"),
+                rs.getString("launch_mode_code"),
+                rs.getString("target_url"),
+                rs.getInt("display_order")
+        );
+    }
+
+    private MaterialResourceAttachmentItem mapMaterialResourceAttachment(ResultSet rs) throws SQLException {
+        return new MaterialResourceAttachmentItem(
+                rs.getLong("attachment_id"),
+                rs.getLong("learning_material_resource_id"),
+                rs.getLong("learning_material_id"),
+                rs.getString("original_filename"),
+                rs.getString("storage_key"),
+                rs.getString("stored_path"),
+                rs.getString("mime_type"),
+                rs.getLong("file_size"),
+                rs.getString("checksum_sha256"),
+                toOffset(rs.getTimestamp("created_at"))
         );
     }
 
