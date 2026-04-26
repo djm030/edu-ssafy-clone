@@ -148,6 +148,7 @@
   .content-grid,
   .level-layout,
   .level-hero-panel,
+  .attendance-month-layout,
   .classmate-grid {
     grid-template-columns: 1fr;
   }

@@ -4,7 +4,7 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { AttendanceAppeal, AttendanceDaySummary, AttendanceMonthSummary, AttendanceRecord, AttendanceRecordFilters, AttendanceSummary, LoadState } from '../types';
+import type { AttendanceAppeal, AttendanceDaySummary, AttendanceMonthDay, AttendanceMonthSummary, AttendanceRecord, AttendanceRecordFilters, AttendanceSummary, LoadState } from '../types';
 
 const statusLabel: Record<AttendanceRecord['status'], string> = {
   absent: '결석',
@@ -169,6 +169,13 @@ function AttendancePage() {
 
 
 function MonthlyAttendancePanel({ month }: { month: AttendanceMonthSummary }) {
+  const [selectedDate, setSelectedDate] = useState(month.days[0]?.date ?? '');
+  const selectedDay = month.days.find((day) => day.date === selectedDate) ?? month.days[0];
+
+  useEffect(() => {
+    setSelectedDate(month.days[0]?.date ?? '');
+  }, [month.month, month.days]);
+
   return (
     <section className="panel">
       <div className="section-heading">
@@ -187,23 +194,64 @@ function MonthlyAttendancePanel({ month }: { month: AttendanceMonthSummary }) {
       {month.days.length === 0 ? (
         <DataState title="월간 출석 캘린더가 없습니다." message="출석 월간 집계를 다시 조회해 주세요." />
       ) : (
-        <div className="attendance-month-grid" aria-label="월간 출석 캘린더">
-          {month.days.map((day) => (
-            <article className={`attendance-month-cell ${day.weekend ? 'weekend' : ''}`} key={day.date}>
-              <strong>{day.date.slice(8)}</strong>
-              <span>{weekdayLabel(day.date)}</span>
-              {day.status ? (
-                <StatusPill tone={statusTone(day.status)}>{statusLabel[day.status]}</StatusPill>
-              ) : (
-                <StatusPill tone={day.weekend ? 'gray' : 'blue'}>{day.weekend ? '주말' : '기록 대기'}</StatusPill>
-              )}
-              <small>{formatTime(day.firstCheckInAt)} 입실 · {formatTime(day.lastCheckOutAt)} 퇴실</small>
-              {day.appealAvailable ? <small className="accent-text">소명 가능</small> : day.appealStatus ? <small>{appealStatusLabel(day.appealStatus)}</small> : null}
-            </article>
-          ))}
+        <div className="attendance-month-layout">
+          <div className="attendance-month-grid" aria-label="월간 출석 캘린더">
+            {month.days.map((day) => (
+              <button
+                aria-pressed={selectedDay?.date === day.date}
+                className={`attendance-month-cell ${day.weekend ? 'weekend' : ''} ${selectedDay?.date === day.date ? 'selected' : ''}`}
+                key={day.date}
+                onClick={() => setSelectedDate(day.date)}
+                type="button"
+              >
+                <strong>{day.date.slice(8)}</strong>
+                <span>{weekdayLabel(day.date)}</span>
+                {day.status ? (
+                  <StatusPill tone={statusTone(day.status)}>{statusLabel[day.status]}</StatusPill>
+                ) : (
+                  <StatusPill tone={day.weekend ? 'gray' : 'blue'}>{day.weekend ? '주말' : '기록 대기'}</StatusPill>
+                )}
+                <small>{formatTime(day.firstCheckInAt)} 입실 · {formatTime(day.lastCheckOutAt)} 퇴실</small>
+                {day.appealAvailable ? <small className="accent-text">소명 가능</small> : day.appealStatus ? <small>{appealStatusLabel(day.appealStatus)}</small> : null}
+              </button>
+            ))}
+          </div>
+          {selectedDay ? <AttendanceDayDetailPanel day={selectedDay} /> : null}
         </div>
       )}
     </section>
+  );
+}
+
+function AttendanceDayDetailPanel({ day }: { day: AttendanceMonthDay }) {
+  const statusText = day.status ? statusLabel[day.status] : day.weekend ? '주말' : '기록 대기';
+  const tone = day.status ? statusTone(day.status) : day.weekend ? 'gray' : 'blue';
+
+  return (
+    <aside className="attendance-day-detail-panel" aria-label="선택한 일자 출석 상세">
+      <p className="eyebrow">일자 상세</p>
+      <h3>{day.date} ({weekdayLabel(day.date)})</h3>
+      <StatusPill tone={tone}>{statusText}</StatusPill>
+      <dl>
+        <div>
+          <dt>입실</dt>
+          <dd>{formatTime(day.firstCheckInAt)}</dd>
+        </div>
+        <div>
+          <dt>퇴실</dt>
+          <dd>{formatTime(day.lastCheckOutAt)}</dd>
+        </div>
+        <div>
+          <dt>소명 상태</dt>
+          <dd>{day.appealAvailable ? '소명 신청 가능' : day.appealStatus ? appealStatusLabel(day.appealStatus) : '소명 없음'}</dd>
+        </div>
+      </dl>
+      {day.appealAvailable ? (
+        <a className="primary-action" href={`/mycampus/attendance/appeals/new?date=${day.date}`}>소명 신청</a>
+      ) : (
+        <span className="attendance-disabled-reason">소명 가능 조건에 해당하지 않습니다.</span>
+      )}
+    </aside>
   );
 }
 

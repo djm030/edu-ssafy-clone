@@ -327,7 +327,12 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(attendancePage)
                 .contains("MonthlyAttendancePanel")
                 .contains("월간 출석현황")
+                .contains("attendance-month-layout")
                 .contains("attendance-month-grid")
+                .contains("aria-pressed")
+                .contains("AttendanceDayDetailPanel")
+                .contains("선택한 일자 출석 상세")
+                .contains("소명 신청 가능")
                 .contains("기록 대기");
         assertThat(appApi)
                 .contains("buildAttendanceMonthSummary")

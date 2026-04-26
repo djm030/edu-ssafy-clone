@@ -866,6 +866,14 @@ h2 {
   padding: 8px 12px;
 }
 
+
+.attendance-month-layout {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+
 .attendance-month-grid {
   display: grid;
   gap: 10px;
@@ -876,10 +884,19 @@ h2 {
   background: #ffffff;
   border: 1px solid #d8e1ef;
   border-radius: 14px;
+  color: inherit;
   display: grid;
   gap: 7px;
   min-height: 132px;
   padding: 12px;
+  text-align: left;
+}
+
+.attendance-month-cell.selected,
+.attendance-month-cell:focus,
+.attendance-month-cell:hover {
+  border-color: #245db8;
+  box-shadow: 0 0 0 3px rgba(36, 93, 184, 0.12);
 }
 
 .attendance-month-cell.weekend {
@@ -895,6 +912,49 @@ h2 {
 .attendance-month-cell span,
 .attendance-month-cell small {
   color: #667085;
+}
+
+
+.attendance-day-detail-panel {
+  background: #f8fbff;
+  border: 1px solid #c9dfff;
+  border-radius: 14px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  position: sticky;
+  top: 142px;
+}
+
+.attendance-day-detail-panel h3 {
+  margin: 0;
+}
+
+.attendance-day-detail-panel dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.attendance-day-detail-panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attendance-day-detail-panel dt {
+  color: #667085;
+  font-weight: 800;
+}
+
+.attendance-day-detail-panel dd {
+  margin: 0;
+}
+
+.attendance-disabled-reason {
+  color: #667085;
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .accent-text {
