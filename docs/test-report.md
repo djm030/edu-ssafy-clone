@@ -1,5 +1,18 @@
 # Test Report
 
+## Frontend SPA Route Smoke Runner (2026-04-26 KST)
+- Added `scripts/dev/smoke-routes.sh` to curl every declared SPA route against the built Vite preview and assert the production SPA shell is returned.
+- Added `FrontendScreenSmokeScriptTest` so the smoke runner stays aligned with `frontend/src/routes.ts`.
+- `bash -n scripts/dev/smoke-routes.sh` -> PASS.
+- `SKIP_HTTP=true scripts/dev/smoke-routes.sh` -> PASS, 30 routes listed.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=FrontendScreenSmokeScriptTest test` -> PASS.
+- `cd frontend && npm run build` -> PASS.
+- Vite preview + `FRONTEND_BASE_URL=http://127.0.0.1:4173 scripts/dev/smoke-routes.sh` -> PASS for all 30 routes.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 193 tests, 0 failures, 0 errors.
+- `cd frontend && npm run lint` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Request-correlated Error Envelope (2026-04-26 KST)
 - Standardized API error responses with `status`, `path`, `requestId`, and `timestamp` metadata while preserving existing `error.code` and `error.message` fields.
 - Added `X-Request-Id` propagation/generation in Spring MVC exception handling and role-access interceptor failures.
