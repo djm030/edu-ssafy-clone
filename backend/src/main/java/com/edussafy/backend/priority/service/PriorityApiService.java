@@ -1203,8 +1203,9 @@ public class PriorityApiService {
         UserProfile user = currentUser();
         LiveSessionItem session = repository.findLiveSession(user.id(), sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Live session not found."));
-        if ("ended".equals(session.status())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ended live session cannot be joined.");
+        if (!session.joinEnabled()) {
+            String reason = session.disabledReason() == null ? "Live session is not joinable." : session.disabledReason();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
         long joinLogId = repository.createLiveSessionJoinLog(user.id(), sessionId);
         LiveSessionJoinLogItem joinLog = repository.findLiveSessionJoinLog(user.id(), sessionId, joinLogId)

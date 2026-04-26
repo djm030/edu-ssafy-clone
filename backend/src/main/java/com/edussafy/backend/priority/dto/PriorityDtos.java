@@ -349,6 +349,9 @@ public final class PriorityDtos {
             OffsetDateTime endsAt,
             String joinUrl,
             String status,
+            boolean joinEnabled,
+            String actionLabel,
+            String disabledReason,
             OffsetDateTime createdAt,
             OffsetDateTime lastJoinedAt,
             long joinCount

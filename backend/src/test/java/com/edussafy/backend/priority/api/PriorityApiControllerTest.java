@@ -593,6 +593,9 @@ class PriorityApiControllerTest {
                 OffsetDateTime.parse("2026-04-26T11:00:00+09:00"),
                 "https://edu.ssafy.local/live/java-algorithm",
                 "live",
+                true,
+                "입장",
+                null,
                 OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
                 null,
                 0
@@ -607,6 +610,9 @@ class PriorityApiControllerTest {
                 OffsetDateTime.parse("2026-04-26T11:00:00+09:00"),
                 "https://edu.ssafy.local/live/java-algorithm",
                 "live",
+                true,
+                "입장",
+                null,
                 OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
                 OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
                 1
@@ -620,13 +626,16 @@ class PriorityApiControllerTest {
 
         mockMvc.perform(get("/api/live-sessions/today"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].status").value("live"));
+                .andExpect(jsonPath("$.items[0].status").value("live"))
+                .andExpect(jsonPath("$.items[0].joinEnabled").value(true))
+                .andExpect(jsonPath("$.items[0].actionLabel").value("입장"));
         mockMvc.perform(get("/api/live-sessions/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.item.id").value(11));
         mockMvc.perform(post("/api/live-sessions/11/join"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.joinCount").value(1))
+                .andExpect(jsonPath("$.item.joinEnabled").value(true))
                 .andExpect(jsonPath("$.joinLog.sessionId").value(11));
     }
 

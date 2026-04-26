@@ -501,3 +501,12 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Live Session Join and Disabled States (2026-04-27 KST)
+- Added backend `joinEnabled`, `actionLabel`, and `disabledReason` fields to live session payloads so scheduled, ended, and Meeting-link-disabled sessions do not appear as joinable.
+- Tightened backend join validation to reject all non-joinable live sessions before writing a join log, while preserving user-scoped join logging for active Meeting sessions.
+- Updated `/learning/live` UI to render 오픈 전/입장 대기/종료됨 states, disabled reasons, and Meeting join-log success messaging.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=PriorityApiControllerTest,PriorityApiServiceTest,FrontendRouteSmokeCoverageTest test` -> PASS, 145 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

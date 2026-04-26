@@ -44,12 +44,16 @@ function LiveSessionsPage() {
   }, [retryToken]);
 
   const handleJoin = (session: LiveSessionItem) => {
-    setActionMessage(`${session.title} 입장 기록을 저장하는 중입니다.`);
+    if (!session.joinEnabled) {
+      setActionMessage(session.disabledReason || '아직 입장할 수 없는 라이브입니다.');
+      return;
+    }
+    setActionMessage(`${session.title} Meeting 입장 기록을 저장하는 중입니다.`);
     joinLiveSession(session.id)
       .then((response) => {
         setItems((currentItems) => currentItems.map((item) => (item.id === response.item.id ? response.item : item)));
         if (current?.id === response.item.id) setCurrent(response.item);
-        setActionMessage(`${response.item.title} 입장 기록을 저장했습니다.`);
+        setActionMessage(`${response.item.title} Meeting 입장 기록을 저장했습니다.`);
         if (response.item.joinUrl && response.item.joinUrl !== '#') {
           window.open(response.item.joinUrl, '_blank', 'noopener,noreferrer');
         }
@@ -88,18 +92,18 @@ function LiveSessionsPage() {
 
 function LiveCard({ item, onJoin }: { item: LiveSessionItem; onJoin: (item: LiveSessionItem) => void; primary?: boolean }) {
   const status = statusLabels[item.status];
-  const canJoin = item.status !== 'ended';
   return (
-    <article className="list-card">
+    <article className={`list-card ${item.joinEnabled ? 'joinable' : 'disabled'}`}>
       <div>
         <p className="eyebrow">{[item.track, item.cohort, item.classRoom].filter(Boolean).join(' · ') || 'LIVE'}</p>
         <h3>{item.title}</h3>
         <p>{formatDateTime(item.startsAt)} ~ {formatDateTime(item.endsAt)}</p>
         <p className="muted">입장 {item.joinCount}회 · 최근 입장 {formatDateTime(item.lastJoinedAt)}</p>
+        {!item.joinEnabled && item.disabledReason ? <p className="muted">{item.disabledReason}</p> : null}
       </div>
       <StatusPill tone={status.tone}>{status.label}</StatusPill>
-      <button className="primary-action" disabled={!canJoin} onClick={() => onJoin(item)} type="button">
-        {canJoin ? '입장' : '종료됨'}
+      <button className="primary-action" disabled={!item.joinEnabled} onClick={() => onJoin(item)} type="button" title={item.disabledReason || undefined}>
+        {item.actionLabel}
       </button>
     </article>
   );

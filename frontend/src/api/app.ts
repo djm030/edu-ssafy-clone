@@ -631,6 +631,9 @@ function toLiveSessionStatus(value?: string | null): LiveSessionItem['status'] {
 }
 
 function toLiveSessionItem(item: BackendLiveSessionItem): LiveSessionItem {
+  const status = toLiveSessionStatus(item.status);
+  const joinUrl = item.joinUrl || '#';
+  const joinEnabled = Boolean(item.joinEnabled ?? (status === 'live' && hasLaunchableLiveUrl(joinUrl)));
   return {
     id: Number(item.id),
     title: item.title || '라이브 강의',
@@ -639,12 +642,34 @@ function toLiveSessionItem(item: BackendLiveSessionItem): LiveSessionItem {
     classRoom: item.classRoom || undefined,
     startsAt: item.startsAt || '',
     endsAt: item.endsAt || '',
-    joinUrl: item.joinUrl || '#',
-    status: toLiveSessionStatus(item.status),
+    joinUrl,
+    status,
+    joinEnabled,
+    actionLabel: item.actionLabel || liveSessionActionLabel(status, joinEnabled),
+    disabledReason: item.disabledReason || liveSessionDisabledReason(status, joinUrl, joinEnabled),
     createdAt: item.createdAt || undefined,
     lastJoinedAt: item.lastJoinedAt || undefined,
     joinCount: Number(item.joinCount ?? 0),
   };
+}
+
+function hasLaunchableLiveUrl(joinUrl: string): boolean {
+  const normalized = joinUrl.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== '#' && normalized !== '#none' && normalized !== '#none;';
+}
+
+function liveSessionActionLabel(status: LiveSessionItem['status'], joinEnabled: boolean): string {
+  if (joinEnabled) return '입장';
+  if (status === 'scheduled') return '오픈 전';
+  if (status === 'ended') return '종료됨';
+  return '입장 대기';
+}
+
+function liveSessionDisabledReason(status: LiveSessionItem['status'], joinUrl: string, joinEnabled: boolean): string | undefined {
+  if (joinEnabled) return undefined;
+  if (status === 'scheduled') return '라이브 시작 시간이 되면 입장할 수 있습니다.';
+  if (status === 'ended') return '종료된 라이브는 다시 입장할 수 없습니다.';
+  return hasLaunchableLiveUrl(joinUrl) ? undefined : 'Meeting 링크가 아직 활성화되지 않았습니다.';
 }
 
 function toMaterialType(value?: string | null): LearningMaterial['type'] {

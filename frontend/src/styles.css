@@ -969,3 +969,12 @@ h2 {
 .education-metric-strip strong {
   color: #1f2933;
 }
+
+.list-card.disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.list-card.joinable {
+  border-color: #bfdbfe;
+}

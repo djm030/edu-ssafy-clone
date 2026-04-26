@@ -203,6 +203,27 @@ class FrontendRouteSmokeCoverageTest {
     }
 
 
+    @Test
+    void liveSessionsPageExposesJoinAndDisabledStates() throws IOException {
+        String livePage = Files.readString(Path.of("..", "frontend", "src", "pages", "LiveSessionsPage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(livePage)
+                .contains("joinEnabled")
+                .contains("disabledReason")
+                .contains("actionLabel")
+                .contains("Meeting 입장 기록");
+        assertThat(appApi)
+                .contains("hasLaunchableLiveUrl")
+                .contains("#none;")
+                .contains("입장 대기");
+        assertThat(types)
+                .contains("joinEnabled: boolean")
+                .contains("disabledReason?: string | null");
+    }
+
+
 
     @Test
     void attendancePageExposesMonthlyCalendarMatrix() throws IOException {

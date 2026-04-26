@@ -314,6 +314,9 @@ export interface LiveSessionItem {
   endsAt: string;
   joinUrl: string;
   status: 'scheduled' | 'live' | 'ended';
+  joinEnabled: boolean;
+  actionLabel: string;
+  disabledReason?: string | null;
   createdAt?: string | null;
   lastJoinedAt?: string | null;
   joinCount: number;

@@ -1014,6 +1014,9 @@ public class PriorityApiRepository {
     }
 
     private LiveSessionItem mapLiveSession(ResultSet rs, int rowNum) throws SQLException {
+        String status = rs.getString("effective_status");
+        String joinUrl = rs.getString("join_url");
+        boolean joinEnabled = "live".equals(status) && hasLaunchableLiveUrl(joinUrl);
         return new LiveSessionItem(
                 rs.getLong("live_session_id"),
                 rs.getString("title"),
@@ -1022,12 +1025,45 @@ public class PriorityApiRepository {
                 rs.getString("class_room"),
                 toOffset(rs.getTimestamp("starts_at")),
                 toOffset(rs.getTimestamp("ends_at")),
-                rs.getString("join_url"),
-                rs.getString("effective_status"),
+                joinUrl,
+                status,
+                joinEnabled,
+                liveSessionActionLabel(status, joinEnabled),
+                liveSessionDisabledReason(status, joinUrl, joinEnabled),
                 toOffset(rs.getTimestamp("created_at")),
                 toOffset(rs.getTimestamp("last_joined_at")),
                 rs.getLong("join_count")
         );
+    }
+
+    private boolean hasLaunchableLiveUrl(String joinUrl) {
+        if (joinUrl == null || joinUrl.isBlank()) {
+            return false;
+        }
+        String normalized = joinUrl.trim().toLowerCase();
+        return !("#".equals(normalized) || "#none".equals(normalized) || "#none;".equals(normalized));
+    }
+
+    private String liveSessionActionLabel(String status, boolean joinEnabled) {
+        if (joinEnabled) {
+            return "입장";
+        }
+        return switch (status) {
+            case "scheduled" -> "오픈 전";
+            case "ended" -> "종료됨";
+            default -> "입장 대기";
+        };
+    }
+
+    private String liveSessionDisabledReason(String status, String joinUrl, boolean joinEnabled) {
+        if (joinEnabled) {
+            return null;
+        }
+        return switch (status) {
+            case "scheduled" -> "라이브 시작 시간이 되면 입장할 수 있습니다.";
+            case "ended" -> "종료된 라이브는 다시 입장할 수 없습니다.";
+            default -> hasLaunchableLiveUrl(joinUrl) ? null : "Meeting 링크가 아직 활성화되지 않았습니다.";
+        };
     }
 
     private String attendanceRecordSelect(String suffix) {

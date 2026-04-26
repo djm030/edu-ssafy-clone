@@ -405,6 +405,9 @@ class PriorityApiServiceTest {
                 OffsetDateTime.now().plusMinutes(90),
                 "https://edu.ssafy.local/live/java-algorithm",
                 "live",
+                true,
+                "입장",
+                null,
                 OffsetDateTime.now().minusDays(1),
                 null,
                 0
@@ -419,6 +422,9 @@ class PriorityApiServiceTest {
                 live.endsAt(),
                 "https://edu.ssafy.local/live/java-algorithm",
                 "live",
+                true,
+                "입장",
+                null,
                 live.createdAt(),
                 OffsetDateTime.now(),
                 1
@@ -439,6 +445,8 @@ class PriorityApiServiceTest {
         assertThat(today.items()).containsExactly(live);
         assertThat(current.item()).isEqualTo(live);
         assertThat(joinedResponse.item().joinCount()).isEqualTo(1);
+        assertThat(joinedResponse.item().joinEnabled()).isTrue();
+        assertThat(joinedResponse.item().actionLabel()).isEqualTo("입장");
         assertThat(joinedResponse.joinLog()).isEqualTo(joinLog);
         verify(repository).createLiveSessionJoinLog(USER.id(), 11L);
     }
@@ -456,18 +464,44 @@ class PriorityApiServiceTest {
                 OffsetDateTime.now().minusHours(1),
                 "https://edu.ssafy.local/live/ended",
                 "ended",
+                false,
+                "종료됨",
+                "종료된 라이브는 다시 입장할 수 없습니다.",
+                OffsetDateTime.now().minusDays(1),
+                null,
+                0
+        );
+        LiveSessionItem scheduled = new LiveSessionItem(
+                13L,
+                "오픈 전 라이브",
+                "Java",
+                "12th",
+                "Seoul Java 1",
+                OffsetDateTime.now().plusHours(1),
+                OffsetDateTime.now().plusHours(3),
+                "#none;",
+                "scheduled",
+                false,
+                "오픈 전",
+                "라이브 시작 시간이 되면 입장할 수 있습니다.",
                 OffsetDateTime.now().minusDays(1),
                 null,
                 0
         );
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
         given(repository.findLiveSession(USER.id(), 12L)).willReturn(Optional.of(ended));
+        given(repository.findLiveSession(USER.id(), 13L)).willReturn(Optional.of(scheduled));
         given(repository.findLiveSession(USER.id(), 99L)).willReturn(Optional.empty());
         PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
 
         assertThatThrownBy(() -> service.joinLiveSession(12L))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("400");
+                .hasMessageContaining("400")
+                .hasMessageContaining("종료된 라이브");
+        assertThatThrownBy(() -> service.joinLiveSession(13L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400")
+                .hasMessageContaining("라이브 시작");
         assertThatThrownBy(() -> service.joinLiveSession(99L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
