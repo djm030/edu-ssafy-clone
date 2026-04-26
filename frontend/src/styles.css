@@ -1400,6 +1400,32 @@ h2 {
 }
 
 
+.academic-rule-anchor-summary {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 14px;
+}
+
+.academic-rule-anchor-summary > div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.academic-rule-anchor-summary strong {
+  color: #17458d;
+}
+
+.academic-rule-anchor-summary span,
+.academic-rule-anchor-summary p {
+  color: #475467;
+  margin: 0;
+}
+
 .support-ticket-status-panel {
   background: #f8fbff;
   border: 1px solid #d8e7ff;

@@ -362,6 +362,21 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("support-thread-item.admin");
     }
 
+    @Test
+    void academicRulesPageExposesAnchorsAndDownloadUnavailableStates() throws IOException {
+        String academicRules = Files.readString(Path.of("..", "frontend", "src", "pages", "AcademicRulesPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(academicRules)
+                .contains("RuleAnchorSummary")
+                .contains("학사규정 상세 앵커와 다운로드 상태")
+                .contains("파일 다운로드 없음")
+                .contains("등록된 규정 첨부파일이 없습니다")
+                .contains("운영 등록 파일 없음");
+        assertThat(styles)
+                .contains("academic-rule-anchor-summary");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {

@@ -154,21 +154,41 @@ function RuleCategoryList({
   );
 }
 
+function RuleAnchorSummary({ rules }: { rules: AcademicRuleItem[] }) {
+  return (
+    <section className="academic-rule-anchor-summary" aria-label="학사규정 상세 앵커와 다운로드 상태">
+      <div>
+        <strong>상세 앵커</strong>
+        <span>{rules.filter((rule) => rule.anchorId || rule.detailPath).length}/{rules.length}개</span>
+      </div>
+      <div>
+        <strong>파일 다운로드</strong>
+        <span>운영 등록 파일 없음</span>
+      </div>
+      <p>규정별 상세 링크는 페이지 앵커로 제공하고, 별도 파일이 없는 규정은 다운로드 버튼을 비활성 상태로 표시합니다.</p>
+    </section>
+  );
+}
+
 function RuleList({ rules }: { rules: AcademicRuleItem[] }) {
   return (
-    <div className="accordion-list">
-      {rules.map((rule) => (
-        <details id={rule.anchorId || `rule-${rule.id}`} key={rule.id} open={Boolean(rule.searchMatched)}>
-          <summary>{rule.question}</summary>
-          <p>{rule.answer}</p>
-          <div className="action-row">
-            {rule.searchMatched ? <StatusPill tone="yellow">검색 일치</StatusPill> : null}
-            <span className="muted">최종 수정 {formatDate(rule.updatedAt)}</span>
-            <a className="ghost-button" href={rule.detailPath || `/help/academic-rules#rule-${rule.id}`}>규정 링크</a>
-          </div>
-        </details>
-      ))}
-    </div>
+    <>
+      <RuleAnchorSummary rules={rules} />
+      <div className="accordion-list">
+        {rules.map((rule) => (
+          <details id={rule.anchorId || `rule-${rule.id}`} key={rule.id} open={Boolean(rule.searchMatched)}>
+            <summary>{rule.question}</summary>
+            <p>{rule.answer}</p>
+            <div className="action-row">
+              {rule.searchMatched ? <StatusPill tone="yellow">검색 일치</StatusPill> : null}
+              <span className="muted">최종 수정 {formatDate(rule.updatedAt)}</span>
+              <a className="ghost-button" href={rule.detailPath || `/help/academic-rules#rule-${rule.id}`}>규정 링크</a>
+              <button className="ghost-button" disabled title="등록된 규정 첨부파일이 없습니다." type="button">파일 다운로드 없음</button>
+            </div>
+          </details>
+        ))}
+      </div>
+    </>
   );
 }
 
