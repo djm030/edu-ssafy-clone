@@ -47,6 +47,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationStatusResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
@@ -581,6 +584,31 @@ class PriorityApiServiceTest {
         assertThat(response.item().weekNumber()).isEqualTo(4);
         assertThat(response.item().track()).isEqualTo("Java");
         assertThat(response.item().sessions()).hasSize(2);
+    }
+
+    @Test
+    void levelDetailAggregatesCurrentUserRankHistoryAndProgress() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        LevelSummary level = new LevelSummary(5, 4200, 5000, 85, 12);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findLevel(USER.id())).willReturn(Optional.of(level));
+        given(repository.findLevelName(USER.id())).willReturn(Optional.of("Silver Lv.5"));
+        given(repository.findLevelHistory(USER.id(), 6)).willReturn(List.of(
+                new LevelHistoryItem(LocalDate.parse("2026-04-24"), 12, 4200, 85),
+                new LevelHistoryItem(LocalDate.parse("2026-04-17"), 18, 3800, 78)
+        ));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        LevelDetailResponse response = service.levelDetail();
+
+        assertThat(response.detail().levelName()).isEqualTo("Silver Lv.5");
+        assertThat(response.detail().expPercent()).isEqualTo(84);
+        assertThat(response.detail().expRemaining()).isEqualTo(800);
+        assertThat(response.detail().history()).hasSize(2);
+        assertThat(response.detail().pointBreakdown())
+                .extracting("category")
+                .contains("누적 장학 포인트", "최근 반영 포인트", "경험치");
+        assertThat(response.detail().pointBreakdown().get(1).points()).isEqualTo(7);
     }
 
     @Test

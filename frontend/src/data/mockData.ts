@@ -8,6 +8,7 @@ import type {
   AcademicRuleCategory,
   CurriculumWeek,
   DashboardSummary,
+  LevelDetailResponse,
   LearningMaterial,
   MentoringMeetingApplicationItem,
   MentoringMeetingItem,
@@ -39,6 +40,25 @@ export const mockDashboard: DashboardSummary = {
   attendance: { present: 18, late: 1, absent: 0, appealAvailable: true },
   notifications: { unreadCount: 3, latest: ['공지사항 확인 필요', '이번 주 설문 미응답', 'Quest 채점 완료'] },
   today: { curriculumTitle: 'Spring Boot REST API', questTitle: '게시판 API 구현', surveyTitle: '주간 만족도 조사' },
+};
+
+export const mockLevelDetail: LevelDetailResponse = {
+  detail: {
+    current: mockDashboard.level,
+    levelName: 'Silver Lv.5',
+    expPercent: 84,
+    expRemaining: 800,
+    history: [
+      { snapshotDate: '2026-04-24', rankNo: 12, exp: 4200, scholarshipPoint: 85 },
+      { snapshotDate: '2026-04-17', rankNo: 18, exp: 3850, scholarshipPoint: 78 },
+      { snapshotDate: '2026-04-10', rankNo: 22, exp: 3400, scholarshipPoint: 70 },
+    ],
+    pointBreakdown: [
+      { category: '누적 장학 포인트', points: 85, description: '현재 사용자 기준 누적 장학 포인트입니다.' },
+      { category: '최근 반영 포인트', points: 7, description: '최근 랭킹 스냅샷 대비 증가한 포인트입니다.' },
+      { category: '경험치', points: 4200, description: '다음 레벨까지 남은 EXP와 함께 표시되는 현재 경험치입니다.' },
+    ],
+  },
 };
 
 export const mockAttendanceRecords: AttendanceRecord[] = [

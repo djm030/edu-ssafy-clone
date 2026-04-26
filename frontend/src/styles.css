@@ -486,3 +486,26 @@ h2 {
   white-space: normal;
   word-break: break-all;
 }
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  border-collapse: collapse;
+  min-width: 620px;
+  width: 100%;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid #e6ebf2;
+  padding: 12px 10px;
+  text-align: left;
+}
+
+.data-table th {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 800;
+}

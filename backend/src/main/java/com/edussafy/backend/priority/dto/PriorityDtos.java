@@ -79,6 +79,25 @@ public final class PriorityDtos {
     public record LevelSummary(int level, int exp, int nextLevelExp, int scholarshipPoints, Integer rank) {
     }
 
+    public record LevelDetailResponse(LevelDetail detail) {
+    }
+
+    public record LevelDetail(
+            LevelSummary current,
+            String levelName,
+            int expPercent,
+            int expRemaining,
+            List<LevelHistoryItem> history,
+            List<ScholarshipPointItem> pointBreakdown
+    ) {
+    }
+
+    public record LevelHistoryItem(LocalDate snapshotDate, int rankNo, int exp, int scholarshipPoint) {
+    }
+
+    public record ScholarshipPointItem(String category, int points, String description) {
+    }
+
     public record AttendanceSummary(int present, int late, int absent, boolean appealAvailable) {
     }
 

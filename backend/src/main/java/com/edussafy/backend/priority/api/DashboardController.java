@@ -1,6 +1,7 @@
 package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,5 +20,10 @@ public class DashboardController {
     @GetMapping("/dashboard/summary")
     public DashboardSummary summary() {
         return priorityApiService.dashboardSummary();
+    }
+
+    @GetMapping("/mycampus/level")
+    public LevelDetailResponse level() {
+        return priorityApiService.levelDetail();
     }
 }

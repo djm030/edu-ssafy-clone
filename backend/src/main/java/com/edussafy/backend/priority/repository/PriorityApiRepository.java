@@ -20,6 +20,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
@@ -133,6 +134,36 @@ public class PriorityApiRepository {
                     );
                 })
                 .optional();
+    }
+
+    public Optional<String> findLevelName(long userId) {
+        return jdbcClient.sql("""
+                SELECT COALESCE(NULLIF(TRIM(level_name), ''), CONCAT('Lv.', COALESCE(level_no, 1))) AS level_name
+                FROM user_level_statuses
+                WHERE user_id = :userId
+                """)
+                .param("userId", userId)
+                .query(String.class)
+                .optional();
+    }
+
+    public List<LevelHistoryItem> findLevelHistory(long userId, int limit) {
+        return jdbcClient.sql("""
+                SELECT snapshot_date, rank_no, exp, scholarship_point
+                FROM user_rank_snapshots
+                WHERE user_id = :userId
+                ORDER BY snapshot_date DESC
+                LIMIT :limit
+                """)
+                .param("userId", userId)
+                .param("limit", Math.max(1, limit))
+                .query((rs, rowNum) -> new LevelHistoryItem(
+                        rs.getObject("snapshot_date", LocalDate.class),
+                        rs.getInt("rank_no"),
+                        rs.getInt("exp"),
+                        rs.getInt("scholarship_point")
+                ))
+                .list();
     }
 
     public EducationAttendanceSummary findEducationAttendanceSummary(long userId, LocalDate today) {

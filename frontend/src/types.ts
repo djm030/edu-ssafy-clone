@@ -64,15 +64,43 @@ export interface AccessPolicyResponse {
   items: AccessPolicyItem[];
 }
 
+export interface LevelSummary {
+  level: number;
+  exp: number;
+  nextLevelExp: number;
+  scholarshipPoints: number;
+  rank: number | null;
+}
+
+export interface LevelHistoryItem {
+  snapshotDate: string;
+  rankNo: number;
+  exp: number;
+  scholarshipPoint: number;
+}
+
+export interface ScholarshipPointItem {
+  category: string;
+  points: number;
+  description: string;
+}
+
+export interface LevelDetail {
+  current: LevelSummary;
+  levelName: string;
+  expPercent: number;
+  expRemaining: number;
+  history: LevelHistoryItem[];
+  pointBreakdown: ScholarshipPointItem[];
+}
+
+export interface LevelDetailResponse {
+  detail: LevelDetail;
+}
+
 export interface DashboardSummary {
   user: Omit<UserProfile, 'id' | 'email' | 'role'>;
-  level: {
-    level: number;
-    exp: number;
-    nextLevelExp: number;
-    scholarshipPoints: number;
-    rank: number;
-  };
+  level: LevelSummary;
   attendance: {
     present: number;
     late: number;

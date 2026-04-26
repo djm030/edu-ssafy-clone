@@ -5,6 +5,7 @@ import {
   mockClassmates,
   mockCurriculumWeeks,
   mockDashboard,
+  mockLevelDetail,
   mockExternalServices,
   mockMaterials,
   mockMentoringMeetingApplications,
@@ -37,6 +38,7 @@ import type {
   Classmate,
   CurriculumWeek,
   DashboardSummary,
+  LevelDetailResponse,
   DocumentAttachmentItem,
   DocumentRequestItem,
   DocumentSubmissionDraft,
@@ -742,6 +744,12 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
   return fetchJson<BackendDashboardSummary>('/api/dashboard/summary', {
     fallback: () => mockDashboard,
   }).then(toDashboardSummary);
+}
+
+export function getLevelDetail(): Promise<LevelDetailResponse> {
+  return fetchJson<LevelDetailResponse>('/api/mycampus/level', {
+    fallback: () => mockLevelDetail,
+  });
 }
 
 export function getEducationStatus(): Promise<EducationStatusSummary> {

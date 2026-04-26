@@ -57,6 +57,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EbookDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ScholarshipPointItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
@@ -432,6 +436,25 @@ public class PriorityApiService {
                 new NotificationsSummary(unreadCount, latest),
                 safe(() -> repository.findTodaySummary(user.id()), EMPTY_TODAY)
         );
+    }
+
+    public LevelDetailResponse levelDetail() {
+        UserProfile user = currentUser();
+        LevelSummary level = safe(() -> repository.findLevel(user.id()).orElse(DEMO_LEVEL), DEMO_LEVEL);
+        String fallbackLevelName = "Lv." + level.level();
+        String levelName = safe(() -> repository.findLevelName(user.id()).orElse(fallbackLevelName), fallbackLevelName);
+        List<LevelHistoryItem> history = safe(() -> repository.findLevelHistory(user.id(), 6), List.of());
+        int expPercent = progressPercent(level.exp(), level.nextLevelExp());
+        int expRemaining = Math.max(0, level.nextLevelExp() - level.exp());
+
+        return new LevelDetailResponse(new LevelDetail(
+                level,
+                levelName,
+                expPercent,
+                expRemaining,
+                history,
+                scholarshipPointBreakdown(level, history)
+        ));
     }
 
     public EducationStatusResponse educationStatus() {
@@ -2084,6 +2107,29 @@ public class PriorityApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported material reaction type.");
         }
         return normalizedType;
+    }
+
+    private int progressPercent(int exp, int nextLevelExp) {
+        if (nextLevelExp <= 0) {
+            return 0;
+        }
+        return Math.max(0, Math.min(100, (int) Math.round((exp * 100.0) / nextLevelExp)));
+    }
+
+    private List<ScholarshipPointItem> scholarshipPointBreakdown(LevelSummary level, List<LevelHistoryItem> history) {
+        Integer previousScholarshipPoint = history.stream()
+                .skip(1)
+                .findFirst()
+                .map(LevelHistoryItem::scholarshipPoint)
+                .orElse(null);
+        int recentDelta = previousScholarshipPoint == null
+                ? level.scholarshipPoints()
+                : Math.max(0, level.scholarshipPoints() - previousScholarshipPoint);
+        return List.of(
+                new ScholarshipPointItem("누적 장학 포인트", level.scholarshipPoints(), "현재 사용자 기준 누적 장학 포인트입니다."),
+                new ScholarshipPointItem("최근 반영 포인트", recentDelta, "최근 랭킹 스냅샷 대비 증가한 포인트입니다."),
+                new ScholarshipPointItem("경험치", level.exp(), "다음 레벨까지 남은 EXP와 함께 표시되는 현재 경험치입니다.")
+        );
     }
 
     private EducationPointSummary educationPointFallback(LevelSummary level) {

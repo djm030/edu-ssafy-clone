@@ -142,6 +142,7 @@ class FrontendRouteSmokeCoverageTest {
     void priorityDataPagesExposeLoadingErrorAndEmptyStates() throws IOException {
         Map<String, Path> pages = Map.ofEntries(
                 Map.entry("attendance", Path.of("..", "frontend", "src", "pages", "AttendancePage.tsx")),
+                Map.entry("level", Path.of("..", "frontend", "src", "pages", "LevelPage.tsx")),
                 Map.entry("board", Path.of("..", "frontend", "src", "components", "BoardListPage.tsx")),
                 Map.entry("survey", Path.of("..", "frontend", "src", "pages", "SurveyPage.tsx")),
                 Map.entry("notifications", Path.of("..", "frontend", "src", "pages", "NotificationsPage.tsx")),

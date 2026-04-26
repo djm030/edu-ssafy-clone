@@ -64,6 +64,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EbookDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ScholarshipPointItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
@@ -406,6 +410,27 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.level.nextLevelExp").value(1000))
                 .andExpect(jsonPath("$.attendance.appealAvailable").value(true))
                 .andExpect(jsonPath("$.notifications.latest").isArray());
+    }
+
+    @Test
+    void levelDetailReturnsMyCampusLevelShape() throws Exception {
+        given(priorityApiService.levelDetail()).willReturn(new LevelDetailResponse(new LevelDetail(
+                new LevelSummary(5, 4200, 5000, 85, 12),
+                "Silver Lv.5",
+                84,
+                800,
+                List.of(new LevelHistoryItem(LocalDate.parse("2026-04-24"), 12, 4200, 85)),
+                List.of(new ScholarshipPointItem("누적 장학 포인트", 85, "현재 사용자 기준 누적 장학 포인트입니다."))
+        )));
+
+        mockMvc.perform(get("/api/mycampus/level"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.detail.levelName").value("Silver Lv.5"))
+                .andExpect(jsonPath("$.detail.current.level").value(5))
+                .andExpect(jsonPath("$.detail.expPercent").value(84))
+                .andExpect(jsonPath("$.detail.expRemaining").value(800))
+                .andExpect(jsonPath("$.detail.history[0].rankNo").value(12))
+                .andExpect(jsonPath("$.detail.pointBreakdown[0].category").value("누적 장학 포인트"));
     }
 
     @Test
