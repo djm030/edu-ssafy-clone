@@ -16,6 +16,7 @@ const targets: VisualTarget[] = [
   { name: 'bookmarks', path: '/mycampus/bookmarks', text: /찜한|북마크/ },
   { name: 'documents', path: '/mycampus/documents', text: /서류/ },
   { name: 'pledges', path: '/mycampus/pledges', text: /서약서/ },
+  { name: 'ebooks', path: '/mycampus/ebooks', text: /e-book|SSAFY e-book/ },
   { name: 'education-status', path: '/mycampus/education-status', text: /교육현황/ },
   { name: 'curriculum', path: '/learning/curriculum', text: /커리큘럼/ },
   { name: 'quest', path: '/quest', text: /Quest|퀘스트/ },

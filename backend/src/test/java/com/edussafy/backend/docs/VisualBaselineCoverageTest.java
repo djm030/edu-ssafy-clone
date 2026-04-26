@@ -22,6 +22,7 @@ class VisualBaselineCoverageTest {
             "bookmarks",
             "documents",
             "pledges",
+            "ebooks",
             "education-status",
             "curriculum",
             "quest",
