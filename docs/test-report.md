@@ -555,3 +555,14 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Hosted CI Sign-off Checklist (2026-04-27 KST)
+- Added `scripts/dev/ci-signoff.sh` to generate a hosted-run markdown evidence artifact with run URL, repository, ref, SHA, attempt, actor, and required gate checklist.
+- Updated GitHub Actions CI to generate the sign-off checklist after verification gates and upload it with observability JSONL evidence as `ci-signoff-${{ github.run_id }}-${{ github.run_attempt }}`.
+- Extended `CiWorkflowHardeningTest` to verify workflow artifact wiring, script content, local artifact generation, and absence of real EduSSAFY credential markers.
+- `bash -n scripts/dev/ci-signoff.sh` -> PASS.
+- `CI_SIGNOFF_OUT=/tmp/ci-signoff-test.md CI_RUN_URL=https://example.invalid/actions/runs/123 GITHUB_REPOSITORY=ssafy/full-clone GITHUB_REF_NAME=main GITHUB_SHA=abc123 GITHUB_RUN_ATTEMPT=1 scripts/dev/ci-signoff.sh` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=CiWorkflowHardeningTest test` -> PASS, 4 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

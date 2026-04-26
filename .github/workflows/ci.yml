@@ -84,3 +84,20 @@ jobs:
 
       - name: Browser visual baseline
         run: npm --prefix frontend run e2e -- --project=chromium e2e/visual-baseline.spec.ts
+
+      - name: Generate hosted CI sign-off checklist
+        if: always()
+        env:
+          CI_SIGNOFF_OUT: build/reports/ci-signoff.md
+          CI_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: scripts/dev/ci-signoff.sh
+
+      - name: Upload CI sign-off evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-signoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/reports/ci-signoff.md
+            build/reports/observability-smoke.jsonl
+          if-no-files-found: warn
