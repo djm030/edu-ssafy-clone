@@ -6,6 +6,10 @@ export interface ApiErrorPayload {
   error?: {
     code?: string;
     message?: string;
+    status?: number;
+    path?: string;
+    requestId?: string;
+    timestamp?: string;
   };
 }
 

@@ -13,6 +13,7 @@ class FrontendRouteSmokeCoverageTest {
 
     private static final Path ROUTES_TS = Path.of("..", "frontend", "src", "routes.ts");
     private static final Path APP_TSX = Path.of("..", "frontend", "src", "App.tsx");
+    private static final Path CLIENT_TS = Path.of("..", "frontend", "src", "api", "client.ts");
     private static final Path OPS_READINESS_TSX = Path.of("..", "frontend", "src", "pages", "OpsReadinessPage.tsx");
 
     private static final List<String> REQUIRED_SCREEN_ROUTES = List.of(
@@ -95,6 +96,16 @@ class FrontendRouteSmokeCoverageTest {
                     .contains("loadState === 'error'")
                     .contains("loadState === 'empty'");
         }
+    }
+
+    @Test
+    void frontendApiClientSurfacesBackendRequestIds() throws IOException {
+        String client = Files.readString(CLIENT_TS);
+
+        assertThat(client)
+                .contains("readonly requestId")
+                .contains("X-Request-Id")
+                .contains("요청 ID:");
     }
 
 }

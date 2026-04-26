@@ -3,12 +3,18 @@ import type { ApiErrorPayload } from '../types';
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
+  readonly requestId?: string;
+  readonly path?: string;
+  readonly timestamp?: string;
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, requestId?: string, path?: string, timestamp?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.requestId = requestId;
+    this.path = path;
+    this.timestamp = timestamp;
   }
 }
 
@@ -89,7 +95,15 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions<T> = {
     if (!response.ok) {
       const payload = await readJson<ApiErrorPayload>(response);
       const message = payload.error?.message || fallbackMessage(response.status);
-      const apiError = new ApiError(response.status, message, payload.error?.code);
+      const requestId = payload.error?.requestId || response.headers.get('X-Request-Id') || undefined;
+      const apiError = new ApiError(
+        response.status,
+        message,
+        payload.error?.code,
+        requestId,
+        payload.error?.path,
+        payload.error?.timestamp,
+      );
       dispatchAccessEvent(apiError);
       throw apiError;
     }
@@ -127,6 +141,7 @@ export function fallbackMessage(status: number): string {
 }
 
 export function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.requestId) return `${error.message} (요청 ID: ${error.requestId})`;
   if (error instanceof Error) return error.message;
   return '알 수 없는 오류가 발생했습니다.';
 }

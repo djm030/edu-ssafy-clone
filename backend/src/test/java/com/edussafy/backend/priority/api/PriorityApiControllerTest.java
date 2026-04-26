@@ -173,9 +173,15 @@ class PriorityApiControllerTest {
     void loginValidatesRequestBody() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Request-Id", "req-login-invalid")
                         .content("{\"email\":\"\",\"password\":\"\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+                .andExpect(header().string("X-Request-Id", "req-login-invalid"))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.error.status").value(400))
+                .andExpect(jsonPath("$.error.path").value("/api/auth/login"))
+                .andExpect(jsonPath("$.error.requestId").value("req-login-invalid"))
+                .andExpect(jsonPath("$.error.timestamp").exists());
 
         verifyNoInteractions(priorityApiService);
     }

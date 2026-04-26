@@ -68,6 +68,9 @@ class RoleAccessInterceptorTest {
         assertThat(allowed).isFalse();
         assertThat(response.getStatus()).isEqualTo(401);
         assertThat(response.getContentAsString()).contains("UNAUTHORIZED");
+        assertThat(response.getContentAsString()).contains("\"status\":401");
+        assertThat(response.getContentAsString()).contains("\"path\":\"/api/surveys\"");
+        assertThat(response.getHeader("X-Request-Id")).isNotBlank();
     }
 
     @ParameterizedTest
@@ -92,6 +95,9 @@ class RoleAccessInterceptorTest {
         } else {
             assertThat(response.getStatus()).isEqualTo(403);
             assertThat(response.getContentAsString()).contains("FORBIDDEN");
+            assertThat(response.getContentAsString()).contains("\"status\":403");
+            assertThat(response.getContentAsString()).contains("\"path\":\"" + path + "\"");
+            assertThat(response.getHeader("X-Request-Id")).isNotBlank();
         }
     }
 

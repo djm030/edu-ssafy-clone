@@ -93,7 +93,7 @@ docker compose --profile app up -d --build
 | 문의 답변 | PASS | staff answer endpoint, status/message persistence, learner forbidden test 존재. |
 | 문의 첨부파일 | PASS | support message attachment metadata create와 stored byte download endpoint/tests 존재. |
 | 권한별 접근 제어 | PASS | session auth와 admin/staff/owner guard, pending attendance staff gate, public readiness bypass, 핵심 mutation interceptor matrix test, `GET /api/auth/access-policy`, `/ops/readiness` 권한 매트릭스가 존재한다. 브라우저 E2E 권한 플로우는 screen smoke 보강 항목으로 분리했다. |
-| 에러 처리 | PARTIAL | Spring error response, invalid request tests, static frontend loading/error/empty state smoke coverage가 있으나 모든 mutation/permission edge case는 브라우저 E2E로 검증되지 않았다. |
+| 에러 처리 | PASS | Spring error envelope가 `code/message/status/path/requestId/timestamp`를 제공하고 `X-Request-Id`를 echo/generate하며, role interceptor 401/403과 invalid request 테스트 및 frontend request-id 표시 smoke가 존재한다. 브라우저 E2E edge case는 screen smoke 보강 항목으로 분리했다. |
 | 로컬 실행 | PASS | app profile 컨테이너 6개가 healthy이고 backend/frontend/Nginx smoke가 통과했다. |
 | 테스트 | PASS | backend 111 tests, frontend lint/build, REST Docs/security headers tests 통과. Browser E2E는 별도 남은 작업으로 분리. |
 | 문서 최신화 | PASS | 이 문서, test report, remaining work, API summary가 2026-04-26 재검증 결과로 갱신됐다. |
@@ -123,4 +123,4 @@ docker compose --profile app up -d --build
 
 **완료 선언은 아직 금지한다.**
 
-현재 저장소는 로컬에서 실행 가능하고 대부분의 핵심 기능이 실제 DB-backed API와 frontend 연결, backend/frontend 검증을 통과한 상태다. 그러나 위 PARTIAL 항목과 rebuild/E2E/권한 matrix gap이 남아 있으므로 최종 상태는 **production-oriented runnable clone / PARTIAL**이다. 실제 서비스 가능한 “완성”으로 판정하려면 남은 작업을 처리하고 모든 핵심 기능 row를 PASS로 재검증해야 한다.
+현재 저장소는 로컬에서 실행 가능하고 대부분의 핵심 기능이 실제 DB-backed API와 frontend 연결, backend/frontend 검증을 통과한 상태다. 그러나 위 PARTIAL/BLOCKED 항목과 rebuild/E2E gap이 남아 있으므로 최종 상태는 **production-oriented runnable clone / PARTIAL**이다. 실제 서비스 가능한 “완성”으로 판정하려면 남은 작업을 처리하고 모든 핵심 기능 row를 PASS로 재검증해야 한다.

@@ -1,5 +1,15 @@
 # Test Report
 
+## Request-correlated Error Envelope (2026-04-26 KST)
+- Standardized API error responses with `status`, `path`, `requestId`, and `timestamp` metadata while preserving existing `error.code` and `error.message` fields.
+- Added `X-Request-Id` propagation/generation in Spring MVC exception handling and role-access interceptor failures.
+- Updated the frontend API client to surface backend request IDs in user-facing error messages for support/debugging.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=RoleAccessInterceptorTest,PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 192 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Ops Access Policy Matrix (2026-04-26 KST)
 - Added `GET /api/auth/access-policy` to expose the backend staff/admin API policy matrix consumed by the production readiness screen.
 - `/ops/readiness` now renders the access-control matrix next to API and screen smoke results so operators can verify protected mutation coverage before deployment.

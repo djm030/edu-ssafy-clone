@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -56,20 +57,20 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         }
 
         if ("false".equalsIgnoreCase(request.getHeader(AUTH_HEADER))) {
-            writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "로그인이 필요한 화면입니다.");
+            writeError(request, response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "로그인이 필요한 화면입니다.");
             return false;
         }
 
         Optional<Long> sessionUserId = AuthSession.currentUserId(request.getSession(false));
         if (sessionUserId.isEmpty()) {
-            writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "로그인이 필요한 화면입니다.");
+            writeError(request, response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "로그인이 필요한 화면입니다.");
             return false;
         }
 
         Optional<UserProfile> user = findSessionUser(sessionUserId.get());
         if (user.isEmpty()) {
             invalidateSession(request.getSession(false));
-            writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "세션 사용자 정보를 찾을 수 없습니다.");
+            writeError(request, response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "세션 사용자 정보를 찾을 수 없습니다.");
             return false;
         }
 
@@ -80,7 +81,7 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
             denied = true;
         }
         if (denied) {
-            writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다.");
+            writeError(request, response, HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다.");
             return false;
         }
 
@@ -126,11 +127,27 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         return managesSurvey && !Set.of("coach", "admin").contains(role);
     }
 
-    private void writeError(HttpServletResponse response, HttpStatus status, String code, String message) throws IOException {
+    private void writeError(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            HttpStatus status,
+            String code,
+            String message
+    ) throws IOException {
+        String requestId = requestId(request);
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(code, message));
+        response.setHeader("X-Request-Id", requestId);
+        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(code, message, status.value(), request.getRequestURI(), requestId));
+    }
+
+    private String requestId(HttpServletRequest request) {
+        String existing = request.getHeader("X-Request-Id");
+        if (existing != null && !existing.isBlank()) {
+            return existing.trim();
+        }
+        return UUID.randomUUID().toString();
     }
 
     private record AccessRule(String method, String pathPrefix, String pathSuffix, Set<String> allowedRoles) {

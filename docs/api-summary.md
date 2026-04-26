@@ -9,6 +9,7 @@
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
+- Error responses keep `{ error: { code, message } }` compatibility and now add `status`, `path`, `requestId`, and `timestamp`; `X-Request-Id` is echoed/generated for support correlation.
 - Remaining API gaps before final service readiness: mutation E2E coverage, browser-level role-flow checks, and broader Spring REST Docs/OpenAPI coverage beyond the documented auth/health/survey endpoints.
 
 
