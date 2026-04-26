@@ -37,6 +37,16 @@ test('external service links expose enabled and disabled states without credenti
   await expect(page.getByText('비활성')).toBeVisible();
 });
 
+test('learner classmate screen blocks staff-only notification actions', async ({ page }) => {
+  await loginAsDemoLearner(page);
+  await page.goto('/community/classmates');
+
+  await expect(page.getByRole('heading', { name: '우리반 보기' })).toBeVisible();
+  await expect(page.getByText('알림 보내기는 코치 또는 관리자 권한으로만 사용할 수 있습니다.')).toBeVisible();
+  await expect(page.getByLabel('알림 메시지')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '알림 권한 없음' }).first()).toBeDisabled();
+});
+
 test('demo learner can complete mycampus learning actions without real credentials', async ({ page }) => {
   await loginAsDemoLearner(page);
 

@@ -20,7 +20,11 @@ const emptySummary: ClassmateSummary = {
   staffCount: 0,
 };
 
-function ClassmatesPage() {
+interface ClassmatesPageProps {
+  canSendNotifications?: boolean;
+}
+
+function ClassmatesPage({ canSendNotifications = false }: ClassmatesPageProps) {
   const [items, setItems] = useState<Classmate[]>([]);
   const [summary, setSummary] = useState<ClassmateSummary>(emptySummary);
   const [keyword, setKeyword] = useState('');
@@ -58,6 +62,11 @@ function ClassmatesPage() {
   };
 
   const notifyClassmate = async (classmate: Classmate) => {
+    if (!canSendNotifications) {
+      setNotificationMessage('알림 발송은 코치 또는 관리자 권한이 필요합니다.');
+      return;
+    }
+
     setNotifyingId(classmate.id);
     setNotificationMessage('');
 
@@ -94,9 +103,20 @@ function ClassmatesPage() {
         </form>
         <label className="field-group">
           알림 메시지
-          <textarea maxLength={1000} onChange={(event) => setNotificationText(event.target.value)} rows={2} value={notificationText} />
+          <textarea
+            disabled={!canSendNotifications}
+            maxLength={1000}
+            onChange={(event) => setNotificationText(event.target.value)}
+            rows={2}
+            value={notificationText}
+          />
         </label>
       </div>
+      {!canSendNotifications ? (
+        <div className="inline-alert">
+          알림 보내기는 코치 또는 관리자 권한으로만 사용할 수 있습니다.
+        </div>
+      ) : null}
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="우리반 정보를 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="조건에 맞는 교육생이 없습니다." message="검색어 또는 역할 필터를 바꿔 보세요." /> : null}
@@ -108,7 +128,14 @@ function ClassmatesPage() {
           <p>{notificationMessage}</p>
         </div>
       ) : null}
-      {loadState === 'loaded' ? <ClassmateGrid items={items} notifyingId={notifyingId} onNotify={notifyClassmate} /> : null}
+      {loadState === 'loaded' ? (
+        <ClassmateGrid
+          canSendNotifications={canSendNotifications}
+          items={items}
+          notifyingId={notifyingId}
+          onNotify={notifyClassmate}
+        />
+      ) : null}
     </section>
   );
 }
@@ -123,7 +150,17 @@ function SummaryCard({ title, value, description }: { title: string; value: numb
   );
 }
 
-function ClassmateGrid({ items, notifyingId, onNotify }: { items: Classmate[]; notifyingId: number | null; onNotify: (classmate: Classmate) => void }) {
+function ClassmateGrid({
+  canSendNotifications,
+  items,
+  notifyingId,
+  onNotify,
+}: {
+  canSendNotifications: boolean;
+  items: Classmate[];
+  notifyingId: number | null;
+  onNotify: (classmate: Classmate) => void;
+}) {
   return (
     <div className="classmate-grid">
       {items.map((item) => (
@@ -142,8 +179,13 @@ function ClassmateGrid({ items, notifyingId, onNotify }: { items: Classmate[]; n
             </div>
             <p>{item.email || '이메일 비공개'}</p>
             <p>{item.statusMessage || '상태 메시지가 없습니다.'}</p>
-            <button className="ghost-button" disabled={notifyingId === item.id} onClick={() => onNotify(item)} type="button">
-              {notifyingId === item.id ? '알림 발송 중' : '알림 보내기'}
+            <button
+              className="ghost-button"
+              disabled={!canSendNotifications || notifyingId === item.id}
+              onClick={() => onNotify(item)}
+              type="button"
+            >
+              {!canSendNotifications ? '알림 권한 없음' : notifyingId === item.id ? '알림 발송 중' : '알림 보내기'}
             </button>
           </div>
         </article>

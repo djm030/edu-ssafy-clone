@@ -92,6 +92,15 @@ export async function installApiFixture(page: Page) {
     if (url.pathname === '/api/auth/session') {
       return json({ authenticated: true, expiresAt: '2026-12-31T23:59:59.000Z', maxInactiveSeconds: 3600, secondsRemaining: 3600 });
     }
+    if (url.pathname === '/api/community/classmates') {
+      return json({
+        items: [
+          { id: 7, name: '이교육생', email: 'classmate@ssafy.local', role: 'learner', memberRole: 'learner', campusName: '서울', cohortName: '12기', trackName: 'Java', className: '서울 1반', statusMessage: '알고리즘 스터디 모집 중' },
+          { id: 8, name: '박코치', email: 'coach@ssafy.local', role: 'coach', memberRole: 'coach', campusName: '서울', cohortName: '12기', trackName: 'Java', className: '서울 1반', statusMessage: '질문 환영' },
+        ],
+        summary: { totalCount: 2, learnerCount: 1, coachCount: 1, staffCount: 0 },
+      });
+    }
     if (url.pathname === '/api/elearning/in-progress') {
       return json({ items: [elearningItem] });
     }

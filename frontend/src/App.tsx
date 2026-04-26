@@ -302,7 +302,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/learning/replays/all') return <ReplaysPage mode="all" />;
   if (path === '/profile/check') return <ProfileCheckPage onVerified={() => navigate('/profile/edit')} />;
   if (path === '/profile/edit') return <ProfileEditPage />;
-  if (path === '/community/classmates') return <ClassmatesPage />;
+  if (path === '/community/classmates') return <ClassmatesPage canSendNotifications={canSendClassmateNotifications(roleAccess)} />;
   if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage boardCode="free" detailPathBase="/community/free" title="자유게시판 글쓰기" />;
   if (path === '/community/anonymous/write' || path === '/community/anonymous/new') {
     return <BoardPostWritePage boardCode="anonymous" detailPathBase="/community/anonymous" title="익명 게시판 글쓰기" />;
@@ -353,6 +353,10 @@ function canAnswerSupport(roleAccess?: RoleAccess): boolean {
 
 function canAnswerMentoring(roleAccess?: RoleAccess): boolean {
   return Boolean(roleAccess?.permissions.includes('*') || roleAccess?.permissions.includes('mentoring:answer'));
+}
+
+function canSendClassmateNotifications(roleAccess?: RoleAccess): boolean {
+  return Boolean(roleAccess?.permissions.includes('*') || roleAccess?.permissions.includes('notifications:send'));
 }
 
 function canManageSurveys(roleAccess?: RoleAccess): boolean {
