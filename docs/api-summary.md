@@ -9,7 +9,7 @@
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
+- Remaining API gaps before final service readiness: full role-matrix documentation/tests, mutation E2E coverage, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -46,6 +46,8 @@
 | `/api/surveys` | GET | `page`, `size` optional | `{ items, page }` survey list | Yes (demo) | `/survey` |
 | `/api/surveys` | POST | body `{ title, category, required, status, startAt, endAt, questions[] }` | created survey `{ item }` | Coach/Admin | `/survey` manager form |
 | `/api/surveys/{id}` | GET | path `id` | `{ item/survey }` survey detail | Yes (demo) | `/survey/:id`, `/survey/:id/respond` |
+| `/api/surveys/{id}` | PUT | staff path `id`, body survey metadata/questions | updated survey `{ item }`; replaces questions and resets stale responses | Coach/Admin | `/survey` manager edit action |
+| `/api/surveys/{id}` | DELETE | staff path `id` | deleted marker `{ item }` | Coach/Admin | `/survey` manager delete action |
 | `/api/surveys/{id}/responses` | POST | path `id`, body `{ answers: [{ questionId, answerText, optionIds }] }` | created survey response `{ item }` | Yes (demo) | `/survey/:id/respond` |
 | `/api/boards/{boardCode}/categories` | GET | path `boardCode` | `{ items }` board categories | Yes (demo) | `/community/free`, `/help/notice`, `/help/faq`, `/help/qna` |
 | `/api/boards/{boardCode}/posts` | GET | path `boardCode`; `categoryId`, `keyword`, `page`, `size`, `sort` optional | `{ items, page }` board posts | Yes (demo) | board list screens |
@@ -92,7 +94,7 @@
 - `POST /api/learning/materials/{id}/resources/{resourceId}/attachments`, `GET /api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}`
 - `GET /api/quests`, `GET /api/quests/{id}`, `POST /api/quests/{id}/submissions`
 - `POST /api/quests/{id}/submissions/{submissionId}/attachments`, `GET /api/quests/{id}/submissions/{submissionId}/attachments/{attachmentId}`
-- `GET /api/surveys`, `POST /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
+- `GET /api/surveys`, `POST /api/surveys`, `GET/PUT/DELETE /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
 - `POST /api/boards/{boardCode}/posts`, `POST /api/boards/{boardCode}/posts/{postId}/comments`, `POST /api/boards/{boardCode}/posts/{postId}/reactions`
 - `GET /api/support/tickets`, `POST /api/support/tickets`
@@ -123,7 +125,7 @@
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.
 - Material like/bookmark/favorite reactions.
-- Attachment byte upload/download APIs now exist for board post attachments, material resource attachments, support ticket message attachments, and quest submission attachments; remaining gaps are broader E2E/role-matrix coverage and survey admin mutation depth.
+- Attachment byte upload/download APIs now exist for board post attachments, material resource attachments, support ticket message attachments, and quest submission attachments; remaining gaps are broader E2E/role-matrix documentation and production image rebuild verification.
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.

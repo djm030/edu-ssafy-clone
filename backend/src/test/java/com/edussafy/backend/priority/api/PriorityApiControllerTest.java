@@ -69,6 +69,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
@@ -693,6 +695,46 @@ class PriorityApiControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.id").value(9))
                 .andExpect(jsonPath("$.item.questions[0].options[0].text").value("좋음"));
+    }
+
+
+    @Test
+    void surveyUpdateAndDeleteReturnPersistedShapesForStaff() throws Exception {
+        given(priorityApiService.updateSurvey(eq(9L), any())).willReturn(new SurveyDetailResponse(new SurveyDetail(
+                9L,
+                "Updated pulse",
+                "course",
+                false,
+                null,
+                null,
+                "scheduled",
+                false,
+                1,
+                List.of(new SurveyQuestionItem(92L, "long_text", "개선 의견을 적어 주세요.", 1, List.of()))
+        )));
+        given(priorityApiService.deleteSurvey(9L)).willReturn(new SurveyDeleteResponse(new SurveyDeleteItem(9L, true, false)));
+
+        mockMvc.perform(put("/api/surveys/9")
+                        .session(sessionFor(2L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Updated pulse",
+                                  "category": "course",
+                                  "required": false,
+                                  "status": "scheduled",
+                                  "questions": [{"type": "long_text", "text": "개선 의견을 적어 주세요."}]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(9))
+                .andExpect(jsonPath("$.item.title").value("Updated pulse"))
+                .andExpect(jsonPath("$.item.questions[0].text").value("개선 의견을 적어 주세요."));
+        mockMvc.perform(delete("/api/surveys/9").session(sessionFor(2L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(9))
+                .andExpect(jsonPath("$.item.deleted").value(true))
+                .andExpect(jsonPath("$.item.demo").value(false));
     }
 
     @Test

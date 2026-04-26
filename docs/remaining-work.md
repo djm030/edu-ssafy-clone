@@ -3,7 +3,7 @@
 ## Final Verification Remaining Work (2026-04-26 KST)
 - Overall status: **PARTIAL**, not final complete.
 - PASS evidence now exists for auth/profile, attendance/appeals, board/post/comment/reaction, notifications, learning materials/resources/reactions, quests/submissions, support tickets/answers/attachments, local compose health, backend tests, frontend lint/build.
-- Still PARTIAL: survey edit/delete admin CRUD, full role-matrix coverage, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
+- Still PARTIAL: full role-matrix coverage documentation, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
 - Rebuild blocker: `docker compose --profile app up -d --build` stalled while resolving Docker Hub metadata for base images and was cancelled; rerun on a stable Docker network/cache before final release.
 - Do not declare all-PASS until the PARTIAL rows in `docs/final-verification.md` are implemented and reverified.
 
@@ -91,7 +91,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 - 현재 `gap` 항목은 R7.1 기준 0개로 정리했지만, 서버 측 RBAC/권한 테스트는 아직 PASS가 아니다.
 
 ### PARTIAL 항목
-- 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 인증/세션, 권한 enforcement, 첨부파일, 설문/문의 depth, E2E/CI 검증이 남아 있다.
+- 기능 UI와 demo/API contract는 대부분 존재하지만, 실서비스 수준의 브라우저 E2E/visual 검증, 운영 이미지 rebuild 검증, 권한 행렬 문서화가 남아 있다.
 
 ### FAIL 항목
 - 현재 문서 기준 명시적인 기능 FAIL 항목은 없다.
@@ -107,7 +107,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 2. Server-side RBAC guard를 controller/service 레벨에 적용하고 learner/operator/admin 권한 test 추가.
 3. Admin campus/cohort/track/class demo flow를 persisted CRUD/edit/delete로 확장.
 3. 첨부파일 업로드/다운로드 API의 브라우저 E2E 검증과 장기 스토리지 위치 정책 확정.
-4. 설문 질문/선택지/응답 저장 depth 구현.
+4. 설문 관리자 CRUD 브라우저 E2E 및 REST Docs/OpenAPI 문서 확장.
 5. 지원 티켓 thread/answer/status transition 구현.
 6. Browser E2E smoke와 GitHub Actions CI 추가.
 

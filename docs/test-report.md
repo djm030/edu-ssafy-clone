@@ -1,5 +1,13 @@
 # Test Report
 
+## Survey Admin CRUD Verification (2026-04-26 KST)
+- Implemented coach/admin `PUT /api/surveys/{id}` and `DELETE /api/surveys/{id}` with survey question replacement, response reset, role gating, and frontend list edit/delete actions.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=PriorityApiServiceTest,PriorityApiControllerTest,RoleAccessInterceptorTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 166 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build` -> PASS, Vite transformed 71 modules.
+- `cd frontend && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## Board Post Attachment Verification (2026-04-26 KST)
 - Implemented board post attachment byte upload/download on top of the existing attachment metadata/link flow.
 - Connected board detail UI to read a selected file as base64, send it to the backend, and render a real download link for persisted attachments.

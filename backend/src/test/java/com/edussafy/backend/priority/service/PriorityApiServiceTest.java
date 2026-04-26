@@ -55,6 +55,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyCreateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionCreateRequest;
@@ -1527,6 +1528,64 @@ class PriorityApiServiceTest {
         assertThat(response.item().questions()).containsExactly(savedQuestion);
         verify(p3Repository).createSurveyOption(11L, "좋음", 1);
         verify(p3Repository).createSurveyOption(11L, "보통", 2);
+    }
+
+
+    @Test
+    void staffUpdatesAndDeletesSurvey() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        SurveyDetail existingSurvey = surveyDetail(6L);
+        SurveyDetail savedSurvey = new SurveyDetail(
+                6L,
+                "Updated pulse",
+                "course",
+                false,
+                null,
+                null,
+                "scheduled",
+                false,
+                1,
+                List.of()
+        );
+        SurveyQuestionItem savedQuestion = new SurveyQuestionItem(
+                21L,
+                "long_text",
+                "개선 의견을 적어 주세요.",
+                1,
+                List.of()
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        given(p3Repository.findSurvey(2L, 6L)).willReturn(Optional.of(existingSurvey), Optional.of(savedSurvey), Optional.of(savedSurvey));
+        given(p3Repository.updateSurvey(6L, "Updated pulse", "course", false, null, null, "scheduled")).willReturn(1);
+        given(p3Repository.createSurveyQuestion(6L, "long_text", "개선 의견을 적어 주세요.", 1)).willReturn(21L);
+        given(p3Repository.findSurveyQuestions(6L)).willReturn(List.of(savedQuestion));
+        given(p3Repository.deleteSurvey(6L)).willReturn(1);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                p3Repository
+        );
+
+        SurveyDetailResponse updated = service.updateSurvey(6L, new SurveyCreateRequest(
+                " Updated pulse ",
+                "course",
+                false,
+                null,
+                null,
+                "scheduled",
+                List.of(new SurveyQuestionCreateRequest("long_text", " 개선 의견을 적어 주세요. ", List.of()))
+        ));
+        SurveyDeleteResponse deleted = service.deleteSurvey(6L);
+
+        assertThat(updated.item().title()).isEqualTo("Updated pulse");
+        assertThat(updated.item().questions()).containsExactly(savedQuestion);
+        assertThat(deleted.item().id()).isEqualTo(6L);
+        assertThat(deleted.item().deleted()).isTrue();
+        assertThat(deleted.item().demo()).isFalse();
+        verify(p3Repository).deleteSurveyResponses(6L);
+        verify(p3Repository).deleteSurveyQuestions(6L);
+        verify(p3Repository).deleteSurvey(6L);
     }
 
     @Test

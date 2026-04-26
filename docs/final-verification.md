@@ -80,7 +80,7 @@ docker compose --profile app up -d --build
 | 학습자료 반응 | PASS | material like/bookmark create/delete, count/current-user state, tests 존재. |
 | 퀘스트/평가 | PASS | quest list/detail/submit API, DB upsert, submission attachment upload/download, frontend detail/submit/result state, tests 존재. |
 | 퀘스트 제출 상태 | PASS | current submission/result detail endpoint와 persisted status tests 존재. |
-| 설문 생성/조회 | PASS | survey list/detail 조회와 coach/admin 전용 생성 API, 첫 문항/선택지 저장, frontend 생성 폼, 권한/서비스 테스트가 존재한다. |
+| 설문 생성/조회/수정/삭제 | PASS | survey list/detail 조회와 coach/admin 전용 create/update/delete API, 첫 문항/선택지 저장, frontend 생성/수정/삭제 폼, 권한/서비스 테스트가 존재한다. |
 | 설문 문항/선택지 | PASS | survey questions/options 조회 DTO, DB 조회, detail/respond 화면 연결, tests 존재. |
 | 설문 응답 저장 | PASS | survey response upsert, answer/option validation, current response 조회 tests 존재. |
 | 게시판 | PASS | board categories/list/detail/write flow, DB repository/service/controller, frontend pages, tests 존재. |
@@ -111,7 +111,7 @@ docker compose --profile app up -d --build
 
 ## 7. 남은 작업
 
-1. 설문 edit/delete 등 관리자 CRUD 후속 범위를 추가한다.
+1. 설문 관리자 CRUD는 구현됐고, 다음 단계는 브라우저 E2E와 REST Docs/OpenAPI 범위를 확장한다.
 2. material/quest까지 포함하는 공통 파일 업로드·다운로드·권한 모델을 통일한다.
 3. learner/coach/admin 전체 role matrix를 도메인별로 테스트한다.
 4. Playwright/Cypress 등 브라우저 E2E smoke와 핵심 화면 visual 검증을 추가한다.

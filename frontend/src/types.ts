@@ -285,9 +285,11 @@ export interface QuestItem {
 export interface SurveyItem {
   id: number;
   title: string;
+  category?: string;
   required: boolean;
   startsAt: string;
   endsAt: string;
+  status?: string;
   answered: boolean;
   description?: string;
   questionCount?: number;

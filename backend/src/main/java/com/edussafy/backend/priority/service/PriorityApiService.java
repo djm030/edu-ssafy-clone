@@ -72,6 +72,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketMessageReques
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyCreateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
@@ -737,6 +739,60 @@ public class PriorityApiService {
                 .map(survey -> survey.withQuestions(p3Repository.findSurveyQuestions(surveyId)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Created survey could not be loaded."));
         return new SurveyDetailResponse(item);
+    }
+
+    @Transactional
+    public SurveyDetailResponse updateSurvey(long id, SurveyCreateRequest request) {
+        UserProfile user = currentUser();
+        if (!canManageSurveys(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Survey management permission is required.");
+        }
+        p3Repository.findSurvey(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey not found."));
+
+        PreparedSurveyCreate draft = prepareSurveyCreate(request);
+        int updated = p3Repository.updateSurvey(
+                id,
+                draft.title(),
+                draft.category(),
+                draft.required(),
+                draft.startAt(),
+                draft.endAt(),
+                draft.status()
+        );
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey not found.");
+        }
+        p3Repository.deleteSurveyResponses(id);
+        p3Repository.deleteSurveyQuestions(id);
+        int questionOrder = 1;
+        for (PreparedSurveyQuestion question : draft.questions()) {
+            long questionId = p3Repository.createSurveyQuestion(id, question.type(), question.text(), questionOrder++);
+            int optionOrder = 1;
+            for (String option : question.options()) {
+                p3Repository.createSurveyOption(questionId, option, optionOrder++);
+            }
+        }
+
+        SurveyDetail item = p3Repository.findSurvey(user.id(), id)
+                .map(survey -> survey.withQuestions(p3Repository.findSurveyQuestions(id)))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Updated survey could not be loaded."));
+        return new SurveyDetailResponse(item);
+    }
+
+    @Transactional
+    public SurveyDeleteResponse deleteSurvey(long id) {
+        UserProfile user = currentUser();
+        if (!canManageSurveys(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Survey management permission is required.");
+        }
+        p3Repository.findSurvey(user.id(), id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey not found."));
+        int deleted = p3Repository.deleteSurvey(id);
+        if (deleted == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Survey not found.");
+        }
+        return new SurveyDeleteResponse(new SurveyDeleteItem(id, true, false));
     }
 
     @Transactional

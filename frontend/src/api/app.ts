@@ -338,9 +338,11 @@ function toSurveyItem(item: BackendSurveyItem): SurveyItem {
   return {
     id: Number(item.id),
     title: item.title || '설문',
+    category: item.category || undefined,
     required: Boolean(item.required),
     startsAt: item.startsAt || toDateText(item.startAt),
     endsAt: item.endsAt || toDateText(item.endAt),
+    status: item.status || undefined,
     answered: item.answered ?? Boolean(item.completed),
     description: item.description || item.category || undefined,
     questionCount: item.questionCount ?? questions.length,
@@ -637,8 +639,8 @@ export function getSurveyResponse(id: number): Promise<SurveySavedResponse | und
     });
 }
 
-export function createSurvey(draft: SurveyCreateDraft): Promise<SurveyItem> {
-  const payload = {
+function surveyPayload(draft: SurveyCreateDraft) {
+  return {
     ...draft,
     startAt: draft.startAt || undefined,
     endAt: draft.endAt || undefined,
@@ -648,33 +650,53 @@ export function createSurvey(draft: SurveyCreateDraft): Promise<SurveyItem> {
       options: question.options?.map((text) => ({ text })).filter((option) => option.text.trim()) || [],
     })),
   };
+}
 
+function fallbackSurveyItem(draft: SurveyCreateDraft, id = Date.now()): BackendSurveyItem {
+  return {
+    id,
+    title: draft.title,
+    category: draft.category,
+    required: draft.required,
+    status: draft.status,
+    completed: false,
+    questionCount: draft.questions.length,
+    questions: draft.questions.map((question, index) => ({
+      id: index + 1,
+      text: question.text,
+      type: question.type,
+      options: question.options?.map((text, optionIndex) => ({
+        id: optionIndex + 1,
+        text,
+        displayOrder: optionIndex + 1,
+      })) || [],
+    })),
+  };
+}
+
+export function createSurvey(draft: SurveyCreateDraft): Promise<SurveyItem> {
   return fetchJson<ItemResponse<BackendSurveyItem>>('/api/surveys', {
-    body: JSON.stringify(payload),
-    fallback: () => ({
-      item: {
-        id: Date.now(),
-        title: draft.title,
-        category: draft.category,
-        required: draft.required,
-        status: draft.status,
-        completed: false,
-        questionCount: draft.questions.length,
-        questions: draft.questions.map((question, index) => ({
-          id: index + 1,
-          text: question.text,
-          type: question.type,
-          options: question.options?.map((text, optionIndex) => ({
-            id: optionIndex + 1,
-            text,
-            displayOrder: optionIndex + 1,
-          })) || [],
-        })),
-      },
-    }),
+    body: JSON.stringify(surveyPayload(draft)),
+    fallback: () => ({ item: fallbackSurveyItem(draft) }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   }).then((response) => toSurveyItem(response.item));
+}
+
+export function updateSurvey(id: number, draft: SurveyCreateDraft): Promise<SurveyItem> {
+  return fetchJson<ItemResponse<BackendSurveyItem>>(`/api/surveys/${id}`, {
+    body: JSON.stringify(surveyPayload(draft)),
+    fallback: () => ({ item: fallbackSurveyItem(draft, id) }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => toSurveyItem(response.item));
+}
+
+export function deleteSurvey(id: number): Promise<{ id: number; deleted: boolean; demo?: boolean }> {
+  return fetchJson<ItemResponse<{ id: number; deleted: boolean; demo?: boolean }>>(`/api/surveys/${id}`, {
+    fallback: () => ({ item: { id, deleted: true, demo: true } }),
+    method: 'DELETE',
+  }).then((response) => response.item);
 }
 
 export function checkProfilePassword(password: string): Promise<{ verified: boolean }> {

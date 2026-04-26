@@ -74,7 +74,7 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         String role = normalizeRole(user.get().role());
         boolean denied = ACCESS_RULES.stream()
                 .anyMatch(rule -> rule.matches(request.getMethod(), path) && !rule.allowedRoles().contains(role));
-        if (!denied && isSurveyCreateDenied(request.getMethod(), path, role)) {
+        if (!denied && isSurveyManagementDenied(request.getMethod(), path, role)) {
             denied = true;
         }
         if (denied) {
@@ -118,10 +118,10 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
         return "learner";
     }
 
-    private boolean isSurveyCreateDenied(String method, String path, String role) {
-        return "POST".equalsIgnoreCase(method)
-                && "/api/surveys".equals(path)
-                && !Set.of("coach", "admin").contains(role);
+    private boolean isSurveyManagementDenied(String method, String path, String role) {
+        boolean managesSurvey = ("POST".equalsIgnoreCase(method) && "/api/surveys".equals(path))
+                || (("PUT".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) && path.matches("^/api/surveys/\\d+$"));
+        return managesSurvey && !Set.of("coach", "admin").contains(role);
     }
 
     private void writeError(HttpServletResponse response, HttpStatus status, String code, String message) throws IOException {

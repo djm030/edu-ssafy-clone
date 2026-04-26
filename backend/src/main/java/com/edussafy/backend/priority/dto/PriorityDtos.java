@@ -362,6 +362,12 @@ public final class PriorityDtos {
     public record SurveyDetailResponse(SurveyDetail item) {
     }
 
+    public record SurveyDeleteResponse(SurveyDeleteItem item) {
+    }
+
+    public record SurveyDeleteItem(long id, boolean deleted, boolean demo) {
+    }
+
     public record SurveyCreateRequest(
             @NotBlank @Size(max = 255) String title,
             @NotBlank @Size(max = 50) String category,

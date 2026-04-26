@@ -422,6 +422,54 @@ public class PriorityP3Repository {
         return key == null ? 0L : key.longValue();
     }
 
+
+    public int updateSurvey(
+            long surveyId,
+            String title,
+            String category,
+            boolean required,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            String status
+    ) {
+        return jdbcClient.sql("""
+                UPDATE surveys
+                SET title = :title,
+                    survey_category_code = :category,
+                    required_yn = :required,
+                    progress_status_code = :status,
+                    start_at = :startAt,
+                    end_at = :endAt
+                WHERE survey_id = :surveyId
+                """)
+                .param("surveyId", surveyId)
+                .param("title", title)
+                .param("category", category)
+                .param("required", required)
+                .param("status", status)
+                .param("startAt", toTimestamp(startAt))
+                .param("endAt", toTimestamp(endAt))
+                .update();
+    }
+
+    public int deleteSurveyResponses(long surveyId) {
+        return jdbcClient.sql("DELETE FROM survey_responses WHERE survey_id = :surveyId")
+                .param("surveyId", surveyId)
+                .update();
+    }
+
+    public int deleteSurveyQuestions(long surveyId) {
+        return jdbcClient.sql("DELETE FROM survey_questions WHERE survey_id = :surveyId")
+                .param("surveyId", surveyId)
+                .update();
+    }
+
+    public int deleteSurvey(long surveyId) {
+        return jdbcClient.sql("DELETE FROM surveys WHERE survey_id = :surveyId")
+                .param("surveyId", surveyId)
+                .update();
+    }
+
     public long createSurveyQuestion(long surveyId, String type, String text, int displayOrder) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcClient.sql("""
