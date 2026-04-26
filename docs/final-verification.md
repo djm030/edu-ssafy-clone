@@ -2,13 +2,13 @@
 
 Date: 2026-04-26 KST
 Role: final verification owner
-Decision: **PARTIAL / DOCKER REBUILD VERIFICATION BLOCKED**
+Decision: **PASS / PRODUCTION-HARDENING VERIFIED**
 
 ## 1. 최종 검증 요약
 
 `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`를 TTY로 실행했지만 Docker/Maven 검증 단계에서 approval 대기와 장시간 `Working` 상태로 멈춰 직접 검증으로 전환했다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, 실행 중인 app profile 컨테이너 health, Nginx reverse proxy smoke가 통과했다.
 
-프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 다만 최신 이미지 rebuild 검증이 Docker Hub metadata 단계에서 막혀 “모든 기능이 실제 서비스 수준으로 완료”라고 판정하지 않는다.
+프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 최신 이미지 rebuild, app profile 기동, backend/frontend/Nginx smoke까지 재검증되어 요청된 우선순위 1~9 기능 기준 PASS로 판정한다.
 
 ## 2. 실행한 명령어
 
@@ -49,7 +49,7 @@ docker compose --profile app up -d --build
 | Gate | Result | Evidence |
 |---|---:|---|
 | 저장소/최근 커밋 확인 | PASS | 최근 커밋은 auth 세션/비밀번호, board 작성자 권한, 보안 헤더, REST Docs, cookie hardening을 포함한다. |
-| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 196, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; POSIX REST Docs verifier covers 10 required snippets. |
+| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 198, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; POSIX REST Docs verifier covers 10 required snippets. |
 | Frontend build | PASS | `tsc -b && vite build`, 72 modules transformed, build completed. |
 | Frontend lint | PASS | `npm run lint` completed without errors. |
 | Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx; backend container healthcheck uses dependency-aware `/api/readiness`; app-profile services use `no-new-privileges:true` and backend drops Linux capabilities. |
@@ -60,7 +60,7 @@ docker compose --profile app up -d --build
 | Auth/session smoke | PASS | login with seeded `student@ssafy.com` / `password` returned session cookie and `/api/me` returned the current user. |
 | Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
-| Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` and a later `docker compose --profile app build backend frontend nginx` recheck both stalled while loading Docker Hub metadata for base images and were cancelled; existing running app profile remained healthy. Backend runtime Dockerfile now drops root privileges, app-profile services set `no-new-privileges:true`, backend drops Linux capabilities, and these are guarded by `DockerImageHardeningTest` plus `DockerComposeRuntimeHardeningTest`. |
+| Docker image rebuild | PASS | `docker compose --profile app build --progress=plain backend frontend nginx` completed after Docker Hub metadata eventually resolved; `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password docker compose --profile app up -d` started mysql/redis/rabbitmq/backend/frontend/nginx healthy on the existing local volume. Backend runtime Dockerfile drops root privileges, app-profile services set `no-new-privileges:true`, backend drops Linux capabilities, and these are guarded by `DockerImageHardeningTest` plus `DockerComposeRuntimeHardeningTest`. |
 | Screen route smoke | PASS | `/ops/readiness` renders the priority 1~9 screen smoke manifest and backend access-policy matrix, `FrontendRouteSmokeCoverageTest` guards route/access-policy coverage, `scripts/dev/smoke.sh` covers API/Nginx smoke, and `scripts/dev/smoke-routes.sh` curls all 30 declared SPA routes against the built Vite preview. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
@@ -101,7 +101,7 @@ docker compose --profile app up -d --build
 ## 5. 발견한 문제
 
 1. `omx ralph` 실행은 TTY/approval/장시간 `Working` 문제로 완료되지 않았다. 최종 검증은 직접 명령 실행으로 대체했다.
-2. 현재 실행 중인 Compose app은 healthy이지만, `docker compose --profile app up -d --build`가 Docker Hub metadata 단계에서 멈춰 최신 이미지 rebuild 완료까지는 검증하지 못했다.
+2. Docker Hub metadata 단계가 매우 느렸지만 재시도에서 backend/frontend image build가 완료됐고 app profile 전체가 healthy 상태로 기동했다.
 3. 공통 첨부파일은 support/material resource/quest submission/board post에서 byte 업로드·다운로드 구현과 단위/API 테스트 근거가 존재한다.
 4. 브라우저 visual baseline 자동화는 아직 없다. 현재는 Vite preview 기반 SPA route smoke와 backend/frontend 회귀 테스트로 보강했다.
 
@@ -121,6 +121,6 @@ docker compose --profile app up -d --build
 
 ## 8. 최종 판단
 
-**완료 선언은 아직 금지한다.**
+**요청된 우선순위 1~9 기준 PASS로 판정한다.**
 
-현재 저장소는 로컬에서 실행 가능하고 핵심 기능이 실제 DB-backed API와 frontend 연결, backend/frontend 검증 및 Vite preview route smoke를 통과한 상태다. 그러나 Docker image rebuild 검증이 BLOCKED 상태이므로 최종 상태는 **production-oriented runnable clone / PARTIAL**이다. 실제 서비스 가능한 “완성”으로 판정하려면 Docker base image metadata/pull 이슈가 없는 환경에서 app profile rebuild를 재검증해야 한다.
+현재 저장소는 로컬에서 실행 가능하고 핵심 기능이 실제 DB-backed API와 frontend 연결, backend/frontend 검증, Docker image rebuild, Compose app profile 기동, Nginx/API smoke, SPA route smoke를 통과한 상태다. 최종 상태는 **production-oriented runnable clone / PASS**이다. 남은 개선은 pixel-level visual baseline과 외부 CI에서의 반복 검증 강화다.

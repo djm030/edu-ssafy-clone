@@ -1,5 +1,20 @@
 # Test Report
 
+## App Profile Rebuild and Runtime Smoke Recovery (2026-04-26 KST)
+- Re-ran the previously blocked Docker image build; Docker Hub metadata eventually resolved and backend/frontend images built successfully.
+- Fixed backend runtime startup by marking the two-argument `HealthService` constructor as the Spring injection constructor.
+- Fixed `scripts/dev/smoke.sh` to persist the login session cookie before calling authenticated smoke endpoints.
+- For the existing local MySQL volume, the stored root password was the old development password; rerun used `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password` and refreshed seed rows to hashed password values. Fresh volumes continue to use the placeholder from `.env.example`/Compose.
+- `docker compose --profile app build --progress=plain backend frontend nginx` -> PASS for backend and frontend image builds.
+- `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password docker compose --profile app up -d` -> PASS, mysql/redis/rabbitmq/backend/frontend/nginx healthy.
+- `BASE_URL=http://localhost BACKEND_URL=http://localhost:8080 scripts/dev/smoke.sh` -> PASS.
+- `FRONTEND_BASE_URL=http://localhost scripts/dev/smoke-routes.sh` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=HealthServiceTest,DeploymentSmokeScriptTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 198 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## POSIX Spring REST Docs Verification (2026-04-26 KST)
 - Added `scripts/dev/verify-restdocs.sh` so macOS/Linux CI can generate and verify required Spring REST Docs snippets without relying on PowerShell.
 - The script runs `ApiRestDocsTest`, `AuthRestDocsTest`, and `SurveyRestDocsTest`, then asserts required health/readiness/auth/survey snippet files exist.

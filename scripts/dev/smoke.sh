@@ -8,6 +8,9 @@ SKIP_HTTP="${SKIP_HTTP:-false}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
+cookie_file="$(mktemp)"
+trap 'rm -f "$cookie_file"' EXIT
+
 require_file_contains() {
   local path="$1"
   local needle="$2"
@@ -34,9 +37,9 @@ request() {
   local url="$2"
   local body="${3:-}"
   if [[ -n "$body" ]]; then
-    curl -fsS -X "$method" -H 'Content-Type: application/json' -d "$body" "$url" >/dev/null
+    curl -fsS -X "$method" -H 'Content-Type: application/json' -b "$cookie_file" -c "$cookie_file" -d "$body" "$url" >/dev/null
   else
-    curl -fsS -X "$method" "$url" >/dev/null
+    curl -fsS -X "$method" -b "$cookie_file" -c "$cookie_file" "$url" >/dev/null
   fi
   echo "$method $url -> OK"
 }

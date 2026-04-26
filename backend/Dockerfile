@@ -5,7 +5,8 @@ COPY pom.xml .
 RUN mvn -B dependency:go-offline
 
 COPY src ./src
-RUN mvn -B package
+# Docker image build should not run repository-level tests because some tests read files outside the backend build context.
+RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

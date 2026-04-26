@@ -31,4 +31,15 @@ class DeploymentSmokeScriptTest {
         assertThat(script).contains("request POST \"$BACKEND_URL/api/auth/login\"");
         assertThat(script).contains("/ops/readiness");
     }
+
+    @Test
+    void posixSmokeScriptStoresSessionCookieForAuthenticatedSmokeRequests() throws IOException {
+        String script = Files.readString(POSIX_SMOKE_SCRIPT);
+
+        assertThat(script).contains("cookie_file=\"$(mktemp)\"");
+        assertThat(script).contains("-b \"$cookie_file\" -c \"$cookie_file\"");
+        assertThat(script).contains("request POST \"$BACKEND_URL/api/auth/login\"");
+        assertThat(script).contains("request GET \"$BACKEND_URL/api/me\"");
+    }
+
 }

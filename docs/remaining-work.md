@@ -1,22 +1,21 @@
 # Remaining Work
 
-## Docker Image Rebuild Recheck (2026-04-26 KST)
+## Docker Image Rebuild Recheck Resolved (2026-04-26 KST)
 
 기능: Docker, 테스트, Spring REST Docs, 프로덕션 하드닝
-상태: BLOCKED
-원인: `docker compose --profile app build backend frontend nginx`가 Docker Hub base image metadata loading 단계(`maven:3.9.9-eclipse-temurin-21`, `eclipse-temurin:21-jre`)에서 90초 이상 진행되지 않아 중단했다.
-시도한 작업: app profile backend/frontend/nginx 이미지 rebuild 재검증.
-수정된 파일: 없음(검증/기록만 수행).
-검증 명령: `docker compose --profile app build backend frontend nginx`
-실패 로그 요약: backend Dockerfile metadata load 단계에서 장시간 정지, 이전 `docker compose --profile app up -d --build`와 동일한 Docker Hub metadata/pull 계열 blocker로 판단.
-다음에 해야 할 일: Docker Hub 접근이 안정적인 네트워크 또는 base image cache가 준비된 CI/호스트에서 app profile rebuild를 재실행하고, 성공 시 `docs/final-verification.md`의 Docker image rebuild row를 PASS로 갱신한다.
+상태: PASS
+해결 내용: Docker Hub metadata 단계가 매우 느렸지만 재시도에서 backend/frontend image build가 완료됐고, `HealthService` 생성자 주입 지정 및 POSIX smoke cookie jar 보강 후 app profile 전체가 healthy로 기동했다.
+검증 명령: `docker compose --profile app build --progress=plain backend frontend nginx`, `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password docker compose --profile app up -d`, `scripts/dev/smoke.sh`, `scripts/dev/smoke-routes.sh`, Dockerized Maven full test, frontend build/lint.
+비고: 기존 로컬 MySQL volume은 과거 `ssafy_dev_root_password`로 초기화되어 해당 env로 재기동했다. fresh volume은 `.env.example`/Compose placeholder 정책을 따른다.
+
+## Docker Image Rebuild Recheck (2026-04-26 KST)
+
+상태: SUPERSEDED_BY_PASS_RECHECK
+비고: 아래 기존 BLOCKED 기록은 위 `Docker Image Rebuild Recheck Resolved` 재검증으로 해소됐다.
 
 ## Final Verification Remaining Work (2026-04-26 KST)
-- Overall status: **PARTIAL**, not final complete.
-- PASS evidence now exists for auth/profile, attendance/appeals, board/post/comment/reaction, notifications, learning materials/resources/reactions, quests/submissions, support tickets/answers/attachments, local compose health, backend tests, frontend lint/build.
-- Still PARTIAL: full role-matrix coverage documentation, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
-- Rebuild blocker: `docker compose --profile app up -d --build` stalled while resolving Docker Hub metadata for base images and was cancelled; rerun on a stable Docker network/cache before final release.
-- Do not declare all-PASS until the PARTIAL rows in `docs/final-verification.md` are implemented and reverified.
+- Overall status: **PASS for requested priority 1~9 gates** after app profile rebuild/startup/smoke recheck.
+- Remaining improvements are non-blocking hardening follow-ups: browser visual baseline automation and external CI repetition.
 
 
 ## Final Verification Recheck (2026-04-24)

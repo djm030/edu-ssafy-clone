@@ -3,11 +3,13 @@ package com.edussafy.backend.health.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import java.lang.reflect.Constructor;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -51,5 +53,12 @@ class HealthServiceTest {
                     assertThat(check.status()).isEqualTo("DOWN");
                     assertThat(check.message()).contains("db unavailable");
                 });
+    }
+
+    @Test
+    void publicConstructorIsSelectedForSpringInjection() throws NoSuchMethodException {
+        Constructor<HealthService> constructor = HealthService.class.getConstructor(JdbcTemplate.class, Environment.class);
+
+        assertThat(constructor.getAnnotation(Autowired.class)).isNotNull();
     }
 }

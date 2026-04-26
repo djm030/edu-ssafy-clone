@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class HealthService {
     private final Environment environment;
     private final Clock clock;
 
+    @Autowired
     public HealthService(JdbcTemplate jdbcTemplate, Environment environment) {
         this(jdbcTemplate, environment, Clock.systemUTC());
     }
