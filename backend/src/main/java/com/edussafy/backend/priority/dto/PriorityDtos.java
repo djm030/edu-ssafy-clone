@@ -87,8 +87,19 @@ public final class PriorityDtos {
             String levelName,
             int expPercent,
             int expRemaining,
+            List<LevelTierItem> tiers,
             List<LevelHistoryItem> history,
             List<ScholarshipPointItem> pointBreakdown
+    ) {
+    }
+
+    public record LevelTierItem(
+            String name,
+            int minLevel,
+            int maxLevel,
+            boolean current,
+            int progressPercent,
+            String description
     ) {
     }
 

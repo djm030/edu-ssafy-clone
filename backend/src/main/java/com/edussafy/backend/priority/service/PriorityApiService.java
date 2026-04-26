@@ -71,6 +71,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelTierItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ScholarshipPointItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
@@ -580,6 +581,7 @@ public class PriorityApiService {
                 levelName,
                 expPercent,
                 expRemaining,
+                levelTiers(level),
                 history,
                 scholarshipPointBreakdown(level, history)
         ));
@@ -2326,6 +2328,24 @@ public class PriorityApiService {
             return 0;
         }
         return Math.max(0, Math.min(100, (int) Math.round((exp * 100.0) / nextLevelExp)));
+    }
+
+    private List<LevelTierItem> levelTiers(LevelSummary level) {
+        int currentLevel = Math.max(1, level.level());
+        return List.of(
+                tier("Bronze", 1, 4, currentLevel, "기초 학습과 출석 루틴을 쌓는 단계"),
+                tier("Silver", 5, 8, currentLevel, "프로젝트 실습과 Quest 수행이 누적되는 단계"),
+                tier("Gold", 9, 12, currentLevel, "심화 학습과 팀 기여도가 반영되는 단계"),
+                tier("Platinum", 13, 16, currentLevel, "우수 학습자 랭킹과 장학 포인트 경쟁 단계")
+        );
+    }
+
+    private LevelTierItem tier(String name, int minLevel, int maxLevel, int currentLevel, String description) {
+        boolean current = currentLevel >= minLevel && currentLevel <= maxLevel;
+        int span = Math.max(1, maxLevel - minLevel + 1);
+        int completed = currentLevel < minLevel ? 0 : Math.min(span, currentLevel - minLevel + 1);
+        int progress = current ? Math.min(100, Math.max(0, (int) Math.round((completed * 100.0) / span))) : currentLevel > maxLevel ? 100 : 0;
+        return new LevelTierItem(name, minLevel, maxLevel, current, progress, description);
     }
 
     private List<ScholarshipPointItem> scholarshipPointBreakdown(LevelSummary level, List<LevelHistoryItem> history) {

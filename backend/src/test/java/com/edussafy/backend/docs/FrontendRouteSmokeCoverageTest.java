@@ -201,6 +201,18 @@ class FrontendRouteSmokeCoverageTest {
     }
 
 
+
+    @Test
+    void levelPageExposesTierRoadmap() throws IOException {
+        String levelPage = Files.readString(Path.of("..", "frontend", "src", "pages", "LevelPage.tsx"));
+
+        assertThat(levelPage)
+                .contains("Bronze/Silver 단계")
+                .contains("tier-roadmap")
+                .contains("LevelTierItem")
+                .contains("progressPercent");
+    }
+
     @Test
     void dashboardPageExposesEduSsafyHomeWidgets() throws IOException {
         String dashboard = Files.readString(Path.of("..", "frontend", "src", "pages", "DashboardPage.tsx"));

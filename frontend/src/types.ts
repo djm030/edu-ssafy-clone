@@ -85,11 +85,21 @@ export interface ScholarshipPointItem {
   description: string;
 }
 
+export interface LevelTierItem {
+  name: string;
+  minLevel: number;
+  maxLevel: number;
+  current: boolean;
+  progressPercent: number;
+  description: string;
+}
+
 export interface LevelDetail {
   current: LevelSummary;
   levelName: string;
   expPercent: number;
   expRemaining: number;
+  tiers: LevelTierItem[];
   history: LevelHistoryItem[];
   pointBreakdown: ScholarshipPointItem[];
 }

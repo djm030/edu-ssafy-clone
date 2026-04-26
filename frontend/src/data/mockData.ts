@@ -82,6 +82,12 @@ export const mockLevelDetail: LevelDetailResponse = {
     levelName: 'Silver Lv.5',
     expPercent: 84,
     expRemaining: 800,
+    tiers: [
+      { name: 'Bronze', minLevel: 1, maxLevel: 4, current: false, progressPercent: 100, description: '기초 학습과 출석 루틴을 쌓는 단계' },
+      { name: 'Silver', minLevel: 5, maxLevel: 8, current: true, progressPercent: 25, description: '프로젝트 실습과 Quest 수행이 누적되는 단계' },
+      { name: 'Gold', minLevel: 9, maxLevel: 12, current: false, progressPercent: 0, description: '심화 학습과 팀 기여도가 반영되는 단계' },
+      { name: 'Platinum', minLevel: 13, maxLevel: 16, current: false, progressPercent: 0, description: '우수 학습자 랭킹과 장학 포인트 경쟁 단계' },
+    ],
     history: [
       { snapshotDate: '2026-04-24', rankNo: 12, exp: 4200, scholarshipPoint: 85 },
       { snapshotDate: '2026-04-17', rankNo: 18, exp: 3850, scholarshipPoint: 78 },

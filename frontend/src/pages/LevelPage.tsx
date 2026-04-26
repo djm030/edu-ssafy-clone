@@ -3,7 +3,7 @@ import { getLevelDetail } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
-import type { LevelDetail, LevelHistoryItem, LoadState, ScholarshipPointItem } from '../types';
+import type { LevelDetail, LevelHistoryItem, LevelTierItem, LoadState, ScholarshipPointItem } from '../types';
 
 function LevelPage() {
   const [detail, setDetail] = useState<LevelDetail>();
@@ -76,6 +76,12 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
         </section>
       </div>
       <section className="panel">
+        <h2>Bronze/Silver 단계</h2>
+        <div className="tier-roadmap" aria-label="레벨 단계 진행 현황">
+          {detail.tiers.map((tier) => <TierCard tier={tier} key={tier.name} />)}
+        </div>
+      </section>
+      <section className="panel">
         <h2>랭킹/포인트 이력</h2>
         {detail.history.length ? (
           <div className="table-scroll">
@@ -98,6 +104,22 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
         )}
       </section>
     </>
+  );
+}
+
+
+function TierCard({ tier }: { tier: LevelTierItem }) {
+  return (
+    <article className={`tier-card ${tier.current ? 'current' : ''}`}>
+      <div>
+        <strong>{tier.name}</strong>
+        <span>Lv.{tier.minLevel} ~ Lv.{tier.maxLevel}</span>
+      </div>
+      <div className="progress-track" aria-label={`${tier.name} 단계 진행률 ${tier.progressPercent}%`}>
+        <span style={{ width: `${tier.progressPercent}%` }} />
+      </div>
+      <p>{tier.description}</p>
+    </article>
   );
 }
 
