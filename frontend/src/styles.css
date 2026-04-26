@@ -1400,6 +1400,23 @@ h2 {
 }
 
 
+.meeting-review-policy {
+  align-items: center;
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+}
+
+.meeting-review-policy p {
+  color: #475467;
+  margin: 0;
+}
+
 .meeting-application-policy {
   background: #f8fbff;
   border: 1px solid #d8e7ff;

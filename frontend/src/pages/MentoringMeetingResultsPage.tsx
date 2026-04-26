@@ -106,6 +106,7 @@ function ResultDetail({ meetingId }: { meetingId: number }) {
           <h2>{result.title}</h2>
           <p>{result.content}</p>
           <p className="muted">일시: {formatDateTime(result.startsAt)} ~ {formatDateTime(result.endedAt)}</p>
+          <MeetingReviewEligibilityPolicy meetingId={result.meetingId} endedAt={result.endedAt} />
           <a className="primary-action" href={`/mentoring/meeting-reviews/write?meetingId=${result.meetingId}`}>후기 작성</a>
           <section className="grid-list">
             {result.reviews.length ? result.reviews.map((review) => <ReviewCard item={review} key={review.id} />) : <DataState title="아직 후기가 없습니다." message="간담회에 참여했다면 첫 후기를 남겨 보세요." />}
@@ -184,6 +185,7 @@ function ReviewEditor({ review }: { review?: MentoringMeetingReviewDetail }) {
     <section className="page">
       <PageHeader eyebrow="MENTORING" title={review ? '간담회 후기 수정' : '간담회 후기 작성'} description="참여한 종료 간담회에 대해 평점과 후기를 남깁니다." />
       <form className="panel stack-form" onSubmit={submit}>
+        <MeetingReviewEligibilityPolicy meetingId={meetingId} editable={review?.editable ?? true} />
         <label htmlFor="meeting-review-meeting-id">간담회 ID</label>
         <input id="meeting-review-meeting-id" min={1} onChange={(event) => setMeetingId(Number(event.target.value))} required type="number" value={meetingId || ''} />
         <label htmlFor="meeting-review-title">제목</label>
@@ -194,7 +196,8 @@ function ReviewEditor({ review }: { review?: MentoringMeetingReviewDetail }) {
         </select>
         <label htmlFor="meeting-review-content">후기</label>
         <textarea id="meeting-review-content" maxLength={4000} onChange={(event) => setContent(event.target.value)} required rows={8} value={content} />
-        <button className="primary-action" type="submit">저장</button>
+        <button className="primary-action" disabled={!canSaveReview(meetingId, title, content, review)} type="submit">저장</button>
+        {!canSaveReview(meetingId, title, content, review) ? <p className="form-message">{reviewDisabledReason(meetingId, title, content, review)}</p> : null}
         {message ? <p className="muted">{message}</p> : null}
       </form>
     </section>
@@ -245,13 +248,37 @@ function ReviewDetail({ reviewId }: { reviewId: number }) {
           <h2>{review.title}</h2>
           <p>{review.content}</p>
           <p className="muted">{review.meetingTitle} · {review.authorName} · {formatDateTime(review.createdAt)}</p>
-          {review.editable ? <button className="ghost-button" onClick={() => setEditing(true)} type="button">수정</button> : null}
-          {review.editable ? <button className="ghost-button" onClick={remove} type="button">삭제</button> : null}
+          <MeetingReviewEligibilityPolicy meetingId={review.meetingId} editable={review.editable} />
+          {review.editable ? <button className="ghost-button" onClick={() => setEditing(true)} type="button">수정</button> : <button className="ghost-button" disabled type="button">수정 불가</button>}
+          {review.editable ? <button className="ghost-button" onClick={remove} type="button">삭제</button> : <button className="ghost-button" disabled type="button">삭제 불가</button>}
           {actionMessage ? <p className="muted">{actionMessage}</p> : null}
         </article>
       ) : null}
     </section>
   );
+}
+
+function MeetingReviewEligibilityPolicy({ editable = true, endedAt, meetingId }: { editable?: boolean; endedAt?: string | null; meetingId: number }) {
+  const ended = endedAt ? !Number.isNaN(new Date(endedAt).getTime()) && Date.now() >= new Date(endedAt).getTime() : true;
+  const allowed = Boolean(meetingId) && editable && ended;
+  return (
+    <section className="meeting-review-policy" aria-label="간담회 후기 작성 조건">
+      <StatusPill tone={allowed ? 'green' : 'gray'}>{allowed ? '후기 작성 가능' : '후기 작성 제한'}</StatusPill>
+      <p>{allowed ? '종료된 간담회에 대해 로그인 사용자 기준으로 후기 작성/수정 권한을 확인합니다.' : '간담회 종료 여부, 작성자 권한, 중복 작성 조건을 확인해야 합니다.'}</p>
+    </section>
+  );
+}
+
+function canSaveReview(meetingId: number, title: string, content: string, review?: MentoringMeetingReviewDetail): boolean {
+  return Boolean(meetingId) && Boolean(title.trim()) && content.trim().length >= 10 && (review?.editable ?? true);
+}
+
+function reviewDisabledReason(meetingId: number, title: string, content: string, review?: MentoringMeetingReviewDetail): string {
+  if (!meetingId) return '후기를 작성할 간담회 ID가 필요합니다.';
+  if (review && !review.editable) return '작성자만 후기를 수정할 수 있습니다.';
+  if (!title.trim()) return '후기 제목을 입력해야 합니다.';
+  if (content.trim().length < 10) return '후기 내용은 10자 이상 입력해야 합니다.';
+  return '후기 저장 조건을 확인해 주세요.';
 }
 
 function formatDateTime(value?: string | null): string {

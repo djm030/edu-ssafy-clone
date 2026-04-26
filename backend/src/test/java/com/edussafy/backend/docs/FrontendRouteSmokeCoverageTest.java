@@ -395,6 +395,23 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("meeting-policy-grid");
     }
 
+    @Test
+    void mentoringReviewPageExposesWriteAndEditEligibility() throws IOException {
+        String mentoringResults = Files.readString(Path.of("..", "frontend", "src", "pages", "MentoringMeetingResultsPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(mentoringResults)
+                .contains("MeetingReviewEligibilityPolicy")
+                .contains("간담회 후기 작성 조건")
+                .contains("canSaveReview")
+                .contains("reviewDisabledReason")
+                .contains("후기 내용은 10자 이상")
+                .contains("수정 불가")
+                .contains("삭제 불가");
+        assertThat(styles)
+                .contains("meeting-review-policy");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {
