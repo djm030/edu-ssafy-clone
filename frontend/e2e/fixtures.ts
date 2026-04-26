@@ -28,6 +28,9 @@ export async function installApiFixture(page: Page) {
     if (url.pathname.endsWith('/access-log')) {
       return json({ item: { code: 'JOB_SSAFY', name: 'JOB SSAFY', url: 'https://job.ssafy.local', accessedAt: '2026-04-26T00:00:00.000Z' } });
     }
+    if (/^\/api\/surveys\/\d+\/responses\/current$/.test(url.pathname)) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: { message: 'saved survey response not found' } }) });
+    }
 
     return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { message: 'fixture fallback' } }) });
   });

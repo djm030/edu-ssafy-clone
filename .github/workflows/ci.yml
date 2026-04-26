@@ -69,3 +69,10 @@ jobs:
 
       - name: Frontend build
         run: npm --prefix frontend run build
+
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser E2E core flows
+        run: npm --prefix frontend run e2e -- --project=chromium e2e/core-flows.spec.ts
