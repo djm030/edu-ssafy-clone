@@ -72,6 +72,20 @@ class VisualBaselineCoverageTest {
     }
 
     @Test
+    void visualBaselineIncludesRecentUiParityScreens() throws IOException {
+        String spec = Files.readString(VISUAL_SPEC);
+
+        assertThat(spec)
+                .contains("name: 'dashboard'")
+                .contains("name: 'free-board'")
+                .contains("name: 'anonymous-board'")
+                .contains("name: 'qna'")
+                .contains("name: 'mentoring-meetings'")
+                .contains("name: 'meeting-reviews'")
+                .contains("name: 'external-services'");
+    }
+
+    @Test
     void ciRunsCommittedVisualBaselineSuite() throws IOException {
         String workflow = Files.readString(CI_WORKFLOW);
 
