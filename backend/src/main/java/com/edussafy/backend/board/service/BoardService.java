@@ -93,6 +93,7 @@ public class BoardService {
 
     public BoardPostDetailResponse getPost(String boardCode, long postId) {
         long boardId = requireBoardId(boardCode);
+        boardRepository.incrementViewCount(boardId, postId);
         BoardPostDetail post = boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
         BoardPostDetail hydrated = withCommentsAndAttachments(

@@ -108,7 +108,8 @@ class BoardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].id").value(1))
                 .andExpect(jsonPath("$.items[0].name").value("General"))
-                .andExpect(jsonPath("$.items[0].sortOrder").value(1));
+                .andExpect(jsonPath("$.items[0].sortOrder").value(1))
+                .andExpect(jsonPath("$.items[0].postCount").value(0));
     }
 
     @Test

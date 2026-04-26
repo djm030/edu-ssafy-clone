@@ -68,18 +68,41 @@ public class BoardRepository {
 
     public List<CategoryItem> findCategories(long boardId) {
         return jdbcClient.sql("""
-                SELECT board_category_id, category_name, sort_order
-                FROM board_categories
-                WHERE board_id = :boardId
-                ORDER BY sort_order ASC, board_category_id ASC
+                SELECT
+                    c.board_category_id,
+                    c.category_name,
+                    c.sort_order,
+                    COALESCE(posts.post_count, 0) AS post_count
+                FROM board_categories c
+                LEFT JOIN (
+                    SELECT board_category_id, COUNT(*) AS post_count
+                    FROM board_posts
+                    WHERE board_id = :boardId
+                    GROUP BY board_category_id
+                ) posts ON posts.board_category_id = c.board_category_id
+                WHERE c.board_id = :boardId
+                ORDER BY c.sort_order ASC, c.board_category_id ASC
                 """)
                 .param("boardId", boardId)
                 .query((rs, rowNum) -> new CategoryItem(
                         rs.getLong("board_category_id"),
                         rs.getString("category_name"),
-                        rs.getInt("sort_order")
+                        rs.getInt("sort_order"),
+                        rs.getLong("post_count")
                 ))
                 .list();
+    }
+
+    public int incrementViewCount(long boardId, long postId) {
+        return jdbcClient.sql("""
+                UPDATE board_posts
+                SET view_count = view_count + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE board_id = :boardId AND board_post_id = :postId
+                """)
+                .param("boardId", boardId)
+                .param("postId", postId)
+                .update();
     }
 
     public long countPosts(long boardId, BoardQuery query) {

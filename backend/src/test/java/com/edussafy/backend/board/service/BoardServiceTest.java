@@ -78,6 +78,21 @@ class BoardServiceTest {
         assertThat(response.comments().getFirst().replies().getFirst().parentCommentId()).isEqualTo(44L);
     }
 
+
+    @Test
+    void getPostIncrementsViewCountBeforeReturningDetail() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(10L, "Notice", List.of());
+        given(repository.findBoardId("notice")).willReturn(Optional.of(3L));
+        given(repository.findPostDetail(3L, 10L)).willReturn(Optional.of(post));
+        BoardService service = new BoardService(repository);
+
+        BoardPostDetail response = service.getPost("notice", 10L).post();
+
+        assertThat(response.id()).isEqualTo(10L);
+        verify(repository).incrementViewCount(3L, 10L);
+    }
+
     @Test
     void createPostPersistsAndReturnsStoredShape() {
         BoardRepository repository = mock(BoardRepository.class);
