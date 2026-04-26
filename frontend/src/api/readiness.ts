@@ -9,6 +9,8 @@ export interface ReadinessCheckResult {
   required: boolean;
   status: ReadinessStatus;
   message: string;
+  checkedAt: string;
+  durationMs: number;
 }
 
 interface ReadinessCheckDefinition {
@@ -202,6 +204,8 @@ export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
 
 export async function runReadinessChecks(): Promise<ReadinessCheckResult[]> {
   const results = await Promise.all(READINESS_CHECKS.map(async (check) => {
+    const startedAt = performance.now();
+    const checkedAt = new Date().toISOString();
     try {
       const message = await check.run();
       return {
@@ -211,6 +215,8 @@ export async function runReadinessChecks(): Promise<ReadinessCheckResult[]> {
         required: check.required ?? true,
         status: 'pass' as const,
         message,
+        checkedAt,
+        durationMs: Math.round(performance.now() - startedAt),
       };
     } catch (error) {
       return {
@@ -220,6 +226,8 @@ export async function runReadinessChecks(): Promise<ReadinessCheckResult[]> {
         required: check.required ?? true,
         status: 'fail' as const,
         message: getErrorMessage(error),
+        checkedAt,
+        durationMs: Math.round(performance.now() - startedAt),
       };
     }
   }));

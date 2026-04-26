@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -81,6 +83,32 @@ class ObservabilityConfigTest {
         assertThat(script).contains("$PROMETHEUS_URL/api/v1/targets?state=active");
         assertThat(script).contains("$GRAFANA_URL/api/health");
         assertThat(script).contains("SKIP_HTTP=true");
+        assertThat(script).contains("EVIDENCE_FILE");
+        assertThat(script).contains("observability-smoke.jsonl");
+        assertThat(script).contains("record_evidence");
+        assertThat(script).contains("\"PASS\"");
+    }
+
+    @Test
+    void observabilitySmokeScriptWritesEvidenceWhenHttpIsSkipped() throws IOException, InterruptedException {
+        Path evidence = Files.createTempFile("observability-smoke", ".jsonl");
+        ProcessBuilder processBuilder = new ProcessBuilder("bash", "../scripts/dev/smoke-observability.sh");
+        Map<String, String> environment = processBuilder.environment();
+        environment.put("SKIP_HTTP", "true");
+        environment.put("EVIDENCE_FILE", evidence.toString());
+        Process process = processBuilder.start();
+
+        boolean finished = process.waitFor(Duration.ofSeconds(10).toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+        String stdout = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        String stderr = new String(process.getErrorStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        String evidenceBody = Files.readString(evidence);
+
+        assertThat(finished).as(stderr).isTrue();
+        assertThat(process.exitValue()).as(stderr).isZero();
+        assertThat(stdout).contains("evidence:");
+        assertThat(evidenceBody)
+                .contains("\"status\":\"SKIPPED\"")
+                .contains("\"label\":\"script wiring\"");
     }
 
     @Test
@@ -93,8 +121,13 @@ class ObservabilityConfigTest {
                 .contains("id: 'actuator-metrics'")
                 .contains("target: '/actuator/metrics'")
                 .contains("id: 'prometheus-metrics'")
-                .contains("target: '/actuator/prometheus'");
-        assertThat(readinessPage).contains("actuator metrics");
+                .contains("target: '/actuator/prometheus'")
+                .contains("checkedAt")
+                .contains("durationMs");
+        assertThat(readinessPage)
+                .contains("actuator metrics")
+                .contains("formatEvidence")
+                .contains("증거");
         assertThat(coreFlows)
                 .contains("Actuator metrics")
                 .contains("Prometheus metrics")

@@ -82,6 +82,7 @@ function OpsReadinessPage() {
                 <span role="columnheader">상태</span>
                 <span role="columnheader">항목</span>
                 <span role="columnheader">대상</span>
+                <span role="columnheader">증거</span>
                 <span role="columnheader">메시지</span>
               </div>
               {results.map((result) => (
@@ -93,6 +94,7 @@ function OpsReadinessPage() {
                   </span>
                   <strong role="cell">{result.label}</strong>
                   <code role="cell">{result.target}</code>
+                  <span role="cell">{formatEvidence(result)}</span>
                   <span role="cell">{result.message}</span>
                 </div>
               ))}
@@ -152,6 +154,14 @@ function OpsReadinessPage() {
       ) : null}
     </main>
   );
+}
+
+function formatEvidence(result: ReadinessCheckResult): string {
+  const checkedAt = new Date(result.checkedAt);
+  const timestamp = Number.isNaN(checkedAt.getTime())
+    ? result.checkedAt
+    : new Intl.DateTimeFormat('ko-KR', { timeStyle: 'medium' }).format(checkedAt);
+  return `${timestamp} · ${result.durationMs}ms`;
 }
 
 export default OpsReadinessPage;

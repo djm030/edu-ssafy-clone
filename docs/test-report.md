@@ -545,3 +545,13 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Observability Smoke Evidence Hooks (2026-04-27 KST)
+- Added JSONL evidence output to `scripts/dev/smoke-observability.sh` so skipped, passed, and failed observability checks leave timestamped proof without requiring live endpoints in local script-wiring mode.
+- Added `/ops/readiness` result evidence metadata (`checkedAt`, `durationMs`) so browser smoke results show when each check ran and how long it took.
+- `bash -n scripts/dev/smoke-observability.sh` -> PASS.
+- `SKIP_HTTP=true EVIDENCE_FILE=/tmp/observability-smoke-test.jsonl scripts/dev/smoke-observability.sh` -> PASS, wrote SKIPPED evidence JSONL.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=ObservabilityConfigTest,FrontendRouteSmokeCoverageTest test` -> PASS, 25 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.
