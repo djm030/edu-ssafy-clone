@@ -6,7 +6,169 @@
 
 > 주의: 실제 서비스 계정/비밀번호/세션 쿠키/원본 HTML은 이 문서와 저장소에 저장하지 않는다. 실제 서비스 확인은 읽기 전용 비교 근거로만 사용하고, 자동 테스트에는 실제 계정을 넣지 않는다.
 
+
 ---
+
+## 0.3 2026-04-27 재점검 시도 및 UI/UX Parity 냉정 판정
+
+2026-04-27 KST에 EduSSAFY 실서비스 재확인을 다시 시도했다. 보안상 실제 계정/비밀번호/세션 쿠키/원본 HTML/원본 스크린샷은 저장소에 남기지 않는 조건으로만 진행했다. 이번 headless 로그인 자동화는 fresh sanitized artifact를 만들기 전에 종료되었으므로, 이 문서는 **2026-04-27 신규 원본 화면을 저장하지 않고** 다음 근거를 보수적으로 합산한다.
+
+1. 2026-04-26 KST에 읽기 전용으로 확인한 실제 EduSSAFY 상단 메뉴/홈 구조 요약
+2. 현재 저장소의 실제 route/API/test 구현 상태
+3. 실서비스와 달라질 가능성이 큰 UI/UX 구조, 상태, 상호작용 gap
+
+냉정한 결론은 다음과 같다.
+
+| 영역 | 현재 판정 | 이유 |
+|---|---:|---|
+| 상단 대메뉴/하위 route 존재 | PASS/PARTIAL | 마이캠퍼스, 강의실, 커뮤니티, HELP DESK, 멘토링, 외부 서비스에 대응 route/API가 대부분 존재한다. |
+| DB 기반 backend flow | PASS/PARTIAL | 주요 도메인은 Controller/Service/Repository/DTO/API test가 존재한다. 일부 UI fidelity 항목은 별도 보강 필요. |
+| Frontend route/API 연결 | PASS/PARTIAL | 핵심 화면은 API client와 route가 연결되어 있다. 실서비스와 동일한 정보 밀도/상호작용은 아직 부족하다. |
+| EduSSAFY 홈 대시보드 parity | PARTIAL | 홈 위젯은 구현되어 있으나 실제 홈의 배치, 밀도, 우선순위, 상단 유틸리티까지 완전 동일하다고 보기 어렵다. |
+| 상세 화면 visual fidelity | PARTIAL | 각 화면의 데이터 흐름은 있으나 실제 서비스의 테이블 컬럼, 필터, 탭, 상태 badge, disabled/empty/error UX는 더 세밀한 비교가 필요하다. |
+| 외부 SSO/JOB/Meeting/Git | PARTIAL/EXTERNAL | clone에서는 설정 기반 링크/로그/disabled 정책까지만 현실적이다. 실제 SSO 토큰 발급은 클론 범위 밖으로 둔다. |
+| 시각 회귀/e2e evidence | PARTIAL | route smoke/build/lint/test는 있으나 실서비스 대비 screenshot baseline과 browser e2e가 더 필요하다. |
+
+### 0.3.1 아직 “클론되지 않았다”고 봐야 하는 것
+
+새 메뉴 자체보다 아래 **UI/UX·상태·운영 fidelity**가 미완성이다.
+
+1. **홈 정보 구조와 시각 밀도**
+   - 출석체크, 출석현황, 레벨/장학포인트, 알림, 주차별 커리큘럼, Quest/평가, 학습자료, 학습중 이러닝, 자유게시판, e-book, 공지사항이 실제처럼 한 화면에서 우선순위 있게 보여야 한다.
+2. **상단 헤더/메가메뉴/유틸리티 영역**
+   - 대메뉴 hover/click, 전체 메뉴, 알림/프로필/외부링크/로그아웃/session expired UX가 부족하다.
+3. **상세 화면의 필터/탭/테이블/상태 badge fidelity**
+   - route는 있어도 실서비스의 컬럼, 정렬, 기간 필터, 카테고리 count, 검색 폼, disabled button, 권한별 액션 차이를 더 맞춰야 한다.
+4. **실제 브라우저 기반 시각 검증**
+   - PASS 선언을 위해서는 핵심 화면의 screenshot baseline, responsive 상태, keyboard/focus, loading/error/empty까지 검증해야 한다.
+5. **외부 서비스 연동의 현실적 경계 표시**
+   - JOB SSAFY, SSAFY GIT, Meeting은 실제 SSO 완전 복제 대신 설정 기반 launch, access log, 권한/disabled 상태, 새 창 정책을 명확히 해야 한다.
+
+### 0.3.2 UI/UX Fidelity PASS 기준
+
+화면 하나를 UI/UX PASS로 분류하려면 다음을 모두 만족해야 한다.
+
+- 실제 backend API 또는 DB 조회 기반 데이터가 렌더링된다.
+- frontend route와 API client가 연결되어 있다.
+- loading, error, empty, disabled 상태가 존재한다.
+- 인증 필요한 기능은 로그인 사용자/소유자/권한 기준으로 동작한다.
+- 핵심 액션은 pending, success, failure feedback이 분리되어 있다.
+- 목록 화면은 검색, 필터, 탭, 정렬 또는 pagination 중 실서비스에 필요한 항목을 가진다.
+- 상세 화면은 상태 badge, 기간, 작성자/대상자, 첨부/링크, 변경 이력을 표시한다.
+- desktop 1280px, tablet 768px, mobile 390px layout이 깨지지 않는다.
+- keyboard focus, aria-label, button/link semantics가 기본 수준을 만족한다.
+- backend test 또는 frontend/static/browser smoke test가 있다.
+- OpenAPI/Swagger 문서가 실제 controller와 크게 어긋나지 않는다.
+
+### 0.3.3 UI/UX 구현 스타일 가이드
+
+원본 CSS/HTML을 복사하지 않고 구조적 fidelity만 맞춘다.
+
+- 전체 톤: 흰색/연회색 카드 배경, 파란색 계열 primary, 작은 helper text, 촘촘한 목록형 정보 배치
+- Header: 로고 영역, 대메뉴, utility link, profile/session area, 알림 진입점
+- Navigation: hover/click 가능한 대메뉴 또는 all-menu overlay, active menu 강조
+- Cards: 작은 제목 + 상태 badge + 핵심 숫자 + CTA 버튼 조합
+- Tables: 촘촘한 row height, category/status/date/count columns, empty row 안내
+- Lists: 공지/게시판/자료는 title + meta + date + count 중심
+- Forms: 검색 조건, 기간 선택, select, keyword input, submit/reset button pair
+- Status: 진행중/완료/마감/대기/반려/보완요청/권한없음/외부링크 불가를 badge로 일관 표시
+- Mutation: 제출/취소/찜 해제/동의/신청은 confirm, pending, success, failure 상태를 분리
+- Accessibility: button/link semantics, focus ring, keyboard 이동, aria-label이 필요한 icon button
+
+### 0.3.4 UI/UX Parity 최우선 백로그
+
+#### P0-1. 홈 대시보드 visual parity
+
+필수 위젯:
+
+1. 출석체크/출석현황: 오늘 입실·퇴실 가능 여부, 현재 상태, 최근 이의신청 상태, 출석 상세 링크
+2. 레벨/장학포인트: 현재 레벨, 다음 레벨 progress, 포인트/EXP, 등급 색상
+3. 필독 알림/공지: mandatory badge, unread count, pinned notice mini list
+4. 주차별 커리큘럼: 이번 주/오늘 session, 주차/시간/강의실/교재 link
+5. Quest/평가: 예정/진행중/마감 임박/제출 완료 card
+6. 학습자료: carousel 또는 2열 card, category, 조회/좋아요/찜 count
+7. 학습중 이러닝: 진행률 bar, 최근 학습일, 이어보기 CTA
+8. 자유/익명 게시판 미니 탭: 최신글, 댓글/조회 count, 작성일
+9. e-book: 사용 가능/권한 없음/disabled state
+
+Acceptance Criteria:
+
+- `/`에서 위 모든 섹션이 실제 API 데이터로 렌더링된다.
+- 각 섹션에 loading/error/empty/disabled 상태가 있다.
+- desktop/tablet/mobile responsive grid가 깨지지 않는다.
+- route smoke test와 frontend build/lint가 통과한다.
+- 가능하면 Playwright screenshot baseline을 추가한다.
+
+#### P0-2. Header / global navigation / all-menu overlay
+
+필수 항목:
+
+- 로고/홈 링크
+- 대메뉴 hover/focus/click 상태
+- 하위 메뉴 panel 또는 mega menu
+- 현재 route active 표시
+- 알림 icon/count
+- 사용자 이름/역할/profile dropdown
+- 외부 서비스 링크 group
+- session expired/logout UX
+- mobile hamburger/all-menu overlay
+
+Acceptance Criteria:
+
+- keyboard로 대메뉴와 하위 메뉴 접근 가능
+- mobile에서 메뉴 열기/닫기 가능
+- active route 표시가 현재 route와 일치
+- 로그아웃/세션 만료 시 안전하게 login으로 이동
+
+#### P1. 마이캠퍼스 화면별 UI/UX 보강
+
+- 레벨&장학포인트: 단계형/원형 시각화, 포인트 이력 table, 획득/차감 reason badge
+- 출석현황: 월간 calendar, 일자 상세 panel, 정상/지각/결석/보강/이의신청중 badge
+- 학습중 이러닝: 실제 서비스에 가까운 썸네일 비율, 운영자/학습기간/차시 meta, resume 실패 상태
+- 찜한 목록: 콘텐츠 유형별 tab label/count, 삭제 confirm/toast, 삭제 실패 row 복구
+- 서류제출: 파일 확장자/용량 client validation, 보완 요청 timeline, 제출 마감/검토완료 disabled state
+- 교육생 서약서: version/date, 재동의 불가/증빙, 긴 원문 scroll/fold UX
+- 교육현황/e-book: 학기/트랙 chart+table, 권한 없음/준비중/외부 viewer disabled state
+
+#### P2. 강의실/학습 화면별 UI/UX 보강
+
+- 라이브 바로가기: 오픈 전/진행중/종료/권한 없음/외부 서비스 장애 상태, Meeting access log
+- 다시보기: 기간, 트랙, 주차, 강사, keyword filter, 시청 이력/만료 상태
+- 커리큘럼: 오전/오후/과제/교재/Meeting link가 있는 시간표 밀도
+- 필수학습: 이수 조건, 만료, 재학습, 완료 badge
+- Quest/평가: Quest/평가 타입 분리, 채점중/결과공개/재제출/첨부 evidence
+
+#### P3. 커뮤니티/HELP DESK/멘토링 UI/UX 보강
+
+- 게시판 공통: category select, 제목/작성자/기수/반/댓글/조회/추천/작성일 columns, pinned row, 첨부 icon
+- 익명 게시판: 익명 표시 규칙, 신고/블라인드/삭제 권한 상태
+- HELP DESK: 공지 필독/pinned, FAQ category count/accordion/search, QNA thread/attachment/닫힘 상태
+- 학사규정: category/search/detail anchor, 파일 다운로드 disabled/available
+- 멘토링: 답변자 권한, 공개/익명, 모집기간/정원/중복신청/선정 결과/후기 작성 조건
+
+#### P4. 외부 서비스/운영/문서 parity
+
+- 외부 서비스 URL은 환경설정 기반
+- 실제 SSO 토큰 발급은 미구현 범위로 명시
+- launch 시 access log 저장
+- 권한 없음/준비중/외부 장애/unconfigured 상태 표시
+- 새 창 열기, `rel="noopener"` 정책
+- `/swagger-ui/index.html`, `/v3/api-docs`, `docs/openapi.json|yaml` 동기화 검증
+- Playwright 또는 Cypress 기반 browser visual smoke 확대
+
+### 0.3.5 이번 계획 기준 PASS 선언 금지 조건
+
+다음 중 하나라도 남아 있으면 “EduSSAFY 전체 클론 PASS”라고 말하지 않는다.
+
+- 실제 홈과 다른 단순 카드형 dashboard만 존재
+- header/menu가 실제 대메뉴 UX와 다름
+- 주요 화면에 loading/error/empty/disabled 상태가 없음
+- mutation action에 pending/실패 복구가 없음
+- 외부 서비스가 하드코딩 URL이거나 disabled/unconfigured 상태가 없음
+- 실제 controller에 없는 API가 Swagger/OpenAPI에 있음
+- 브라우저 build/lint/test 또는 최소 smoke evidence가 없음
+- 실제 계정/개인정보를 fixture나 문서에 저장함
+
 
 ## 0. 현재 결론 — 2026-04-26 실서비스 재점검 반영
 
@@ -261,7 +423,7 @@
 
 ### 현재 상태
 
-실제 EduSSAFY에는 `마이캠퍼스 > 학습중 이러닝` 메뉴가 있다. 현재 클론에는 해당 route/API가 없다.
+실제 EduSSAFY에는 `마이캠퍼스 > 학습중 이러닝` 메뉴가 있다. 현재 클론에는 `/api/elearning/in-progress`, 상세, resume API와 `/mycampus/elearning`, `/mycampus/elearning/:courseId` route가 있다. 기능 흐름은 PASS에 가깝지만, 실제 화면과 같은 썸네일 비율/운영자 meta/홈 미니 위젯/외부 viewer 실패 UX는 아직 PARTIAL이다.
 
 ### 목표
 
@@ -408,7 +570,7 @@ Frontend/static:
 
 ### 현재 상태
 
-실제 EduSSAFY에는 `마이캠퍼스 > 찜한 목록`이 있다. 현재 클론에는 학습자료 반응/북마크성 기능 일부가 있으나, 통합 찜 목록 화면은 없다.
+실제 EduSSAFY에는 `마이캠퍼스 > 찜한 목록`이 있다. 현재 클론에는 `/api/me/bookmarks` list/create/delete와 `/mycampus/bookmarks` route가 있다. 통합 찜 목록의 DB flow는 구현되었지만, 실서비스의 콘텐츠 유형 tab label/count, 삭제 confirm/toast, 실패 복구, 이동 대상 unavailable state는 UI/UX PARTIAL이다.
 
 ### 목표
 
@@ -496,7 +658,7 @@ Route:
 
 ### 현재 상태
 
-실제 EduSSAFY에는 `마이캠퍼스 > 서류제출`이 있다. 현재 클론에는 support/material/quest/board 쪽 첨부파일은 있으나, 교육생 서류 제출 흐름은 없다.
+실제 EduSSAFY에는 `마이캠퍼스 > 서류제출`이 있다. 현재 클론에는 `/api/documents/requests`, 상세, 제출, 취소, attachment download API와 `/mycampus/documents`, `/mycampus/documents/:requestId` route가 있다. 제출 이력/상태/취소 pending guard는 구현되었지만, 파일 확장자/용량 client validation, 보완 요청 timeline, 제출 마감/검토 완료/반려 상태별 action disable은 UI/UX PARTIAL이다.
 
 ### 목표
 
