@@ -17,10 +17,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.edussafy.backend.priority.api.AuthController;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
@@ -78,6 +80,60 @@ class AuthRestDocsTest {
                                 fieldWithPath("user.campusName").description("Campus label."),
                                 fieldWithPath("user.cohortName").description("Cohort label."),
                                 fieldWithPath("user.trackName").description("Training track label.")
+                        )
+                ));
+    }
+
+    @Test
+    void documentsMeEndpoint() throws Exception {
+        given(priorityApiService.me()).willReturn(new UserResponse(new UserProfile(
+                1L,
+                "Demo Learner",
+                "student@ssafy.com",
+                "learner",
+                "Seoul",
+                "12",
+                "Java"
+        )));
+
+        mockMvc.perform(get("/api/me").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.email").value("student@ssafy.com"))
+                .andDo(document(
+                        "auth-me",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        responseFields(
+                                fieldWithPath("user.id").description("Current session user id."),
+                                fieldWithPath("user.name").description("Current user display name."),
+                                fieldWithPath("user.email").description("Current user email."),
+                                fieldWithPath("user.role").description("Normalized application role."),
+                                fieldWithPath("user.campusName").description("Campus label."),
+                                fieldWithPath("user.cohortName").description("Cohort label."),
+                                fieldWithPath("user.trackName").description("Training track label.")
+                        )
+                ));
+    }
+
+    @Test
+    void documentsCurrentRoleAccessEndpoint() throws Exception {
+        given(priorityApiService.currentRoleAccess()).willReturn(new RoleAccessResponse(
+                "coach",
+                List.of("dashboard:read", "attendance:resolve", "survey:manage", "support:answer"),
+                List.of("/admin")
+        ));
+
+        mockMvc.perform(get("/api/auth/roles/current").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("coach"))
+                .andDo(document(
+                        "auth-current-role-access",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        responseFields(
+                                fieldWithPath("role").description("Normalized role used by frontend and backend authorization."),
+                                fieldWithPath("permissions").description("Action permissions granted to the current role."),
+                                fieldWithPath("deniedRoutes").description("Frontend route prefixes hidden or blocked for the current role.")
                         )
                 ));
     }

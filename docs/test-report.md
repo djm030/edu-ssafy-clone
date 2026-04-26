@@ -1,5 +1,13 @@
 # Test Report
 
+## Auth REST Docs Current User and Role Access (2026-04-26 KST)
+- Added Spring REST Docs snippets for `GET /api/me` and `GET /api/auth/roles/current` so production API docs cover session bootstrap and role/permission discovery.
+- The role access snippet documents the permission and denied route payload consumed by the frontend shell.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=AuthRestDocsTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 186 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## POSIX Deployment Smoke Script (2026-04-26 KST)
 - Added `scripts/dev/smoke.sh` as a curl/bash smoke runner for CI and macOS/Linux hosts that do not have PowerShell installed.
 - The script statically checks priority frontend/API wiring and exercises Nginx readiness, backend readiness, login, and core list endpoints without mock fallback.
