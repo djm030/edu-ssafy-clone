@@ -440,6 +440,41 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record PledgesResponse(List<PledgeItem> items, PageMeta page) {
+    }
+
+    public record PledgeDetailResponse(PledgeItem item) {
+    }
+
+    public record PledgeAgreementResponse(PledgeItem item, PledgeAgreementItem agreement) {
+    }
+
+    public record PledgeAgreementRequest(@NotNull Boolean agreed) {
+    }
+
+    public record PledgeItem(
+            long id,
+            String title,
+            String content,
+            String version,
+            boolean required,
+            OffsetDateTime startsAt,
+            OffsetDateTime dueAt,
+            boolean agreed,
+            OffsetDateTime agreedAt,
+            String versionSnapshot
+    ) {
+    }
+
+    public record PledgeAgreementItem(
+            long id,
+            long pledgeId,
+            boolean agreed,
+            OffsetDateTime agreedAt,
+            String versionSnapshot
+    ) {
+    }
+
     public record MaterialsResponse(List<MaterialItem> items, PageMeta page) {
     }
 

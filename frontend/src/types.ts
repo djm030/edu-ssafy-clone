@@ -259,6 +259,30 @@ export interface DocumentSubmissionResult {
   };
 }
 
+export interface PledgeItem {
+  id: number;
+  title: string;
+  content: string;
+  version: string;
+  required: boolean;
+  startsAt?: string | null;
+  dueAt?: string | null;
+  agreed: boolean;
+  agreedAt?: string | null;
+  versionSnapshot?: string | null;
+}
+
+export interface PledgeAgreementResult {
+  item: PledgeItem;
+  agreement: {
+    id: number;
+    pledgeId: number;
+    agreed: boolean;
+    agreedAt?: string | null;
+    versionSnapshot?: string | null;
+  };
+}
+
 export interface Classmate {
   id: number;
   name: string;

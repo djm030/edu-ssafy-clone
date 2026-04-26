@@ -40,6 +40,8 @@ import type {
   LoginResponse,
   MaterialResourceAttachmentDraft,
   MaterialResourceAttachmentResult,
+  PledgeAgreementResult,
+  PledgeItem,
   RoleAccess,
   NotificationItem,
   NotificationDeleteResult,
@@ -135,6 +137,12 @@ type BackendDocumentRequestItem = Partial<DocumentRequestItem> & {
   submittedAt?: string | null;
   reviewedAt?: string | null;
   attachments?: BackendDocumentAttachmentItem[];
+};
+
+type BackendPledgeItem = Partial<PledgeItem> & {
+  startsAt?: string | null;
+  dueAt?: string | null;
+  agreedAt?: string | null;
 };
 
 type BackendMaterialResource = {
@@ -380,6 +388,21 @@ function toDocumentRequestItem(item: BackendDocumentRequestItem): DocumentReques
     reviewedAt: item.reviewedAt || undefined,
     reviewComment: item.reviewComment || undefined,
     attachments: (item.attachments || []).map(toDocumentAttachmentItem),
+  };
+}
+
+function toPledgeItem(item: BackendPledgeItem): PledgeItem {
+  return {
+    id: Number(item.id),
+    title: item.title || '교육생 서약서',
+    content: item.content || '',
+    version: item.version || '-',
+    required: Boolean(item.required),
+    startsAt: item.startsAt || undefined,
+    dueAt: item.dueAt || undefined,
+    agreed: Boolean(item.agreed),
+    agreedAt: item.agreedAt || undefined,
+    versionSnapshot: item.versionSnapshot || undefined,
   };
 }
 
@@ -701,6 +724,25 @@ export function submitDocument(requestId: number, draft: DocumentSubmissionDraft
 
 export function cancelDocumentSubmission(requestId: number, submissionId: number): Promise<{ requestId: number; submissionId: number; canceled: boolean }> {
   return fetchJson<{ requestId: number; submissionId: number; canceled: boolean }>(`/api/documents/requests/${requestId}/submissions/${submissionId}`, { method: 'DELETE' });
+}
+
+export function getPledges(query: { page?: number; size?: number } = {}): Promise<{ items: PledgeItem[] }> {
+  const params = buildQuery({ page: query.page, size: query.size });
+  return fetchJson<{ items: BackendPledgeItem[] }>(`/api/pledges${params}`)
+    .then((response) => ({ items: response.items.map(toPledgeItem) }));
+}
+
+export function getPledge(pledgeId: number): Promise<PledgeItem> {
+  return fetchJson<ItemResponse<BackendPledgeItem>>(`/api/pledges/${pledgeId}`)
+    .then((response) => toPledgeItem(response.item));
+}
+
+export function agreePledge(pledgeId: number): Promise<PledgeAgreementResult> {
+  return fetchJson<{ item: BackendPledgeItem; agreement: PledgeAgreementResult['agreement'] }>(`/api/pledges/${pledgeId}/agreements`, {
+    body: JSON.stringify({ agreed: true }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => ({ item: toPledgeItem(response.item), agreement: response.agreement }));
 }
 
 export function getElearningProgress(query: {

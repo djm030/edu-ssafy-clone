@@ -342,6 +342,48 @@ SET @identity_attachment_id := (SELECT attachment_id FROM attachments WHERE chec
 INSERT IGNORE INTO learner_document_attachments (learner_document_submission_id, attachment_id)
 VALUES (@identity_submission_id, @identity_attachment_id);
 
+INSERT INTO pledge_documents (title, content, version, required_yn, starts_at, due_at, active_yn)
+VALUES
+  ('교육생 기본 서약서', 'SSAFY 교육과정의 학습 규칙, 보안 수칙, 출결 정책을 준수합니다.', '2026.1', TRUE, '2026-04-01 09:00:00', '2026-05-10 18:00:00', TRUE),
+  ('개인정보 이용 동의서', '교육 운영과 학습 이력 관리를 위한 개인정보 이용 항목을 확인했습니다.', '2026.1', TRUE, '2026-04-01 09:00:00', '2026-05-10 18:00:00', TRUE)
+ON DUPLICATE KEY UPDATE
+  content = VALUES(content),
+  required_yn = VALUES(required_yn),
+  starts_at = VALUES(starts_at),
+  due_at = VALUES(due_at),
+  active_yn = VALUES(active_yn);
+
+SET @pledge_id := (
+  SELECT pledge_document_id
+  FROM pledge_documents
+  WHERE title = '교육생 기본 서약서'
+    AND version = '2026.1'
+  LIMIT 1
+);
+
+INSERT INTO learner_pledge_agreements (
+  pledge_document_id,
+  user_id,
+  agreed_yn,
+  agreed_at,
+  agreement_ip_hash,
+  user_agent_hash,
+  version_snapshot
+)
+VALUES (
+  @pledge_id,
+  @student_id,
+  TRUE,
+  '2026-04-25 15:00:00',
+  SHA2('seed-ip', 256),
+  SHA2('seed-user-agent', 256),
+  '2026.1'
+)
+ON DUPLICATE KEY UPDATE
+  agreed_yn = VALUES(agreed_yn),
+  agreed_at = VALUES(agreed_at),
+  version_snapshot = VALUES(version_snapshot);
+
 INSERT INTO quest_evaluations (content_scope_id, external_task_id, quest_type_code, task_classification_code, title, start_at, end_at, max_exp, progress_status_code)
 VALUES
   (@class_scope_id, 'quest-priority1-board-api', 'assignment', 'required', 'Implement board API', '2026-04-24 09:00:00', '2026-04-25 18:00:00', 100, 'in_progress'),

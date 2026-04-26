@@ -27,6 +27,8 @@ class FrontendRouteSmokeCoverageTest {
             "/mycampus/elearning/1",
             "/mycampus/bookmarks",
             "/mycampus/documents",
+            "/mycampus/pledges",
+            "/mycampus/pledges/1",
             "/community/free",
             "/community/free/1",
             "/community/free/write",
@@ -69,6 +71,8 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/mycampus/elearning')");
         assertThat(app).contains("if (path === '/mycampus/bookmarks')");
         assertThat(app).contains("if (path === '/mycampus/documents')");
+        assertThat(app).contains("if (path === '/mycampus/pledges')");
+        assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/elearning\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/learning\\/materials\\/(\\d+)\\/viewer$/)");
         assertThat(app).contains("match(/^\\/quest\\/(\\d+)\\/submit$/)");
@@ -82,17 +86,18 @@ class FrontendRouteSmokeCoverageTest {
     }
     @Test
     void priorityDataPagesExposeLoadingErrorAndEmptyStates() throws IOException {
-        Map<String, Path> pages = Map.of(
-                "attendance", Path.of("..", "frontend", "src", "pages", "AttendancePage.tsx"),
-                "board", Path.of("..", "frontend", "src", "components", "BoardListPage.tsx"),
-                "survey", Path.of("..", "frontend", "src", "pages", "SurveyPage.tsx"),
-                "notifications", Path.of("..", "frontend", "src", "pages", "NotificationsPage.tsx"),
-                "learning", Path.of("..", "frontend", "src", "pages", "MaterialsPage.tsx"),
-                "elearning", Path.of("..", "frontend", "src", "pages", "ElearningPage.tsx"),
-                "bookmarks", Path.of("..", "frontend", "src", "pages", "BookmarksPage.tsx"),
-                "documents", Path.of("..", "frontend", "src", "pages", "DocumentsPage.tsx"),
-                "quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx"),
-                "support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx")
+        Map<String, Path> pages = Map.ofEntries(
+                Map.entry("attendance", Path.of("..", "frontend", "src", "pages", "AttendancePage.tsx")),
+                Map.entry("board", Path.of("..", "frontend", "src", "components", "BoardListPage.tsx")),
+                Map.entry("survey", Path.of("..", "frontend", "src", "pages", "SurveyPage.tsx")),
+                Map.entry("notifications", Path.of("..", "frontend", "src", "pages", "NotificationsPage.tsx")),
+                Map.entry("learning", Path.of("..", "frontend", "src", "pages", "MaterialsPage.tsx")),
+                Map.entry("elearning", Path.of("..", "frontend", "src", "pages", "ElearningPage.tsx")),
+                Map.entry("bookmarks", Path.of("..", "frontend", "src", "pages", "BookmarksPage.tsx")),
+                Map.entry("documents", Path.of("..", "frontend", "src", "pages", "DocumentsPage.tsx")),
+                Map.entry("pledges", Path.of("..", "frontend", "src", "pages", "PledgesPage.tsx")),
+                Map.entry("quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx")),
+                Map.entry("support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx"))
         );
 
         for (Map.Entry<String, Path> entry : pages.entrySet()) {

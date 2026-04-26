@@ -33,6 +33,8 @@ DROP TABLE IF EXISTS surveys;
 DROP TABLE IF EXISTS learner_document_attachments;
 DROP TABLE IF EXISTS learner_document_submissions;
 DROP TABLE IF EXISTS document_requests;
+DROP TABLE IF EXISTS learner_pledge_agreements;
+DROP TABLE IF EXISTS pledge_documents;
 DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
 DROP TABLE IF EXISTS learner_bookmarks;
@@ -105,6 +107,7 @@ INSERT INTO code_groups (code_group, group_name, description) VALUES
   ('ELEARNING_PROGRESS_STATUS', '이러닝 진행 상태', NULL),
   ('BOOKMARK_TARGET_TYPE', '찜 대상 유형', NULL),
   ('DOCUMENT_SUBMISSION_STATUS', '교육생 서류 제출 상태', NULL),
+  ('PLEDGE_AGREEMENT_STATUS', '교육생 서약 동의 상태', NULL),
   ('CURRICULUM_TYPE', '커리큘럼 유형', NULL),
   ('MATERIAL_TYPE', '학습자료 유형', NULL),
   ('RESOURCE_TYPE', '학습자료 리소스 유형', NULL),
@@ -175,6 +178,8 @@ INSERT INTO codes (code_group, code, code_name, sort_order) VALUES
   ('DOCUMENT_SUBMISSION_STATUS', 'rejected', '반려', 3),
   ('DOCUMENT_SUBMISSION_STATUS', 'approved', '승인', 4),
   ('DOCUMENT_SUBMISSION_STATUS', 'canceled', '취소', 5),
+  ('PLEDGE_AGREEMENT_STATUS', 'agreed', '동의', 1),
+  ('PLEDGE_AGREEMENT_STATUS', 'revoked', '철회', 2),
   ('CURRICULUM_TYPE', 'lecture', '강의', 1),
   ('CURRICULUM_TYPE', 'practice', '실습', 2),
   ('CURRICULUM_TYPE', 'project', '프로젝트', 3),
@@ -877,6 +882,44 @@ CREATE TABLE learner_document_attachments (
     ON DELETE CASCADE,
   CONSTRAINT fk_learner_document_attachments_attachment
     FOREIGN KEY (attachment_id) REFERENCES attachments (attachment_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE pledge_documents (
+  pledge_document_id BIGINT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  version VARCHAR(50) NOT NULL,
+  required_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  starts_at DATETIME,
+  due_at DATETIME,
+  active_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (pledge_document_id),
+  UNIQUE KEY uk_pledge_documents_title_version (title, version),
+  KEY idx_pledge_documents_active_due (active_yn, due_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_pledge_agreements (
+  pledge_agreement_id BIGINT NOT NULL AUTO_INCREMENT,
+  pledge_document_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  agreed_yn BOOLEAN NOT NULL DEFAULT FALSE,
+  agreed_at DATETIME,
+  agreement_ip_hash CHAR(64),
+  user_agent_hash CHAR(64),
+  version_snapshot VARCHAR(50) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (pledge_agreement_id),
+  UNIQUE KEY uk_learner_pledge_agreements_user_document (pledge_document_id, user_id),
+  KEY idx_learner_pledge_agreements_user (user_id, agreed_yn, agreed_at),
+  CONSTRAINT fk_learner_pledge_agreements_document
+    FOREIGN KEY (pledge_document_id) REFERENCES pledge_documents (pledge_document_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_learner_pledge_agreements_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE learning_material_reactions (

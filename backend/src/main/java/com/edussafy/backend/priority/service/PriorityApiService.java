@@ -63,6 +63,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.PageMeta;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeRequest;
@@ -688,6 +694,43 @@ public class PriorityApiService {
         DocumentAttachmentItem attachment = repository.findDocumentAttachment(user.id(), submissionId, attachmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document attachment not found."));
         return new DocumentAttachmentDownload(attachment, readDocumentAttachment(attachment));
+    }
+
+    public PledgesResponse pledges(int page, int size) {
+        UserProfile user = currentUser();
+        long total = safe(() -> repository.countPledges(user.id()), 0L);
+        List<PledgeItem> items = total == 0
+                ? List.of()
+                : safe(() -> repository.findPledges(user.id(), size, offset(page, size)), List.of());
+        return new PledgesResponse(items, pageMeta(page, size, total));
+    }
+
+    public PledgeDetailResponse pledge(long pledgeId) {
+        UserProfile user = currentUser();
+        return new PledgeDetailResponse(currentUserPledge(user.id(), pledgeId));
+    }
+
+    @Transactional
+    public PledgeAgreementResponse agreePledge(long pledgeId, PledgeAgreementRequest request) {
+        UserProfile user = currentUser();
+        PledgeItem pledge = currentUserPledge(user.id(), pledgeId);
+        if (!Boolean.TRUE.equals(request.agreed())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pledge agreement must be true.");
+        }
+        if (pledge.dueAt() != null && pledge.dueAt().isBefore(OffsetDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pledge agreement due date has passed.");
+        }
+        long agreementId = repository.upsertPledgeAgreement(
+                user.id(),
+                pledge,
+                true,
+                currentRequestHash("ip"),
+                currentRequestHash("user-agent")
+        );
+        PledgeAgreementItem agreement = repository.findPledgeAgreement(user.id(), pledgeId, agreementId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Pledge agreement was not saved."));
+        PledgeItem updated = currentUserPledge(user.id(), pledgeId);
+        return new PledgeAgreementResponse(updated, agreement);
     }
 
     public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {
@@ -1791,6 +1834,24 @@ public class PriorityApiService {
         if (!allowed) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document attachment extension is not allowed.");
         }
+    }
+
+    private PledgeItem currentUserPledge(long userId, long pledgeId) {
+        return repository.findPledge(userId, pledgeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pledge document not found."));
+    }
+
+    private String currentRequestHash(String source) {
+        String value = "unknown";
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+            HttpServletRequest request = attributes.getRequest();
+            value = switch (source) {
+                case "ip" -> Optional.ofNullable(request.getRemoteAddr()).orElse("unknown");
+                case "user-agent" -> Optional.ofNullable(request.getHeader("User-Agent")).orElse("unknown");
+                default -> "unknown";
+            };
+        }
+        return sha256Hex(value.getBytes(StandardCharsets.UTF_8));
     }
 
     private MaterialItem fallbackMaterial(long id) {

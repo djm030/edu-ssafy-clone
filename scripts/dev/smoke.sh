@@ -49,6 +49,7 @@ for route in \
   /mycampus/elearning \
   /mycampus/bookmarks \
   /mycampus/documents \
+  /mycampus/pledges \
   /profile/check \
   /community/free \
   /community/classmates \
@@ -68,6 +69,7 @@ for api_path in \
   /api/elearning/in-progress \
   /api/me/bookmarks \
   /api/documents/requests \
+  /api/pledges \
   /api/quests/ \
   /api/surveys/ \
   /api/support/tickets; do
@@ -92,6 +94,7 @@ request GET "$BACKEND_URL/api/learning/materials?page=1&size=5"
 request GET "$BACKEND_URL/api/elearning/in-progress?page=1&size=5"
 request GET "$BACKEND_URL/api/me/bookmarks?page=1&size=5"
 request GET "$BACKEND_URL/api/documents/requests?page=1&size=5"
+request GET "$BACKEND_URL/api/pledges?page=1&size=5"
 request GET "$BACKEND_URL/api/quests?page=1&size=5"
 request GET "$BACKEND_URL/api/surveys?page=1&size=5"
 request GET "$BACKEND_URL/api/support/tickets?page=1&size=5"

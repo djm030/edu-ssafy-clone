@@ -23,6 +23,7 @@ import MaterialViewerPage from './pages/MaterialViewerPage';
 import MaterialsPage from './pages/MaterialsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import OpsReadinessPage from './pages/OpsReadinessPage';
+import PledgesPage from './pages/PledgesPage';
 import ProfileCheckPage from './pages/ProfileCheckPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import QnaDetailPage from './pages/QnaDetailPage';
@@ -234,6 +235,7 @@ function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
 function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: (nextPath: string) => void) {
   const match = (pattern: RegExp) => path.match(pattern);
   const elearningMatch = match(/^\/mycampus\/elearning\/(\d+)$/);
+  const pledgeMatch = match(/^\/mycampus\/pledges\/(\d+)$/);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
   const freePostMatch = match(/^\/community\/free\/(\d+)$/);
@@ -254,6 +256,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/elearning') return <ElearningPage />;
   if (path === '/mycampus/bookmarks') return <BookmarksPage />;
   if (path === '/mycampus/documents') return <DocumentsPage />;
+  if (path === '/mycampus/pledges') return <PledgesPage />;
   if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
@@ -268,6 +271,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/help/qna/new') return <QnaNewPage />;
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (elearningMatch) return <ElearningDetailPage courseId={Number(elearningMatch[1])} />;
+  if (pledgeMatch) return <PledgesPage pledgeId={Number(pledgeMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;
   if (surveyRespondMatch) return <SurveyRespondPage surveyId={Number(surveyRespondMatch[1])} />;
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;

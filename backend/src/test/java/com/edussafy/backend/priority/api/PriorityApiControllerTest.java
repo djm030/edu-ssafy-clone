@@ -68,6 +68,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.PageMeta;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeRequest;
@@ -134,6 +139,7 @@ import org.springframework.web.context.WebApplicationContext;
         ElearningController.class,
         BookmarkController.class,
         DocumentController.class,
+        PledgeController.class,
         QuestSurveyController.class,
         SupportController.class,
         CommunityController.class,
@@ -624,6 +630,52 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("identity.pdf")))
                 .andExpect(content().bytes("hello".getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    void pledgeEndpointsReturnAndPersistAgreementState() throws Exception {
+        PageMeta page = new PageMeta(1, 20, 1, 1);
+        PledgeItem item = new PledgeItem(
+                3L,
+                "교육생 기본 서약서",
+                "학습 규칙을 준수합니다.",
+                "2026.1",
+                true,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                false,
+                null,
+                null
+        );
+        PledgeItem agreed = new PledgeItem(
+                3L,
+                "교육생 기본 서약서",
+                "학습 규칙을 준수합니다.",
+                "2026.1",
+                true,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                true,
+                OffsetDateTime.parse("2026-04-25T15:00:00+09:00"),
+                "2026.1"
+        );
+        PledgeAgreementItem agreement = new PledgeAgreementItem(44L, 3L, true, OffsetDateTime.parse("2026-04-25T15:00:00+09:00"), "2026.1");
+        given(priorityApiService.pledges(eq(1), eq(20))).willReturn(new PledgesResponse(List.of(item), page));
+        given(priorityApiService.pledge(3L)).willReturn(new PledgeDetailResponse(item));
+        given(priorityApiService.agreePledge(eq(3L), any())).willReturn(new PledgeAgreementResponse(agreed, agreement));
+
+        mockMvc.perform(get("/api/pledges"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("교육생 기본 서약서"));
+        mockMvc.perform(get("/api/pledges/3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.version").value("2026.1"));
+        mockMvc.perform(post("/api/pledges/3/agreements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"agreed\":true}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.agreed").value(true))
+                .andExpect(jsonPath("$.agreement.id").value(44));
     }
 
     @Test

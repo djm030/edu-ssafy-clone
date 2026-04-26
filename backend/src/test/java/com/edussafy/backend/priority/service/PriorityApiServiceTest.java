@@ -58,6 +58,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationsReadAllResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.PasswordCheckResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileDetails;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileEditAuthorizationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeRequest;
@@ -530,6 +535,76 @@ class PriorityApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
         verify(p2Repository, never()).createOrFindAttachment(anyString(), anyString(), anyString(), anyString(), anyLong(), anyString());
+    }
+
+    @Test
+    void pledgeListAndAgreementUseCurrentUserAndPersistVersionSnapshot() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PledgeItem before = new PledgeItem(
+                3L,
+                "교육생 기본 서약서",
+                "학습 규칙을 준수합니다.",
+                "2026.1",
+                true,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                false,
+                null,
+                null
+        );
+        PledgeItem after = new PledgeItem(
+                3L,
+                "교육생 기본 서약서",
+                "학습 규칙을 준수합니다.",
+                "2026.1",
+                true,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                true,
+                OffsetDateTime.parse("2026-04-25T15:00:00+09:00"),
+                "2026.1"
+        );
+        PledgeAgreementItem agreement = new PledgeAgreementItem(44L, 3L, true, OffsetDateTime.parse("2026-04-25T15:00:00+09:00"), "2026.1");
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countPledges(USER.id())).willReturn(1L);
+        given(repository.findPledges(USER.id(), 20, 0)).willReturn(List.of(before));
+        given(repository.findPledge(USER.id(), 3L)).willReturn(Optional.of(before), Optional.of(after));
+        given(repository.upsertPledgeAgreement(eq(USER.id()), eq(before), eq(true), anyString(), anyString())).willReturn(44L);
+        given(repository.findPledgeAgreement(USER.id(), 3L, 44L)).willReturn(Optional.of(agreement));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        PledgesResponse list = service.pledges(1, 20);
+        PledgeAgreementResponse response = service.agreePledge(3L, new PledgeAgreementRequest(true));
+
+        assertThat(list.items()).containsExactly(before);
+        assertThat(response.item().agreed()).isTrue();
+        assertThat(response.agreement().versionSnapshot()).isEqualTo("2026.1");
+        verify(repository).upsertPledgeAgreement(eq(USER.id()), eq(before), eq(true), anyString(), anyString());
+    }
+
+    @Test
+    void pledgeAgreementRequiresPositiveAgreementAndActiveDueDate() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PledgeItem target = new PledgeItem(
+                3L,
+                "교육생 기본 서약서",
+                "학습 규칙을 준수합니다.",
+                "2026.1",
+                true,
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-10T18:00:00+09:00"),
+                false,
+                null,
+                null
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findPledge(USER.id(), 3L)).willReturn(Optional.of(target));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.agreePledge(3L, new PledgeAgreementRequest(false)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        verify(repository, never()).upsertPledgeAgreement(anyLong(), eq(target), eq(true), anyString(), anyString());
     }
 
     @Test

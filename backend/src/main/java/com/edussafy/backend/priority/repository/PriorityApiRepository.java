@@ -16,6 +16,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
@@ -859,6 +861,140 @@ public class PriorityApiRepository {
                 .update();
     }
 
+    public long countPledges(long userId) {
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM pledge_documents pd
+                WHERE pd.active_yn = TRUE
+                  AND (pd.starts_at IS NULL OR pd.starts_at <= CURRENT_TIMESTAMP)
+                """)
+                .query(Long.class)
+                .single();
+    }
+
+    public List<PledgeItem> findPledges(long userId, int limit, int offset) {
+        return jdbcClient.sql("""
+                SELECT
+                    pd.pledge_document_id,
+                    pd.title,
+                    pd.content,
+                    pd.version,
+                    pd.required_yn,
+                    pd.starts_at,
+                    pd.due_at,
+                    COALESCE(lpa.agreed_yn, FALSE) AS agreed_yn,
+                    lpa.agreed_at,
+                    lpa.version_snapshot
+                FROM pledge_documents pd
+                LEFT JOIN learner_pledge_agreements lpa
+                    ON lpa.pledge_document_id = pd.pledge_document_id
+                   AND lpa.user_id = :userId
+                WHERE pd.active_yn = TRUE
+                  AND (pd.starts_at IS NULL OR pd.starts_at <= CURRENT_TIMESTAMP)
+                ORDER BY pd.required_yn DESC, pd.due_at ASC, pd.pledge_document_id ASC
+                LIMIT :limit OFFSET :offset
+                """)
+                .param("userId", userId)
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapPledge)
+                .list();
+    }
+
+    public Optional<PledgeItem> findPledge(long userId, long pledgeId) {
+        return jdbcClient.sql("""
+                SELECT
+                    pd.pledge_document_id,
+                    pd.title,
+                    pd.content,
+                    pd.version,
+                    pd.required_yn,
+                    pd.starts_at,
+                    pd.due_at,
+                    COALESCE(lpa.agreed_yn, FALSE) AS agreed_yn,
+                    lpa.agreed_at,
+                    lpa.version_snapshot
+                FROM pledge_documents pd
+                LEFT JOIN learner_pledge_agreements lpa
+                    ON lpa.pledge_document_id = pd.pledge_document_id
+                   AND lpa.user_id = :userId
+                WHERE pd.pledge_document_id = :pledgeId
+                  AND pd.active_yn = TRUE
+                  AND (pd.starts_at IS NULL OR pd.starts_at <= CURRENT_TIMESTAMP)
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("pledgeId", pledgeId)
+                .query(this::mapPledge)
+                .optional();
+    }
+
+    public long upsertPledgeAgreement(long userId, PledgeItem pledge, boolean agreed, String ipHash, String userAgentHash) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO learner_pledge_agreements (
+                    pledge_document_id,
+                    user_id,
+                    agreed_yn,
+                    agreed_at,
+                    agreement_ip_hash,
+                    user_agent_hash,
+                    version_snapshot
+                )
+                VALUES (:pledgeId, :userId, :agreed, CURRENT_TIMESTAMP, :ipHash, :userAgentHash, :versionSnapshot)
+                ON DUPLICATE KEY UPDATE
+                    agreed_yn = VALUES(agreed_yn),
+                    agreed_at = VALUES(agreed_at),
+                    agreement_ip_hash = VALUES(agreement_ip_hash),
+                    user_agent_hash = VALUES(user_agent_hash),
+                    version_snapshot = VALUES(version_snapshot),
+                    updated_at = CURRENT_TIMESTAMP
+                """)
+                .param("pledgeId", pledge.id())
+                .param("userId", userId)
+                .param("agreed", agreed)
+                .param("ipHash", ipHash)
+                .param("userAgentHash", userAgentHash)
+                .param("versionSnapshot", pledge.version())
+                .update(keyHolder, "pledge_agreement_id");
+        Number key = keyHolder.getKey();
+        if (key != null) {
+            return key.longValue();
+        }
+        return jdbcClient.sql("""
+                SELECT pledge_agreement_id
+                FROM learner_pledge_agreements
+                WHERE pledge_document_id = :pledgeId AND user_id = :userId
+                LIMIT 1
+                """)
+                .param("pledgeId", pledge.id())
+                .param("userId", userId)
+                .query(Long.class)
+                .single();
+    }
+
+    public Optional<PledgeAgreementItem> findPledgeAgreement(long userId, long pledgeId, long agreementId) {
+        return jdbcClient.sql("""
+                SELECT pledge_agreement_id, pledge_document_id, agreed_yn, agreed_at, version_snapshot
+                FROM learner_pledge_agreements
+                WHERE user_id = :userId
+                  AND pledge_document_id = :pledgeId
+                  AND pledge_agreement_id = :agreementId
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("pledgeId", pledgeId)
+                .param("agreementId", agreementId)
+                .query((rs, rowNum) -> new PledgeAgreementItem(
+                        rs.getLong("pledge_agreement_id"),
+                        rs.getLong("pledge_document_id"),
+                        rs.getBoolean("agreed_yn"),
+                        toOffset(rs.getTimestamp("agreed_at")),
+                        rs.getString("version_snapshot")
+                ))
+                .optional();
+    }
+
     public long countElearningProgress(long userId, String status, String keyword) {
         SqlParts parts = elearningProgressWhere(userId, status, keyword);
         return jdbcClient.sql("""
@@ -1301,6 +1437,21 @@ public class PriorityApiRepository {
                 rs.getString("mime_type"),
                 rs.getLong("file_size"),
                 toOffset(rs.getTimestamp("created_at"))
+        );
+    }
+
+    private PledgeItem mapPledge(ResultSet rs, int rowNum) throws SQLException {
+        return new PledgeItem(
+                rs.getLong("pledge_document_id"),
+                rs.getString("title"),
+                rs.getString("content"),
+                rs.getString("version"),
+                rs.getBoolean("required_yn"),
+                toOffset(rs.getTimestamp("starts_at")),
+                toOffset(rs.getTimestamp("due_at")),
+                rs.getBoolean("agreed_yn"),
+                toOffset(rs.getTimestamp("agreed_at")),
+                rs.getString("version_snapshot")
         );
     }
 
