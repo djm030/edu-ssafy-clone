@@ -175,6 +175,17 @@ export interface DashboardBoardPost {
   authorLabel?: string | null;
   createdAt?: string | null;
   pinned: boolean;
+  badgeLabel?: string | null;
+  detailPath: string;
+}
+
+export interface DashboardMandatoryAlert {
+  id: number;
+  source: 'notification' | 'notice' | string;
+  title: string;
+  message?: string | null;
+  unread: boolean;
+  createdAt?: string | null;
   detailPath: string;
 }
 
@@ -194,6 +205,7 @@ export interface DashboardHomeWidgets {
   materials: DashboardLearningCard[];
   elearnings: DashboardLearningCard[];
   freePosts: DashboardBoardPost[];
+  mandatoryAlerts: DashboardMandatoryAlert[];
   notices: DashboardBoardPost[];
   ebooks: DashboardEbookCard[];
 }

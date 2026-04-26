@@ -1109,6 +1109,7 @@ public class PriorityApiRepository {
                         rs.getString("author_label"),
                         toOffset(rs.getTimestamp("created_at")),
                         rs.getBoolean("notice_yn"),
+                        rs.getBoolean("notice_yn") ? "필독" : "일반",
                         dashboardPostPath(rs.getString("board_code"), rs.getLong("board_post_id"))
                 ))
                 .list();

@@ -43,6 +43,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumSession
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardEbookCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardHomeWidgets;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardLearningCard;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardMandatoryAlert;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardQuestCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
@@ -459,11 +460,11 @@ public class PriorityApiService {
                 attendance,
                 new NotificationsSummary(unreadCount, latest),
                 today,
-                dashboardHomeWidgets(user.id(), attendance)
+                dashboardHomeWidgets(user.id(), attendance, latest)
         );
     }
 
-    private DashboardHomeWidgets dashboardHomeWidgets(long userId, AttendanceSummary attendance) {
+    private DashboardHomeWidgets dashboardHomeWidgets(long userId, AttendanceSummary attendance, List<NotificationItem> latestNotifications) {
         List<CurriculumWeekItem> weeks = toCurriculumWeeks(
                 safe(() -> repository.findCurriculumWeekSchedules(userId, null, null), List.of())
         );
@@ -542,6 +543,9 @@ public class PriorityApiService {
                 ))
                 .toList();
 
+        List<DashboardBoardPost> freePosts = safe(() -> repository.findDashboardPosts("free", 4), List.<DashboardBoardPost>of());
+        List<DashboardBoardPost> notices = safe(() -> repository.findDashboardPosts("notice", 4), List.<DashboardBoardPost>of());
+
         return new DashboardHomeWidgets(
                 attendanceCheckWidget(attendance),
                 dashboardCurriculumOverview(weeks),
@@ -549,10 +553,46 @@ public class PriorityApiService {
                 quests,
                 materials,
                 elearnings,
-                safe(() -> repository.findDashboardPosts("free", 4), List.<DashboardBoardPost>of()),
-                safe(() -> repository.findDashboardPosts("notice", 4), List.<DashboardBoardPost>of()),
+                freePosts,
+                dashboardMandatoryAlerts(latestNotifications, notices),
+                notices,
                 ebooks
         );
+    }
+
+    private List<DashboardMandatoryAlert> dashboardMandatoryAlerts(List<NotificationItem> latestNotifications, List<DashboardBoardPost> notices) {
+        List<DashboardMandatoryAlert> alerts = new ArrayList<>();
+        if (latestNotifications != null) {
+            latestNotifications.stream()
+                    .filter(item -> !item.read())
+                    .limit(3)
+                    .map(item -> new DashboardMandatoryAlert(
+                            item.id(),
+                            "notification",
+                            item.title(),
+                            item.body(),
+                            true,
+                            item.createdAt(),
+                            "/mycampus/notifications"
+                    ))
+                    .forEach(alerts::add);
+        }
+        if (notices != null) {
+            notices.stream()
+                    .filter(DashboardBoardPost::pinned)
+                    .limit(2)
+                    .map(item -> new DashboardMandatoryAlert(
+                            item.id(),
+                            "notice",
+                            item.title(),
+                            item.authorLabel(),
+                            false,
+                            item.createdAt(),
+                            item.detailPath()
+                    ))
+                    .forEach(alerts::add);
+        }
+        return alerts.stream().limit(5).toList();
     }
 
     private DashboardCurriculumOverview dashboardCurriculumOverview(List<CurriculumWeekItem> weeks) {

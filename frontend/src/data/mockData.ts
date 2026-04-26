@@ -75,10 +75,14 @@ export const mockDashboard: DashboardSummary = {
       { id: 1, title: 'Java 기초 이러닝', category: 'Java', description: '객체지향 핵심', progressPercent: 42, viewCount: 0, likeCount: 0, bookmarkCount: 0, resourceCount: 0, detailPath: '/mycampus/elearning/1' },
     ],
     freePosts: [
-      { id: 201, boardCode: 'free', title: '알고리즘 스터디 같이 하실 분 모집합니다', authorLabel: '박싸피', createdAt: '2026-04-24T13:40:00+09:00', pinned: false, detailPath: '/community/free/201' },
+      { id: 201, boardCode: 'free', title: '알고리즘 스터디 같이 하실 분 모집합니다', authorLabel: '박싸피', createdAt: '2026-04-24T13:40:00+09:00', pinned: false, badgeLabel: '일반', detailPath: '/community/free/201' },
+    ],
+    mandatoryAlerts: [
+      { id: 1, source: 'notification', title: '공지사항 확인 필요', message: '필독 공지와 학습 알림을 확인하세요.', unread: true, createdAt: '2026-04-24T09:05:00+09:00', detailPath: '/mycampus/notifications' },
+      { id: 101, source: 'notice', title: '4월 공통 프로젝트 일정 안내', message: '교육지원팀', unread: false, createdAt: '2026-04-24T09:00:00+09:00', detailPath: '/help/notice/101' },
     ],
     notices: [
-      { id: 101, boardCode: 'notice', title: '4월 공통 프로젝트 일정 안내', authorLabel: '교육지원팀', createdAt: '2026-04-24T09:00:00+09:00', pinned: true, detailPath: '/help/notice/101' },
+      { id: 101, boardCode: 'notice', title: '4월 공통 프로젝트 일정 안내', authorLabel: '교육지원팀', createdAt: '2026-04-24T09:00:00+09:00', pinned: true, badgeLabel: '필독', detailPath: '/help/notice/101' },
     ],
     ebooks: [
       { id: 1, title: 'SSAFY Java e-book', category: 'Java', description: 'Java 트랙 실습 전자책', detailPath: '/mycampus/ebooks/1' },

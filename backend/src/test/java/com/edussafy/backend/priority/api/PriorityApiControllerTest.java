@@ -51,6 +51,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumSession
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardEbookCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardHomeWidgets;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardLearningCard;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardMandatoryAlert;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardQuestCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
@@ -429,8 +430,9 @@ class PriorityApiControllerTest {
                         List.of(new DashboardQuestCard(7, "Dashboard Quest", "assignment", "algorithm", "progress", "진행 중", null, 100, null, null, "제출하기", "/quest/7")),
                         List.of(new DashboardLearningCard(5, "REST API", "Backend", "API 자료", 0, 10, 2, 1, 3, "/learning/materials/5")),
                         List.of(new DashboardLearningCard(6, "Java e-learning", "Java", "객체지향", 40, 0, 0, 0, 0, "/mycampus/elearning/6")),
-                        List.of(new DashboardBoardPost(9, "free", "자유게시판 글", "Demo", null, false, "/community/free/9")),
-                        List.of(new DashboardBoardPost(10, "notice", "공지사항", "운영자", null, true, "/help/notice/10")),
+                        List.of(new DashboardBoardPost(9, "free", "자유게시판 글", "Demo", null, false, "일반", "/community/free/9")),
+                        List.of(new DashboardMandatoryAlert(10, "notice", "공지사항", "운영자", false, null, "/help/notice/10")),
+                        List.of(new DashboardBoardPost(10, "notice", "공지사항", "운영자", null, true, "필독", "/help/notice/10")),
                         List.of(new DashboardEbookCard(3, "Java e-book", "Java", "전자책", "/mycampus/ebooks/3"))
                 )
         ));
@@ -452,7 +454,10 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.home.quests[0].statusLabel").value("진행 중"))
                 .andExpect(jsonPath("$.home.quests[0].actionLabel").value("제출하기"))
                 .andExpect(jsonPath("$.home.quests[0].maxExp").value(100))
-                .andExpect(jsonPath("$.home.notices[0].pinned").value(true));
+                .andExpect(jsonPath("$.home.notices[0].pinned").value(true))
+                .andExpect(jsonPath("$.home.notices[0].badgeLabel").value("필독"))
+                .andExpect(jsonPath("$.home.mandatoryAlerts[0].source").value("notice"))
+                .andExpect(jsonPath("$.home.mandatoryAlerts[0].detailPath").value("/help/notice/10"));
     }
 
     @Test

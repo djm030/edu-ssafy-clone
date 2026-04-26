@@ -8,6 +8,7 @@ import type {
   DashboardCurriculumSession,
   DashboardEbookCard,
   DashboardLearningCard,
+  DashboardMandatoryAlert,
   DashboardQuestCard,
   DashboardSummary,
   LoadState,
@@ -77,13 +78,13 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
         </section>
 
         <section className="panel">
-          <PanelHeader title="알림" moreHref="/mycampus/notifications" />
-          {summary.notifications.latest.length === 0 ? (
-            <DataState title="새 알림이 없습니다." message="필독 알림과 학습 알림이 도착하면 여기에 표시됩니다." />
+          <PanelHeader title="필독 알림" moreHref="/mycampus/notifications" />
+          {summary.home.mandatoryAlerts.length === 0 ? (
+            <DataState title="확인할 필독 알림이 없습니다." message="필독 공지와 읽지 않은 학습 알림이 도착하면 여기에 표시됩니다." />
           ) : (
-            <ul className="dashboard-mini-list">
-              {summary.notifications.latest.map((item) => <li key={item}>{item}</li>)}
-            </ul>
+            <div className="dashboard-alert-list">
+              {summary.home.mandatoryAlerts.map((item) => <MandatoryAlertCard key={`${item.source}-${item.id}`} item={item} />)}
+            </div>
           )}
         </section>
 
@@ -206,8 +207,19 @@ function LearningCard({ item, showProgress = false, showResourceMetric = false }
 function BoardPostCard({ item }: { item: DashboardBoardPost }) {
   return (
     <a className="dashboard-widget-card" href={item.detailPath}>
-      <strong>{item.pinned ? '[필독] ' : ''}{item.title}</strong>
+      {item.badgeLabel ? <span className={`status-pill ${item.pinned ? 'orange' : 'blue'}`}>{item.badgeLabel}</span> : null}
+      <strong>{item.title}</strong>
       <p>{item.authorLabel || '운영자'} · {item.createdAt ? item.createdAt.slice(0, 10) : '-'}</p>
+    </a>
+  );
+}
+
+function MandatoryAlertCard({ item }: { item: DashboardMandatoryAlert }) {
+  return (
+    <a className="dashboard-alert-card" href={item.detailPath}>
+      <span className={`status-pill ${item.unread ? 'orange' : 'blue'}`}>{item.source === 'notice' ? '필독 공지' : item.unread ? '미확인 알림' : '알림'}</span>
+      <strong>{item.title}</strong>
+      <small>{item.message || '상세 내용을 확인하세요.'}{item.createdAt ? ` · ${item.createdAt.slice(0, 10)}` : ''}</small>
     </a>
   );
 }

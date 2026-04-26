@@ -1,5 +1,13 @@
 # Test Report
 
+## Dashboard Notice and Mandatory Alerts (2026-04-27 KST)
+- Added DB-backed mandatory alert payloads for unread notifications and pinned notices so the home dashboard exposes 필독 알림 with direct links before the notice list.
+- Added notice badge labels and rendered pinned notices with explicit 필독 badges, while preserving the existing notification list and notice routes.
+- `git diff --check` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test` -> PASS, 67 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## Dashboard Quest Evaluation Cards (2026-04-27 KST)
 - Added dashboard Quest/평가 card metadata for classification, Korean status labels, result status, max EXP, and action labels so home cards expose 예정/제출/결과 cues instead of a generic status-only line.
 - Updated backend DTO/service mapping, frontend types/fallback data/UI, CSS, and static/controller assertions to keep the dashboard widget connected to DB-backed quest/evaluation data.

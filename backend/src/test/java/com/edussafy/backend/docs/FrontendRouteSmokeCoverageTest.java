@@ -336,6 +336,8 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("출석체크 & 현황")
                 .contains("장학포인트")
                 .contains("레벨&경험치")
+                .contains("필독 알림")
+                .contains("mandatoryAlerts")
                 .contains("curriculumOverview")
                 .contains("개 세션")
                 .contains("주차별 커리큘럼")

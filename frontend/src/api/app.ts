@@ -419,6 +419,7 @@ function toDashboardSummary(summary: BackendDashboardSummary): DashboardSummary 
       materials: home.materials || [],
       elearnings: home.elearnings || [],
       freePosts: home.freePosts || [],
+      mandatoryAlerts: home.mandatoryAlerts || mockDashboard.home.mandatoryAlerts || [],
       notices: home.notices || [],
       ebooks: home.ebooks || [],
     },

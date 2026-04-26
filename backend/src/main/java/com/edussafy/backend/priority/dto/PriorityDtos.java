@@ -190,6 +190,18 @@ public final class PriorityDtos {
             String authorLabel,
             OffsetDateTime createdAt,
             boolean pinned,
+            String badgeLabel,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardMandatoryAlert(
+            long id,
+            String source,
+            String title,
+            String message,
+            boolean unread,
+            OffsetDateTime createdAt,
             String detailPath
     ) {
     }
@@ -211,6 +223,7 @@ public final class PriorityDtos {
             List<DashboardLearningCard> materials,
             List<DashboardLearningCard> elearnings,
             List<DashboardBoardPost> freePosts,
+            List<DashboardMandatoryAlert> mandatoryAlerts,
             List<DashboardBoardPost> notices,
             List<DashboardEbookCard> ebooks
     ) {
