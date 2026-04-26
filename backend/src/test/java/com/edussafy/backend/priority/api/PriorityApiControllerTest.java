@@ -99,7 +99,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentD
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudiesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyCompleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyDetailResponse;
@@ -156,6 +160,7 @@ import org.springframework.web.context.WebApplicationContext;
         EbookController.class,
         RequiredStudyController.class,
         LiveSessionController.class,
+        ReplayController.class,
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
@@ -537,6 +542,59 @@ class PriorityApiControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.joinCount").value(1))
                 .andExpect(jsonPath("$.joinLog.sessionId").value(11));
+    }
+
+    @Test
+    void replaySplitEndpointsReturnMyAllDetailAndWatchLog() throws Exception {
+        ReplayItem replay = new ReplayItem(
+                21L,
+                3L,
+                "Spring Boot REST API Replay",
+                1,
+                OffsetDateTime.parse("2026-04-24T18:30:00+09:00"),
+                "lecture",
+                "Demo Instructor",
+                "Seoul Java 1",
+                LocalDate.parse("2026-04-24"),
+                "class_group",
+                null,
+                0
+        );
+        ReplayItem watched = new ReplayItem(
+                21L,
+                3L,
+                "Spring Boot REST API Replay",
+                1,
+                OffsetDateTime.parse("2026-04-24T18:30:00+09:00"),
+                "lecture",
+                "Demo Instructor",
+                "Seoul Java 1",
+                LocalDate.parse("2026-04-24"),
+                "class_group",
+                OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
+                1
+        );
+        given(priorityApiService.myReplays("spring")).willReturn(new ReplayResponse(List.of(replay)));
+        given(priorityApiService.allReplays(null)).willReturn(new ReplayResponse(List.of(replay)));
+        given(priorityApiService.replay(21L)).willReturn(new ReplayDetailResponse(replay));
+        given(priorityApiService.watchReplay(21L)).willReturn(new ReplayWatchLogResponse(
+                watched,
+                new ReplayWatchLogItem(55L, 21L, OffsetDateTime.parse("2026-04-26T10:00:00+09:00"))
+        ));
+
+        mockMvc.perform(get("/api/replays/my?keyword=spring"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].scope").value("class_group"));
+        mockMvc.perform(get("/api/replays/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("Spring Boot REST API Replay"));
+        mockMvc.perform(get("/api/replays/21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.instructor").value("Demo Instructor"));
+        mockMvc.perform(post("/api/replays/21/watch-log"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.watchCount").value(1))
+                .andExpect(jsonPath("$.watchLog.replayId").value(21));
     }
 
     @Test

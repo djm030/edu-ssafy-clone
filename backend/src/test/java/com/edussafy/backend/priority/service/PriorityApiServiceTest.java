@@ -92,6 +92,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudiesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyCompleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
@@ -454,6 +459,74 @@ class PriorityApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
         verify(repository, never()).createLiveSessionJoinLog(anyLong(), anyLong());
+    }
+
+    @Test
+    void replaySplitListDetailAndWatchLogUseCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        ReplayItem replay = new ReplayItem(
+                21L,
+                3L,
+                "Spring Boot REST API Replay",
+                1,
+                OffsetDateTime.parse("2026-04-24T18:30:00+09:00"),
+                "lecture",
+                "Demo Instructor",
+                "Seoul Java 1",
+                LocalDate.parse("2026-04-24"),
+                "class_group",
+                null,
+                0
+        );
+        ReplayItem watched = new ReplayItem(
+                21L,
+                3L,
+                "Spring Boot REST API Replay",
+                1,
+                OffsetDateTime.parse("2026-04-24T18:30:00+09:00"),
+                "lecture",
+                "Demo Instructor",
+                "Seoul Java 1",
+                LocalDate.parse("2026-04-24"),
+                "class_group",
+                OffsetDateTime.now(),
+                1
+        );
+        ReplayWatchLogItem watchLog = new ReplayWatchLogItem(55L, 21L, OffsetDateTime.now());
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findReplays(USER.id(), "my", "spring")).willReturn(List.of(replay));
+        given(repository.findReplays(USER.id(), "all", null)).willReturn(List.of(replay));
+        given(repository.findReplay(USER.id(), 21L)).willReturn(Optional.of(replay), Optional.of(watched));
+        given(repository.createReplayWatchLog(USER.id(), 21L)).willReturn(55L);
+        given(repository.findReplayWatchLog(USER.id(), 21L, 55L)).willReturn(Optional.of(watchLog));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        ReplayResponse my = service.myReplays("spring");
+        ReplayResponse all = service.allReplays(null);
+        ReplayDetailResponse detail = service.replay(21L);
+        ReplayWatchLogResponse watchedResponse = service.watchReplay(21L);
+
+        assertThat(my.items()).containsExactly(replay);
+        assertThat(all.items()).containsExactly(replay);
+        assertThat(detail.item()).isEqualTo(replay);
+        assertThat(watchedResponse.item().watchCount()).isEqualTo(1);
+        assertThat(watchedResponse.watchLog()).isEqualTo(watchLog);
+        verify(repository).findReplays(USER.id(), "my", "spring");
+        verify(repository).findReplays(USER.id(), "all", null);
+        verify(repository).createReplayWatchLog(USER.id(), 21L);
+    }
+
+    @Test
+    void replayWatchRejectsInvisibleReplay() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findReplay(USER.id(), 404L)).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.watchReplay(404L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+        verify(repository, never()).createReplayWatchLog(anyLong(), anyLong());
     }
 
     @Test

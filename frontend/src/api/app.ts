@@ -61,6 +61,7 @@ import type {
   QuestSubmissionDraft,
   QuestSubmissionResult,
   ReplayItem,
+  ReplayWatchLogResult,
   ProfileEditDraft,
   ProfileDetails,
   ProfilePasswordChangeDraft,
@@ -116,6 +117,9 @@ type BackendReplayItem = Partial<ReplayItem> & {
   curriculumScheduleId?: number | null;
   versionNo?: number | null;
   publishedAt?: string | null;
+  classDate?: string | null;
+  lastWatchedAt?: string | null;
+  watchCount?: number | null;
 };
 
 type BackendElearningProgressItem = Partial<ElearningProgressItem> & {
@@ -317,10 +321,15 @@ function toReplayItem(item: BackendReplayItem): ReplayItem {
     id: Number(item.id),
     title: item.title || 'Replay',
     instructor: item.instructor || '-',
-    date: item.date || toDateText(item.publishedAt),
+    date: item.date || toDateText(item.classDate || item.publishedAt),
     duration: item.duration || '-',
     category: item.category || `v${item.versionNo ?? 1}`,
-    watched: Boolean(item.watched),
+    watched: Boolean(item.watched ?? item.lastWatchedAt),
+    versionNo: item.versionNo ?? undefined,
+    scope: item.scope || undefined,
+    classroom: item.classroom || undefined,
+    watchCount: Number(item.watchCount ?? 0),
+    lastWatchedAt: item.lastWatchedAt || undefined,
   };
 }
 
@@ -751,14 +760,35 @@ export function getCurriculum(): Promise<{ items: CurriculumWeek[] }> {
 }
 
 export function getReplays(query: { keyword?: string }): Promise<{ items: ReplayItem[] }> {
+  return getMyReplays(query);
+}
+
+export function getMyReplays(query: { keyword?: string }): Promise<{ items: ReplayItem[] }> {
   const keyword = query.keyword?.trim().toLowerCase();
   const params = buildQuery({ keyword: query.keyword?.trim() });
 
-  return fetchJson<{ items: BackendReplayItem[] }>(`/api/learning/replays${params}`, {
+  return fetchJson<{ items: BackendReplayItem[] }>(`/api/replays/my${params}`, {
     fallback: () => ({
       items: mockReplays.filter((replay) => !keyword || replay.title.toLowerCase().includes(keyword)),
     }),
   }).then((response) => ({ items: response.items.map(toReplayItem) }));
+}
+
+export function getAllReplays(query: { keyword?: string }): Promise<{ items: ReplayItem[] }> {
+  const keyword = query.keyword?.trim().toLowerCase();
+  const params = buildQuery({ keyword: query.keyword?.trim() });
+
+  return fetchJson<{ items: BackendReplayItem[] }>(`/api/replays/all${params}`, {
+    fallback: () => ({
+      items: mockReplays.filter((replay) => !keyword || replay.title.toLowerCase().includes(keyword)),
+    }),
+  }).then((response) => ({ items: response.items.map(toReplayItem) }));
+}
+
+export function recordReplayWatch(replayId: number): Promise<ReplayWatchLogResult> {
+  return fetchJson<{ item: BackendReplayItem; watchLog: ReplayWatchLogResult['watchLog'] }>(`/api/replays/${replayId}/watch-log`, {
+    method: 'POST',
+  }).then((response) => ({ item: toReplayItem(response.item), watchLog: response.watchLog }));
 }
 
 export function getBookmarks(query: { targetType?: string; page?: number; size?: number }): Promise<{ items: BookmarkItem[] }> {

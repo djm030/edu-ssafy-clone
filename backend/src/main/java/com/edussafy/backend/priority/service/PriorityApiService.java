@@ -101,7 +101,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudiesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyCompleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyDetailResponse;
@@ -623,6 +627,36 @@ public class PriorityApiService {
     public ReplayResponse replays() {
         UserProfile user = currentUser();
         return new ReplayResponse(safe(() -> repository.findReplays(user.id()), List.of()));
+    }
+
+    public ReplayResponse myReplays(String keyword) {
+        UserProfile user = currentUser();
+        return new ReplayResponse(safe(() -> repository.findReplays(user.id(), "my", keyword), List.of()));
+    }
+
+    public ReplayResponse allReplays(String keyword) {
+        UserProfile user = currentUser();
+        return new ReplayResponse(safe(() -> repository.findReplays(user.id(), "all", keyword), List.of()));
+    }
+
+    public ReplayDetailResponse replay(long replayId) {
+        UserProfile user = currentUser();
+        ReplayItem item = repository.findReplay(user.id(), replayId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Replay not found."));
+        return new ReplayDetailResponse(item);
+    }
+
+    @Transactional
+    public ReplayWatchLogResponse watchReplay(long replayId) {
+        UserProfile user = currentUser();
+        ReplayItem item = repository.findReplay(user.id(), replayId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Replay not found."));
+        long watchLogId = repository.createReplayWatchLog(user.id(), replayId);
+        ReplayWatchLogItem watchLog = repository.findReplayWatchLog(user.id(), replayId, watchLogId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Replay watch log was not saved."));
+        ReplayItem updated = repository.findReplay(user.id(), replayId)
+                .orElse(item);
+        return new ReplayWatchLogResponse(updated, watchLog);
     }
 
     public BookmarksResponse bookmarks(String targetType, int page, int size) {

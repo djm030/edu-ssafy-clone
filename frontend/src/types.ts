@@ -240,6 +240,20 @@ export interface ReplayItem {
   duration: string;
   category: string;
   watched: boolean;
+  versionNo?: number;
+  scope?: string | null;
+  classroom?: string | null;
+  watchCount?: number;
+  lastWatchedAt?: string | null;
+}
+
+export interface ReplayWatchLogResult {
+  item: ReplayItem;
+  watchLog: {
+    id: number;
+    replayId: number;
+    watchedAt: string;
+  };
 }
 
 export type ElearningProgressStatus = 'not_started' | 'in_progress' | 'completed';

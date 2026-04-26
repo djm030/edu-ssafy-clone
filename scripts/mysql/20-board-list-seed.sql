@@ -187,6 +187,22 @@ INSERT INTO lecture_replays (curriculum_schedule_id, content_external_id, replay
 VALUES (@practice_schedule_id, 'replay-priority2-schema-practice', 'schema-practice', 'MySQL Schema Practice Replay', 1, '2026-04-22 18:30:00')
 ON DUPLICATE KEY UPDATE title = VALUES(title), published_at = VALUES(published_at);
 
+SET @rest_replay_id := (
+  SELECT lecture_replay_id
+  FROM lecture_replays
+  WHERE content_external_id = 'replay-priority1-rest-api'
+  LIMIT 1
+);
+
+INSERT INTO lecture_replay_watch_logs (lecture_replay_id, user_id, watched_at)
+SELECT @rest_replay_id, @student_id, '2026-04-25 10:00:00'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM lecture_replay_watch_logs
+  WHERE lecture_replay_id = @rest_replay_id
+    AND user_id = @student_id
+);
+
 INSERT INTO learning_materials (curriculum_schedule_id, content_scope_id, content_external_id, category_parent, category_child, material_type_code, title, summary, detail_url, view_count)
 VALUES
   (@schedule_id, @class_scope_id, 'material-priority1-rest-api-doc', 'Backend', 'REST API', 'document', 'REST API Workbook', 'Seed document for learning materials list.', '/materials/rest-api-workbook.pdf', 12),

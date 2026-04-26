@@ -52,6 +52,7 @@ DROP TABLE IF EXISTS learning_material_reactions;
 DROP TABLE IF EXISTS learning_material_resource_attachments;
 DROP TABLE IF EXISTS learning_material_resources;
 DROP TABLE IF EXISTS learning_materials;
+DROP TABLE IF EXISTS lecture_replay_watch_logs;
 DROP TABLE IF EXISTS lecture_replays;
 DROP TABLE IF EXISTS curriculum_schedules;
 DROP TABLE IF EXISTS terms;
@@ -649,6 +650,22 @@ CREATE TABLE lecture_replays (
   CONSTRAINT chk_lecture_replays_version_no CHECK (version_no > 0),
   CONSTRAINT fk_lecture_replays_schedule
     FOREIGN KEY (curriculum_schedule_id) REFERENCES curriculum_schedules (curriculum_schedule_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE lecture_replay_watch_logs (
+  lecture_replay_watch_log_id BIGINT NOT NULL AUTO_INCREMENT,
+  lecture_replay_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  watched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (lecture_replay_watch_log_id),
+  KEY idx_lecture_replay_watch_logs_user_watched (user_id, watched_at),
+  KEY idx_lecture_replay_watch_logs_replay_user (lecture_replay_id, user_id),
+  CONSTRAINT fk_lecture_replay_watch_logs_replay
+    FOREIGN KEY (lecture_replay_id) REFERENCES lecture_replays (lecture_replay_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_lecture_replay_watch_logs_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

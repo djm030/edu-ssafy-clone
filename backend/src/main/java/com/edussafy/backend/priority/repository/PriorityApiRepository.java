@@ -32,6 +32,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.TodaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -649,6 +650,104 @@ public class PriorityApiRepository {
         );
     }
 
+    private SqlParts replayWhere(long userId, String scope, String keyword) {
+        Map<String, Object> params = new java.util.LinkedHashMap<>();
+        params.put("userId", userId);
+        StringBuilder where = new StringBuilder("""
+                WHERE lr.published_at IS NOT NULL
+                  AND (
+                      cs_scope.scope_type_code = 'all'
+                      OR cs_scope.user_id = :userId
+                      OR cs_scope.class_group_id IN (
+                          SELECT class_group_id FROM user_class_enrollments WHERE user_id = :userId
+                      )
+                      OR cs_scope.track_id IN (
+                          SELECT track_id FROM user_track_enrollments WHERE user_id = :userId
+                      )
+                      OR cs_scope.cohort_id IN (
+                          SELECT cohort_id FROM user_track_enrollments WHERE user_id = :userId
+                      )
+                      OR (cs_scope.track_id, cs_scope.cohort_id) IN (
+                          SELECT track_id, cohort_id FROM user_track_enrollments WHERE user_id = :userId
+                      )
+                  )
+                """);
+        if ("my".equals(scope)) {
+            where.append("""
+                  AND (
+                      cs_scope.user_id = :userId
+                      OR cs_scope.class_group_id IN (
+                          SELECT class_group_id FROM user_class_enrollments WHERE user_id = :userId
+                      )
+                      OR (cs_scope.track_id, cs_scope.cohort_id) IN (
+                          SELECT track_id, cohort_id FROM user_track_enrollments WHERE user_id = :userId
+                      )
+                  )
+                """);
+        }
+        if (StringUtils.hasText(keyword)) {
+            where.append("""
+                  AND (
+                      LOWER(lr.title) LIKE :keyword
+                      OR LOWER(COALESCE(cs.topic, '')) LIKE :keyword
+                      OR LOWER(COALESCE(cs.instructor_name, '')) LIKE :keyword
+                  )
+                """);
+            params.put("keyword", "%" + keyword.trim().toLowerCase() + "%");
+        }
+        return new SqlParts(" " + where, params);
+    }
+
+    private String replaySelect(String suffix) {
+        return """
+                SELECT
+                    lr.lecture_replay_id,
+                    lr.curriculum_schedule_id,
+                    lr.title,
+                    lr.version_no,
+                    lr.published_at,
+                    COALESCE(cs.curriculum_type_code, 'lecture') AS category,
+                    cs.instructor_name,
+                    cs.classroom,
+                    cs.class_date,
+                    cs_scope.scope_type_code,
+                    latest_watch.last_watched_at,
+                    COALESCE(watch_counts.watch_count, 0) AS watch_count
+                FROM lecture_replays lr
+                JOIN curriculum_schedules cs ON cs.curriculum_schedule_id = lr.curriculum_schedule_id
+                JOIN content_scopes cs_scope ON cs_scope.content_scope_id = cs.content_scope_id
+                LEFT JOIN (
+                    SELECT lecture_replay_id, MAX(watched_at) AS last_watched_at
+                    FROM lecture_replay_watch_logs
+                    WHERE user_id = :userId
+                    GROUP BY lecture_replay_id
+                ) latest_watch ON latest_watch.lecture_replay_id = lr.lecture_replay_id
+                LEFT JOIN (
+                    SELECT lecture_replay_id, COUNT(*) AS watch_count
+                    FROM lecture_replay_watch_logs
+                    WHERE user_id = :userId
+                    GROUP BY lecture_replay_id
+                ) watch_counts ON watch_counts.lecture_replay_id = lr.lecture_replay_id
+                """ + suffix;
+    }
+
+    private ReplayItem mapReplay(ResultSet rs, int rowNum) throws SQLException {
+        return new ReplayItem(
+                rs.getLong("lecture_replay_id"),
+                rs.getLong("curriculum_schedule_id"),
+                rs.getString("title"),
+                rs.getInt("version_no"),
+                toOffset(rs.getTimestamp("published_at")),
+                rs.getString("category"),
+                rs.getString("instructor_name"),
+                rs.getString("classroom"),
+                toLocalDate(rs, "class_date"),
+                rs.getString("scope_type_code"),
+                toOffset(rs.getTimestamp("last_watched_at")),
+                rs.getLong("watch_count")
+        );
+    }
+
     private String ebookSelect(String suffix) {
         return """
                 SELECT
@@ -1015,20 +1114,63 @@ public class PriorityApiRepository {
     }
 
     public List<ReplayItem> findReplays(long userId) {
-        return jdbcClient.sql("""
-                SELECT lecture_replay_id, curriculum_schedule_id, title, version_no, published_at
-                FROM lecture_replays
-                ORDER BY COALESCE(published_at, created_at) DESC, lecture_replay_id DESC
+        return findReplays(userId, "my", null);
+    }
+
+    public List<ReplayItem> findReplays(long userId, String scope, String keyword) {
+        SqlParts parts = replayWhere(userId, scope, keyword);
+        return jdbcClient.sql(replaySelect(parts.whereClause() + """
+                ORDER BY COALESCE(lr.published_at, lr.created_at) DESC, lr.lecture_replay_id DESC
                 LIMIT 80
-                """)
-                .query((rs, rowNum) -> new ReplayItem(
-                        rs.getLong("lecture_replay_id"),
-                        rs.getLong("curriculum_schedule_id"),
-                        rs.getString("title"),
-                        rs.getInt("version_no"),
-                        toOffset(rs.getTimestamp("published_at"))
-                ))
+                """))
+                .params(parts.params())
+                .query(this::mapReplay)
                 .list();
+    }
+
+    public Optional<ReplayItem> findReplay(long userId, long replayId) {
+        SqlParts parts = replayWhere(userId, "all", null);
+        return jdbcClient.sql(replaySelect(parts.whereClause() + """
+                AND lr.lecture_replay_id = :replayId
+                LIMIT 1
+                """))
+                .params(parts.params())
+                .param("replayId", replayId)
+                .query(this::mapReplay)
+                .optional();
+    }
+
+    public long createReplayWatchLog(long userId, long replayId) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO lecture_replay_watch_logs (lecture_replay_id, user_id)
+                VALUES (:replayId, :userId)
+                """)
+                .param("replayId", replayId)
+                .param("userId", userId)
+                .update(keyHolder, "lecture_replay_watch_log_id");
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public Optional<ReplayWatchLogItem> findReplayWatchLog(long userId, long replayId, long watchLogId) {
+        return jdbcClient.sql("""
+                SELECT lecture_replay_watch_log_id, lecture_replay_id, watched_at
+                FROM lecture_replay_watch_logs
+                WHERE lecture_replay_watch_log_id = :watchLogId
+                  AND lecture_replay_id = :replayId
+                  AND user_id = :userId
+                LIMIT 1
+                """)
+                .param("watchLogId", watchLogId)
+                .param("replayId", replayId)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new ReplayWatchLogItem(
+                        rs.getLong("lecture_replay_watch_log_id"),
+                        rs.getLong("lecture_replay_id"),
+                        toOffset(rs.getTimestamp("watched_at"))
+                ))
+                .optional();
     }
 
     public long countBookmarks(long userId, String targetType) {

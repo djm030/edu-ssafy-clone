@@ -306,13 +306,29 @@ public final class PriorityDtos {
     public record ReplayResponse(List<ReplayItem> items) {
     }
 
+    public record ReplayDetailResponse(ReplayItem item) {
+    }
+
+    public record ReplayWatchLogResponse(ReplayItem item, ReplayWatchLogItem watchLog) {
+    }
+
     public record ReplayItem(
             long id,
             long curriculumScheduleId,
             String title,
             int versionNo,
-            OffsetDateTime publishedAt
+            OffsetDateTime publishedAt,
+            String category,
+            String instructor,
+            String classroom,
+            LocalDate classDate,
+            String scope,
+            OffsetDateTime lastWatchedAt,
+            long watchCount
     ) {
+    }
+
+    public record ReplayWatchLogItem(long id, long replayId, OffsetDateTime watchedAt) {
     }
 
     public record ElearningProgressResponse(List<ElearningProgressItem> items, PageMeta page) {

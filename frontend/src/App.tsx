@@ -270,7 +270,8 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/learning/live') return <LiveSessionsPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
   if (path === '/learning/required-studies') return <RequiredStudiesPage />;
-  if (path === '/learning/replays') return <ReplaysPage />;
+  if (path === '/learning/replays' || path === '/learning/replays/my') return <ReplaysPage mode="my" />;
+  if (path === '/learning/replays/all') return <ReplaysPage mode="all" />;
   if (path === '/profile/check') return <ProfileCheckPage onVerified={() => navigate('/profile/edit')} />;
   if (path === '/profile/edit') return <ProfileEditPage />;
   if (path === '/community/classmates') return <ClassmatesPage />;

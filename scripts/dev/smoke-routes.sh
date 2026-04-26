@@ -42,6 +42,8 @@ routes=(
   "/learning/required-studies"
   "/learning/required-studies/1"
   "/learning/replays"
+  "/learning/replays/my"
+  "/learning/replays/all"
   "/quest"
   "/quest/1"
   "/quest/1/submit"
