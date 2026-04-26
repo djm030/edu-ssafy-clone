@@ -526,6 +526,7 @@ INSERT INTO boards (board_code, board_name, board_group_code, access_scope_code)
 VALUES
   ('notice', 'Notice', 'notice', 'public'),
   ('free', 'Free Board', 'community', 'authenticated'),
+  ('anonymous', 'Anonymous Board', 'community', 'authenticated'),
   ('faq', 'FAQ', 'faq', 'public'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
@@ -542,6 +543,8 @@ JOIN (
   SELECT 'free', 'General', 1
   UNION ALL
   SELECT 'free', 'Study', 2
+  UNION ALL
+  SELECT 'anonymous', 'General', 1
   UNION ALL
   SELECT 'faq', 'General', 1
   UNION ALL
@@ -567,6 +570,8 @@ JOIN (
   UNION ALL
   SELECT 'free', 'Study', 'REST API study notes', 'Searchable board seed for keyword checks.', FALSE, 5
   UNION ALL
+  SELECT 'anonymous', 'General', '익명 학습 고민 공유', '작성자는 DB에 저장되지만 API 응답에는 익명으로 표시되는 게시글입니다.', FALSE, 4
+  UNION ALL
   SELECT 'faq', 'General', 'How do I open learning materials?', 'Use the learning materials menu.', TRUE, 3
   UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
@@ -586,6 +591,7 @@ VALUES ('rest-api-study.pdf', 'seed/rest-api-study.pdf', '/seed/rest-api-study.p
 ON DUPLICATE KEY UPDATE original_filename = VALUES(original_filename);
 
 SET @free_post_id := (SELECT board_post_id FROM board_posts WHERE title = 'REST API study notes' LIMIT 1);
+SET @anonymous_post_id := (SELECT board_post_id FROM board_posts WHERE title = '익명 학습 고민 공유' LIMIT 1);
 SET @attachment_id := (SELECT attachment_id FROM attachments WHERE checksum_sha256 = SHA2('rest-api-study.pdf', 256) LIMIT 1);
 
 INSERT IGNORE INTO board_post_attachments (board_post_id, attachment_id)
@@ -595,10 +601,15 @@ INSERT INTO board_comments (board_post_id, author_user_id, content)
 SELECT @free_post_id, @manager_id, 'Seed comment for board list counts.'
 WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @free_post_id);
 
+INSERT INTO board_comments (board_post_id, author_user_id, content)
+SELECT @anonymous_post_id, @classmate_id, '익명 댓글도 작성자 식별자 없이 표시됩니다.'
+WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @anonymous_post_id);
+
 INSERT IGNORE INTO board_post_reactions (board_post_id, user_id, reaction_type_code)
 VALUES
   (@free_post_id, @student_id, 'bookmark'),
-  (@free_post_id, @manager_id, 'like');
+  (@free_post_id, @manager_id, 'like'),
+  (@anonymous_post_id, @student_id, 'like');
 
 -- SSAFY e-book demo data for My Campus e-book flow.
 INSERT INTO ssafy_ebooks (title, description, thumbnail_url, category, external_url, active_yn) VALUES

@@ -155,6 +155,45 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.post.hasAttachment").value(true));
     }
 
+
+    @Test
+    void anonymousPostDetailDoesNotExposeAuthorIds() throws Exception {
+        given(boardService.getPost("anonymous", 70L)).willReturn(new BoardPostDetailResponse(new BoardPostDetail(
+                70L,
+                "anonymous",
+                new CategorySummary(11L, "General"),
+                "Secret question",
+                "Hidden body",
+                null,
+                "익명",
+                OffsetDateTime.parse("2026-04-26T00:00:00Z"),
+                OffsetDateTime.parse("2026-04-26T00:00:00Z"),
+                7,
+                new EngagementSummary(1, 2, 0),
+                List.of(new BoardPostDetailResponse.BoardCommentItem(
+                        80L,
+                        70L,
+                        null,
+                        "Same here",
+                        null,
+                        "익명",
+                        OffsetDateTime.parse("2026-04-26T00:05:00Z"),
+                        List.of()
+                )),
+                List.of(),
+                false,
+                false
+        )));
+
+        mockMvc.perform(get("/api/boards/anonymous/posts/70"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.post.id").value(70))
+                .andExpect(jsonPath("$.post.authorName").value("익명"))
+                .andExpect(jsonPath("$.post.authorUserId").doesNotExist())
+                .andExpect(jsonPath("$.post.comments[0].authorName").value("익명"))
+                .andExpect(jsonPath("$.post.comments[0].authorUserId").doesNotExist());
+    }
+
     @Test
     void invalidPageReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/boards/free/posts?page=0"))

@@ -51,6 +51,7 @@ export const navSections: NavSection[] = [
     title: '소통',
     items: [
       { path: '/community/free', label: '자유게시판' },
+      { path: '/community/anonymous', label: '익명 게시판' },
       { path: '/community/classmates', label: '우리반 보기' },
     ],
   },
@@ -74,6 +75,9 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'board-list', priority: 3, feature: '게시판', path: '/community/free', label: '자유게시판 목록' },
   { id: 'board-detail', priority: 3, feature: '게시글/댓글', path: '/community/free/1', label: '자유게시판 상세' },
   { id: 'board-write', priority: 3, feature: '게시글 작성', path: '/community/free/write', label: '자유게시판 작성' },
+  { id: 'anonymous-board-list', priority: 19, feature: '익명 게시판', path: '/community/anonymous', label: '익명 게시판 목록' },
+  { id: 'anonymous-board-detail', priority: 19, feature: '익명 게시글/댓글', path: '/community/anonymous/1', label: '익명 게시판 상세' },
+  { id: 'anonymous-board-write', priority: 19, feature: '익명 게시글 작성', path: '/community/anonymous/write', label: '익명 게시판 작성' },
   { id: 'survey-list', priority: 4, feature: '설문', path: '/survey', label: '설문 목록' },
   { id: 'survey-detail', priority: 4, feature: '설문 문항', path: '/survey/1', label: '설문 상세' },
   { id: 'survey-respond', priority: 4, feature: '설문 응답', path: '/survey/1/respond', label: '설문 응답' },

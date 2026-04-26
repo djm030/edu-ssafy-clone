@@ -1,5 +1,6 @@
 package com.edussafy.backend.board.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -11,6 +12,7 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             CategorySummary category,
             String title,
             String content,
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             Long authorUserId,
             String authorName,
             OffsetDateTime createdAt,
@@ -32,6 +34,7 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             long postId,
             Long parentCommentId,
             String content,
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             Long authorUserId,
             String authorName,
             OffsetDateTime createdAt,

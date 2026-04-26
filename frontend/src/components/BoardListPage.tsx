@@ -197,6 +197,7 @@ function PostTable({ posts, showEngagement }: { posts: BoardPostListItem[]; show
 
 function postDetailPath(post: BoardPostListItem): string {
   if (post.boardCode === 'free') return `/community/free/${post.id}`;
+  if (post.boardCode === 'anonymous') return `/community/anonymous/${post.id}`;
   if (post.boardCode === 'notice') return `/help/notice/${post.id}`;
   if (post.boardCode === 'faq') return `/help/faq/${post.id}`;
   return '/help/qna';

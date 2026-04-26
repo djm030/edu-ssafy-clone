@@ -1,4 +1,4 @@
-export type BoardCode = 'notice' | 'free' | 'faq' | 'qna';
+export type BoardCode = 'notice' | 'free' | 'anonymous' | 'faq' | 'qna';
 
 export type LoadState = 'loading' | 'refreshing' | 'loaded' | 'empty' | 'error';
 

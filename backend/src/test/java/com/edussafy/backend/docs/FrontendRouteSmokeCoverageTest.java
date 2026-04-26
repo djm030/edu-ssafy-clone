@@ -34,6 +34,9 @@ class FrontendRouteSmokeCoverageTest {
             "/community/free",
             "/community/free/1",
             "/community/free/write",
+            "/community/anonymous",
+            "/community/anonymous/1",
+            "/community/anonymous/write",
             "/survey",
             "/survey/1",
             "/survey/1/respond",
@@ -84,6 +87,8 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/learning/live')");
         assertThat(app).contains("if (path === '/learning/replays' || path === '/learning/replays/my')");
         assertThat(app).contains("if (path === '/learning/replays/all')");
+        assertThat(app).contains("if (path === '/community/anonymous/write' || path === '/community/anonymous/new')");
+        assertThat(app).contains("match(/^\\/community\\/anonymous\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/ebooks\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/elearning\\/(\\d+)$/)");

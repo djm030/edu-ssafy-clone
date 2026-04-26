@@ -68,6 +68,19 @@ const boardScreens: Record<string, BoardScreenConfig> = {
     title: '자유게시판',
     writePath: '/community/free/write',
   },
+  '/community/anonymous': {
+    boardCode: 'anonymous',
+    description: '작성자 정보가 공개되지 않는 익명 게시글을 조회하고 의견을 나눕니다.',
+    emptyMessage: '익명 게시글이 없습니다.',
+    eyebrow: 'COMMUNITY',
+    navLabel: '익명 게시판',
+    path: '/community/anonymous',
+    searchPlaceholder: '익명 게시글 검색',
+    showEngagement: true,
+    showWriteAction: true,
+    title: '익명 게시판',
+    writePath: '/community/anonymous/write',
+  },
   '/help/faq': {
     boardCode: 'faq',
     description: '자주 묻는 질문과 답변을 확인합니다.',
@@ -252,6 +265,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   const surveyRespondMatch = match(/^\/survey\/(\d+)\/respond$/);
   const surveyMatch = match(/^\/survey\/(\d+)$/);
   const qnaTicketMatch = match(/^\/help\/qna\/tickets\/(\d+)$/);
+  const anonymousPostMatch = match(/^\/community\/anonymous\/(\d+)$/);
 
   if (path === '/') return <DashboardPage />;
   if (path === '/admin/campus') return <AdminCampusPage />;
@@ -275,7 +289,10 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/profile/check') return <ProfileCheckPage onVerified={() => navigate('/profile/edit')} />;
   if (path === '/profile/edit') return <ProfileEditPage />;
   if (path === '/community/classmates') return <ClassmatesPage />;
-  if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage />;
+  if (path === '/community/free/write' || path === '/community/free/new') return <BoardPostWritePage boardCode="free" detailPathBase="/community/free" title="자유게시판 글쓰기" />;
+  if (path === '/community/anonymous/write' || path === '/community/anonymous/new') {
+    return <BoardPostWritePage boardCode="anonymous" detailPathBase="/community/anonymous" title="익명 게시판 글쓰기" />;
+  }
   if (path === '/help/qna') return <QnaListPage canAnswerSupport={canAnswerSupport(roleAccess)} />;
   if (path === '/quest') return <QuestPage />;
   if (path === '/survey') return <SurveyPage canManageSurveys={canManageSurveys(roleAccess)} />;
@@ -289,6 +306,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;
   if (materialMatch) return <MaterialDetailPage materialId={Number(materialMatch[1])} />;
   if (requiredStudyMatch) return <RequiredStudiesPage studyId={Number(requiredStudyMatch[1])} />;
+  if (anonymousPostMatch) return <BoardDetailPage boardCode="anonymous" postId={Number(anonymousPostMatch[1])} title="익명 게시판 상세" listPath="/community/anonymous" />;
   if (freePostMatch) return <BoardDetailPage boardCode="free" postId={Number(freePostMatch[1])} title="자유게시판 상세" listPath="/community/free" />;
   if (noticePostMatch) return <BoardDetailPage boardCode="notice" postId={Number(noticePostMatch[1])} title="공지 상세" listPath="/help/notice" />;
   if (faqPostMatch) return <BoardDetailPage boardCode="faq" postId={Number(faqPostMatch[1])} title="FAQ 상세" listPath="/help/faq" />;

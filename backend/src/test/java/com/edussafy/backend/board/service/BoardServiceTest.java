@@ -11,6 +11,7 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentIte
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
+import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
@@ -163,6 +164,105 @@ class BoardServiceTest {
         assertThat(response.item().deleted()).isTrue();
         assertThat(response.item().demo()).isFalse();
         verify(repository).deletePost(1L, 33L);
+    }
+
+
+    @Test
+    void anonymousPostListMasksAuthorName() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostListItem persisted = new BoardPostListItem(
+                70L,
+                "anonymous",
+                new CategorySummary(11L, "General"),
+                "Secret question",
+                "Real Student",
+                OffsetDateTime.now(),
+                12,
+                2,
+                3,
+                1,
+                false,
+                false
+        );
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.countPosts(2L, new BoardQuery(null, null, 1, 20, "createdAt,desc"))).willReturn(1L);
+        given(repository.findPosts(2L, new BoardQuery(null, null, 1, 20, "createdAt,desc"), BoardSort.parse("createdAt,desc")))
+                .willReturn(List.of(persisted));
+        BoardService service = new BoardService(repository);
+
+        BoardPostListItem response = service.getPosts(
+                "anonymous",
+                new BoardQuery(null, null, 1, 20, "createdAt,desc")
+        ).items().getFirst();
+
+        assertThat(response.authorName()).isEqualTo("익명");
+        assertThat(response.title()).isEqualTo("Secret question");
+        assertThat(response.boardCode()).isEqualTo("anonymous");
+    }
+
+    @Test
+    void anonymousPostDetailMasksPostAndCommentAuthors() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(70L, "anonymous", "Secret question", "Hidden body", 7L, "Real Student", List.of());
+        BoardCommentItem comment = new BoardCommentItem(80L, 70L, null, "Same here", 8L, "Classmate", OffsetDateTime.now(), List.of());
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.findPostDetail(2L, 70L)).willReturn(Optional.of(post));
+        given(repository.findComments(70L)).willReturn(List.of(comment));
+        given(repository.findAttachments(70L)).willReturn(List.of());
+        BoardService service = new BoardService(repository);
+
+        BoardPostDetail response = service.getPost("anonymous", 70L).post();
+
+        assertThat(response.authorUserId()).isNull();
+        assertThat(response.authorName()).isEqualTo("익명");
+        assertThat(response.comments()).hasSize(1);
+        assertThat(response.comments().getFirst().authorUserId()).isNull();
+        assertThat(response.comments().getFirst().authorName()).isEqualTo("익명");
+    }
+
+    @Test
+    void createAnonymousPostStoresRealAuthorButReturnsMaskedAuthor() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail created = detail(71L, "anonymous", "Secret", "Body", 7L, "Demo Student", List.of());
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(7L));
+        given(repository.createPost(2L, null, 7L, "Secret", "Body")).willReturn(71L);
+        given(repository.findPostDetail(2L, 71L)).willReturn(Optional.of(created));
+        BoardService service = new BoardService(repository);
+
+        BoardPostCreateResponse response = service.createPost("anonymous", new BoardPostCreateRequest(null, " Secret ", " Body "));
+
+        assertThat(response.item().boardCode()).isEqualTo("anonymous");
+        assertThat(response.item().authorName()).isEqualTo("익명");
+        verify(repository).createPost(2L, null, 7L, "Secret", "Body");
+    }
+
+    @Test
+    void updateAnonymousPostRejectsNonAuthorInWebRequest() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail existing = detail(72L, "anonymous", "Before", "Body", 7L, "Demo Student", List.of());
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.findPostDetail(2L, 72L)).willReturn(Optional.of(existing));
+        BoardService service = new BoardService(repository);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(AuthSession.CURRENT_USER_ID, 8L);
+        request.setSession(session);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        try {
+            assertThatThrownBy(() -> service.updatePost(
+                    "anonymous",
+                    72L,
+                    new BoardPostCreateRequest(null, "Updated", "Changed body")
+            ))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("403")
+                    .hasMessageContaining("게시글 작성자만");
+            verify(repository, never()).updatePost(2L, 72L, null, "Updated", "Changed body");
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
     @Test
@@ -421,14 +521,26 @@ class BoardServiceTest {
     }
 
     private BoardPostDetail detail(long id, String title, String content, List<BoardCommentItem> comments) {
+        return detail(id, "free", title, content, 7L, "Demo Student", comments);
+    }
+
+    private BoardPostDetail detail(
+            long id,
+            String boardCode,
+            String title,
+            String content,
+            long authorUserId,
+            String authorName,
+            List<BoardCommentItem> comments
+    ) {
         return new BoardPostDetail(
                 id,
-                "free",
-                new CategorySummary(4L, "General"),
+                boardCode,
+                new CategorySummary("anonymous".equals(boardCode) ? 11L : 4L, "General"),
                 title,
                 content,
-                7L,
-                "Demo Student",
+                authorUserId,
+                authorName,
                 OffsetDateTime.now(),
                 OffsetDateTime.now(),
                 0,

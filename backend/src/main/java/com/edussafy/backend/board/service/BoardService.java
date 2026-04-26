@@ -83,6 +83,9 @@ public class BoardService {
         List<BoardPostListItem> items = totalItems == 0
                 ? List.of()
                 : boardRepository.findPosts(boardId, query, sort);
+        if (isAnonymousBoard(boardCode)) {
+            items = items.stream().map(this::anonymousListItem).toList();
+        }
         int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / query.size());
 
         return new BoardPostListResponse(items, new PageMeta(query.page(), query.size(), totalItems, totalPages));
@@ -92,11 +95,12 @@ public class BoardService {
         long boardId = requireBoardId(boardCode);
         BoardPostDetail post = boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
-        return new BoardPostDetailResponse(withCommentsAndAttachments(
+        BoardPostDetail hydrated = withCommentsAndAttachments(
                 post,
                 nestComments(boardRepository.findComments(postId)),
                 nonNullList(boardRepository.findAttachments(postId))
-        ));
+        );
+        return new BoardPostDetailResponse(isAnonymousBoard(boardCode) ? anonymousDetail(hydrated) : hydrated);
     }
 
     @Transactional
@@ -121,7 +125,7 @@ public class BoardService {
                 created.category() == null ? null : created.category().id(),
                 created.title(),
                 created.content(),
-                created.authorName(),
+                displayAuthorName(boardCode, created.authorName()),
                 created.createdAt(),
                 false
         ));
@@ -154,7 +158,7 @@ public class BoardService {
                 saved.category() == null ? null : saved.category().id(),
                 saved.title(),
                 saved.content(),
-                saved.authorName(),
+                displayAuthorName(boardCode, saved.authorName()),
                 saved.createdAt(),
                 false
         ));
@@ -276,7 +280,7 @@ public class BoardService {
                 created.postId(),
                 created.parentCommentId(),
                 created.content(),
-                created.authorName(),
+                displayAuthorName(boardCode, created.authorName()),
                 created.createdAt(),
                 false
         ));
@@ -310,7 +314,7 @@ public class BoardService {
                 saved.postId(),
                 saved.parentCommentId(),
                 saved.content(),
-                saved.authorName(),
+                displayAuthorName(boardCode, saved.authorName()),
                 saved.createdAt(),
                 false
         ));
@@ -439,6 +443,65 @@ public class BoardService {
         return roots;
     }
 
+    private boolean isAnonymousBoard(String boardCode) {
+        return "anonymous".equalsIgnoreCase(boardCode);
+    }
+
+    private String displayAuthorName(String boardCode, String authorName) {
+        return isAnonymousBoard(boardCode) ? "익명" : authorName;
+    }
+
+    private BoardPostListItem anonymousListItem(BoardPostListItem item) {
+        return new BoardPostListItem(
+                item.id(),
+                item.boardCode(),
+                item.category(),
+                item.title(),
+                "익명",
+                item.createdAt(),
+                item.viewCount(),
+                item.commentCount(),
+                item.reactionCount(),
+                item.bookmarkCount(),
+                item.hasAttachment(),
+                item.isPinned()
+        );
+    }
+
+    private BoardPostDetail anonymousDetail(BoardPostDetail post) {
+        return new BoardPostDetail(
+                post.id(),
+                post.boardCode(),
+                post.category(),
+                post.title(),
+                post.content(),
+                null,
+                "익명",
+                post.createdAt(),
+                post.updatedAt(),
+                post.viewCount(),
+                post.engagement(),
+                anonymousComments(post.comments()),
+                post.attachments(),
+                post.hasAttachment(),
+                post.isPinned()
+        );
+    }
+
+    private List<BoardCommentItem> anonymousComments(List<BoardCommentItem> comments) {
+        return comments.stream()
+                .map(comment -> new BoardCommentItem(
+                        comment.id(),
+                        comment.postId(),
+                        comment.parentCommentId(),
+                        comment.content(),
+                        null,
+                        "익명",
+                        comment.createdAt(),
+                        anonymousComments(comment.replies() == null ? List.of() : comment.replies())
+                ))
+                .toList();
+    }
 
     private Long currentBoardActorUserId() {
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {

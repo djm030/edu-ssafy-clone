@@ -59,6 +59,7 @@ for route in \
   /learning/replays/all \
   /profile/check \
   /community/free \
+  /community/anonymous \
   /community/classmates \
   /help/qna \
   /quest \
