@@ -4,6 +4,7 @@ import type {
   BoardCode,
   BoardPostListItem,
   Classmate,
+  ExternalServiceItem,
   AcademicRuleCategory,
   CurriculumWeek,
   DashboardSummary,
@@ -264,6 +265,13 @@ export const mockMentoringMeetingReviews: MentoringMeetingReviewDetail[] = [
 ];
 
 mockMentoringMeetingResults[0].reviews = mockMentoringMeetingReviews;
+
+
+export const mockExternalServices: ExternalServiceItem[] = [
+  { code: 'JOB_SSAFY', name: 'JOB SSAFY', url: 'https://job.ssafy.local', description: '채용 공고와 취업 지원 프로그램으로 이동합니다.', enabled: true, accessCount: 0 },
+  { code: 'SSAFY_GIT', name: 'SSAFY GIT', url: 'https://git.ssafy.local', description: '프로젝트 저장소와 코드 리뷰 시스템으로 이동합니다.', enabled: true, accessCount: 0 },
+  { code: 'MEETING_SSAFY', name: 'Meeting! SSAFY', url: 'https://meeting.ssafy.local', description: '라이브 세션과 간담회 회의실로 이동합니다.', enabled: false, accessCount: 0 },
+];
 
 export const mockAcademicRuleCategories: AcademicRuleCategory[] = [
   {

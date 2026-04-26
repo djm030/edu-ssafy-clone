@@ -18,7 +18,7 @@ export interface ScreenSmokeRoute {
 
 export const navSections: NavSection[] = [
   { title: '홈', items: [{ path: '/', label: '대시보드' }] },
-  { title: '운영', items: [{ path: '/ops/readiness', label: '운영 점검' }] },
+  { title: '운영', items: [{ path: '/ops/readiness', label: '운영 점검' }, { path: '/external-services', label: '외부 서비스' }] },
   { title: '관리', items: [{ path: '/admin/campus', label: '캠퍼스 관리' }] },
   {
     title: '마이캠퍼스',
@@ -137,4 +137,5 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'quest-detail', priority: 8, feature: '퀘스트/평가', path: '/quest/1', label: '퀘스트 상세' },
   { id: 'quest-submit', priority: 8, feature: '퀘스트 제출', path: '/quest/1/submit', label: '퀘스트 제출' },
   { id: 'ops-readiness', priority: 9, feature: '프로덕션 하드닝', path: '/ops/readiness', label: '운영 준비 점검' },
+  { id: 'external-services', priority: 26, feature: '외부 서비스', path: '/external-services', label: '외부 서비스' },
 ];

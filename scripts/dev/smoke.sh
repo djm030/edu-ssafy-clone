@@ -71,7 +71,8 @@ for route in \
   /help/qna \
   /quest \
   /survey \
-  /ops/readiness; do
+  /ops/readiness \
+  /external-services; do
   require_file_contains frontend/src/App.tsx "$route"
 done
 
@@ -100,7 +101,8 @@ for api_path in \
   /api/mentoring/notices \
   /api/mentoring/meetings \
   /api/mentoring/meeting-results \
-  /api/mentoring/meeting-reviews; do
+  /api/mentoring/meeting-reviews \
+  /api/external-services; do
   require_any_file_contains "$api_path" frontend/src/api/app.ts frontend/src/api/readiness.ts
 done
 
@@ -136,3 +138,4 @@ request GET "$BACKEND_URL/api/support/tickets?page=1&size=5"
 request GET "$BACKEND_URL/api/mentoring/meetings?page=1&size=5"
 request GET "$BACKEND_URL/api/mentoring/meeting-results?page=1&size=5"
 request GET "$BACKEND_URL/api/mentoring/meeting-reviews?page=1&size=5"
+request GET "$BACKEND_URL/api/external-services"

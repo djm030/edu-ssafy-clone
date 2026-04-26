@@ -73,7 +73,8 @@ class FrontendRouteSmokeCoverageTest {
             "/quest",
             "/quest/1",
             "/quest/1/submit",
-            "/ops/readiness"
+            "/ops/readiness",
+            "/external-services"
     );
 
     @Test
@@ -94,6 +95,7 @@ class FrontendRouteSmokeCoverageTest {
 
         assertThat(app).contains("if (path === '/login')");
         assertThat(app).contains("if (path === '/ops/readiness')");
+        assertThat(app).contains("if (path === '/external-services')");
         assertThat(app).contains("if (path === '/mycampus/elearning')");
         assertThat(app).contains("if (path === '/mycampus/bookmarks')");
         assertThat(app).contains("if (path === '/mycampus/documents')");
@@ -158,7 +160,8 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("mentoring-questions", Path.of("..", "frontend", "src", "pages", "MentoringQuestionsPage.tsx")),
                 Map.entry("mentoring-notices", Path.of("..", "frontend", "src", "pages", "MentoringNoticesPage.tsx")),
                 Map.entry("mentoring-meetings", Path.of("..", "frontend", "src", "pages", "MentoringMeetingsPage.tsx")),
-                Map.entry("mentoring-meeting-results", Path.of("..", "frontend", "src", "pages", "MentoringMeetingResultsPage.tsx"))
+                Map.entry("mentoring-meeting-results", Path.of("..", "frontend", "src", "pages", "MentoringMeetingResultsPage.tsx")),
+                Map.entry("external-services", Path.of("..", "frontend", "src", "pages", "ExternalServicesPage.tsx"))
         );
 
         for (Map.Entry<String, Path> entry : pages.entrySet()) {

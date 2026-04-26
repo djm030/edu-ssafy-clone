@@ -83,6 +83,9 @@ function AppShell({
             </span>
           </div>
           <div className="topbar-actions">
+            <button className="ghost-button" onClick={() => onNavigate('/external-services')} type="button">
+              외부 서비스
+            </button>
             <button className="ghost-button" onClick={() => onNavigate('/profile/check')} type="button">
               회원정보
             </button>

@@ -535,6 +535,7 @@ VALUES
   ('mentoring_meeting', 'Mentoring Meeting', 'mentoring', 'authenticated'),
   ('mentoring_meeting_result', 'Mentoring Meeting Result', 'mentoring', 'public'),
   ('mentoring_meeting_review', 'Mentoring Meeting Review', 'mentoring', 'authenticated'),
+  ('external_service', 'External Service', 'external', 'authenticated'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -580,6 +581,8 @@ JOIN (
   SELECT 'mentoring_meeting_result', '결과', 1
   UNION ALL
   SELECT 'mentoring_meeting_review', '후기', 1
+  UNION ALL
+  SELECT 'external_service', '링크', 1
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -678,6 +681,28 @@ JOIN (
  location=서울 캠퍼스
  -->
  포트폴리오 화면 구성과 배포 경험 정리 방법을 나눕니다.', FALSE, 5
+  UNION ALL
+  UNION ALL
+  SELECT 'external_service', '링크', 'JOB SSAFY', '<!--EXTERNAL_SERVICE
+ code=JOB_SSAFY
+ url=https://job.ssafy.local
+ enabled=true
+ -->
+ 채용 공고와 취업 지원 프로그램으로 이동합니다.', FALSE, 0
+  UNION ALL
+  SELECT 'external_service', '링크', 'SSAFY GIT', '<!--EXTERNAL_SERVICE
+ code=SSAFY_GIT
+ url=https://git.ssafy.local
+ enabled=true
+ -->
+ 프로젝트 저장소와 코드 리뷰 시스템으로 이동합니다.', FALSE, 0
+  UNION ALL
+  SELECT 'external_service', '링크', 'Meeting! SSAFY', '<!--EXTERNAL_SERVICE
+ code=MEETING_SSAFY
+ url=https://meeting.ssafy.local
+ enabled=false
+ -->
+ 라이브 세션과 간담회 회의실 링크입니다. 운영 연결 전까지 비활성화합니다.', FALSE, 0
   UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
 ) seed ON seed.board_code = b.board_code

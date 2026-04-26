@@ -972,3 +972,25 @@ export interface AdminCohortItem { id: number; name: string; year: number; activ
 export interface AdminTrackItem { id: number; name: string; description?: string; active: boolean; }
 export interface AdminClassGroupItem { id: number; campusId: number; cohortId: number; trackId: number; name: string; classroom?: string; capacity: number; active: boolean; }
 export type AdminClassGroupDraft = Omit<AdminClassGroupItem, 'id' | 'active'>;
+
+
+export interface ExternalServicesResponse {
+  items: ExternalServiceItem[];
+}
+
+export interface ExternalServiceItem {
+  code: string;
+  name: string;
+  url: string;
+  description: string;
+  enabled: boolean;
+  lastAccessedAt?: string | null;
+  accessCount: number;
+}
+
+export interface ExternalServiceAccessItem {
+  code: string;
+  name: string;
+  url: string;
+  accessedAt?: string | null;
+}

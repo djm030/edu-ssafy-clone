@@ -5,6 +5,7 @@ import {
   mockClassmates,
   mockCurriculumWeeks,
   mockDashboard,
+  mockExternalServices,
   mockMaterials,
   mockMentoringMeetingApplications,
   mockMentoringMeetingResults,
@@ -40,6 +41,9 @@ import type {
   DocumentRequestItem,
   DocumentSubmissionDraft,
   DocumentSubmissionResult,
+  ExternalServiceAccessItem,
+  ExternalServiceItem,
+  ExternalServicesResponse,
   EducationStatusSummary,
   EbookAccessLogResult,
   EbookItem,
@@ -1131,6 +1135,19 @@ export function updateMentoringMeetingReview(reviewId: number, input: { title: s
 export function deleteMentoringMeetingReview(reviewId: number): Promise<MentoringMeetingReviewDetail> {
   return fetchJson<{ item: MentoringMeetingReviewDetail }>(`/api/mentoring/meeting-reviews/${reviewId}`, {
     method: 'DELETE',
+  }).then((response) => response.item);
+}
+
+
+export function getExternalServices(): Promise<ExternalServiceItem[]> {
+  return fetchJson<ExternalServicesResponse>('/api/external-services', {
+    fallback: () => ({ items: mockExternalServices }),
+  }).then((response) => response.items);
+}
+
+export function logExternalServiceAccess(code: string): Promise<ExternalServiceAccessItem> {
+  return fetchJson<{ item: ExternalServiceAccessItem }>(`/api/external-services/${encodeURIComponent(code)}/access-log`, {
+    method: 'POST',
   }).then((response) => response.item);
 }
 

@@ -67,6 +67,7 @@ routes=(
   "/quest/1"
   "/quest/1/submit"
   "/ops/readiness"
+  "/external-services"
   "/admin/campus"
 )
 
