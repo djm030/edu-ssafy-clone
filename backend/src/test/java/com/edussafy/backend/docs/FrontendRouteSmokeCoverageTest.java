@@ -343,6 +343,8 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("학습자료")
                 .contains("자료")
                 .contains("상세보기")
+                .contains("actionLabel")
+                .contains("최대")
                 .contains("학습중 이러닝")
                 .contains("자유게시판")
                 .contains("e-book")

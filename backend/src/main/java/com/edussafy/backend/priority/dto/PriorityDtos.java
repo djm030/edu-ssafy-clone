@@ -157,9 +157,14 @@ public final class PriorityDtos {
             long id,
             String title,
             String type,
+            String classification,
             String status,
+            String statusLabel,
+            String resultStatus,
+            Integer maxExp,
             OffsetDateTime startAt,
             OffsetDateTime endAt,
+            String actionLabel,
             String detailPath
     ) {
     }

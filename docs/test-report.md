@@ -1,5 +1,13 @@
 # Test Report
 
+## Dashboard Quest Evaluation Cards (2026-04-27 KST)
+- Added dashboard Quest/평가 card metadata for classification, Korean status labels, result status, max EXP, and action labels so home cards expose 예정/제출/결과 cues instead of a generic status-only line.
+- Updated backend DTO/service mapping, frontend types/fallback data/UI, CSS, and static/controller assertions to keep the dashboard widget connected to DB-backed quest/evaluation data.
+- `git diff --check` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test` -> PASS, 67 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## Dashboard Material Carousel Metrics (2026-04-27 KST)
 - Added DB-backed resource counts to dashboard material cards and rendered the home learning-material area as a horizontal carousel-style strip with resource/view/like/bookmark/detail cues.
 - Updated the dashboard API DTO/service mapping, frontend types, fallback data, UI, and smoke assertions so the home material carousel no longer relies on mock-only metric gaps.

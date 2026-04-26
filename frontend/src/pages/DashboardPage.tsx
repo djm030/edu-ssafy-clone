@@ -173,10 +173,16 @@ function CurriculumRow({ item }: { item: DashboardCurriculumSession }) {
 
 function QuestCard({ item }: { item: DashboardQuestCard }) {
   return (
-    <a className="dashboard-widget-card" href={item.detailPath}>
+    <a className="dashboard-widget-card dashboard-quest-card" href={item.detailPath}>
+      <div className="dashboard-quest-card__meta">
+        <span className={`status-pill ${item.resultStatus === 'graded' ? 'green' : item.status === 'submitted' ? 'blue' : 'orange'}`}>
+          {item.statusLabel || formatStatus(item.status)}
+        </span>
+        <span>{item.type || 'Quest'}{item.classification ? ` · ${item.classification}` : ''}</span>
+      </div>
       <strong>{item.title}</strong>
-      <p>{item.type || 'Quest'} · {formatStatus(item.status)}</p>
-      <small>{formatPeriod(item.startAt, item.endAt)}</small>
+      <small>{formatPeriod(item.startAt, item.endAt)}{item.maxExp ? ` · 최대 ${item.maxExp}EXP` : ''}</small>
+      <span className="dashboard-quest-card__action">{item.actionLabel || '상세보기'}</span>
     </a>
   );
 }

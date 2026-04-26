@@ -490,9 +490,14 @@ public class PriorityApiService {
                         item.id(),
                         item.title(),
                         item.type(),
+                        item.classification(),
                         firstText(item.resultStatus(), item.submitStatus(), item.status(), "scheduled"),
+                        dashboardQuestStatusLabel(item),
+                        item.resultStatus(),
+                        item.maxExp(),
                         item.startAt(),
                         item.endAt(),
+                        dashboardQuestActionLabel(item),
                         "/quest/" + item.id()
                 ))
                 .toList();
@@ -602,6 +607,37 @@ public class PriorityApiService {
             }
         }
         return null;
+    }
+
+    private String dashboardQuestStatusLabel(QuestItem item) {
+        String status = firstText(item.resultStatus(), item.submitStatus(), item.status(), "scheduled");
+        if (status == null) {
+            return "예정";
+        }
+        return switch (status.toLowerCase(Locale.ROOT)) {
+            case "graded" -> "채점 완료";
+            case "submitted", "done" -> "제출 완료";
+            case "overdue" -> "기간 종료";
+            case "progress", "open" -> "진행 중";
+            case "scheduled", "planned" -> "예정";
+            default -> status;
+        };
+    }
+
+    private String dashboardQuestActionLabel(QuestItem item) {
+        String resultStatus = normalizeNullable(item.resultStatus());
+        if ("graded".equals(resultStatus)) {
+            return "결과보기";
+        }
+        String submitStatus = normalizeNullable(item.submitStatus());
+        if ("submitted".equals(submitStatus) || "done".equals(submitStatus)) {
+            return "제출내역";
+        }
+        String status = normalizeNullable(item.status());
+        if ("overdue".equals(status)) {
+            return "기간 종료";
+        }
+        return "제출하기";
     }
 
     public LevelDetailResponse levelDetail() {

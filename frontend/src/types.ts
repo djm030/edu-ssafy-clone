@@ -144,9 +144,14 @@ export interface DashboardQuestCard {
   id: number;
   title: string;
   type?: string | null;
+  classification?: string | null;
   status?: string | null;
+  statusLabel?: string | null;
+  resultStatus?: string | null;
+  maxExp?: number | null;
   startAt?: string | null;
   endAt?: string | null;
+  actionLabel?: string | null;
   detailPath: string;
 }
 

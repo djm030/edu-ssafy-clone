@@ -64,8 +64,8 @@ export const mockDashboard: DashboardSummary = {
       { id: 32, weekNumber: 3, date: '2026-04-24', period: '13:00 ~ 18:00', title: '프로젝트 통합 실습', instructor: '담임 코치', location: '서울 A반', status: 'current', detailPath: '/learning/curriculum/3' },
     ],
     quests: [
-      { id: 1, title: '게시판 API 구현', type: 'assignment', status: 'progress', startAt: '2026-04-20T09:00:00+09:00', endAt: '2026-04-26T18:00:00+09:00', detailPath: '/quest/1' },
-      { id: 2, title: 'React 목록 화면 평가', type: 'evaluation', status: 'submitted', startAt: '2026-04-23T09:00:00+09:00', endAt: '2026-04-24T18:00:00+09:00', detailPath: '/quest/2' },
+      { id: 1, title: '게시판 API 구현', type: 'assignment', classification: 'algorithm', status: 'progress', statusLabel: '진행 중', resultStatus: null, maxExp: 100, startAt: '2026-04-20T09:00:00+09:00', endAt: '2026-04-26T18:00:00+09:00', actionLabel: '제출하기', detailPath: '/quest/1' },
+      { id: 2, title: 'React 목록 화면 평가', type: 'evaluation', classification: 'frontend', status: 'submitted', statusLabel: '제출 완료', resultStatus: 'pending', maxExp: 80, startAt: '2026-04-23T09:00:00+09:00', endAt: '2026-04-24T18:00:00+09:00', actionLabel: '제출내역', detailPath: '/quest/2' },
     ],
     materials: [
       { id: 1, title: 'Spring Boot REST API', category: 'Backend', description: 'Controller/Service/Repository 계층 실습 자료', progressPercent: 0, viewCount: 142, likeCount: 24, bookmarkCount: 11, resourceCount: 3, detailPath: '/learning/materials/1' },
