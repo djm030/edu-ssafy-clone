@@ -528,6 +528,7 @@ VALUES
   ('free', 'Free Board', 'community', 'authenticated'),
   ('anonymous', 'Anonymous Board', 'community', 'authenticated'),
   ('faq', 'FAQ', 'faq', 'public'),
+  ('academic_rules', 'Academic Rules', 'help', 'public'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -547,6 +548,12 @@ JOIN (
   SELECT 'anonymous', 'General', 1
   UNION ALL
   SELECT 'faq', 'General', 1
+  UNION ALL
+  SELECT 'academic_rules', '출결', 1
+  UNION ALL
+  SELECT 'academic_rules', '평가', 2
+  UNION ALL
+  SELECT 'academic_rules', '수료/포인트', 3
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -573,6 +580,14 @@ JOIN (
   SELECT 'anonymous', 'General', '익명 학습 고민 공유', '작성자는 DB에 저장되지만 API 응답에는 익명으로 표시되는 게시글입니다.', FALSE, 4
   UNION ALL
   SELECT 'faq', 'General', 'How do I open learning materials?', 'Use the learning materials menu.', TRUE, 3
+  UNION ALL
+  SELECT 'academic_rules', '출결', '출결 소명은 언제까지 가능한가요?', '발생일 기준 3영업일 이내에 증빙 자료와 함께 출결 소명을 신청합니다.', FALSE, 0
+  UNION ALL
+  SELECT 'academic_rules', '출결', '지각과 결석은 어떻게 산정되나요?', '입실/퇴실 기록과 운영자가 승인한 소명 결과를 기준으로 출결 상태를 산정합니다.', FALSE, 0
+  UNION ALL
+  SELECT 'academic_rules', '평가', 'Quest/평가 미제출은 어떻게 처리되나요?', '제출 기간 종료 후 미제출 상태로 집계되며 운영 정책에 따라 보완 제출 또는 감점이 적용될 수 있습니다.', FALSE, 0
+  UNION ALL
+  SELECT 'academic_rules', '수료/포인트', '장학 포인트는 어디에서 확인하나요?', '마이캠퍼스의 레벨&장학포인트 및 교육현황 화면에서 현재 포인트와 최근 반영 상태를 확인합니다.', FALSE, 0
   UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
 ) seed ON seed.board_code = b.board_code

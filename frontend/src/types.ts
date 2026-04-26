@@ -726,6 +726,29 @@ export interface ProfilePasswordChangeDraft {
   newPassword: string;
 }
 
+
+export interface AcademicRulesResponse {
+  categories: AcademicRuleCategory[];
+  keyword?: string | null;
+}
+
+export interface AcademicRuleCategory {
+  id: number;
+  name: string;
+  displayOrder: number;
+  ruleCount: number;
+  rules: AcademicRuleItem[];
+}
+
+export interface AcademicRuleItem {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  question: string;
+  answer: string;
+  updatedAt?: string | null;
+}
+
 export interface SupportTicketDraft {
   title: string;
   content: string;

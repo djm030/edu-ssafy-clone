@@ -4,6 +4,7 @@ import type {
   BoardCode,
   BoardPostListItem,
   Classmate,
+  AcademicRuleCategory,
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
@@ -87,6 +88,38 @@ export const mockPosts: BoardPostListItem[] = [
   { id: 302, boardCode: 'faq', category: { id: 8, name: '시스템' }, title: '비밀번호를 잊어버렸을 때 어떻게 하나요?', authorName: '운영자', createdAt: '2026-04-18T13:00:00+09:00', viewCount: 188, content: '로그인 화면의 비밀번호 찾기 링크를 이용하거나 캠퍼스 운영자에게 문의해 주세요.' },
   { id: 401, boardCode: 'qna', category: { id: 9, name: '출결' }, title: '오전 입실 기록이 누락되었습니다', authorName: '김싸피', createdAt: '2026-04-24T12:10:00+09:00', viewCount: 12, commentCount: 1, isNew: true, content: '오전 입실 시 QR 체크를 했는데 기록이 보이지 않습니다. 확인 부탁드립니다.' },
   { id: 402, boardCode: 'qna', category: { id: 10, name: '학습' }, title: '프로젝트 제출 파일 형식 문의', authorName: '박싸피', createdAt: '2026-04-23T16:40:00+09:00', viewCount: 19, commentCount: 2, content: '프로젝트 제출 시 압축 파일명 규칙과 포함해야 할 파일을 문의드립니다.' },
+];
+
+
+export const mockAcademicRuleCategories: AcademicRuleCategory[] = [
+  {
+    id: 31,
+    name: '출결',
+    displayOrder: 1,
+    ruleCount: 2,
+    rules: [
+      { id: 3101, categoryId: 31, categoryName: '출결', question: '지각과 결석은 어떻게 산정되나요?', answer: '입실/퇴실 기록과 운영자가 승인한 소명 결과를 기준으로 출결 상태를 산정합니다.', updatedAt: '2026-04-24T09:00:00+09:00' },
+      { id: 3102, categoryId: 31, categoryName: '출결', question: '출결 소명은 언제까지 가능한가요?', answer: '발생일 기준 3영업일 이내에 증빙 자료와 함께 1:1 문의 또는 출결 소명 화면에서 신청합니다.', updatedAt: '2026-04-24T09:05:00+09:00' },
+    ],
+  },
+  {
+    id: 32,
+    name: '평가',
+    displayOrder: 2,
+    ruleCount: 1,
+    rules: [
+      { id: 3201, categoryId: 32, categoryName: '평가', question: 'Quest/평가 미제출은 어떻게 처리되나요?', answer: '제출 기간 종료 후 미제출 상태로 집계되며, 운영 정책에 따라 보완 제출 또는 감점이 적용될 수 있습니다.', updatedAt: '2026-04-24T10:00:00+09:00' },
+    ],
+  },
+  {
+    id: 33,
+    name: '수료/포인트',
+    displayOrder: 3,
+    ruleCount: 1,
+    rules: [
+      { id: 3301, categoryId: 33, categoryName: '수료/포인트', question: '장학 포인트는 어디에서 확인하나요?', answer: '마이캠퍼스의 레벨&장학포인트 및 교육현황 화면에서 현재 포인트와 최근 반영 상태를 확인합니다.', updatedAt: '2026-04-24T11:00:00+09:00' },
+    ],
+  },
 ];
 
 export const mockMaterials: LearningMaterial[] = [

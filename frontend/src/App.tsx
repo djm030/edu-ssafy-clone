@@ -4,6 +4,7 @@ import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
 import { getCurrentRoleAccess, getMe, logout } from './api/app';
 import { mockUser } from './data/mockData';
+import AcademicRulesPage from './pages/AcademicRulesPage';
 import AdminCampusPage from './pages/AdminCampusPage';
 import AttendanceAppealPage from './pages/AttendanceAppealPage';
 import AttendancePage from './pages/AttendancePage';
@@ -293,6 +294,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/community/anonymous/write' || path === '/community/anonymous/new') {
     return <BoardPostWritePage boardCode="anonymous" detailPathBase="/community/anonymous" title="익명 게시판 글쓰기" />;
   }
+  if (path === '/help/rules') return <AcademicRulesPage />;
   if (path === '/help/qna') return <QnaListPage canAnswerSupport={canAnswerSupport(roleAccess)} />;
   if (path === '/quest') return <QuestPage />;
   if (path === '/survey') return <SurveyPage canManageSurveys={canManageSurveys(roleAccess)} />;

@@ -60,6 +60,7 @@ export const navSections: NavSection[] = [
     items: [
       { path: '/help/notice', label: '공지사항' },
       { path: '/help/faq', label: 'FAQ' },
+      { path: '/help/rules', label: '학사규정' },
       { path: '/help/qna', label: '1:1 문의' },
     ],
   },
@@ -81,6 +82,7 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'survey-list', priority: 4, feature: '설문', path: '/survey', label: '설문 목록' },
   { id: 'survey-detail', priority: 4, feature: '설문 문항', path: '/survey/1', label: '설문 상세' },
   { id: 'survey-respond', priority: 4, feature: '설문 응답', path: '/survey/1/respond', label: '설문 응답' },
+  { id: 'academic-rules', priority: 20, feature: '학사규정', path: '/help/rules', label: '학사규정' },
   { id: 'support-list', priority: 5, feature: '1:1 문의', path: '/help/qna', label: '문의 목록' },
   { id: 'support-new', priority: 5, feature: '1:1 문의', path: '/help/qna/new', label: '문의 작성' },
   { id: 'support-detail', priority: 5, feature: '1:1 문의 답변', path: '/help/qna/tickets/1', label: '문의 상세' },

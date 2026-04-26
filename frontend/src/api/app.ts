@@ -1,5 +1,6 @@
 import { ApiError, buildQuery, fetchJson } from './client';
 import {
+  mockAcademicRuleCategories,
   mockAttendanceRecords,
   mockClassmates,
   mockCurriculumWeeks,
@@ -12,6 +13,7 @@ import {
   mockUser,
 } from '../data/mockData';
 import type {
+  AcademicRulesResponse,
   AdminCampusStructure,
   AdminClassGroupDraft,
   AdminClassGroupItem,
@@ -897,6 +899,28 @@ export function agreePledge(pledgeId: number): Promise<PledgeAgreementResult> {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   }).then((response) => ({ item: toPledgeItem(response.item), agreement: response.agreement }));
+}
+
+
+export function getAcademicRules(query: { categoryId?: number; keyword?: string } = {}): Promise<AcademicRulesResponse> {
+  const normalizedKeyword = query.keyword?.trim();
+  const params = buildQuery({ categoryId: query.categoryId, keyword: normalizedKeyword });
+  return fetchJson<AcademicRulesResponse>(`/api/help/academic-rules${params}`, {
+    fallback: () => {
+      const categories = mockAcademicRuleCategories
+        .filter((category) => !query.categoryId || category.id === query.categoryId)
+        .map((category) => {
+          const rules = category.rules.filter((rule) => {
+            if (!normalizedKeyword) return true;
+            const keyword = normalizedKeyword.toLowerCase();
+            return rule.question.toLowerCase().includes(keyword) || rule.answer.toLowerCase().includes(keyword);
+          });
+          return { ...category, ruleCount: rules.length, rules };
+        })
+        .filter((category) => !normalizedKeyword || category.rules.length > 0);
+      return { categories, keyword: normalizedKeyword || null };
+    },
+  });
 }
 
 export function getEbooks(query: { page?: number; size?: number } = {}): Promise<{ items: EbookItem[] }> {

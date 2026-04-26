@@ -36,6 +36,7 @@ routes=(
   "/help/qna/tickets/1"
   "/help/notice"
   "/help/faq"
+  "/help/rules"
   "/mycampus/notifications"
   "/learning/live"
   "/learning/curriculum"
