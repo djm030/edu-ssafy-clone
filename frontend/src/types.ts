@@ -781,6 +781,23 @@ export interface MentoringQuestionDraft {
   anonymousAllowed: boolean;
 }
 
+export interface MentoringNoticesResponse {
+  items: MentoringNoticeItem[];
+  page: PageMeta;
+  keyword?: string | null;
+}
+
+export interface MentoringNoticeItem {
+  id: number;
+  title: string;
+  summary?: string | null;
+  content?: string | null;
+  categoryName: string;
+  pinned: boolean;
+  viewCount: number;
+  publishedAt?: string | null;
+}
+
 export interface AcademicRulesResponse {
   categories: AcademicRuleCategory[];
   keyword?: string | null;

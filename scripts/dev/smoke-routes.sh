@@ -42,6 +42,8 @@ routes=(
   "/mentoring/questions"
   "/mentoring/questions/new"
   "/mentoring/questions/1"
+  "/mentoring/notices"
+  "/mentoring/notices/1"
   "/mycampus/notifications"
   "/learning/live"
   "/learning/curriculum"

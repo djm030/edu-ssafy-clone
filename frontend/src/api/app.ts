@@ -6,6 +6,7 @@ import {
   mockCurriculumWeeks,
   mockDashboard,
   mockMaterials,
+  mockMentoringNotices,
   mockMentoringQuestions,
   mockMentorStories,
   mockNotifications,
@@ -47,6 +48,8 @@ import type {
   LiveSessionItem,
   LiveSessionJoinResult,
   LoginResponse,
+  MentoringNoticeItem,
+  MentoringNoticesResponse,
   MentoringQuestionDraft,
   MentoringQuestionItem,
   MentoringQuestionsResponse,
@@ -983,6 +986,35 @@ export function answerMentoringQuestion(questionId: number, content: string): Pr
 export function closeMentoringQuestion(questionId: number): Promise<MentoringQuestionItem> {
   return fetchJson<{ item: MentoringQuestionItem }>(`/api/mentoring/questions/${questionId}/close`, {
     method: 'PATCH',
+  }).then((response) => response.item);
+}
+
+export function getMentoringNotices(query: { keyword?: string; page?: number; size?: number } = {}): Promise<MentoringNoticesResponse> {
+  const keyword = query.keyword?.trim();
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ keyword, page, size });
+  return fetchJson<MentoringNoticesResponse>(`/api/mentoring/notices${params}`, {
+    fallback: () => {
+      const filtered = mockMentoringNotices.filter((notice) => {
+        if (!keyword) return true;
+        const lower = keyword.toLowerCase();
+        return notice.title.toLowerCase().includes(lower)
+          || (notice.summary || '').toLowerCase().includes(lower)
+          || (notice.content || '').toLowerCase().includes(lower);
+      });
+      return {
+        items: filtered.slice((page - 1) * size, page * size),
+        page: { page, size, totalItems: filtered.length, totalPages: Math.ceil(filtered.length / size) },
+        keyword,
+      };
+    },
+  });
+}
+
+export function getMentoringNotice(noticeId: number): Promise<MentoringNoticeItem> {
+  return fetchJson<{ item: MentoringNoticeItem }>(`/api/mentoring/notices/${noticeId}`, {
+    fallback: () => ({ item: mockMentoringNotices.find((notice) => notice.id === noticeId) || mockMentoringNotices[0] }),
   }).then((response) => response.item);
 }
 

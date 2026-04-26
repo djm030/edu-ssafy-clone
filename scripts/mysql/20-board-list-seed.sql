@@ -531,6 +531,7 @@ VALUES
   ('academic_rules', 'Academic Rules', 'help', 'public'),
   ('mentor_story', 'Mentor Story', 'mentoring', 'public'),
   ('mentoring_qna', 'Mentoring Q&A', 'mentoring', 'authenticated'),
+  ('mentoring_notice', 'Mentoring Notice', 'mentoring', 'public'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -564,6 +565,10 @@ JOIN (
   SELECT 'mentoring_qna', '커리어', 1
   UNION ALL
   SELECT 'mentoring_qna', '면접', 2
+  UNION ALL
+  SELECT 'mentoring_notice', '특강', 1
+  UNION ALL
+  SELECT 'mentoring_notice', '운영', 2
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -606,6 +611,10 @@ JOIN (
   SELECT 'mentoring_qna', '커리어', '백엔드 프로젝트 경험을 어떻게 포트폴리오로 정리할까요?', '팀 프로젝트에서 맡은 API와 장애 대응 경험을 어떤 구조로 정리하면 좋을지 궁금합니다.', FALSE, 6
   UNION ALL
   SELECT 'mentoring_qna', '면접', '프론트엔드 면접에서 상태 관리를 어떻게 설명하나요?', '<!--MENTORING_QNA:anonymous=true-->\nReact 프로젝트에서 서버 상태와 UI 상태를 분리했던 경험을 어떻게 말하면 좋을까요?', FALSE, 4
+  UNION ALL
+  SELECT 'mentoring_notice', '특강', '멘토링 특강 신청 전 확인 사항', '멘토링 특강은 신청 후 참석 확정 안내를 받은 교육생만 참여할 수 있습니다. 질문 목록을 미리 정리해 주세요.', TRUE, 24
+  UNION ALL
+  SELECT 'mentoring_notice', '운영', '4월 멘토링 Q&A 답변 운영 일정', '4월 멘토링 Q&A는 평일 오후에 순차 답변되며, 마감된 질문은 추가 답변이 제한됩니다.', FALSE, 16
   UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
 ) seed ON seed.board_code = b.board_code

@@ -8,6 +8,7 @@ import type {
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
+  MentoringNoticeItem,
   MentoringQuestionItem,
   MentorStoryItem,
   NotificationItem,
@@ -152,6 +153,29 @@ export const mockMentoringQuestions: MentoringQuestionItem[] = [
     answerCount: 0,
     createdAt: '2026-04-23T16:30:00+09:00',
     answers: [],
+  },
+];
+
+export const mockMentoringNotices: MentoringNoticeItem[] = [
+  {
+    id: 981,
+    title: '멘토링 특강 신청 전 확인 사항',
+    summary: '멘토링 특강 참여 전 준비물과 신청 유의사항을 안내합니다.',
+    content: '멘토링 특강은 신청 후 참석 확정 안내를 받은 교육생만 참여할 수 있습니다. 질문 목록을 미리 정리해 주세요.',
+    categoryName: '특강',
+    pinned: true,
+    viewCount: 24,
+    publishedAt: '2026-04-24T09:00:00+09:00',
+  },
+  {
+    id: 982,
+    title: '4월 멘토링 Q&A 답변 운영 일정',
+    summary: '질문 답변 가능 시간과 마감 일정을 안내합니다.',
+    content: '4월 멘토링 Q&A는 평일 오후에 순차 답변되며, 마감된 질문은 추가 답변이 제한됩니다.',
+    categoryName: '운영',
+    pinned: false,
+    viewCount: 16,
+    publishedAt: '2026-04-23T11:00:00+09:00',
   },
 ];
 

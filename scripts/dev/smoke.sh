@@ -64,6 +64,7 @@ for route in \
   /help/rules \
   /mentoring/stories \
   /mentoring/questions \
+  /mentoring/notices \
   /help/qna \
   /quest \
   /survey \
@@ -92,7 +93,8 @@ for api_path in \
   /api/support/tickets \
   /api/help/academic-rules \
   /api/mentoring/stories \
-  /api/mentoring/questions; do
+  /api/mentoring/questions \
+  /api/mentoring/notices; do
   require_any_file_contains "$api_path" frontend/src/api/app.ts frontend/src/api/readiness.ts
 done
 
