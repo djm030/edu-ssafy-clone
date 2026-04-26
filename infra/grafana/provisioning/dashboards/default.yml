@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: ssafy-clone
+    orgId: 1
+    folder: SSAFY Clone
+    type: file
+    disableDeletion: false
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards
