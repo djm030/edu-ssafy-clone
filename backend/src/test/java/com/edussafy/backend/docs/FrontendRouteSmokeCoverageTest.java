@@ -307,6 +307,25 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("quest-evidence-panel");
     }
 
+    @Test
+    void boardListPageExposesEduSsafyTableColumnsAndCategorySelect() throws IOException {
+        String boardList = Files.readString(Path.of("..", "frontend", "src", "components", "BoardListPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(boardList)
+                .contains("board-category-select")
+                .contains("카테고리 선택")
+                .contains("BoardResultSummary")
+                .contains("게시판 목록 상태 요약")
+                .contains("기수/반")
+                .contains("댓글/조회")
+                .contains("추천/첨부")
+                .contains("cohortClassLabel");
+        assertThat(styles)
+                .contains("board-result-summary-grid")
+                .contains("community-board-table .table-row");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {

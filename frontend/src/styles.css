@@ -1400,6 +1400,64 @@ h2 {
 }
 
 
+.board-category-select {
+  color: #475467;
+  display: grid;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.board-category-select select {
+  background: #fff;
+  border: 1px solid #d8dee8;
+  border-radius: 999px;
+  color: #344054;
+  font: inherit;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+.board-result-summary {
+  margin: 16px 0;
+}
+
+.board-result-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.board-summary-metric {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.board-summary-metric span {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.board-summary-metric strong {
+  color: #17458d;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.community-board-table .table-row {
+  grid-template-columns: 100px minmax(220px, 1.5fr) 110px 110px 110px 135px 130px;
+}
+
+.community-board-table.compact .table-row {
+  grid-template-columns: 100px minmax(220px, 1.5fr) 110px 110px 110px 135px 100px;
+}
+
 .quest-type-summary {
   margin: 16px 0;
 }

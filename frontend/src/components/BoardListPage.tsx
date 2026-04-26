@@ -93,6 +93,17 @@ function BoardListPage({ config }: BoardListPageProps) {
 
       <div className="filter-bar" aria-label={`${config.title} 검색 조건`}>
         <CategoryFilter categories={categories} selectedId={categoryId} onSelect={selectCategory} />
+        <label className="board-category-select">
+          <span>카테고리 선택</span>
+          <select onChange={(event) => selectCategory(event.target.value ? Number(event.target.value) : undefined)} value={categoryId ?? ''}>
+            <option value="">전체</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}{typeof category.postCount === 'number' ? ` (${category.postCount})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
         <form className="search-form" onSubmit={submitSearch}>
           <label className="visually-hidden" htmlFor={`${config.boardCode}-keyword`}>
             검색어
@@ -120,11 +131,39 @@ function BoardListPage({ config }: BoardListPageProps) {
       {loadState === 'empty' ? <DataState title={config.emptyMessage} message="검색어 또는 카테고리를 바꿔 보세요." /> : null}
       {(loadState === 'loaded' || loadState === 'refreshing') && posts.length > 0 ? (
         <>
+          <BoardResultSummary posts={posts} />
           {config.boardCode === 'faq' ? <FaqAccordion posts={posts} answers={faqAnswers} /> : <PostTable posts={posts} showEngagement={config.showEngagement} />}
           <Pagination page={pageMeta.page} totalPages={totalPages} onMove={(nextPage) => setPageMeta((current) => ({ ...current, page: nextPage }))} />
         </>
       ) : null}
     </section>
+  );
+}
+
+function BoardResultSummary({ posts }: { posts: BoardPostListItem[] }) {
+  const pinnedCount = posts.filter((post) => post.isPinned).length;
+  const attachmentCount = posts.filter((post) => post.hasAttachment).length;
+  const newCount = posts.filter((post) => post.isNew).length;
+  const commentCount = posts.reduce((total, post) => total + (post.commentCount || 0), 0);
+
+  return (
+    <section className="panel board-result-summary" aria-label="게시판 목록 상태 요약">
+      <div className="board-result-summary-grid">
+        <SummaryMetric label="고정" value={`${pinnedCount}건`} />
+        <SummaryMetric label="신규" value={`${newCount}건`} />
+        <SummaryMetric label="첨부" value={`${attachmentCount}건`} />
+        <SummaryMetric label="댓글" value={`${commentCount.toLocaleString('ko-KR')}건`} />
+      </div>
+    </section>
+  );
+}
+
+function SummaryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="board-summary-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -207,14 +246,15 @@ function FaqAccordion({ posts, answers }: { posts: BoardPostListItem[]; answers:
 
 function PostTable({ posts, showEngagement }: { posts: BoardPostListItem[]; showEngagement: boolean }) {
   return (
-    <div className={showEngagement ? 'board-table' : 'board-table compact'} role="table" aria-label="게시글 목록">
+    <div className={showEngagement ? 'board-table community-board-table' : 'board-table community-board-table compact'} role="table" aria-label="게시글 목록">
       <div className="table-row table-head" role="row">
         <span role="columnheader">카테고리</span>
         <span role="columnheader">제목</span>
         <span role="columnheader">작성자</span>
-        <span role="columnheader">등록일</span>
-        <span role="columnheader">조회</span>
-        {showEngagement ? <span role="columnheader">반응</span> : null}
+        <span role="columnheader">기수/반</span>
+        <span role="columnheader">작성일</span>
+        <span role="columnheader">댓글/조회</span>
+        <span role="columnheader">{showEngagement ? '추천/첨부' : '첨부'}</span>
       </div>
       {posts.map((post) => (
         <a className={post.isPinned ? 'table-row pinned' : 'table-row'} href={postDetailPath(post)} key={post.id} role="row">
@@ -226,17 +266,22 @@ function PostTable({ posts, showEngagement }: { posts: BoardPostListItem[]; show
             {post.hasAttachment ? <span className="attachment">첨부</span> : null}
           </span>
           <span role="cell">{post.authorName || '-'}</span>
+          <span role="cell">{cohortClassLabel(post)}</span>
           <span role="cell">{formatDate(post.createdAt)}</span>
-          <span role="cell">{formatNumber(post.viewCount)}</span>
-          {showEngagement ? (
-            <span className="metric-cell" role="cell">
-              댓글 {formatNumber(post.commentCount)} · 추천 {formatNumber(post.reactionCount)} · 찜 {formatNumber(post.bookmarkCount)}
-            </span>
-          ) : null}
+          <span role="cell">댓글 {formatNumber(post.commentCount)} · 조회 {formatNumber(post.viewCount)}</span>
+          <span className="metric-cell" role="cell">
+            {showEngagement ? `추천 ${formatNumber(post.reactionCount)} · ` : ''}{post.hasAttachment ? '첨부 있음' : '첨부 없음'}
+          </span>
         </a>
       ))}
     </div>
   );
+}
+
+function cohortClassLabel(post: BoardPostListItem): string {
+  if (post.boardCode === 'anonymous') return '익명 보호';
+  if (post.boardCode === 'notice' || post.boardCode === 'faq') return '운영 공지';
+  return post.category?.name || '공개 범위 내';
 }
 
 function postDetailPath(post: BoardPostListItem): string {
