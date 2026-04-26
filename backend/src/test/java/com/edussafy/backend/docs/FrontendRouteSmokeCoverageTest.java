@@ -454,6 +454,36 @@ class FrontendRouteSmokeCoverageTest {
 
 
     @Test
+    void appShellExposesEduSsafyGlobalNavigation() throws IOException {
+        String appShell = Files.readString(Path.of("..", "frontend", "src", "components", "AppShell.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+        String responsive = Files.readString(Path.of("..", "frontend", "src", "responsive.css"));
+
+        assertThat(appShell)
+                .contains("EduSSAFY 상단 대메뉴")
+                .contains("mega-menu-panel")
+                .contains("global-mobile-menu")
+                .contains("aria-expanded")
+                .contains("aria-controls")
+                .contains("onMouseEnter")
+                .contains("onFocus")
+                .contains("세션")
+                .contains("알림함")
+                .contains("외부 서비스")
+                .contains("회원정보")
+                .contains("로그아웃")
+                .contains("전체메뉴");
+        assertThat(styles)
+                .contains(".global-header")
+                .contains(".global-nav__item.active")
+                .contains(".mega-menu-panel__links")
+                .contains(".mega-menu-link.active");
+        assertThat(responsive)
+                .contains(".global-mobile-menu.open")
+                .contains(".global-menu-toggle");
+    }
+
+    @Test
     void dashboardPageExposesEduSsafyHomeWidgets() throws IOException {
         String dashboard = Files.readString(Path.of("..", "frontend", "src", "pages", "DashboardPage.tsx"));
 

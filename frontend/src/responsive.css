@@ -97,14 +97,45 @@
     grid-template-columns: 1fr;
   }
 
-  .sidebar {
+  .global-header {
     position: static;
   }
 
-  .nav-section {
-    display: inline-grid;
-    margin-right: 10px;
-    vertical-align: top;
+  .global-header__utility {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+    padding: 16px 20px;
+  }
+
+  .global-header__actions {
+    justify-content: flex-start;
+  }
+
+  .global-menu-toggle {
+    display: inline-flex;
+  }
+
+  .global-nav,
+  .mega-menu-panel {
+    display: none;
+  }
+
+  .global-mobile-menu.open {
+    border-top: 1px solid #eef2f7;
+    display: grid;
+    gap: 18px;
+    padding: 16px 20px 22px;
+  }
+
+  .global-mobile-menu__section {
+    display: grid;
+    gap: 10px;
+  }
+
+  .global-mobile-menu__section > div {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
 
   .topbar,
