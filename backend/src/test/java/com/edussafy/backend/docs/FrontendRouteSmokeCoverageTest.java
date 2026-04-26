@@ -392,7 +392,10 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("제출 상태 이력")
                 .contains("제출 파일 이력")
                 .contains("보완 요청/검토 의견")
-                .contains("deadlineLabel");
+                .contains("deadlineLabel")
+                .contains("pendingDocumentAction")
+                .contains("제출 중")
+                .contains("취소 중");
     }
 
     @Test

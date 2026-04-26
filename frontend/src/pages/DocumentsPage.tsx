@@ -23,6 +23,7 @@ function DocumentsPage({ requestId }: DocumentsPageProps) {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [mutationMessage, setMutationMessage] = useState('');
+  const [pendingDocumentAction, setPendingDocumentAction] = useState<string | null>(null);
 
   const load = () => {
     setLoadState('loading');
@@ -48,6 +49,8 @@ function DocumentsPage({ requestId }: DocumentsPageProps) {
       setMutationMessage('제출할 파일을 선택해 주세요.');
       return;
     }
+    if (pendingDocumentAction !== null) return;
+    setPendingDocumentAction(`submit:${requestId}`);
     setMutationMessage('서류를 제출하는 중입니다.');
     try {
       const result = await submitDocument(requestId, await fileToDocumentDraft(file));
@@ -55,11 +58,14 @@ function DocumentsPage({ requestId }: DocumentsPageProps) {
       setMutationMessage('서류 제출이 완료되었습니다.');
     } catch (error) {
       setMutationMessage(getErrorMessage(error));
+    } finally {
+      setPendingDocumentAction(null);
     }
   };
 
   const handleCancel = async (requestId: number, submissionId?: number) => {
-    if (!submissionId) return;
+    if (!submissionId || pendingDocumentAction !== null) return;
+    setPendingDocumentAction(`cancel:${requestId}`);
     setMutationMessage('제출을 취소하는 중입니다.');
     try {
       await cancelDocumentSubmission(requestId, submissionId);
@@ -67,6 +73,8 @@ function DocumentsPage({ requestId }: DocumentsPageProps) {
       setMutationMessage('서류 제출이 취소되었습니다.');
     } catch (error) {
       setMutationMessage(getErrorMessage(error));
+    } finally {
+      setPendingDocumentAction(null);
     }
   };
 
@@ -77,19 +85,20 @@ function DocumentsPage({ requestId }: DocumentsPageProps) {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="서류 제출 목록을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="제출할 서류가 없습니다." message="현재 활성화된 서류 제출 요청이 없습니다." /> : null}
-      {loadState === 'loaded' && requestId ? <DocumentDetailPanel item={items[0]} onCancel={handleCancel} onSubmit={handleSubmit} /> : null}
-      {loadState === 'loaded' && !requestId ? <DocumentList items={items} onCancel={handleCancel} onSubmit={handleSubmit} /> : null}
+      {loadState === 'loaded' && requestId ? <DocumentDetailPanel item={items[0]} pendingAction={pendingDocumentAction} onCancel={handleCancel} onSubmit={handleSubmit} /> : null}
+      {loadState === 'loaded' && !requestId ? <DocumentList items={items} pendingAction={pendingDocumentAction} onCancel={handleCancel} onSubmit={handleSubmit} /> : null}
     </section>
   );
 }
 
 interface DocumentListProps {
   items: DocumentRequestItem[];
+  pendingAction: string | null;
   onCancel: (requestId: number, submissionId?: number) => void;
   onSubmit: (requestId: number, file?: File) => void;
 }
 
-function DocumentList({ items, onCancel, onSubmit }: DocumentListProps) {
+function DocumentList({ items, pendingAction, onCancel, onSubmit }: DocumentListProps) {
   const [selectedFiles, setSelectedFiles] = useState<Record<number, File | undefined>>({});
 
   return (
@@ -98,6 +107,9 @@ function DocumentList({ items, onCancel, onSubmit }: DocumentListProps) {
         const status = statusLabels[item.status];
         const attachment = item.attachments[0];
         const canCancel = item.status === 'submitted' || item.status === 'rejected';
+        const submitPending = pendingAction === `submit:${item.id}`;
+        const cancelPending = pendingAction === `cancel:${item.id}`;
+        const actionPending = pendingAction !== null;
         return (
           <article className="list-card" key={item.id}>
             <div>
@@ -132,8 +144,14 @@ function DocumentList({ items, onCancel, onSubmit }: DocumentListProps) {
                 onChange={(event) => setSelectedFiles((current) => ({ ...current, [item.id]: event.target.files?.[0] }))}
                 type="file"
               />
-              <button className="primary-action" onClick={() => onSubmit(item.id, selectedFiles[item.id])} type="button">제출</button>
-              {canCancel ? <button className="ghost-button" onClick={() => onCancel(item.id, attachment?.submissionId)} type="button">제출 취소</button> : null}
+              <button className="primary-action" disabled={actionPending} onClick={() => onSubmit(item.id, selectedFiles[item.id])} type="button">
+                {submitPending ? '제출 중' : '제출'}
+              </button>
+              {canCancel ? (
+                <button className="ghost-button" disabled={actionPending} onClick={() => onCancel(item.id, attachment?.submissionId)} type="button">
+                  {cancelPending ? '취소 중' : '제출 취소'}
+                </button>
+              ) : null}
             </div>
           </article>
         );
@@ -144,15 +162,19 @@ function DocumentList({ items, onCancel, onSubmit }: DocumentListProps) {
 
 interface DocumentDetailPanelProps {
   item: DocumentRequestItem;
+  pendingAction: string | null;
   onCancel: (requestId: number, submissionId?: number) => void;
   onSubmit: (requestId: number, file?: File) => void;
 }
 
-function DocumentDetailPanel({ item, onCancel, onSubmit }: DocumentDetailPanelProps) {
+function DocumentDetailPanel({ item, pendingAction, onCancel, onSubmit }: DocumentDetailPanelProps) {
   const [selectedFile, setSelectedFile] = useState<File>();
   const status = statusLabels[item.status];
   const canCancel = item.status === 'submitted' || item.status === 'rejected';
   const latestSubmissionId = item.attachments[0]?.submissionId;
+  const submitPending = pendingAction === `submit:${item.id}`;
+  const cancelPending = pendingAction === `cancel:${item.id}`;
+  const actionPending = pendingAction !== null;
 
   return (
     <div className="document-detail-grid">
@@ -203,8 +225,14 @@ function DocumentDetailPanel({ item, onCancel, onSubmit }: DocumentDetailPanelPr
         )}
         <div className="action-row">
           <input aria-label={`${item.title} 상세 파일 선택`} onChange={(event) => setSelectedFile(event.target.files?.[0])} type="file" />
-          <button className="primary-action" onClick={() => onSubmit(item.id, selectedFile)} type="button">다시 제출</button>
-          {canCancel ? <button className="ghost-button" onClick={() => onCancel(item.id, latestSubmissionId)} type="button">제출 취소</button> : null}
+          <button className="primary-action" disabled={actionPending} onClick={() => onSubmit(item.id, selectedFile)} type="button">
+            {submitPending ? '제출 중' : '다시 제출'}
+          </button>
+          {canCancel ? (
+            <button className="ghost-button" disabled={actionPending} onClick={() => onCancel(item.id, latestSubmissionId)} type="button">
+              {cancelPending ? '취소 중' : '제출 취소'}
+            </button>
+          ) : null}
         </div>
       </article>
       <DocumentTimeline item={item} />
