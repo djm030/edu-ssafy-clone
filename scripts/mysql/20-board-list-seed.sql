@@ -574,3 +574,14 @@ INSERT IGNORE INTO board_post_reactions (board_post_id, user_id, reaction_type_c
 VALUES
   (@free_post_id, @student_id, 'bookmark'),
   (@free_post_id, @manager_id, 'like');
+
+-- SSAFY e-book demo data for My Campus e-book flow.
+INSERT INTO ssafy_ebooks (title, description, thumbnail_url, category, external_url, active_yn) VALUES
+  ('SSAFY Java e-book', 'Java 트랙 교육생을 위한 핵심 문법 e-book입니다.', '/assets/ebooks/java.png', 'Java', 'https://edu.ssafy.local/ebooks/java', TRUE),
+  ('SSAFY 알고리즘 e-book', '알고리즘 문제 해결 전략과 예제 풀이를 제공합니다.', '/assets/ebooks/algorithm.png', 'Algorithm', 'https://edu.ssafy.local/ebooks/algorithm', TRUE),
+  ('비공개 e-book', '비활성 e-book은 API 목록에서 제외되어야 합니다.', NULL, 'Archive', 'https://edu.ssafy.local/ebooks/private', FALSE);
+
+INSERT INTO ssafy_ebook_access_logs (ebook_id, user_id, accessed_at)
+SELECT e.ebook_id, 1, CURRENT_TIMESTAMP - INTERVAL 1 DAY
+FROM ssafy_ebooks e
+WHERE e.title = 'SSAFY Java e-book';

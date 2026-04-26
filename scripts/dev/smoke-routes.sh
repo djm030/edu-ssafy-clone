@@ -18,6 +18,8 @@ routes=(
   "/mycampus/pledges"
   "/mycampus/pledges/1"
   "/mycampus/education-status"
+  "/mycampus/ebooks"
+  "/mycampus/ebooks/1"
   "/mycampus/level"
   "/community/free"
   "/community/free/1"

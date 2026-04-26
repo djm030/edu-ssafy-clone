@@ -128,6 +128,31 @@ public final class PriorityDtos {
     public record EducationPointSummary(int scholarshipPoint, int experiencePoint, String levelName) {
     }
 
+    public record EbooksResponse(List<EbookItem> items, PageMeta page) {
+    }
+
+    public record EbookDetailResponse(EbookItem item) {
+    }
+
+    public record EbookAccessLogResponse(EbookItem item, EbookAccessLogItem accessLog) {
+    }
+
+    public record EbookItem(
+            long id,
+            String title,
+            String description,
+            String thumbnailUrl,
+            String category,
+            String externalUrl,
+            OffsetDateTime createdAt,
+            OffsetDateTime lastAccessedAt,
+            long accessCount
+    ) {
+    }
+
+    public record EbookAccessLogItem(long id, long ebookId, OffsetDateTime accessedAt) {
+    }
+
     public record AttendanceRecordsResponse(AttendanceSummary summary, List<AttendanceRecordItem> items) {
     }
 

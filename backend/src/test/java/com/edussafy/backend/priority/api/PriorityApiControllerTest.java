@@ -54,6 +54,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
@@ -139,6 +144,7 @@ import org.springframework.web.context.WebApplicationContext;
         AuthController.class,
         DashboardController.class,
         EducationStatusController.class,
+        EbookController.class,
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
@@ -379,6 +385,50 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.level.nextLevelExp").value(1000))
                 .andExpect(jsonPath("$.attendance.appealAvailable").value(true))
                 .andExpect(jsonPath("$.notifications.latest").isArray());
+    }
+
+    @Test
+    void ebookEndpointsReturnListDetailAndAccessLog() throws Exception {
+        EbookItem ebook = new EbookItem(
+                5L,
+                "SSAFY Java e-book",
+                "Java 트랙 학습서",
+                null,
+                "Java",
+                "https://edu.ssafy.local/ebooks/java",
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                null,
+                0
+        );
+        EbookItem accessed = new EbookItem(
+                5L,
+                "SSAFY Java e-book",
+                "Java 트랙 학습서",
+                null,
+                "Java",
+                "https://edu.ssafy.local/ebooks/java",
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
+                1
+        );
+        given(priorityApiService.ebooks(1, 20)).willReturn(new EbooksResponse(List.of(ebook), new PageMeta(1, 20, 1, 1)));
+        given(priorityApiService.ebook(5L)).willReturn(new EbookDetailResponse(ebook));
+        given(priorityApiService.logEbookAccess(5L)).willReturn(new EbookAccessLogResponse(
+                accessed,
+                new EbookAccessLogItem(91L, 5L, OffsetDateTime.parse("2026-04-26T10:00:00+09:00"))
+        ));
+
+        mockMvc.perform(get("/api/ebooks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("SSAFY Java e-book"))
+                .andExpect(jsonPath("$.page.totalItems").value(1));
+        mockMvc.perform(get("/api/ebooks/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.category").value("Java"));
+        mockMvc.perform(post("/api/ebooks/5/access-log"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.accessCount").value(1))
+                .andExpect(jsonPath("$.accessLog.ebookId").value(5));
     }
 
     @Test

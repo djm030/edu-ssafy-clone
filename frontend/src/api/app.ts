@@ -32,6 +32,8 @@ import type {
   DocumentSubmissionDraft,
   DocumentSubmissionResult,
   EducationStatusSummary,
+  EbookAccessLogResult,
+  EbookItem,
   ElearningProgressDetail,
   ElearningProgressItem,
   ElearningResumeResult,
@@ -144,6 +146,12 @@ type BackendPledgeItem = Partial<PledgeItem> & {
   startsAt?: string | null;
   dueAt?: string | null;
   agreedAt?: string | null;
+};
+
+type BackendEbookItem = Partial<EbookItem> & {
+  createdAt?: string | null;
+  lastAccessedAt?: string | null;
+  accessCount?: number | null;
 };
 
 type BackendMaterialResource = {
@@ -404,6 +412,20 @@ function toPledgeItem(item: BackendPledgeItem): PledgeItem {
     agreed: Boolean(item.agreed),
     agreedAt: item.agreedAt || undefined,
     versionSnapshot: item.versionSnapshot || undefined,
+  };
+}
+
+function toEbookItem(item: BackendEbookItem): EbookItem {
+  return {
+    id: Number(item.id),
+    title: item.title || 'SSAFY e-book',
+    description: item.description || undefined,
+    thumbnailUrl: item.thumbnailUrl || undefined,
+    category: item.category || undefined,
+    externalUrl: item.externalUrl || '#',
+    createdAt: item.createdAt || undefined,
+    lastAccessedAt: item.lastAccessedAt || undefined,
+    accessCount: Number(item.accessCount ?? 0),
   };
 }
 
@@ -748,6 +770,23 @@ export function agreePledge(pledgeId: number): Promise<PledgeAgreementResult> {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   }).then((response) => ({ item: toPledgeItem(response.item), agreement: response.agreement }));
+}
+
+export function getEbooks(query: { page?: number; size?: number } = {}): Promise<{ items: EbookItem[] }> {
+  const params = buildQuery({ page: query.page, size: query.size });
+  return fetchJson<{ items: BackendEbookItem[] }>(`/api/ebooks${params}`)
+    .then((response) => ({ items: response.items.map(toEbookItem) }));
+}
+
+export function getEbook(ebookId: number): Promise<EbookItem> {
+  return fetchJson<ItemResponse<BackendEbookItem>>(`/api/ebooks/${ebookId}`)
+    .then((response) => toEbookItem(response.item));
+}
+
+export function recordEbookAccess(ebookId: number): Promise<EbookAccessLogResult> {
+  return fetchJson<{ item: BackendEbookItem; accessLog: EbookAccessLogResult['accessLog'] }>(`/api/ebooks/${ebookId}/access-log`, {
+    method: 'POST',
+  }).then((response) => ({ item: toEbookItem(response.item), accessLog: response.accessLog }));
 }
 
 export function getElearningProgress(query: {

@@ -17,6 +17,7 @@ import DocumentsPage from './pages/DocumentsPage';
 import ElearningDetailPage from './pages/ElearningDetailPage';
 import ElearningPage from './pages/ElearningPage';
 import EducationStatusPage from './pages/EducationStatusPage';
+import EbooksPage from './pages/EbooksPage';
 import LevelPage from './pages/LevelPage';
 import LoginPage from './pages/LoginPage';
 import MaterialDetailPage from './pages/MaterialDetailPage';
@@ -236,6 +237,7 @@ function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
 function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: (nextPath: string) => void) {
   const match = (pattern: RegExp) => path.match(pattern);
   const elearningMatch = match(/^\/mycampus\/elearning\/(\d+)$/);
+  const ebookMatch = match(/^\/mycampus\/ebooks\/(\d+)$/);
   const pledgeMatch = match(/^\/mycampus\/pledges\/(\d+)$/);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
@@ -256,6 +258,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/notifications') return <NotificationsPage />;
   if (path === '/mycampus/elearning') return <ElearningPage />;
   if (path === '/mycampus/education-status') return <EducationStatusPage />;
+  if (path === '/mycampus/ebooks') return <EbooksPage />;
   if (path === '/mycampus/bookmarks') return <BookmarksPage />;
   if (path === '/mycampus/documents') return <DocumentsPage />;
   if (path === '/mycampus/pledges') return <PledgesPage />;
@@ -274,6 +277,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (elearningMatch) return <ElearningDetailPage courseId={Number(elearningMatch[1])} />;
   if (pledgeMatch) return <PledgesPage pledgeId={Number(pledgeMatch[1])} />;
+  if (ebookMatch) return <EbooksPage ebookId={Number(ebookMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;
   if (surveyRespondMatch) return <SurveyRespondPage surveyId={Number(surveyRespondMatch[1])} />;
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;

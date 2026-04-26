@@ -46,6 +46,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailRes
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
@@ -757,6 +762,35 @@ public class PriorityApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Pledge agreement was not saved."));
         PledgeItem updated = currentUserPledge(user.id(), pledgeId);
         return new PledgeAgreementResponse(updated, agreement);
+    }
+
+    public EbooksResponse ebooks(int page, int size) {
+        UserProfile user = currentUser();
+        long total = safe(() -> repository.countEbooks(user.id()), 0L);
+        List<EbookItem> items = total == 0
+                ? List.of()
+                : safe(() -> repository.findEbooks(user.id(), size, offset(page, size)), List.of());
+        return new EbooksResponse(items, pageMeta(page, size, total));
+    }
+
+    public EbookDetailResponse ebook(long ebookId) {
+        UserProfile user = currentUser();
+        EbookItem item = repository.findEbook(user.id(), ebookId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-book not found."));
+        return new EbookDetailResponse(item);
+    }
+
+    @Transactional
+    public EbookAccessLogResponse logEbookAccess(long ebookId) {
+        UserProfile user = currentUser();
+        repository.findEbook(user.id(), ebookId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-book not found."));
+        long accessLogId = repository.createEbookAccessLog(user.id(), ebookId);
+        EbookAccessLogItem accessLog = repository.findEbookAccessLog(user.id(), ebookId, accessLogId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "E-book access log was not saved."));
+        EbookItem item = repository.findEbook(user.id(), ebookId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-book not found."));
+        return new EbookAccessLogResponse(item, accessLog);
     }
 
     public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {

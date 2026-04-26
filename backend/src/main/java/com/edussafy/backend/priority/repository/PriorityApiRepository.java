@@ -13,6 +13,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
@@ -225,6 +227,74 @@ public class PriorityApiRepository {
                         rs.getInt("scholarship_point"),
                         rs.getInt("exp"),
                         rs.getString("level_name")
+                ))
+                .optional();
+    }
+
+    public long countEbooks(long userId) {
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM ssafy_ebooks
+                WHERE active_yn = TRUE
+                """)
+                .query(Long.class)
+                .single();
+    }
+
+    public List<EbookItem> findEbooks(long userId, int limit, int offset) {
+        return jdbcClient.sql(ebookSelect("""
+                WHERE e.active_yn = TRUE
+                ORDER BY e.created_at DESC, e.ebook_id DESC
+                LIMIT :limit OFFSET :offset
+                """))
+                .param("userId", userId)
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapEbook)
+                .list();
+    }
+
+    public Optional<EbookItem> findEbook(long userId, long ebookId) {
+        return jdbcClient.sql(ebookSelect("""
+                WHERE e.ebook_id = :ebookId
+                  AND e.active_yn = TRUE
+                LIMIT 1
+                """))
+                .param("userId", userId)
+                .param("ebookId", ebookId)
+                .query(this::mapEbook)
+                .optional();
+    }
+
+    public long createEbookAccessLog(long userId, long ebookId) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO ssafy_ebook_access_logs (ebook_id, user_id)
+                VALUES (:ebookId, :userId)
+                """)
+                .param("ebookId", ebookId)
+                .param("userId", userId)
+                .update(keyHolder, "ebook_access_log_id");
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public Optional<EbookAccessLogItem> findEbookAccessLog(long userId, long ebookId, long accessLogId) {
+        return jdbcClient.sql("""
+                SELECT ebook_access_log_id, ebook_id, accessed_at
+                FROM ssafy_ebook_access_logs
+                WHERE ebook_access_log_id = :accessLogId
+                  AND ebook_id = :ebookId
+                  AND user_id = :userId
+                LIMIT 1
+                """)
+                .param("accessLogId", accessLogId)
+                .param("ebookId", ebookId)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new EbookAccessLogItem(
+                        rs.getLong("ebook_access_log_id"),
+                        rs.getLong("ebook_id"),
+                        toOffset(rs.getTimestamp("accessed_at"))
                 ))
                 .optional();
     }
@@ -445,6 +515,48 @@ public class PriorityApiRepository {
                 rs.getString("resolution_comment"),
                 rs.getString("resolved_by_name"),
                 false
+        );
+    }
+
+    private String ebookSelect(String suffix) {
+        return """
+                SELECT
+                    e.ebook_id,
+                    e.title,
+                    e.description,
+                    e.thumbnail_url,
+                    e.category,
+                    e.external_url,
+                    e.created_at,
+                    latest_access.last_accessed_at,
+                    COALESCE(access_counts.access_count, 0) AS access_count
+                FROM ssafy_ebooks e
+                LEFT JOIN (
+                    SELECT ebook_id, MAX(accessed_at) AS last_accessed_at
+                    FROM ssafy_ebook_access_logs
+                    WHERE user_id = :userId
+                    GROUP BY ebook_id
+                ) latest_access ON latest_access.ebook_id = e.ebook_id
+                LEFT JOIN (
+                    SELECT ebook_id, COUNT(*) AS access_count
+                    FROM ssafy_ebook_access_logs
+                    WHERE user_id = :userId
+                    GROUP BY ebook_id
+                ) access_counts ON access_counts.ebook_id = e.ebook_id
+                """ + suffix;
+    }
+
+    private EbookItem mapEbook(ResultSet rs, int rowNum) throws SQLException {
+        return new EbookItem(
+                rs.getLong("ebook_id"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("thumbnail_url"),
+                rs.getString("category"),
+                rs.getString("external_url"),
+                toOffset(rs.getTimestamp("created_at")),
+                toOffset(rs.getTimestamp("last_accessed_at")),
+                rs.getLong("access_count")
         );
     }
 

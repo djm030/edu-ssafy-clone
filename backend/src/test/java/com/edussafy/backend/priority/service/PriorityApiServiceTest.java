@@ -48,6 +48,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
@@ -246,6 +250,62 @@ class PriorityApiServiceTest {
                 .filteredOn(item -> item.id().equals("support-answer"))
                 .singleElement()
                 .satisfies(item -> assertThat(item.allowedRoles()).containsExactly("coach", "admin"));
+    }
+
+    @Test
+    void ebookListDetailAndAccessLogUseCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        EbookItem before = new EbookItem(
+                5L,
+                "SSAFY Java e-book",
+                "Java 트랙 학습서",
+                null,
+                "Java",
+                "https://edu.ssafy.local/ebooks/java",
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                null,
+                0
+        );
+        EbookItem after = new EbookItem(
+                5L,
+                "SSAFY Java e-book",
+                "Java 트랙 학습서",
+                null,
+                "Java",
+                "https://edu.ssafy.local/ebooks/java",
+                OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
+                1
+        );
+        EbookAccessLogItem accessLog = new EbookAccessLogItem(91L, 5L, OffsetDateTime.parse("2026-04-26T10:00:00+09:00"));
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countEbooks(USER.id())).willReturn(1L);
+        given(repository.findEbooks(USER.id(), 20, 0)).willReturn(List.of(before));
+        given(repository.findEbook(USER.id(), 5L)).willReturn(Optional.of(before), Optional.of(after));
+        given(repository.createEbookAccessLog(USER.id(), 5L)).willReturn(91L);
+        given(repository.findEbookAccessLog(USER.id(), 5L, 91L)).willReturn(Optional.of(accessLog));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        EbooksResponse list = service.ebooks(1, 20);
+        EbookAccessLogResponse response = service.logEbookAccess(5L);
+
+        assertThat(list.items()).containsExactly(before);
+        assertThat(response.item().accessCount()).isEqualTo(1);
+        assertThat(response.accessLog()).isEqualTo(accessLog);
+        verify(repository).createEbookAccessLog(USER.id(), 5L);
+    }
+
+    @Test
+    void ebookDetailRejectsInactiveOrMissingEbook() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findEbook(USER.id(), 404L)).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.ebook(404L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+        verify(repository, never()).createEbookAccessLog(anyLong(), anyLong());
     }
 
     @Test

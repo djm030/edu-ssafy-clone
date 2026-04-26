@@ -37,6 +37,8 @@ DROP TABLE IF EXISTS learner_pledge_agreements;
 DROP TABLE IF EXISTS pledge_documents;
 DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
+DROP TABLE IF EXISTS ssafy_ebook_access_logs;
+DROP TABLE IF EXISTS ssafy_ebooks;
 DROP TABLE IF EXISTS learner_bookmarks;
 DROP TABLE IF EXISTS learner_elearning_lesson_progress;
 DROP TABLE IF EXISTS learner_elearning_progress;
@@ -793,6 +795,36 @@ CREATE TABLE learner_elearning_lesson_progress (
     ON DELETE CASCADE,
   CONSTRAINT fk_learner_elearning_lesson_progress_lesson
     FOREIGN KEY (elearning_lesson_id) REFERENCES elearning_lessons (elearning_lesson_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ssafy_ebooks (
+  ebook_id BIGINT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  thumbnail_url VARCHAR(500),
+  category VARCHAR(100),
+  external_url VARCHAR(500) NOT NULL,
+  active_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (ebook_id),
+  KEY idx_ssafy_ebooks_active_category (active_yn, category, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ssafy_ebook_access_logs (
+  ebook_access_log_id BIGINT NOT NULL AUTO_INCREMENT,
+  ebook_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  accessed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (ebook_access_log_id),
+  KEY idx_ssafy_ebook_access_logs_user_accessed (user_id, accessed_at),
+  KEY idx_ssafy_ebook_access_logs_ebook_user (ebook_id, user_id),
+  CONSTRAINT fk_ssafy_ebook_access_logs_ebook
+    FOREIGN KEY (ebook_id) REFERENCES ssafy_ebooks (ebook_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_ssafy_ebook_access_logs_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

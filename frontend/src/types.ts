@@ -116,6 +116,27 @@ export interface EducationStatusSummary {
   };
 }
 
+export interface EbookItem {
+  id: number;
+  title: string;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  category?: string | null;
+  externalUrl: string;
+  createdAt?: string | null;
+  lastAccessedAt?: string | null;
+  accessCount: number;
+}
+
+export interface EbookAccessLogResult {
+  item: EbookItem;
+  accessLog: {
+    id: number;
+    ebookId: number;
+    accessedAt: string;
+  };
+}
+
 export interface AttendanceRecord {
   id: number;
   date: string;
