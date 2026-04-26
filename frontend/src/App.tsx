@@ -307,7 +307,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/community/anonymous/write' || path === '/community/anonymous/new') {
     return <BoardPostWritePage boardCode="anonymous" detailPathBase="/community/anonymous" title="익명 게시판 글쓰기" />;
   }
-  if (path === '/help/rules') return <AcademicRulesPage />;
+  if (path === '/help/academic-rules' || path === '/help/rules') return <AcademicRulesPage />;
   if (path === '/mentoring/stories') return <MentorStoriesPage />;
   if (path === '/mentoring/notices') return <MentoringNoticesPage />;
   if (path === '/mentoring/meetings') return <MentoringMeetingsPage />;

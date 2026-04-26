@@ -40,6 +40,7 @@ class FrontendRouteSmokeCoverageTest {
             "/survey",
             "/survey/1",
             "/survey/1/respond",
+            "/help/academic-rules",
             "/help/rules",
             "/mentoring/stories",
             "/mentoring/stories/1",
@@ -105,7 +106,7 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/learning/live')");
         assertThat(app).contains("if (path === '/learning/replays' || path === '/learning/replays/my')");
         assertThat(app).contains("if (path === '/learning/replays/all')");
-        assertThat(app).contains("if (path === '/help/rules')");
+        assertThat(app).contains("if (path === '/help/academic-rules' || path === '/help/rules')");
         assertThat(app).contains("if (path === '/mentoring/stories')");
         assertThat(app).contains("match(/^\\/mentoring\\/stories\\/(\\d+)$/)");
         assertThat(app).contains("if (path === '/mentoring/questions')");
