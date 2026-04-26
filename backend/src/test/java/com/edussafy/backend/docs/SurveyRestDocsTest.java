@@ -1,6 +1,7 @@
 package com.edussafy.backend.docs;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
@@ -9,12 +10,16 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.pr
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.priority.api.QuestSurveyController;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyCreateRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
@@ -128,4 +133,106 @@ class SurveyRestDocsTest {
                         )
                 ));
     }
+
+    @Test
+    void documentsSurveyUpdateEndpoint() throws Exception {
+        OffsetDateTime startAt = OffsetDateTime.parse("2026-05-01T09:00:00+09:00");
+        OffsetDateTime endAt = OffsetDateTime.parse("2026-05-05T18:00:00+09:00");
+        given(priorityApiService.updateSurvey(eq(9L), any(SurveyCreateRequest.class))).willReturn(new SurveyDetailResponse(new SurveyDetail(
+                9L,
+                "Updated pulse",
+                "course",
+                false,
+                startAt,
+                endAt,
+                "scheduled",
+                false,
+                1,
+                List.of(new SurveyQuestionItem(
+                        92L,
+                        "long_text",
+                        "개선 의견을 적어 주세요.",
+                        1,
+                        List.of()
+                ))
+        )));
+
+        mockMvc.perform(put("/api/surveys/9")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Updated pulse",
+                                  "category": "course",
+                                  "required": false,
+                                  "status": "scheduled",
+                                  "startAt": "2026-05-01T09:00:00+09:00",
+                                  "endAt": "2026-05-05T18:00:00+09:00",
+                                  "questions": [
+                                    {
+                                      "type": "long_text",
+                                      "text": "개선 의견을 적어 주세요.",
+                                      "options": []
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(9))
+                .andExpect(jsonPath("$.item.title").value("Updated pulse"))
+                .andDo(document(
+                        "survey-update",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        requestFields(
+                                fieldWithPath("title").description("Updated survey title."),
+                                fieldWithPath("category").description("Updated survey category code."),
+                                fieldWithPath("required").description("Whether learners must answer this survey."),
+                                fieldWithPath("status").description("Updated progress status code."),
+                                fieldWithPath("startAt").description("Updated survey start timestamp."),
+                                fieldWithPath("endAt").description("Updated survey end timestamp."),
+                                fieldWithPath("questions").description("Replacement question definitions. Existing responses are reset."),
+                                fieldWithPath("questions[].type").description("Question type code."),
+                                fieldWithPath("questions[].text").description("Question prompt."),
+                                fieldWithPath("questions[].options").description("Choice options; empty for text questions.")
+                        ),
+                        responseFields(
+                                fieldWithPath("item.id").description("Updated survey id."),
+                                fieldWithPath("item.title").description("Updated survey title."),
+                                fieldWithPath("item.category").description("Updated survey category code."),
+                                fieldWithPath("item.required").description("Whether the survey is required."),
+                                fieldWithPath("item.startAt").description("Survey start timestamp."),
+                                fieldWithPath("item.endAt").description("Survey end timestamp."),
+                                fieldWithPath("item.status").description("Survey progress status."),
+                                fieldWithPath("item.completed").description("Whether the current learner has completed it."),
+                                fieldWithPath("item.questionCount").description("Number of questions."),
+                                fieldWithPath("item.questions").description("Replacement persisted questions."),
+                                fieldWithPath("item.questions[].id").description("Question id."),
+                                fieldWithPath("item.questions[].type").description("Question type code."),
+                                fieldWithPath("item.questions[].text").description("Question prompt."),
+                                fieldWithPath("item.questions[].displayOrder").description("Question display order."),
+                                fieldWithPath("item.questions[].options").description("Persisted choice options; empty for text questions.")
+                        )
+                ));
+    }
+
+    @Test
+    void documentsSurveyDeleteEndpoint() throws Exception {
+        given(priorityApiService.deleteSurvey(9L)).willReturn(new SurveyDeleteResponse(new SurveyDeleteItem(9L, true, false)));
+
+        mockMvc.perform(delete("/api/surveys/9").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.deleted").value(true))
+                .andDo(document(
+                        "survey-delete",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        responseFields(
+                                fieldWithPath("item.id").description("Deleted survey id."),
+                                fieldWithPath("item.deleted").description("Whether the survey was deleted."),
+                                fieldWithPath("item.demo").description("Whether this is a frontend demo fallback response.")
+                        )
+                ));
+    }
+
 }

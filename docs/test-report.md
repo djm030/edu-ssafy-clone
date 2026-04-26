@@ -1,5 +1,9 @@
 # Test Report
 
+## Survey REST Docs Mutation Coverage (2026-04-26 KST)
+- Added Spring REST Docs snippets for `PUT /api/surveys/{id}` and `DELETE /api/surveys/{id}` to complement the existing survey creation documentation.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=SurveyRestDocsTest test` -> PASS.
+
 ## Survey Admin CRUD Verification (2026-04-26 KST)
 - Implemented coach/admin `PUT /api/surveys/{id}` and `DELETE /api/surveys/{id}` with survey question replacement, response reset, role gating, and frontend list edit/delete actions.
 - `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=PriorityApiServiceTest,PriorityApiControllerTest,RoleAccessInterceptorTest test` -> PASS.

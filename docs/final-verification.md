@@ -111,7 +111,7 @@ docker compose --profile app up -d --build
 
 ## 7. 남은 작업
 
-1. 설문 관리자 CRUD는 구현됐고, 다음 단계는 브라우저 E2E와 REST Docs/OpenAPI 범위를 확장한다.
+1. 설문 관리자 CRUD는 구현됐고, 다음 단계는 브라우저 E2E와 OpenAPI 범위를 확장한다; survey create/update/delete REST Docs는 존재한다.
 2. material/quest까지 포함하는 공통 파일 업로드·다운로드·권한 모델을 통일한다.
 3. learner/coach/admin 전체 role matrix를 도메인별로 테스트한다.
 4. Playwright/Cypress 등 브라우저 E2E smoke와 핵심 화면 visual 검증을 추가한다.

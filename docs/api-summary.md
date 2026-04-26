@@ -64,6 +64,8 @@
 
 ## Spring REST Docs Coverage (2026-04-26 KST)
 - `survey-create`: documents `POST /api/surveys` request fields for survey metadata, first question, and choice options plus the persisted `{ item }` response shape.
+- `survey-update`: documents `PUT /api/surveys/{id}` replacement semantics, including response reset when questions are replaced.
+- `survey-delete`: documents `DELETE /api/surveys/{id}` deleted marker response.
 
 ## Task 66 API Documentation Status (2026-04-24)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
