@@ -84,6 +84,22 @@ class BoardControllerTest {
     }
 
     @Test
+    void readinessReturnsServiceUnavailableWhenRequiredProbeIsDown() throws Exception {
+        given(healthService.getHealth()).willReturn(new HealthResponse(
+                "DOWN",
+                OffsetDateTime.parse("2026-04-26T00:00:00Z"),
+                "edussafy-backend",
+                "test",
+                List.of(new HealthCheckItem("database", "DOWN", true, "Database probe failed."))
+        ));
+
+        mockMvc.perform(get("/api/readiness"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value("DOWN"))
+                .andExpect(jsonPath("$.checks[0].status").value("DOWN"));
+    }
+
+    @Test
     void categoriesReturnItems() throws Exception {
         given(boardService.getCategories("notice"))
                 .willReturn(new BoardCategoryListResponse(List.of(new CategoryItem(1L, "General", 1))));

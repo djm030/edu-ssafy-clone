@@ -60,6 +60,13 @@ public class BoardController {
         return healthService.getHealth();
     }
 
+    @GetMapping("/readiness")
+    public ResponseEntity<HealthResponse> readiness() {
+        HealthResponse response = healthService.getHealth();
+        HttpStatus status = "UP".equals(response.status()) ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(status).body(response);
+    }
+
     @GetMapping("/boards/{boardCode}/categories")
     public BoardCategoryListResponse categories(@PathVariable String boardCode) {
         return boardService.getCategories(boardCode);

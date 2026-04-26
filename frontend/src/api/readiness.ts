@@ -74,7 +74,7 @@ async function expectText(endpoint: string, expected: string, passMessage: strin
 }
 
 async function expectBackendHealth(): Promise<string> {
-  const payload = await fetchJson<unknown>('/api/health');
+  const payload = await fetchJson<unknown>('/api/readiness');
   if (!hasOperationalHealth(payload)) {
     throw new Error('Backend health 필수 의존성 점검이 UP이 아닙니다.');
   }
@@ -91,8 +91,8 @@ export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
   },
   {
     id: 'backend-health',
-    label: 'Backend API health',
-    target: '/api/health',
+    label: 'Backend API readiness',
+    target: '/api/readiness',
     run: expectBackendHealth,
   },
   {

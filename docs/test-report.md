@@ -1,5 +1,14 @@
 # Test Report
 
+## Backend Readiness HTTP Status Endpoint (2026-04-26 KST)
+- Added `GET /api/readiness` so production smoke can receive HTTP 503 when a required health probe is down instead of relying only on a JSON `DOWN` status.
+- Updated the frontend `/ops/readiness` backend check to call `/api/readiness`.
+- Added controller and Spring REST Docs coverage for the readiness endpoint.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=BoardControllerTest,ApiRestDocsTest test` -> PASS.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 177 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+
 ## Frontend Screen Smoke Route Manifest (2026-04-26 KST)
 - Added a shared frontend route manifest for navigation and priority-domain screen smoke coverage, then rendered the smoke target list on `/ops/readiness`.
 - Added a backend regression test that guards required priority 1~9 screen paths and verifies the readiness page consumes the manifest.

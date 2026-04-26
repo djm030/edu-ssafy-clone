@@ -72,4 +72,38 @@ class ApiRestDocsTest {
                         )
                 ));
     }
+
+    @Test
+    void documentsReadinessEndpoint() throws Exception {
+        given(healthService.getHealth()).willReturn(new HealthResponse(
+                "UP",
+                OffsetDateTime.parse("2026-04-26T03:31:00Z"),
+                "edussafy-backend",
+                "prod",
+                List.of(
+                        new HealthCheckItem("database", "UP", true, "MySQL connectivity check passed."),
+                        new HealthCheckItem("temp-storage", "UP", true, "Temporary attachment storage is writable.")
+                )
+        ));
+
+        mockMvc.perform(get("/api/readiness").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andDo(document(
+                        "readiness-check",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        responseFields(
+                                fieldWithPath("status").description("Overall readiness status. Returns HTTP 503 when required checks are down."),
+                                fieldWithPath("checkedAt").description("UTC timestamp when the readiness probe was evaluated."),
+                                fieldWithPath("service").description("Backend service identifier."),
+                                fieldWithPath("profile").description("Active Spring profile summary."),
+                                fieldWithPath("checks").description("Individual readiness probes."),
+                                fieldWithPath("checks[].name").description("Probe name."),
+                                fieldWithPath("checks[].status").description("Probe status."),
+                                fieldWithPath("checks[].required").description("Whether this probe blocks readiness."),
+                                fieldWithPath("checks[].message").description("Human-readable probe result.")
+                        )
+                ));
+    }
 }
