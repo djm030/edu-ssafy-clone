@@ -85,8 +85,12 @@ public final class BoardWriteDtos {
             @Size(max = 100) String mimeType,
             @PositiveOrZero Long fileSize,
             @Pattern(regexp = "^[a-fA-F0-9]{64}$", message = "checksumSha256 must be a 64 character hex string")
-            String checksumSha256
+            String checksumSha256,
+            @Size(max = 3_000_000) String contentBase64
     ) {
+    }
+
+    public record BoardAttachmentDownload(BoardPostDetailResponse.BoardAttachmentItem item, byte[] content) {
     }
 
     public record BoardAttachmentCreateResponse(BoardAttachmentCreatedItem item) {

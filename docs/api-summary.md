@@ -9,7 +9,7 @@
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, board binary download parity, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
+- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -52,6 +52,8 @@
 | `/api/boards/{boardCode}/posts/{postId}` | GET | path `boardCode`, `postId` | `{ post }` detail wrapper | Yes (demo) | board detail screens |
 | `/api/boards/{boardCode}/posts` | POST | path `boardCode`, body post draft | created `{ item }` | Yes (demo) | `/community/free/write`, `/help/qna/new` |
 | `/api/boards/{boardCode}/posts/{postId}/comments` | POST | path `boardCode`, `postId`, body `{ content }` | created comment `{ item }` | Yes (demo) | board detail screens |
+| `/api/boards/{boardCode}/posts/{postId}/attachments` | POST | path `boardCode`, `postId`, body filename/metadata plus optional `contentBase64` | created attachment `{ item }` and stores bytes when content is supplied | Yes (demo metadata fallback) | board detail attachment manager |
+| `/api/boards/{boardCode}/posts/{postId}/attachments/{attachmentId}` | GET | path `boardCode`, `postId`, `attachmentId` | attachment bytes with `Content-Disposition` | No | board detail download link |
 | `/api/boards/{boardCode}/posts/{postId}/reactions` | POST | path `boardCode`, `postId`, body reaction type | created reaction `{ item }` | Yes (demo) | board detail screens |
 | `/api/support/tickets` | GET | `page`, `size`, status filters optional | `{ items, page }` support tickets | Yes (demo) | `/help/qna` |
 | `/api/support/tickets` | POST | body `{ title, content, category }` | created support ticket `{ item }` | Yes (demo) | `/help/qna/new` |
@@ -121,7 +123,7 @@
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.
 - Material like/bookmark/favorite reactions.
-- Attachment upload/download APIs remain for board byte downloads; material resource, support ticket, and quest submission byte flows now exist.
+- Attachment byte upload/download APIs now exist for board post attachments, material resource attachments, support ticket message attachments, and quest submission attachments; remaining gaps are broader E2E/role-matrix coverage and survey admin mutation depth.
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.

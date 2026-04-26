@@ -1,5 +1,14 @@
 # Test Report
 
+## Board Post Attachment Verification (2026-04-26 KST)
+- Implemented board post attachment byte upload/download on top of the existing attachment metadata/link flow.
+- Connected board detail UI to read a selected file as base64, send it to the backend, and render a real download link for persisted attachments.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=BoardServiceTest,BoardControllerTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 160 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build` -> PASS, Vite transformed 71 modules.
+- `cd frontend && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## Quest Submission Attachment Verification (2026-04-26 KST)
 - Implemented owner-scoped quest submission attachment upload/download endpoints backed by the shared `attachments` table and local byte storage.
 - Connected `/quest/:id/submit` to read an optional file, submit the quest, and then upload the attachment against the persisted submission id.

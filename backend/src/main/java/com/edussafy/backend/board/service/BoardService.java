@@ -24,6 +24,7 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRespon
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeletedItem;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDownload;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreatedItem;
@@ -32,7 +33,16 @@ import com.edussafy.backend.board.error.BoardNotFoundException;
 import com.edussafy.backend.board.error.BoardPostNotFoundException;
 import com.edussafy.backend.board.error.InvalidBoardQueryException;
 import com.edussafy.backend.board.repository.BoardRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +60,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class BoardService {
+
+    private static final int BOARD_ATTACHMENT_MAX_BYTES = 2 * 1024 * 1024;
 
     private final BoardRepository boardRepository;
 
@@ -172,18 +184,38 @@ public class BoardService {
         boardRepository.findPostDetail(boardId, postId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
 
-        String originalFilename = request.originalFilename().trim();
+        byte[] content = decodeBoardAttachment(request.contentBase64());
+        String originalFilename = sanitizeAttachmentFilename(request.originalFilename());
+        String mimeType = normalizedOrNull(request.mimeType());
+        String checksumSha256 = normalizedOrNull(request.checksumSha256());
+        String storageKey = normalizedOrNull(request.storageKey());
+        String storedPath = normalizedOrNull(request.storedPath());
+        Long fileSize = request.fileSize();
+        if (content != null) {
+            checksumSha256 = sha256Hex(content);
+            fileSize = (long) content.length;
+            mimeType = mimeType == null ? "application/octet-stream" : mimeType;
+            storageKey = storageKey == null
+                    ? "boards/%s/posts/%d/%s-%s".formatted(boardCode, postId, checksumSha256.substring(0, 12), originalFilename)
+                    : storageKey;
+            storedPath = storedPath == null
+                    ? "/boards/%s/posts/%d/attachments/%s".formatted(boardCode, postId, checksumSha256)
+                    : storedPath;
+        }
         long attachmentId = boardRepository.createAttachment(
                 originalFilename,
-                normalizedOrNull(request.storageKey()),
-                normalizedOrNull(request.storedPath()),
-                normalizedOrNull(request.mimeType()),
-                request.fileSize(),
-                normalizedOrNull(request.checksumSha256())
+                storageKey,
+                storedPath,
+                mimeType,
+                fileSize,
+                checksumSha256
         );
         boardRepository.attachPost(postId, attachmentId);
         BoardAttachmentItem saved = boardRepository.findAttachment(postId, attachmentId)
                 .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        if (content != null) {
+            storeBoardAttachment(saved, content);
+        }
 
         return new BoardAttachmentCreateResponse(new BoardAttachmentCreatedItem(
                 saved.id(),
@@ -196,6 +228,16 @@ public class BoardService {
                 saved.createdAt(),
                 false
         ));
+    }
+
+
+    public BoardAttachmentDownload downloadAttachment(String boardCode, long postId, long attachmentId) {
+        long boardId = requireBoardId(boardCode);
+        boardRepository.findPostDetail(boardId, postId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        BoardAttachmentItem attachment = boardRepository.findAttachment(postId, attachmentId)
+                .orElseThrow(() -> new BoardPostNotFoundException(postId));
+        return new BoardAttachmentDownload(attachment, readBoardAttachment(attachment));
     }
 
     @Transactional
@@ -441,6 +483,74 @@ public class BoardService {
             return "coach".equals(role) || "admin".equals(role);
         }
         return false;
+    }
+
+
+    private byte[] decodeBoardAttachment(String contentBase64) {
+        if (!StringUtils.hasText(contentBase64)) {
+            return null;
+        }
+        try {
+            byte[] decoded = Base64.getDecoder().decode(contentBase64.trim());
+            if (decoded.length == 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Board attachment cannot be empty.");
+            }
+            if (decoded.length > BOARD_ATTACHMENT_MAX_BYTES) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Board attachment exceeds the 2MB limit.");
+            }
+            return decoded;
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Board attachment content must be base64.");
+        }
+    }
+
+    private String sanitizeAttachmentFilename(String filename) {
+        String normalized = filename.trim().replaceAll("[\\\\/\\p{Cntrl}]+", "_");
+        if (normalized.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Board attachment filename is required.");
+        }
+        return normalized.length() <= 255 ? normalized : normalized.substring(0, 255);
+    }
+
+    private void storeBoardAttachment(BoardAttachmentItem attachment, byte[] content) {
+        Path path = boardAttachmentPath(attachment);
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Board attachment could not be stored.", exception);
+        }
+    }
+
+    private byte[] readBoardAttachment(BoardAttachmentItem attachment) {
+        try {
+            return Files.readAllBytes(boardAttachmentPath(attachment));
+        } catch (NoSuchFileException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Board attachment file was not found.", exception);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Board attachment could not be read.", exception);
+        }
+    }
+
+    private Path boardAttachmentPath(BoardAttachmentItem attachment) {
+        String storageKey = attachment.storageKey();
+        if (!StringUtils.hasText(storageKey)) {
+            storageKey = "boards/attachments/%d".formatted(attachment.id());
+        }
+        Path root = Path.of(System.getProperty("java.io.tmpdir"), "edussafy-attachments").toAbsolutePath().normalize();
+        Path path = root.resolve(storageKey.trim()).normalize();
+        if (!path.startsWith(root)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Board attachment storage key is invalid.");
+        }
+        return path;
+    }
+
+    private String sha256Hex(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 digest is unavailable.", exception);
+        }
     }
 
     private String normalizedOrNull(String value) {

@@ -14,6 +14,7 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDownload;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
@@ -26,6 +27,8 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.CategorySummary;
 import com.edussafy.backend.board.repository.BoardRepository;
 import com.edussafy.backend.priority.security.AuthSession;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -196,6 +199,7 @@ class BoardServiceTest {
                 " /uploads/board/33/guide.pdf ",
                 " application/pdf ",
                 2048L,
+                null,
                 null
         ));
         BoardAttachmentDeleteResponse deleted = service.deleteAttachment("free", 33L, 91L);
@@ -207,6 +211,57 @@ class BoardServiceTest {
         assertThat(deleted.item().demo()).isFalse();
         verify(repository).attachPost(33L, 91L);
         verify(repository).deletePostAttachment(33L, 91L);
+    }
+
+
+    @Test
+    void createAttachmentWithContentStoresBytesAndDownloadReadsThem() throws Exception {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(33L, "Before", List.of());
+        OffsetDateTime createdAt = OffsetDateTime.now();
+        String checksum = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+        String storageKey = "boards/free/posts/33/2cf24dba5fb0-guide.txt";
+        BoardAttachmentItem attachment = new BoardAttachmentItem(
+                91L,
+                "guide.txt",
+                storageKey,
+                "/boards/free/posts/33/attachments/" + checksum,
+                "text/plain",
+                5L,
+                createdAt
+        );
+        given(repository.findBoardId("free")).willReturn(Optional.of(1L));
+        given(repository.findPostDetail(1L, 33L)).willReturn(Optional.of(post));
+        given(repository.createAttachment(
+                "guide.txt",
+                storageKey,
+                "/boards/free/posts/33/attachments/" + checksum,
+                "text/plain",
+                5L,
+                checksum
+        )).willReturn(91L);
+        given(repository.findAttachment(33L, 91L)).willReturn(Optional.of(attachment));
+        BoardService service = new BoardService(repository);
+        Path storedFile = Path.of(System.getProperty("java.io.tmpdir"), "edussafy-attachments", storageKey);
+        Files.deleteIfExists(storedFile);
+
+        BoardAttachmentCreateResponse created = service.createAttachment("free", 33L, new BoardAttachmentCreateRequest(
+                "guide.txt",
+                null,
+                null,
+                "text/plain",
+                null,
+                null,
+                "aGVsbG8="
+        ));
+        BoardAttachmentDownload download = service.downloadAttachment("free", 33L, 91L);
+
+        assertThat(created.item().id()).isEqualTo(91L);
+        assertThat(created.item().fileSize()).isEqualTo(5L);
+        assertThat(Files.readAllBytes(storedFile)).isEqualTo("hello".getBytes());
+        assertThat(download.item().originalFilename()).isEqualTo("guide.txt");
+        assertThat(download.content()).isEqualTo("hello".getBytes());
+        verify(repository).attachPost(33L, 91L);
     }
 
     @Test

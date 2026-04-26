@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import {
+  boardAttachmentUrl,
   createComment,
   createPostAttachment,
   createReaction,
@@ -204,8 +205,9 @@ function AttachmentManager({
   const [storedPath, setStoredPath] = useState('');
   const [mimeType, setMimeType] = useState('');
   const [fileSize, setFileSize] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState('첨부파일 메타데이터를 등록하면 게시글 상세에서 함께 조회됩니다.');
+  const [message, setMessage] = useState('첨부파일 파일을 선택하면 서버에 저장되고, 기존 메타데이터도 등록할 수 있습니다.');
 
   useEffect(() => {
     setAttachments(post.attachments ?? []);
@@ -213,22 +215,25 @@ function AttachmentManager({
     setStoredPath('');
     setMimeType('');
     setFileSize('');
-    setMessage('첨부파일 메타데이터를 등록하면 게시글 상세에서 함께 조회됩니다.');
+    setSelectedFile(undefined);
+    setMessage('첨부파일 파일을 선택하면 서버에 저장되고, 기존 메타데이터도 등록할 수 있습니다.');
   }, [post.id, post.attachments]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const filename = originalFilename.trim();
+    const filename = (originalFilename.trim() || selectedFile?.name || '').trim();
     if (!filename) return;
 
     setSubmitting(true);
     setMessage('첨부파일을 저장하는 중입니다.');
     try {
+      const contentBase64 = selectedFile ? await fileToBase64(selectedFile) : undefined;
       const draft: BoardAttachmentDraft = {
         originalFilename: filename,
         storedPath: storedPath.trim() || undefined,
-        mimeType: mimeType.trim() || undefined,
-        fileSize: fileSize ? Number(fileSize) : undefined,
+        mimeType: mimeType.trim() || selectedFile?.type || undefined,
+        fileSize: selectedFile ? selectedFile.size : fileSize ? Number(fileSize) : undefined,
+        contentBase64,
       };
       const created = await createPostAttachment(boardCode, post.id, draft);
       const nextAttachments = [...attachments, created];
@@ -238,6 +243,7 @@ function AttachmentManager({
       setStoredPath('');
       setMimeType('');
       setFileSize('');
+      setSelectedFile(undefined);
       setMessage('첨부파일이 저장되었습니다.');
     } catch (error) {
       setMessage(getErrorMessage(error));
@@ -279,7 +285,11 @@ function AttachmentManager({
             <li key={attachment.id}>
               <strong>{attachment.originalFilename}</strong>
               <span>{attachment.mimeType || 'unknown'} · {formatFileSize(attachment.fileSize)}</span>
-              {attachment.storedPath ? <a className="ghost-button" href={attachment.storedPath}>열기</a> : null}
+              {!attachment.demo ? (
+                <a className="ghost-button" href={boardAttachmentUrl(boardCode, post.id, attachment.id)}>다운로드</a>
+              ) : attachment.storedPath ? (
+                <a className="ghost-button" href={attachment.storedPath}>열기</a>
+              ) : null}
               <button className="ghost-button danger" disabled={submitting} onClick={() => { void remove(attachment.id); }} type="button">
                 삭제
               </button>
@@ -288,6 +298,21 @@ function AttachmentManager({
         </ul>
       )}
       <form className="stack-form" onSubmit={submit}>
+        <label htmlFor={`attachment-file-${post.id}`}>파일 선택</label>
+        <input
+          disabled={submitting}
+          id={`attachment-file-${post.id}`}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            setSelectedFile(file);
+            if (file) {
+              setOriginalFilename(file.name);
+              setMimeType(file.type || 'application/octet-stream');
+              setFileSize(String(file.size));
+            }
+          }}
+          type="file"
+        />
         <label htmlFor={`attachment-name-${post.id}`}>파일명</label>
         <input
           disabled={submitting}
@@ -667,6 +692,20 @@ function formatDate(value?: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('첨부파일을 읽지 못했습니다.'));
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const [, base64 = ''] = result.split(',');
+      resolve(base64);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function formatFileSize(value?: number | null): string {

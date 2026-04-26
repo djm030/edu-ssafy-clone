@@ -8,17 +8,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.board.dto.BoardCategoryListResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreatedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDownload;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeletedItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreatedItem;
@@ -38,6 +42,7 @@ import com.edussafy.backend.board.dto.PageMeta;
 import com.edussafy.backend.board.error.BoardNotFoundException;
 import com.edussafy.backend.board.error.BoardPostNotFoundException;
 import com.edussafy.backend.board.service.BoardService;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -227,6 +232,29 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.item.id").value(91))
                 .andExpect(jsonPath("$.item.deleted").value(true))
                 .andExpect(jsonPath("$.item.demo").value(false));
+    }
+
+
+    @Test
+    void downloadAttachmentReturnsPersistedBytes() throws Exception {
+        given(boardService.downloadAttachment("free", 33L, 91L)).willReturn(new BoardAttachmentDownload(
+                new BoardAttachmentItem(
+                        91L,
+                        "guide.txt",
+                        "boards/free/posts/33/guide.txt",
+                        "/boards/free/posts/33/attachments/checksum",
+                        "text/plain",
+                        5L,
+                        OffsetDateTime.now()
+                ),
+                "hello".getBytes()
+        ));
+
+        mockMvc.perform(get("/api/boards/free/posts/33/attachments/91"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/plain"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("guide.txt")))
+                .andExpect(content().bytes("hello".getBytes()));
     }
 
     @Test

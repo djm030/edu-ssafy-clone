@@ -133,6 +133,10 @@ export function updatePost(boardCode: BoardCode, postId: number, draft: BoardPos
   }).then((response) => response.item);
 }
 
+export function boardAttachmentUrl(boardCode: BoardCode, postId: number, attachmentId: number): string {
+  return `/api/boards/${boardCode}/posts/${postId}/attachments/${attachmentId}`;
+}
+
 export function deletePost(boardCode: BoardCode, postId: number): Promise<BoardPostDeleteResponse['item']> {
   return fetchJson<BoardPostDeleteResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
     fallback: () => ({ item: { id: postId, boardCode, deleted: true, demo: true } }),

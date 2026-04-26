@@ -6,6 +6,7 @@ import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDeleteResponse;
+import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentDownload;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentDeleteResponse;
@@ -22,7 +23,12 @@ import com.edussafy.backend.board.service.BoardService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.nio.charset.StandardCharsets;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -107,6 +113,25 @@ public class BoardController {
             @Valid @RequestBody BoardAttachmentCreateRequest request
     ) {
         return boardService.createAttachment(boardCode, postId, request);
+    }
+
+    @GetMapping("/boards/{boardCode}/posts/{postId}/attachments/{attachmentId}")
+    public ResponseEntity<byte[]> downloadAttachment(
+            @PathVariable String boardCode,
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId
+    ) {
+        BoardAttachmentDownload download = boardService.downloadAttachment(boardCode, postId, attachmentId);
+        String mimeType = download.item().mimeType() == null || download.item().mimeType().isBlank()
+                ? MediaType.APPLICATION_OCTET_STREAM_VALUE
+                : download.item().mimeType();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(mimeType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(download.item().originalFilename(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .body(download.content());
     }
 
     @DeleteMapping("/boards/{boardCode}/posts/{postId}/attachments/{attachmentId}")

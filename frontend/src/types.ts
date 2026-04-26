@@ -343,6 +343,7 @@ export interface BoardAttachmentDraft {
   mimeType?: string;
   fileSize?: number;
   checksumSha256?: string;
+  contentBase64?: string;
 }
 
 export interface AttendanceAppealDraft {
