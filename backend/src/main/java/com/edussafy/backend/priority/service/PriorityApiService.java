@@ -97,6 +97,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudiesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyCompleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
@@ -791,6 +795,33 @@ public class PriorityApiService {
         EbookItem item = repository.findEbook(user.id(), ebookId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-book not found."));
         return new EbookAccessLogResponse(item, accessLog);
+    }
+
+    public RequiredStudiesResponse requiredStudies(int page, int size) {
+        UserProfile user = currentUser();
+        long total = safe(() -> repository.countRequiredStudies(user.id()), 0L);
+        List<RequiredStudyItem> items = total == 0
+                ? List.of()
+                : safe(() -> repository.findRequiredStudies(user.id(), size, offset(page, size)), List.of());
+        return new RequiredStudiesResponse(items, pageMeta(page, size, total));
+    }
+
+    public RequiredStudyDetailResponse requiredStudy(long studyId) {
+        UserProfile user = currentUser();
+        RequiredStudyItem item = repository.findRequiredStudy(user.id(), studyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Required study not found."));
+        return new RequiredStudyDetailResponse(item);
+    }
+
+    @Transactional
+    public RequiredStudyCompleteResponse completeRequiredStudy(long studyId) {
+        UserProfile user = currentUser();
+        repository.findRequiredStudy(user.id(), studyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Required study not found."));
+        repository.completeRequiredStudy(user.id(), studyId);
+        RequiredStudyItem item = repository.findRequiredStudy(user.id(), studyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Required study not found."));
+        return new RequiredStudyCompleteResponse(item);
     }
 
     public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {

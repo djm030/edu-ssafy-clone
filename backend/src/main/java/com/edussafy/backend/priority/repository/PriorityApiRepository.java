@@ -26,6 +26,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.TodaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
@@ -299,6 +300,68 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public long countRequiredStudies(long userId) {
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM required_studies rs
+                """ + requiredStudyVisibilityWhere())
+                .param("userId", userId)
+                .query(Long.class)
+                .single();
+    }
+
+    public List<RequiredStudyItem> findRequiredStudies(long userId, int limit, int offset) {
+        return jdbcClient.sql(requiredStudySelect(requiredStudyVisibilityWhere() + """
+                ORDER BY CASE WHEN rs.due_at IS NULL THEN 1 ELSE 0 END,
+                         rs.due_at ASC,
+                         rs.required_study_id DESC
+                LIMIT :limit OFFSET :offset
+                """))
+                .param("userId", userId)
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapRequiredStudy)
+                .list();
+    }
+
+    public Optional<RequiredStudyItem> findRequiredStudy(long userId, long studyId) {
+        return jdbcClient.sql(requiredStudySelect(requiredStudyVisibilityWhere() + """
+                AND rs.required_study_id = :studyId
+                LIMIT 1
+                """))
+                .param("userId", userId)
+                .param("studyId", studyId)
+                .query(this::mapRequiredStudy)
+                .optional();
+    }
+
+    public int completeRequiredStudy(long userId, long studyId) {
+        return jdbcClient.sql("""
+                INSERT INTO learner_required_study_progress (
+                    user_id,
+                    required_study_id,
+                    status_code,
+                    progress_percent,
+                    completed_at
+                )
+                VALUES (
+                    :userId,
+                    :studyId,
+                    'completed',
+                    100,
+                    CURRENT_TIMESTAMP
+                )
+                ON DUPLICATE KEY UPDATE
+                    status_code = 'completed',
+                    progress_percent = 100,
+                    completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+                    updated_at = CURRENT_TIMESTAMP
+                """)
+                .param("userId", userId)
+                .param("studyId", studyId)
+                .update();
+    }
+
     public AttendanceSummary findAttendanceSummary(long userId) {
         return findAttendanceSummary(userId, null, null, null);
     }
@@ -557,6 +620,64 @@ public class PriorityApiRepository {
                 toOffset(rs.getTimestamp("created_at")),
                 toOffset(rs.getTimestamp("last_accessed_at")),
                 rs.getLong("access_count")
+        );
+    }
+
+    private String requiredStudyVisibilityWhere() {
+        return """
+                WHERE rs.active_yn = TRUE
+                  AND (
+                      rs.required_for_track IS NULL
+                      OR EXISTS (
+                          SELECT 1
+                          FROM user_track_enrollments ute
+                          JOIN tracks t ON t.track_id = ute.track_id
+                          WHERE ute.user_id = :userId
+                            AND t.track_name = rs.required_for_track
+                      )
+                  )
+                """;
+    }
+
+    private String requiredStudySelect(String suffix) {
+        return """
+                SELECT
+                    rs.required_study_id,
+                    rs.title,
+                    rs.description,
+                    rs.category,
+                    rs.required_for_track,
+                    rs.due_at,
+                    rs.content_type,
+                    rs.content_url,
+                    CASE
+                        WHEN lrsp.status_code = 'completed' THEN 'completed'
+                        WHEN rs.due_at IS NOT NULL AND rs.due_at < CURRENT_TIMESTAMP THEN 'overdue'
+                        WHEN lrsp.status_code IS NOT NULL THEN lrsp.status_code
+                        ELSE 'not_started'
+                    END AS effective_status,
+                    COALESCE(lrsp.progress_percent, 0) AS progress_percent,
+                    lrsp.completed_at
+                FROM required_studies rs
+                LEFT JOIN learner_required_study_progress lrsp
+                    ON lrsp.required_study_id = rs.required_study_id
+                   AND lrsp.user_id = :userId
+                """ + suffix;
+    }
+
+    private RequiredStudyItem mapRequiredStudy(ResultSet rs, int rowNum) throws SQLException {
+        return new RequiredStudyItem(
+                rs.getLong("required_study_id"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("category"),
+                rs.getString("required_for_track"),
+                toOffset(rs.getTimestamp("due_at")),
+                rs.getString("content_type"),
+                rs.getString("content_url"),
+                rs.getString("effective_status"),
+                rs.getInt("progress_percent"),
+                toOffset(rs.getTimestamp("completed_at"))
         );
     }
 

@@ -95,6 +95,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentI
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudiesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyCompleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentCreateResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SupportTicketAttachmentDownload;
@@ -145,6 +149,7 @@ import org.springframework.web.context.WebApplicationContext;
         DashboardController.class,
         EducationStatusController.class,
         EbookController.class,
+        RequiredStudyController.class,
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
@@ -429,6 +434,54 @@ class PriorityApiControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.accessCount").value(1))
                 .andExpect(jsonPath("$.accessLog.ebookId").value(5));
+    }
+
+    @Test
+    void requiredStudyEndpointsReturnListDetailAndComplete() throws Exception {
+        RequiredStudyItem study = new RequiredStudyItem(
+                7L,
+                "Java 보안 필수학습",
+                "보안 체크리스트",
+                "Security",
+                "Java",
+                OffsetDateTime.parse("2026-05-01T18:00:00+09:00"),
+                "url",
+                "https://edu.ssafy.local/required-studies/java-security",
+                "in_progress",
+                40,
+                null
+        );
+        RequiredStudyItem completed = new RequiredStudyItem(
+                7L,
+                "Java 보안 필수학습",
+                "보안 체크리스트",
+                "Security",
+                "Java",
+                OffsetDateTime.parse("2026-05-01T18:00:00+09:00"),
+                "url",
+                "https://edu.ssafy.local/required-studies/java-security",
+                "completed",
+                100,
+                OffsetDateTime.parse("2026-04-26T10:00:00+09:00")
+        );
+        given(priorityApiService.requiredStudies(1, 20)).willReturn(new RequiredStudiesResponse(
+                List.of(study),
+                new PageMeta(1, 20, 1, 1)
+        ));
+        given(priorityApiService.requiredStudy(7L)).willReturn(new RequiredStudyDetailResponse(study));
+        given(priorityApiService.completeRequiredStudy(7L)).willReturn(new RequiredStudyCompleteResponse(completed));
+
+        mockMvc.perform(get("/api/required-studies"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("in_progress"))
+                .andExpect(jsonPath("$.page.totalItems").value(1));
+        mockMvc.perform(get("/api/required-studies/7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.requiredForTrack").value("Java"));
+        mockMvc.perform(post("/api/required-studies/7/complete"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.status").value("completed"))
+                .andExpect(jsonPath("$.item.progressPercent").value(100));
     }
 
     @Test

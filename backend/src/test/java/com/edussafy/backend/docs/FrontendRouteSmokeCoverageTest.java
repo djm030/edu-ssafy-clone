@@ -45,6 +45,8 @@ class FrontendRouteSmokeCoverageTest {
             "/learning/materials",
             "/learning/materials/1",
             "/learning/materials/1/viewer",
+            "/learning/required-studies",
+            "/learning/required-studies/1",
             "/learning/replays",
             "/quest",
             "/quest/1",
@@ -75,10 +77,12 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/mycampus/documents')");
         assertThat(app).contains("if (path === '/mycampus/pledges')");
         assertThat(app).contains("if (path === '/mycampus/ebooks')");
+        assertThat(app).contains("if (path === '/learning/required-studies')");
         assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/ebooks\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/elearning\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/learning\\/materials\\/(\\d+)\\/viewer$/)");
+        assertThat(app).contains("match(/^\\/learning\\/required-studies\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/quest\\/(\\d+)\\/submit$/)");
         assertThat(app).contains("match(/^\\/survey\\/(\\d+)\\/respond$/)");
         assertThat(app).contains("match(/^\\/help\\/qna\\/tickets\\/(\\d+)$/)");
@@ -101,6 +105,7 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("documents", Path.of("..", "frontend", "src", "pages", "DocumentsPage.tsx")),
                 Map.entry("pledges", Path.of("..", "frontend", "src", "pages", "PledgesPage.tsx")),
                 Map.entry("ebooks", Path.of("..", "frontend", "src", "pages", "EbooksPage.tsx")),
+                Map.entry("required-studies", Path.of("..", "frontend", "src", "pages", "RequiredStudiesPage.tsx")),
                 Map.entry("quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx")),
                 Map.entry("support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx"))
         );

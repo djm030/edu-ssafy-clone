@@ -52,6 +52,8 @@ import type {
   NotificationsReadAllResult,
   QnaDraft,
   QuestItem,
+  RequiredStudyCompleteResult,
+  RequiredStudyItem,
   QuestSubmissionAttachmentDraft,
   QuestSubmissionAttachmentResult,
   QuestSubmissionDraft,
@@ -152,6 +154,11 @@ type BackendEbookItem = Partial<EbookItem> & {
   createdAt?: string | null;
   lastAccessedAt?: string | null;
   accessCount?: number | null;
+};
+
+type BackendRequiredStudyItem = Partial<RequiredStudyItem> & {
+  dueAt?: string | null;
+  completedAt?: string | null;
 };
 
 type BackendMaterialResource = {
@@ -426,6 +433,27 @@ function toEbookItem(item: BackendEbookItem): EbookItem {
     createdAt: item.createdAt || undefined,
     lastAccessedAt: item.lastAccessedAt || undefined,
     accessCount: Number(item.accessCount ?? 0),
+  };
+}
+
+function toRequiredStudyStatus(value?: string | null): RequiredStudyItem['status'] {
+  if (value === 'in_progress' || value === 'completed' || value === 'overdue') return value;
+  return 'not_started';
+}
+
+function toRequiredStudyItem(item: BackendRequiredStudyItem): RequiredStudyItem {
+  return {
+    id: Number(item.id),
+    title: item.title || '필수학습',
+    description: item.description || undefined,
+    category: item.category || undefined,
+    requiredForTrack: item.requiredForTrack || undefined,
+    dueAt: item.dueAt || undefined,
+    contentType: item.contentType || 'url',
+    contentUrl: item.contentUrl || '#',
+    status: toRequiredStudyStatus(item.status),
+    progressPercent: Number(item.progressPercent ?? 0),
+    completedAt: item.completedAt || undefined,
   };
 }
 
@@ -787,6 +815,22 @@ export function recordEbookAccess(ebookId: number): Promise<EbookAccessLogResult
   return fetchJson<{ item: BackendEbookItem; accessLog: EbookAccessLogResult['accessLog'] }>(`/api/ebooks/${ebookId}/access-log`, {
     method: 'POST',
   }).then((response) => ({ item: toEbookItem(response.item), accessLog: response.accessLog }));
+}
+
+export function getRequiredStudies(query: { page?: number; size?: number } = {}): Promise<{ items: RequiredStudyItem[] }> {
+  const params = buildQuery({ page: query.page, size: query.size });
+  return fetchJson<{ items: BackendRequiredStudyItem[] }>(`/api/required-studies${params}`)
+    .then((response) => ({ items: response.items.map(toRequiredStudyItem) }));
+}
+
+export function getRequiredStudy(studyId: number): Promise<RequiredStudyItem> {
+  return fetchJson<ItemResponse<BackendRequiredStudyItem>>(`/api/required-studies/${studyId}`)
+    .then((response) => toRequiredStudyItem(response.item));
+}
+
+export function completeRequiredStudy(studyId: number): Promise<RequiredStudyCompleteResult> {
+  return fetchJson<{ item: BackendRequiredStudyItem }>(`/api/required-studies/${studyId}/complete`, { method: 'POST' })
+    .then((response) => ({ item: toRequiredStudyItem(response.item) }));
 }
 
 export function getElearningProgress(query: {

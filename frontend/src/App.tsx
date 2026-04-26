@@ -34,6 +34,7 @@ import QnaNewPage from './pages/QnaNewPage';
 import QuestDetailPage from './pages/QuestDetailPage';
 import QuestPage from './pages/QuestPage';
 import QuestSubmitPage from './pages/QuestSubmitPage';
+import RequiredStudiesPage from './pages/RequiredStudiesPage';
 import ReplaysPage from './pages/ReplaysPage';
 import SurveyDetailPage from './pages/SurveyDetailPage';
 import SurveyPage from './pages/SurveyPage';
@@ -241,6 +242,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   const pledgeMatch = match(/^\/mycampus\/pledges\/(\d+)$/);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
+  const requiredStudyMatch = match(/^\/learning\/required-studies\/(\d+)$/);
   const freePostMatch = match(/^\/community\/free\/(\d+)$/);
   const noticePostMatch = match(/^\/help\/notice\/(\d+)$/);
   const faqPostMatch = match(/^\/help\/faq\/(\d+)$/);
@@ -265,6 +267,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
+  if (path === '/learning/required-studies') return <RequiredStudiesPage />;
   if (path === '/learning/replays') return <ReplaysPage />;
   if (path === '/profile/check') return <ProfileCheckPage onVerified={() => navigate('/profile/edit')} />;
   if (path === '/profile/edit') return <ProfileEditPage />;
@@ -282,6 +285,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (surveyRespondMatch) return <SurveyRespondPage surveyId={Number(surveyRespondMatch[1])} />;
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;
   if (materialMatch) return <MaterialDetailPage materialId={Number(materialMatch[1])} />;
+  if (requiredStudyMatch) return <RequiredStudiesPage studyId={Number(requiredStudyMatch[1])} />;
   if (freePostMatch) return <BoardDetailPage boardCode="free" postId={Number(freePostMatch[1])} title="자유게시판 상세" listPath="/community/free" />;
   if (noticePostMatch) return <BoardDetailPage boardCode="notice" postId={Number(noticePostMatch[1])} title="공지 상세" listPath="/help/notice" />;
   if (faqPostMatch) return <BoardDetailPage boardCode="faq" postId={Number(faqPostMatch[1])} title="FAQ 상세" listPath="/help/faq" />;

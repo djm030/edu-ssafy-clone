@@ -39,6 +39,7 @@ export const navSections: NavSection[] = [
     items: [
       { path: '/learning/curriculum', label: '커리큘럼' },
       { path: '/learning/materials', label: '학습자료' },
+      { path: '/learning/required-studies', label: '필수학습' },
       { path: '/learning/replays', label: '강의 다시보기' },
       { path: '/quest', label: 'Quest' },
       { path: '/survey', label: '설문' },
@@ -91,6 +92,8 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'materials', priority: 7, feature: '학습자료', path: '/learning/materials', label: '학습자료 목록' },
   { id: 'material-detail', priority: 7, feature: '학습자료', path: '/learning/materials/1', label: '학습자료 상세' },
   { id: 'material-viewer', priority: 7, feature: '학습자료 다시보기', path: '/learning/materials/1/viewer', label: '자료 뷰어' },
+  { id: 'required-studies', priority: 16, feature: '필수학습', path: '/learning/required-studies', label: '필수학습 목록' },
+  { id: 'required-study-detail', priority: 16, feature: '필수학습', path: '/learning/required-studies/1', label: '필수학습 상세' },
   { id: 'replays', priority: 7, feature: '강의 다시보기', path: '/learning/replays', label: '강의 다시보기' },
   { id: 'quest-list', priority: 8, feature: '퀘스트/평가', path: '/quest', label: '퀘스트 목록' },
   { id: 'quest-detail', priority: 8, feature: '퀘스트/평가', path: '/quest/1', label: '퀘스트 상세' },

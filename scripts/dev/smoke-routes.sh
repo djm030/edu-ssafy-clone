@@ -38,6 +38,8 @@ routes=(
   "/learning/materials"
   "/learning/materials/1"
   "/learning/materials/1/viewer"
+  "/learning/required-studies"
+  "/learning/required-studies/1"
   "/learning/replays"
   "/quest"
   "/quest/1"

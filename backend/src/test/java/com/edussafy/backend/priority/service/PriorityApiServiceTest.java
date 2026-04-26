@@ -87,6 +87,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudiesResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyCompleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyAnswerRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyCreateRequest;
@@ -306,6 +309,64 @@ class PriorityApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
         verify(repository, never()).createEbookAccessLog(anyLong(), anyLong());
+    }
+
+    @Test
+    void requiredStudiesListCompleteAndCurrentUserProgressOnly() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        RequiredStudyItem inProgress = new RequiredStudyItem(
+                7L,
+                "Java 보안 필수학습",
+                "보안 체크리스트",
+                "Security",
+                "Java",
+                OffsetDateTime.now().plusDays(7),
+                "url",
+                "https://edu.ssafy.local/required-studies/java-security",
+                "in_progress",
+                40,
+                null
+        );
+        RequiredStudyItem completed = new RequiredStudyItem(
+                7L,
+                "Java 보안 필수학습",
+                "보안 체크리스트",
+                "Security",
+                "Java",
+                inProgress.dueAt(),
+                "url",
+                "https://edu.ssafy.local/required-studies/java-security",
+                "completed",
+                100,
+                OffsetDateTime.now()
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countRequiredStudies(USER.id())).willReturn(1L);
+        given(repository.findRequiredStudies(USER.id(), 20, 0)).willReturn(List.of(inProgress));
+        given(repository.findRequiredStudy(USER.id(), 7L)).willReturn(Optional.of(inProgress), Optional.of(completed));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        RequiredStudiesResponse list = service.requiredStudies(1, 20);
+        RequiredStudyCompleteResponse result = service.completeRequiredStudy(7L);
+
+        assertThat(list.items()).containsExactly(inProgress);
+        assertThat(result.item().status()).isEqualTo("completed");
+        assertThat(result.item().progressPercent()).isEqualTo(100);
+        verify(repository).findRequiredStudies(USER.id(), 20, 0);
+        verify(repository).completeRequiredStudy(USER.id(), 7L);
+    }
+
+    @Test
+    void requiredStudyCompleteRejectsMissingOrInvisibleStudy() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findRequiredStudy(USER.id(), 99L)).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.completeRequiredStudy(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+        verify(repository, never()).completeRequiredStudy(anyLong(), anyLong());
     }
 
     @Test

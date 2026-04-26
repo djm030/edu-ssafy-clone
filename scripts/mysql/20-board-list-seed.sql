@@ -585,3 +585,77 @@ INSERT INTO ssafy_ebook_access_logs (ebook_id, user_id, accessed_at)
 SELECT e.ebook_id, 1, CURRENT_TIMESTAMP - INTERVAL 1 DAY
 FROM ssafy_ebooks e
 WHERE e.title = 'SSAFY Java e-book';
+
+-- Required study demo data for classroom mandatory learning flow.
+INSERT INTO required_studies (
+  title,
+  description,
+  category,
+  required_for_track,
+  due_at,
+  content_type,
+  content_url,
+  active_yn
+)
+SELECT seed.title, seed.description, seed.category, seed.required_for_track, seed.due_at, seed.content_type, seed.content_url, seed.active_yn
+FROM (
+  SELECT 'Java 보안 필수학습' AS title,
+         '웹 애플리케이션 보안 기본 원칙과 SSAFY 프로젝트 보안 체크리스트를 학습합니다.' AS description,
+         'Security' AS category,
+         'Java' AS required_for_track,
+         CURRENT_TIMESTAMP + INTERVAL 7 DAY AS due_at,
+         'url' AS content_type,
+         'https://edu.ssafy.local/required-studies/java-security' AS content_url,
+         TRUE AS active_yn
+  UNION ALL
+  SELECT '프로젝트 협업 필수학습',
+         '팀 프로젝트를 시작하기 전 Git 브랜치 전략과 코드 리뷰 규칙을 확인합니다.',
+         'Collaboration',
+         NULL,
+         CURRENT_TIMESTAMP - INTERVAL 1 DAY,
+         'url',
+         'https://edu.ssafy.local/required-studies/collaboration',
+         TRUE
+  UNION ALL
+  SELECT '비활성 필수학습',
+         '비활성 필수학습은 API 목록에서 제외되어야 합니다.',
+         'Archive',
+         'Java',
+         CURRENT_TIMESTAMP + INTERVAL 30 DAY,
+         'url',
+         'https://edu.ssafy.local/required-studies/private',
+         FALSE
+) seed
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM required_studies rs
+  WHERE rs.title = seed.title
+);
+
+SET @java_security_study_id := (
+  SELECT required_study_id
+  FROM required_studies
+  WHERE title = 'Java 보안 필수학습'
+  LIMIT 1
+);
+SET @collaboration_study_id := (
+  SELECT required_study_id
+  FROM required_studies
+  WHERE title = '프로젝트 협업 필수학습'
+  LIMIT 1
+);
+
+INSERT INTO learner_required_study_progress (user_id, required_study_id, status_code, progress_percent)
+VALUES
+  (@student_id, @java_security_study_id, 'in_progress', 40)
+ON DUPLICATE KEY UPDATE
+  status_code = VALUES(status_code),
+  progress_percent = VALUES(progress_percent);
+
+INSERT INTO learner_required_study_progress (user_id, required_study_id, status_code, progress_percent, completed_at)
+VALUES
+  (@classmate_id, @collaboration_study_id, 'completed', 100, CURRENT_TIMESTAMP - INTERVAL 2 DAY)
+ON DUPLICATE KEY UPDATE
+  status_code = VALUES(status_code),
+  progress_percent = VALUES(progress_percent),
+  completed_at = VALUES(completed_at);

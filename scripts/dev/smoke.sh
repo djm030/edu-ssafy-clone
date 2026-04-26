@@ -52,6 +52,7 @@ for route in \
   /mycampus/pledges \
   /mycampus/education-status \
   /mycampus/ebooks \
+  /learning/required-studies \
   /profile/check \
   /community/free \
   /community/classmates \
@@ -74,6 +75,7 @@ for api_path in \
   /api/pledges \
   /api/mycampus/education-status \
   /api/ebooks \
+  /api/required-studies \
   /api/quests/ \
   /api/surveys/ \
   /api/support/tickets; do
@@ -101,6 +103,7 @@ request GET "$BACKEND_URL/api/documents/requests?page=1&size=5"
 request GET "$BACKEND_URL/api/pledges?page=1&size=5"
 request GET "$BACKEND_URL/api/mycampus/education-status"
 request GET "$BACKEND_URL/api/ebooks?page=1&size=5"
+request GET "$BACKEND_URL/api/required-studies?page=1&size=5"
 request GET "$BACKEND_URL/api/quests?page=1&size=5"
 request GET "$BACKEND_URL/api/surveys?page=1&size=5"
 request GET "$BACKEND_URL/api/support/tickets?page=1&size=5"

@@ -153,6 +153,30 @@ public final class PriorityDtos {
     public record EbookAccessLogItem(long id, long ebookId, OffsetDateTime accessedAt) {
     }
 
+    public record RequiredStudiesResponse(List<RequiredStudyItem> items, PageMeta page) {
+    }
+
+    public record RequiredStudyDetailResponse(RequiredStudyItem item) {
+    }
+
+    public record RequiredStudyCompleteResponse(RequiredStudyItem item) {
+    }
+
+    public record RequiredStudyItem(
+            long id,
+            String title,
+            String description,
+            String category,
+            String requiredForTrack,
+            OffsetDateTime dueAt,
+            String contentType,
+            String contentUrl,
+            String status,
+            int progressPercent,
+            OffsetDateTime completedAt
+    ) {
+    }
+
     public record AttendanceRecordsResponse(AttendanceSummary summary, List<AttendanceRecordItem> items) {
     }
 

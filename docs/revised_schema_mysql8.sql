@@ -37,6 +37,8 @@ DROP TABLE IF EXISTS learner_pledge_agreements;
 DROP TABLE IF EXISTS pledge_documents;
 DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
+DROP TABLE IF EXISTS learner_required_study_progress;
+DROP TABLE IF EXISTS required_studies;
 DROP TABLE IF EXISTS ssafy_ebook_access_logs;
 DROP TABLE IF EXISTS ssafy_ebooks;
 DROP TABLE IF EXISTS learner_bookmarks;
@@ -107,6 +109,7 @@ INSERT INTO code_groups (code_group, group_name, description) VALUES
   ('APPROVAL_STATUS', '승인 상태', NULL),
   ('PROGRESS_STATUS', '진행 상태', NULL),
   ('ELEARNING_PROGRESS_STATUS', '이러닝 진행 상태', NULL),
+  ('REQUIRED_STUDY_STATUS', '필수학습 진행 상태', NULL),
   ('BOOKMARK_TARGET_TYPE', '찜 대상 유형', NULL),
   ('DOCUMENT_SUBMISSION_STATUS', '교육생 서류 제출 상태', NULL),
   ('PLEDGE_AGREEMENT_STATUS', '교육생 서약 동의 상태', NULL),
@@ -172,6 +175,10 @@ INSERT INTO codes (code_group, code, code_name, sort_order) VALUES
   ('ELEARNING_PROGRESS_STATUS', 'not_started', '미시작', 1),
   ('ELEARNING_PROGRESS_STATUS', 'in_progress', '학습중', 2),
   ('ELEARNING_PROGRESS_STATUS', 'completed', '완료', 3),
+  ('REQUIRED_STUDY_STATUS', 'not_started', '미시작', 1),
+  ('REQUIRED_STUDY_STATUS', 'in_progress', '학습중', 2),
+  ('REQUIRED_STUDY_STATUS', 'completed', '완료', 3),
+  ('REQUIRED_STUDY_STATUS', 'overdue', '기한 초과', 4),
   ('BOOKMARK_TARGET_TYPE', 'material', '학습자료', 1),
   ('BOOKMARK_TARGET_TYPE', 'elearning', '이러닝', 2),
   ('BOOKMARK_TARGET_TYPE', 'replay', '강의 다시보기', 3),
@@ -825,6 +832,47 @@ CREATE TABLE ssafy_ebook_access_logs (
     ON DELETE CASCADE,
   CONSTRAINT fk_ssafy_ebook_access_logs_user
     FOREIGN KEY (user_id) REFERENCES users (user_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE required_studies (
+  required_study_id BIGINT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  category VARCHAR(100),
+  required_for_track VARCHAR(100),
+  due_at DATETIME,
+  content_type VARCHAR(50) NOT NULL DEFAULT 'url',
+  content_url VARCHAR(500) NOT NULL,
+  active_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (required_study_id),
+  KEY idx_required_studies_track_due_active (required_for_track, due_at, active_yn)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_required_study_progress (
+  learner_required_study_progress_id BIGINT NOT NULL AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  required_study_id BIGINT NOT NULL,
+  status_code_group VARCHAR(50) NOT NULL DEFAULT 'REQUIRED_STUDY_STATUS',
+  status_code VARCHAR(50) NOT NULL DEFAULT 'not_started',
+  progress_percent INT NOT NULL DEFAULT 0,
+  completed_at DATETIME,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (learner_required_study_progress_id),
+  UNIQUE KEY uk_required_study_progress_user_study (user_id, required_study_id),
+  KEY idx_required_study_progress_status (user_id, status_code),
+  CONSTRAINT chk_required_study_progress_status_group CHECK (status_code_group = 'REQUIRED_STUDY_STATUS'),
+  CONSTRAINT chk_required_study_progress_percent CHECK (progress_percent BETWEEN 0 AND 100),
+  CONSTRAINT fk_required_study_progress_status
+    FOREIGN KEY (status_code_group, status_code) REFERENCES codes (code_group, code),
+  CONSTRAINT fk_required_study_progress_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_required_study_progress_study
+    FOREIGN KEY (required_study_id) REFERENCES required_studies (required_study_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

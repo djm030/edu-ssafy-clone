@@ -137,6 +137,24 @@ export interface EbookAccessLogResult {
   };
 }
 
+export interface RequiredStudyItem {
+  id: number;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+  requiredForTrack?: string | null;
+  dueAt?: string | null;
+  contentType: string;
+  contentUrl: string;
+  status: 'not_started' | 'in_progress' | 'completed' | 'overdue';
+  progressPercent: number;
+  completedAt?: string | null;
+}
+
+export interface RequiredStudyCompleteResult {
+  item: RequiredStudyItem;
+}
+
 export interface AttendanceRecord {
   id: number;
   date: string;
