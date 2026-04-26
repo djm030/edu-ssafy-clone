@@ -147,8 +147,24 @@
   .summary-grid,
   .content-grid,
   .level-layout,
+  .level-hero-panel,
   .classmate-grid {
     grid-template-columns: 1fr;
+  }
+
+  .level-kpi-row,
+  .tier-roadmap {
+    grid-template-columns: 1fr;
+  }
+
+  .point-breakdown-item {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  .point-breakdown-item dd {
+    justify-content: flex-start;
+    text-align: left;
   }
 
   .search-form,

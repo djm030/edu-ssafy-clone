@@ -51,26 +51,37 @@ function LevelPage() {
 function LevelDetailContent({ detail }: { detail: LevelDetail }) {
   const rankText = detail.current.rank ? `${detail.current.rank}위` : '집계 전';
   const trend = detail.trend;
+  const nextLevelLabel = detail.current.nextLevelExp > 0 ? `${detail.expRemaining.toLocaleString('ko-KR')} EXP 남음` : '최고 레벨';
 
   return (
     <>
-      <div className="level-layout">
-        <section className="panel">
-          <h2>현재 레벨</h2>
+      <section className="panel level-hero-panel" aria-labelledby="level-hero-title">
+        <div className="level-hero-copy">
           <span className="status-pill green">{detail.levelName}</span>
-          <div className="level-number">Lv.{detail.current.level}</div>
-          <div className="progress-track" aria-label={`경험치 ${detail.expPercent}%`}>
-            <span style={{ width: `${detail.expPercent}%` }} />
+          <h2 id="level-hero-title">레벨&장학포인트 현황</h2>
+          <p>현재 성장 단계, 다음 레벨까지의 경험치, 장학 포인트와 최근 순위 변동을 한 번에 확인합니다.</p>
+          <div className="level-kpi-row" aria-label="레벨 핵심 지표">
+            <MetricPill label="현재 레벨" value={`Lv.${detail.current.level}`} />
+            <MetricPill label="장학 포인트" value={`${detail.current.scholarshipPoints.toLocaleString('ko-KR')}점`} />
+            <MetricPill label="현재 순위" value={rankText} />
+          </div>
+        </div>
+        <div className="level-ring-card" aria-label={`경험치 ${detail.expPercent}%`}>
+          <div className="level-ring" style={{ background: `conic-gradient(#245db8 ${detail.expPercent}%, #e6ebf2 0)` }}>
+            <div>
+              <strong>{detail.expPercent}%</strong>
+              <span>EXP</span>
+            </div>
           </div>
           <p>
-            {detail.current.exp.toLocaleString('ko-KR')} / {detail.current.nextLevelExp.toLocaleString('ko-KR')} EXP · 다음 레벨까지{' '}
-            {detail.expRemaining.toLocaleString('ko-KR')} EXP
+            {detail.current.exp.toLocaleString('ko-KR')} / {detail.current.nextLevelExp.toLocaleString('ko-KR')} EXP · {nextLevelLabel}
           </p>
-        </section>
+        </div>
+      </section>
+
+      <div className="level-layout">
         <section className="panel">
-          <h2>장학 포인트</h2>
-          <div className="level-number">{detail.current.scholarshipPoints.toLocaleString('ko-KR')}점</div>
-          <p>현재 순위 {rankText}</p>
+          <h2>최근 레벨 변동</h2>
           <div className="level-trend-panel" aria-label="최근 레벨 변동">
             <span className="status-pill blue">{trend.trendLabel}</span>
             <strong>{formatRankTrend(trend.rankDelta)}</strong>
@@ -79,7 +90,10 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
               {formatSignedNumber(trend.scholarshipPointDelta)}
             </p>
           </div>
-          <dl className="info-list">
+        </section>
+        <section className="panel">
+          <h2>포인트 사유</h2>
+          <dl className="point-breakdown-grid" aria-label="장학 포인트 사유별 합계">
             {detail.pointBreakdown.map((item) => <PointRow item={item} key={item.category} />)}
           </dl>
         </section>
@@ -87,7 +101,7 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
       <section className="panel">
         <h2>Bronze/Silver 단계</h2>
         <div className="tier-roadmap" aria-label="레벨 단계 진행 현황">
-          {detail.tiers.map((tier) => <TierCard tier={tier} key={tier.name} />)}
+          {detail.tiers.map((tier, index) => <TierCard tier={tier} key={tier.name} index={index + 1} />)}
         </div>
       </section>
       <section className="panel">
@@ -127,14 +141,17 @@ function formatSignedNumber(value: number) {
   return `${value > 0 ? '+' : ''}${value.toLocaleString('ko-KR')}`;
 }
 
-function TierCard({ tier }: { tier: LevelTierItem }) {
+function TierCard({ tier, index }: { tier: LevelTierItem; index: number }) {
   const visualState = tier.visualState || (tier.current ? 'active' : tier.progressPercent >= 100 ? 'completed' : 'locked');
 
   return (
     <article className={`tier-card ${tier.current ? 'current' : ''} ${visualState}`}>
-      <div>
-        <strong>{tier.name}</strong>
-        <span>Lv.{tier.minLevel} ~ Lv.{tier.maxLevel}</span>
+      <div className="tier-card-header">
+        <span className="tier-step-index">{index}</span>
+        <div>
+          <strong>{tier.name}</strong>
+          <span>Lv.{tier.minLevel} ~ Lv.{tier.maxLevel}</span>
+        </div>
       </div>
       <span className={`status-pill ${visualState === 'completed' ? 'green' : visualState === 'active' ? 'blue' : 'gray'}`}>
         {tier.scholarshipLabel || (visualState === 'completed' ? '달성 완료' : visualState === 'active' ? '현재 단계' : '미달성')}
@@ -148,10 +165,26 @@ function TierCard({ tier }: { tier: LevelTierItem }) {
 }
 
 function PointRow({ item }: { item: ScholarshipPointItem }) {
+  const tone = item.points > 0 ? 'positive' : item.points < 0 ? 'negative' : 'neutral';
+  const label = item.points > 0 ? '획득' : item.points < 0 ? '차감' : '대기';
+
   return (
-    <div>
+    <div className={`point-breakdown-item ${tone}`}>
       <dt>{item.category}</dt>
-      <dd>{item.points.toLocaleString('ko-KR')} · {item.description}</dd>
+      <dd>
+        <span className={`point-reason-badge ${tone}`}>{label}</span>
+        <strong>{formatSignedNumber(item.points)}점</strong>
+        <small>{item.description}</small>
+      </dd>
+    </div>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="level-metric-pill">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

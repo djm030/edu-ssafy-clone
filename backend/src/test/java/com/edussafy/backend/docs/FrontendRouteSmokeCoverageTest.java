@@ -343,8 +343,15 @@ class FrontendRouteSmokeCoverageTest {
         String levelPage = Files.readString(Path.of("..", "frontend", "src", "pages", "LevelPage.tsx"));
 
         assertThat(levelPage)
+                .contains("레벨&장학포인트 현황")
+                .contains("level-hero-panel")
+                .contains("level-ring")
+                .contains("level-kpi-row")
+                .contains("포인트 사유")
+                .contains("point-reason-badge")
                 .contains("Bronze/Silver 단계")
                 .contains("tier-roadmap")
+                .contains("tier-step-index")
                 .contains("최근 레벨 변동")
                 .contains("level-trend-panel")
                 .contains("LevelTierItem")
