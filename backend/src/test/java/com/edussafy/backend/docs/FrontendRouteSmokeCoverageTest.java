@@ -234,6 +234,26 @@ class FrontendRouteSmokeCoverageTest {
     }
 
     @Test
+    void bookmarksPageExposesTypeSummaryAndOptimisticDeleteState() throws IOException {
+        String bookmarksPage = Files.readString(Path.of("..", "frontend", "src", "pages", "BookmarksPage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(bookmarksPage)
+                .contains("BookmarkSummaryPanel")
+                .contains("찜한 목록 유형별 요약")
+                .contains("decrementBookmarkSummary")
+                .contains("summaryCount");
+        assertThat(appApi)
+                .contains("BookmarksResponse")
+                .contains("materialCount");
+        assertThat(types)
+                .contains("BookmarkSummary")
+                .contains("BookmarksResponse");
+    }
+
+
+    @Test
     void elearningPageExposesOperationalSummaryAndMeta() throws IOException {
         String elearningPage = Files.readString(Path.of("..", "frontend", "src", "pages", "ElearningPage.tsx"));
         String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));

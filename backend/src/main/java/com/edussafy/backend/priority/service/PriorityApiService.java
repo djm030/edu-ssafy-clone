@@ -21,6 +21,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
@@ -872,7 +873,8 @@ public class PriorityApiService {
         List<BookmarkItem> items = total == 0
                 ? List.of()
                 : safe(() -> repository.findBookmarks(user.id(), normalizedTargetType, size, offset(page, size)), List.of());
-        return new BookmarksResponse(items, pageMeta(page, size, total));
+        BookmarkSummary summary = safe(() -> repository.findBookmarkSummary(user.id()), new BookmarkSummary(0, 0, 0, 0));
+        return new BookmarksResponse(items, pageMeta(page, size, total), summary);
     }
 
     @Transactional

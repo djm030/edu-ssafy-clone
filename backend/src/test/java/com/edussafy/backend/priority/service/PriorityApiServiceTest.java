@@ -27,6 +27,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -816,6 +817,7 @@ class PriorityApiServiceTest {
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
         given(repository.countBookmarks(USER.id(), "material")).willReturn(1L);
         given(repository.findBookmarks(USER.id(), "material", 20, 0)).willReturn(List.of(item));
+        given(repository.findBookmarkSummary(USER.id())).willReturn(new BookmarkSummary(1, 0, 0, 1));
         given(repository.findBookmarkSnapshot("material", 5L)).willReturn(Optional.of(snapshot));
         given(repository.createOrUpdateBookmark(USER.id(), snapshot)).willReturn(90L);
         given(repository.findBookmark(USER.id(), 90L)).willReturn(Optional.of(item));
@@ -831,6 +833,8 @@ class PriorityApiServiceTest {
         BookmarkDeleteResponse deleted = service.deleteBookmark(90L);
 
         assertThat(list.items()).containsExactly(item);
+        assertThat(list.summary().materialCount()).isEqualTo(1);
+        assertThat(list.summary().totalCount()).isEqualTo(1);
         assertThat(created.item()).isEqualTo(item);
         assertThat(deleted.deleted()).isTrue();
         verify(repository).deleteBookmark(USER.id(), 90L);

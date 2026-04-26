@@ -441,6 +441,18 @@ h2 {
 }
 
 
+
+.bookmark-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin-bottom: 16px;
+}
+
+.category-chip span {
+  font-weight: 900;
+}
+
 .elearning-summary-grid {
   display: grid;
   gap: 12px;

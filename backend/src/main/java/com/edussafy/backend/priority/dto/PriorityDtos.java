@@ -621,7 +621,10 @@ public final class PriorityDtos {
     ) {
     }
 
-    public record BookmarksResponse(List<BookmarkItem> items, PageMeta page) {
+    public record BookmarksResponse(List<BookmarkItem> items, PageMeta page, BookmarkSummary summary) {
+    }
+
+    public record BookmarkSummary(long materialCount, long elearningCount, long replayCount, long totalCount) {
     }
 
     public record BookmarkResponse(BookmarkItem item) {

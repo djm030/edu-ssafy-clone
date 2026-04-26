@@ -4,6 +4,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardBoardPost;
@@ -1385,6 +1386,26 @@ public class PriorityApiRepository {
         return jdbcClient.sql("SELECT COUNT(*) FROM learner_bookmarks lb " + parts.whereClause())
                 .params(parts.params())
                 .query(Long.class)
+                .single();
+    }
+
+    public BookmarkSummary findBookmarkSummary(long userId) {
+        return jdbcClient.sql("""
+                SELECT
+                    SUM(CASE WHEN target_type = 'material' THEN 1 ELSE 0 END) AS material_count,
+                    SUM(CASE WHEN target_type = 'elearning' THEN 1 ELSE 0 END) AS elearning_count,
+                    SUM(CASE WHEN target_type = 'replay' THEN 1 ELSE 0 END) AS replay_count,
+                    COUNT(*) AS total_count
+                FROM learner_bookmarks
+                WHERE user_id = :userId
+                """)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new BookmarkSummary(
+                        rs.getLong("material_count"),
+                        rs.getLong("elearning_count"),
+                        rs.getLong("replay_count"),
+                        rs.getLong("total_count")
+                ))
                 .single();
     }
 

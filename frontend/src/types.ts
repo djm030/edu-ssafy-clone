@@ -500,6 +500,18 @@ export interface BookmarkItem {
   createdAt?: string | null;
 }
 
+export interface BookmarkSummary {
+  materialCount: number;
+  elearningCount: number;
+  replayCount: number;
+  totalCount: number;
+}
+
+export interface BookmarksResponse {
+  items: BookmarkItem[];
+  summary: BookmarkSummary;
+}
+
 export interface BookmarkDraft {
   targetType: BookmarkTargetType;
   targetId: number;

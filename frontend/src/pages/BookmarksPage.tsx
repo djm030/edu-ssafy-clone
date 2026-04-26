@@ -4,7 +4,7 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { BookmarkItem, LoadState } from '../types';
+import type { BookmarkItem, BookmarkSummary, BookmarkTargetType, LoadState } from '../types';
 
 const targetFilters = [
   { label: '전체', value: 'all' },
@@ -21,6 +21,7 @@ const targetLabels = {
 
 function BookmarksPage() {
   const [items, setItems] = useState<BookmarkItem[]>([]);
+  const [summary, setSummary] = useState<BookmarkSummary>();
   const [targetType, setTargetType] = useState<(typeof targetFilters)[number]['value']>('all');
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -33,6 +34,7 @@ function BookmarksPage() {
       .then((response) => {
         if (ignore) return;
         setItems(response.items);
+        setSummary(response.summary);
         setLoadState(response.items.length ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -49,8 +51,12 @@ function BookmarksPage() {
     setMutationMessage('찜을 해제하는 중입니다.');
     deleteBookmark(bookmarkId)
       .then(() => {
+        const removed = items.find((item) => item.id === bookmarkId);
         const nextItems = items.filter((item) => item.id !== bookmarkId);
         setItems(nextItems);
+        if (removed) {
+          setSummary((current) => decrementBookmarkSummary(current, removed.targetType));
+        }
         setLoadState(nextItems.length ? 'loaded' : 'empty');
         setMutationMessage('찜이 해제되었습니다.');
       })
@@ -64,11 +70,12 @@ function BookmarksPage() {
         <div className="category-strip">
           {targetFilters.map((option) => (
             <button className={targetType === option.value ? 'category-chip active' : 'category-chip'} key={option.value} onClick={() => setTargetType(option.value)} type="button">
-              {option.label}
+              {option.label} <span>{summaryCount(summary, option.value)}</span>
             </button>
           ))}
         </div>
       </div>
+      {summary ? <BookmarkSummaryPanel summary={summary} /> : null}
       {mutationMessage ? <p className="helper-text" role="status">{mutationMessage}</p> : null}
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="찜한 목록을 불러오지 못했습니다." message={errorMessage} /> : null}
@@ -76,6 +83,46 @@ function BookmarksPage() {
       {loadState === 'loaded' ? <BookmarkList items={items} onDelete={removeBookmark} /> : null}
     </section>
   );
+}
+
+
+function BookmarkSummaryPanel({ summary }: { summary: BookmarkSummary }) {
+  return (
+    <div className="bookmark-summary-grid" aria-label="찜한 목록 유형별 요약">
+      <SummaryCard title="전체" value={`${summary.totalCount}개`} />
+      <SummaryCard title="학습자료" value={`${summary.materialCount}개`} />
+      <SummaryCard title="이러닝" value={`${summary.elearningCount}개`} />
+      <SummaryCard title="다시보기" value={`${summary.replayCount}개`} />
+    </div>
+  );
+}
+
+function SummaryCard({ title, value }: { title: string; value: string }) {
+  return (
+    <section className="stat-card compact">
+      <span>{title}</span>
+      <strong>{value}</strong>
+    </section>
+  );
+}
+
+function summaryCount(summary: BookmarkSummary | undefined, targetType: (typeof targetFilters)[number]['value']) {
+  if (!summary) return '-';
+  if (targetType === 'all') return summary.totalCount;
+  if (targetType === 'material') return summary.materialCount;
+  if (targetType === 'elearning') return summary.elearningCount;
+  return summary.replayCount;
+}
+
+function decrementBookmarkSummary(summary: BookmarkSummary | undefined, targetType: BookmarkTargetType): BookmarkSummary | undefined {
+  if (!summary) return summary;
+  return {
+    ...summary,
+    totalCount: Math.max(summary.totalCount - 1, 0),
+    materialCount: targetType === 'material' ? Math.max(summary.materialCount - 1, 0) : summary.materialCount,
+    elearningCount: targetType === 'elearning' ? Math.max(summary.elearningCount - 1, 0) : summary.elearningCount,
+    replayCount: targetType === 'replay' ? Math.max(summary.replayCount - 1, 0) : summary.replayCount,
+  };
 }
 
 function BookmarkList({ items, onDelete }: { items: BookmarkItem[]; onDelete: (bookmarkId: number) => void }) {

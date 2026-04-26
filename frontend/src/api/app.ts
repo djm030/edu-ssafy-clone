@@ -37,6 +37,7 @@ import type {
   AttendanceRecordFilters,
   BookmarkDraft,
   BookmarkItem,
+  BookmarksResponse,
   BoardPostDraft,
   Classmate,
   ClassmatesResponse,
@@ -1000,14 +1001,25 @@ export function recordReplayWatch(replayId: number): Promise<ReplayWatchLogResul
   }).then((response) => ({ item: toReplayItem(response.item), watchLog: response.watchLog }));
 }
 
-export function getBookmarks(query: { targetType?: string; page?: number; size?: number }): Promise<{ items: BookmarkItem[] }> {
+export function getBookmarks(query: { targetType?: string; page?: number; size?: number }): Promise<BookmarksResponse> {
   const params = buildQuery({
     page: query.page,
     size: query.size,
     targetType: query.targetType && query.targetType !== 'all' ? query.targetType : undefined,
   });
-  return fetchJson<{ items: BackendBookmarkItem[] }>(`/api/me/bookmarks${params}`)
-    .then((response) => ({ items: response.items.map(toBookmarkItem) }));
+  return fetchJson<{ items: BackendBookmarkItem[]; summary?: BookmarksResponse['summary'] }>(`/api/me/bookmarks${params}`)
+    .then((response) => {
+      const items = response.items.map(toBookmarkItem);
+      return {
+        items,
+        summary: response.summary || {
+          materialCount: items.filter((item) => item.targetType === 'material').length,
+          elearningCount: items.filter((item) => item.targetType === 'elearning').length,
+          replayCount: items.filter((item) => item.targetType === 'replay').length,
+          totalCount: items.length,
+        },
+      };
+    });
 }
 
 export function createBookmark(draft: BookmarkDraft): Promise<{ item: BookmarkItem }> {

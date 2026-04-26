@@ -33,6 +33,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateFilters;
@@ -935,7 +936,7 @@ class PriorityApiControllerTest {
                 "/learning/materials/5",
                 OffsetDateTime.parse("2026-04-25T10:00:00+09:00")
         );
-        given(priorityApiService.bookmarks(eq("material"), eq(1), eq(20))).willReturn(new BookmarksResponse(List.of(item), page));
+        given(priorityApiService.bookmarks(eq("material"), eq(1), eq(20))).willReturn(new BookmarksResponse(List.of(item), page, new BookmarkSummary(1, 0, 0, 1)));
         given(priorityApiService.createBookmark(any())).willReturn(new BookmarkResponse(item));
         given(priorityApiService.deleteBookmark(90L)).willReturn(new BookmarkDeleteResponse(90L, true));
 
