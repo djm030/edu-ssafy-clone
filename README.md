@@ -128,10 +128,11 @@ Swagger UI is exposed by the backend and Nginx at:
 http://localhost/swagger-ui.html
 ```
 
-The machine-readable OpenAPI JSON is available at:
+The machine-readable OpenAPI JSON is available at runtime and is also committed as a generated snapshot for offline review:
 
 ```text
 http://localhost/v3/api-docs
+docs/openapi.json
 ```
 
 The legacy docs entrypoint `http://localhost/api/docs` redirects to Swagger UI.

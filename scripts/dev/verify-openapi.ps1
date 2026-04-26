@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$specPath = Join-Path $repoRoot "docs/openapi.yaml"
+$specPath = Join-Path $repoRoot "docs/openapi.json"
 $smokePath = Join-Path $repoRoot "scripts/dev/smoke.ps1"
 
 function Assert-FileContains {
@@ -17,17 +17,19 @@ function Assert-FileContains {
 }
 
 foreach ($path in @(
-  "/api/auth/login:",
-  "/api/me:",
-  "/api/profile:",
-  "/api/boards/{boardCode}/posts:",
-  "/api/boards/{boardCode}/posts/{postId}:",
-  "BoardPostDetailResponse:",
-  "BoardPostCreateResponse:",
-  "required: [user]",
-  "required: [profile]",
-  "required: [post]",
-  "required: [item]"
+  "`"/api/auth/login`"",
+  "`"/api/me`"",
+  "`"/api/profile`"",
+  "`"/api/dashboard/summary`"",
+  "`"/api/elearning/in-progress`"",
+  "`"/api/me/bookmarks`"",
+  "`"/api/documents/requests`"",
+  "`"/api/pledges`"",
+  "`"/api/ebooks`"",
+  "`"/api/boards/{boardCode}/posts`"",
+  "`"/api/boards/{boardCode}/posts/{postId}`"",
+  "`"BoardPostDetailResponse`"",
+  "`"BoardPostCreateResponse`""
 )) {
   Assert-FileContains $specPath $path
 }
@@ -42,4 +44,4 @@ foreach ($shape in @(
   Assert-FileContains $smokePath $shape
 }
 
-Write-Host "OpenAPI bootstrap/drift markers verified."
+Write-Host "Generated Swagger/OpenAPI snapshot markers verified."

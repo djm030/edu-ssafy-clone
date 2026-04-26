@@ -10,7 +10,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,6 +28,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class SwaggerOpenApiControllerTest {
 
     private static final Path ENDPOINT_CATALOG = Path.of("src", "test", "resources", "api-docs-endpoints.tsv");
+    private static final Path OPENAPI_SNAPSHOT = Path.of("..", "docs", "openapi.json");
 
     @Autowired
     private MockMvc mockMvc;
@@ -74,5 +79,37 @@ class SwaggerOpenApiControllerTest {
         assertThat(missing)
                 .as("Swagger/OpenAPI should expose every cataloged backend /api route")
                 .isEmpty();
+    }
+
+    @Test
+    void committedOpenApiSnapshotMatchesGeneratedControllerPaths() throws Exception {
+        MvcResult result = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode generated = objectMapper.readTree(result.getResponse().getContentAsByteArray());
+        JsonNode snapshot = objectMapper.readTree(Files.readString(OPENAPI_SNAPSHOT));
+
+        assertThat(snapshot.path("info").path("title").asText())
+                .isEqualTo(generated.path("info").path("title").asText());
+        assertThat(pathOperationKeys(snapshot.path("paths")))
+                .as("docs/openapi.json should be regenerated from /v3/api-docs whenever controllers change")
+                .isEqualTo(pathOperationKeys(generated.path("paths")));
+    }
+
+    private Set<String> pathOperationKeys(JsonNode paths) {
+        Set<String> keys = new TreeSet<>();
+        Iterator<Map.Entry<String, JsonNode>> fields = paths.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> path = fields.next();
+            if (!path.getKey().startsWith("/api/")) {
+                continue;
+            }
+            Iterator<String> methods = path.getValue().fieldNames();
+            while (methods.hasNext()) {
+                String method = methods.next();
+                keys.add(method.toUpperCase() + " " + path.getKey());
+            }
+        }
+        return keys;
     }
 }

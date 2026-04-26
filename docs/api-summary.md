@@ -70,14 +70,14 @@
 - OpenAPI JSON entrypoint: `GET /v3/api-docs` is generated from the running Spring MVC controller surface and includes the implemented `/api/**` routes.
 - Legacy compatibility: `GET /api/docs` and `GET /api/docs/` now redirect to `/swagger-ui.html` so old bookmarks do not break.
 - Nginx proxies `/swagger-ui.html`, `/swagger-ui/`, and `/v3/api-docs` to the backend; the frontend fallback no longer captures the docs assets.
-- Regression guard: `SwaggerOpenApiControllerTest` verifies representative auth/attendance/board/survey/support/learning/quest paths and checks that the cataloged backend `/api/**` routes are present in OpenAPI JSON.
+- Regression guard: `SwaggerOpenApiControllerTest` verifies representative auth/attendance/board/survey/support/learning/quest paths, checks that cataloged backend `/api/**` routes are present in runtime OpenAPI JSON, and compares the committed `docs/openapi.json` snapshot against generated controller path/method keys.
 - Legacy Spring REST Docs snippet tests remain as internal contract examples for health/readiness/auth/survey until fully retired, but runtime API documentation is Swagger/OpenAPI.
 
 ## Task 66 API Documentation Status (2026-04-24)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
 - Most learner-facing endpoints currently use demo-session semantics; final auth requirement is **not complete** until RBAC/session/token enforcement is implemented and documented per endpoint.
 - Frontend connection screens are mapped in `frontend/src/App.tsx` and page components; high-level coverage is: dashboard `/`, attendance `/mycampus/attendance`, learning `/learning/**`, quest `/quest/**`, survey `/survey/**`, board/community `/community/**`, help/QNA `/help/**`, and profile `/profile/**`.
-- Runtime Swagger/OpenAPI at `/v3/api-docs` is the source of truth for route inventory; keep this summary aligned whenever request/response wrappers change.
+- Runtime Swagger/OpenAPI at `/v3/api-docs` is the source of truth for route inventory; `docs/openapi.json` is the committed generated snapshot for review/offline tooling. Keep this summary aligned whenever request/response wrappers change.
 
 
 ## R7.0 Contract Guardrails Added (2026-04-24)
@@ -89,7 +89,7 @@
   - `GET /api/boards/{boardCode}/posts/{postId}` -> `{ post: { id, boardCode, title, content, engagement } }`.
   - `POST /api/boards/{boardCode}/posts` -> `{ item: { id, boardCode, title, content, authorName, createdAt } }`.
 - These assertions are an R7.0 prerequisite for Auth/RBAC work because later auth failures must not be hidden by weak smoke checks or frontend fallback behavior.
-- Added maintained contract bootstrap `docs/openapi.yaml` and drift-marker command `scripts/dev/verify-openapi.ps1`; keep both updated as endpoints/wrappers change.
+- Replaced the old hand-maintained `docs/openapi.yaml` bootstrap with generated `docs/openapi.json`; `scripts/dev/verify-openapi.ps1` now verifies Swagger/OpenAPI snapshot markers against implemented high-value routes.
 
 ## Implemented API Surface
 - `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/roles/current`, `GET /api/auth/access-policy`, `POST /api/auth/logout`

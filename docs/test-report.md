@@ -572,3 +572,8 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `GET /api/docs` and `GET /api/docs/` now redirect to `/swagger-ui.html`; Nginx proxies `/swagger-ui.html`, `/swagger-ui/`, and `/v3/api-docs` to the backend.
 - Added `SwaggerOpenApiControllerTest` to verify representative implemented API routes and catalog coverage in generated OpenAPI JSON.
 - Verification: Dockerized Maven targeted Swagger/Nginx/docs tests, full backend test suite, frontend build/lint, Docker Compose app rebuild, and live Swagger/OpenAPI HTTP smoke.
+## Generated OpenAPI Snapshot Refresh (2026-04-27 KST)
+- Exported live `/v3/api-docs` to `docs/openapi.json` so the committed machine-readable contract matches Swagger UI instead of the old hand-maintained REST contract bootstrap.
+- Deleted stale `docs/openapi.yaml`; `scripts/dev/verify-openapi.ps1` now checks the generated JSON snapshot markers.
+- Extended `SwaggerOpenApiControllerTest` to compare `docs/openapi.json` path/method keys against generated `/v3/api-docs`, preventing stale committed API docs.
+- Verification: targeted Dockerized Maven Swagger test, full Dockerized backend Maven suite, frontend build/lint, Docker Compose config, live OpenAPI curl smoke, `git diff --check`.

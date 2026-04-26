@@ -73,7 +73,7 @@ git diff --stat
 | Docker image rebuild | PASS | `docker compose --profile app build --progress=plain backend frontend nginx` completed after Docker Hub metadata eventually resolved; `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password docker compose --profile app up -d` started mysql/redis/rabbitmq/backend/frontend/nginx healthy on the existing local volume. Backend runtime Dockerfile drops root privileges, app-profile services set `no-new-privileges:true`, backend drops Linux capabilities, and these are guarded by `DockerImageHardeningTest` plus `DockerComposeRuntimeHardeningTest`. |
 | Screen route smoke | PASS | `/ops/readiness` renders the priority 1~9 screen smoke manifest and backend access-policy matrix, `FrontendRouteSmokeCoverageTest` guards route/access-policy coverage, `scripts/dev/smoke.sh` covers API/Nginx smoke, and `scripts/dev/smoke-routes.sh` curls all 30 declared SPA routes against the built Vite preview. |
 | CI production hardening gates | PASS | `.github/workflows/ci.yml` validates Compose rendering, POSIX smoke script syntax/static wiring, frontend route smoke manifest, backend tests, REST Docs snippets, frontend lint/build; `CiWorkflowHardeningTest` prevents this gate from being removed silently. |
-| Swagger/OpenAPI runtime docs | PASS | `/swagger-ui.html` redirects to bundled Swagger UI, `/v3/api-docs` returns generated OpenAPI JSON for the implemented controller surface, `/api/docs` redirects to Swagger UI, and Nginx proxies all Swagger/OpenAPI routes to the backend. |
+| Swagger/OpenAPI runtime docs | PASS | `/swagger-ui.html` redirects to bundled Swagger UI, `/v3/api-docs` returns generated OpenAPI JSON for the implemented controller surface, `/api/docs` redirects to Swagger UI, Nginx proxies all Swagger/OpenAPI routes to the backend, and `docs/openapi.json` is a generated snapshot guarded against controller path/method drift. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
@@ -134,7 +134,7 @@ git diff --stat
 4. Playwright/Cypress 등 실제 브라우저 visual baseline 검증을 추가한다. 현재는 `/ops/readiness` route manifest, 정적 회귀 테스트, Vite preview route smoke까지 존재한다.
 5. 기존 로컬 MySQL volume을 계속 재사용할 경우 schema drift를 피하려면 전체 volume recreate 또는 idempotent migration/seed refresh 절차를 별도 운영 스크립트로 분리한다.
 6. Docker base image metadata/pull 이슈가 없는 네트워크에서 `docker compose --profile app up -d --build`를 주기적으로 재실행해 최신 이미지 rebuild를 검증한다.
-7. Spring REST Docs/OpenAPI 산출물을 전체 mutation endpoint까지 확장한다.
+7. OpenAPI schema descriptions/examples and authenticated Swagger operation examples should be enriched beyond the generated route/method snapshot.
 
 ## 8. 최종 판단
 
