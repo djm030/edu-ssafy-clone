@@ -105,12 +105,18 @@ type BackendNotificationItem = Partial<NotificationItem> & {
 
 type BackendCurriculumItem = Partial<CurriculumWeek> & {
   weekNo?: number | null;
+  weekNumber?: number | null;
   classDate?: string | null;
   startTime?: string | null;
   endTime?: string | null;
   type?: string | null;
   instructorName?: string | null;
   classroom?: string | null;
+  semester?: string | null;
+  track?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  sessionCount?: number | null;
 };
 
 type BackendReplayItem = Partial<ReplayItem> & {
@@ -305,14 +311,33 @@ function toCurriculumStatus(item: BackendCurriculumItem): CurriculumWeek['status
 function toCurriculumWeek(item: BackendCurriculumItem): CurriculumWeek {
   const period = item.period || [item.classDate, [item.startTime, item.endTime].filter(Boolean).join(' ~ ')].filter(Boolean).join(' ');
   const lessonDetails = [item.title, item.instructorName, item.classroom, item.type].filter(Boolean);
+  const sessions = item.sessions?.map((session) => ({
+    id: Number(session.id),
+    date: session.date,
+    period: session.period || '-',
+    title: session.title || 'Curriculum session',
+    instructor: session.instructor,
+    location: session.location,
+    sessionType: session.sessionType,
+  }));
 
   return {
     id: Number(item.id),
-    week: item.week || item.weekNo || 0,
-    title: item.title || 'Curriculum',
-    period: period || '-',
-    lessons: item.lessons?.length ? item.lessons : [lessonDetails.join(' · ') || 'Lesson'],
+    week: item.week || item.weekNo || item.weekNumber || 0,
+    title: item.title || `${item.weekNumber || item.weekNo || item.week || 0}주차 커리큘럼`,
+    period: period || [item.startsAt, item.endsAt].filter(Boolean).join(' ~ ') || '-',
+    lessons: item.lessons?.length
+      ? item.lessons
+      : sessions?.length
+        ? sessions.map((session) => [session.date, session.period, session.title].filter(Boolean).join(' · '))
+        : [lessonDetails.join(' · ') || 'Lesson'],
     status: toCurriculumStatus(item),
+    semester: item.semester || undefined,
+    track: item.track || undefined,
+    startsAt: item.startsAt || undefined,
+    endsAt: item.endsAt || undefined,
+    sessionCount: Number(item.sessionCount ?? sessions?.length ?? 0),
+    sessions,
   };
 }
 
@@ -755,6 +780,18 @@ export function deleteNotification(notificationId: number): Promise<Notification
 
 export function getCurriculum(): Promise<{ items: CurriculumWeek[] }> {
   return fetchJson<{ items: BackendCurriculumItem[] }>('/api/learning/curriculum', {
+    fallback: () => ({ items: mockCurriculumWeeks }),
+  }).then((response) => ({ items: response.items.map(toCurriculumWeek) }));
+}
+
+export function getCurriculumWeeks(query: { semester?: string; track?: string; status?: string }): Promise<{ items: CurriculumWeek[] }> {
+  const params = buildQuery({
+    semester: query.semester,
+    track: query.track,
+    status: query.status,
+  });
+
+  return fetchJson<{ items: BackendCurriculumItem[] }>(`/api/curriculum/weeks${params}`, {
     fallback: () => ({ items: mockCurriculumWeeks }),
   }).then((response) => ({ items: response.items.map(toCurriculumWeek) }));
 }

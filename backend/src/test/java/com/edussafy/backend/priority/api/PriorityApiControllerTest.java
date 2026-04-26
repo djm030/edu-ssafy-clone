@@ -32,6 +32,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumSessionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
@@ -161,6 +165,7 @@ import org.springframework.web.context.WebApplicationContext;
         RequiredStudyController.class,
         LiveSessionController.class,
         ReplayController.class,
+        CurriculumController.class,
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
@@ -595,6 +600,57 @@ class PriorityApiControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.watchCount").value(1))
                 .andExpect(jsonPath("$.watchLog.replayId").value(21));
+    }
+
+    @Test
+    void curriculumWeekEndpointsReturnFilteredWeeksAndDetail() throws Exception {
+        CurriculumWeekItem week = new CurriculumWeekItem(
+                31L,
+                "2026 Priority 1 Term",
+                4,
+                "Java",
+                LocalDate.parse("2026-04-20"),
+                LocalDate.parse("2026-04-24"),
+                "done",
+                2,
+                List.of(
+                        new CurriculumSessionItem(
+                                31L,
+                                LocalDate.parse("2026-04-20"),
+                                "09:00 ~ 12:00",
+                                "Java Collections Review",
+                                "Demo Instructor",
+                                "Seoul 1",
+                                "lecture"
+                        ),
+                        new CurriculumSessionItem(
+                                32L,
+                                LocalDate.parse("2026-04-24"),
+                                "09:00 ~ 18:00",
+                                "Spring Boot REST API",
+                                "Demo Instructor",
+                                "Seoul 1",
+                                "lecture"
+                        )
+                )
+        );
+        given(priorityApiService.curriculumWeeks("2026 Priority 1 Term", "Java", "done"))
+                .willReturn(new CurriculumWeeksResponse(List.of(week)));
+        given(priorityApiService.curriculumWeek(31L)).willReturn(new CurriculumWeekDetailResponse(week));
+
+        mockMvc.perform(get("/api/curriculum/weeks")
+                        .param("semester", "2026 Priority 1 Term")
+                        .param("track", "Java")
+                        .param("status", "done"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].semester").value("2026 Priority 1 Term"))
+                .andExpect(jsonPath("$.items[0].track").value("Java"))
+                .andExpect(jsonPath("$.items[0].sessions[1].title").value("Spring Boot REST API"));
+
+        mockMvc.perform(get("/api/curriculum/weeks/31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.weekNumber").value(4))
+                .andExpect(jsonPath("$.item.sessionCount").value(2));
     }
 
     @Test

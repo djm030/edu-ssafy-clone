@@ -6,6 +6,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumScheduleRow;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestItem;
@@ -28,11 +29,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.PledgeAgreementItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.PledgeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.RequiredStudyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.TodaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
-import com.edussafy.backend.priority.dto.PriorityDtos.ReplayWatchLogItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -650,6 +651,64 @@ public class PriorityApiRepository {
         );
     }
 
+    private String curriculumWeekScheduleSelect(String suffix) {
+        return """
+                SELECT
+                    cs.curriculum_schedule_id AS id,
+                    cs.term_id,
+                    t.term_name AS semester,
+                    cs.content_scope_id,
+                    cs.week_no,
+                    COALESCE(scope_track.track_name, class_track.track_name, '공통') AS track,
+                    cs.class_date,
+                    cs.start_time,
+                    cs.end_time,
+                    COALESCE(cs.curriculum_type_code, 'lecture') AS session_type,
+                    cs.topic AS title,
+                    cs.instructor_name,
+                    cs.classroom
+                FROM curriculum_schedules cs
+                JOIN terms t ON t.term_id = cs.term_id
+                JOIN content_scopes scope ON scope.content_scope_id = cs.content_scope_id
+                LEFT JOIN tracks scope_track ON scope_track.track_id = scope.track_id
+                LEFT JOIN class_groups cg ON cg.class_group_id = scope.class_group_id
+                LEFT JOIN tracks class_track ON class_track.track_id = cg.track_id
+                WHERE (
+                    scope.scope_type_code = 'all'
+                    OR scope.user_id = :userId
+                    OR scope.class_group_id IN (
+                        SELECT class_group_id FROM user_class_enrollments WHERE user_id = :userId
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM user_track_enrollments ute
+                        WHERE ute.user_id = :userId
+                          AND (scope.track_id IS NULL OR scope.track_id = ute.track_id)
+                          AND (scope.cohort_id IS NULL OR scope.cohort_id = ute.cohort_id)
+                          AND scope.scope_type_code IN ('track', 'cohort', 'track_cohort')
+                    )
+                )
+                """ + suffix;
+    }
+
+    private CurriculumScheduleRow mapCurriculumScheduleRow(ResultSet rs, int rowNum) throws SQLException {
+        return new CurriculumScheduleRow(
+                rs.getLong("id"),
+                rs.getLong("term_id"),
+                rs.getString("semester"),
+                rs.getLong("content_scope_id"),
+                nullableInt(rs, "week_no"),
+                rs.getString("track"),
+                rs.getDate("class_date") == null ? null : rs.getDate("class_date").toLocalDate(),
+                nullableTime(rs, "start_time"),
+                nullableTime(rs, "end_time"),
+                rs.getString("session_type"),
+                rs.getString("title"),
+                rs.getString("instructor_name"),
+                rs.getString("classroom")
+        );
+    }
+
     private SqlParts replayWhere(long userId, String scope, String keyword) {
         Map<String, Object> params = new java.util.LinkedHashMap<>();
         params.put("userId", userId);
@@ -1110,6 +1169,77 @@ public class PriorityApiRepository {
                         rs.getString("instructor_name"),
                         rs.getString("classroom")
                 ))
+                .list();
+    }
+
+    public List<CurriculumScheduleRow> findCurriculumWeekSchedules(
+            long userId,
+            String semester,
+            String track
+    ) {
+        return jdbcClient.sql(curriculumWeekScheduleSelect("""
+                AND (:semester IS NULL OR t.term_name = :semester OR CAST(t.term_id AS CHAR) = :semester)
+                AND (:track IS NULL OR COALESCE(scope_track.track_name, class_track.track_name, '공통') = :track)
+                ORDER BY COALESCE(t.start_date, DATE('1970-01-01')) DESC,
+                         cs.week_no DESC,
+                         cs.class_date,
+                         cs.start_time,
+                         cs.curriculum_schedule_id
+                """))
+                .param("userId", userId)
+                .param("semester", normalizeBlank(semester))
+                .param("track", normalizeBlank(track))
+                .query(this::mapCurriculumScheduleRow)
+                .list();
+    }
+
+    public List<CurriculumScheduleRow> findCurriculumWeekSchedules(long userId, long weekId) {
+        return jdbcClient.sql("""
+                SELECT
+                    cs.curriculum_schedule_id AS id,
+                    cs.term_id,
+                    t.term_name AS semester,
+                    cs.content_scope_id,
+                    cs.week_no,
+                    COALESCE(scope_track.track_name, class_track.track_name, '공통') AS track,
+                    cs.class_date,
+                    cs.start_time,
+                    cs.end_time,
+                    COALESCE(cs.curriculum_type_code, 'lecture') AS session_type,
+                    cs.topic AS title,
+                    cs.instructor_name,
+                    cs.classroom
+                FROM curriculum_schedules cs
+                JOIN curriculum_schedules target
+                  ON target.curriculum_schedule_id = :weekId
+                 AND target.term_id = cs.term_id
+                 AND target.content_scope_id = cs.content_scope_id
+                 AND COALESCE(target.week_no, -1) = COALESCE(cs.week_no, -1)
+                JOIN terms t ON t.term_id = cs.term_id
+                JOIN content_scopes scope ON scope.content_scope_id = cs.content_scope_id
+                LEFT JOIN tracks scope_track ON scope_track.track_id = scope.track_id
+                LEFT JOIN class_groups cg ON cg.class_group_id = scope.class_group_id
+                LEFT JOIN tracks class_track ON class_track.track_id = cg.track_id
+                WHERE (
+                    scope.scope_type_code = 'all'
+                    OR scope.user_id = :userId
+                    OR scope.class_group_id IN (
+                        SELECT class_group_id FROM user_class_enrollments WHERE user_id = :userId
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM user_track_enrollments ute
+                        WHERE ute.user_id = :userId
+                          AND (scope.track_id IS NULL OR scope.track_id = ute.track_id)
+                          AND (scope.cohort_id IS NULL OR scope.cohort_id = ute.cohort_id)
+                          AND scope.scope_type_code IN ('track', 'cohort', 'track_cohort')
+                    )
+                )
+                ORDER BY cs.class_date, cs.start_time, cs.curriculum_schedule_id
+                """)
+                .param("userId", userId)
+                .param("weekId", weekId)
+                .query(this::mapCurriculumScheduleRow)
                 .list();
     }
 
@@ -2173,6 +2303,10 @@ public class PriorityApiRepository {
     private Long nullableLong(ResultSet rs, String columnName) throws SQLException {
         long value = rs.getLong(columnName);
         return rs.wasNull() ? null : value;
+    }
+
+    private String normalizeBlank(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private LocalTime nullableTime(ResultSet rs, String columnName) throws SQLException {

@@ -161,6 +161,15 @@ WHERE NOT EXISTS (
     AND topic = 'MySQL Schema Practice'
 );
 
+INSERT INTO curriculum_schedules (term_id, content_scope_id, week_no, class_date, start_time, end_time, curriculum_type_code, topic, instructor_name, classroom)
+SELECT @term_id, @class_scope_id, 5, '2026-04-26', '10:00:00', '12:00:00', 'project', '주차별 프로젝트 코칭', 'Demo Coach', 'Seoul 1'
+WHERE NOT EXISTS (
+  SELECT 1 FROM curriculum_schedules
+  WHERE content_scope_id = @class_scope_id
+    AND class_date = '2026-04-26'
+    AND topic = '주차별 프로젝트 코칭'
+);
+
 SET @schedule_id := (
   SELECT curriculum_schedule_id
   FROM curriculum_schedules

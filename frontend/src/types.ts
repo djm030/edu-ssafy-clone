@@ -230,6 +230,22 @@ export interface CurriculumWeek {
   period: string;
   lessons: string[];
   status: 'planned' | 'current' | 'done';
+  semester?: string;
+  track?: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  sessionCount?: number;
+  sessions?: CurriculumSession[];
+}
+
+export interface CurriculumSession {
+  id: number;
+  date?: string | null;
+  period: string;
+  title: string;
+  instructor?: string | null;
+  location?: string | null;
+  sessionType?: string | null;
 }
 
 export interface ReplayItem {

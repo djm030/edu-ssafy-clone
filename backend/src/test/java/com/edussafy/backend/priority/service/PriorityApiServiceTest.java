@@ -31,6 +31,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumScheduleRow;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
@@ -135,6 +138,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -527,6 +531,56 @@ class PriorityApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
         verify(repository, never()).createReplayWatchLog(anyLong(), anyLong());
+    }
+
+    @Test
+    void curriculumWeeksGroupSessionsAndApplyFilters() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findCurriculumWeekSchedules(USER.id(), "2026 Priority 1 Term", "Java")).willReturn(List.of(
+                curriculumRow(31L, "2026 Priority 1 Term", 4, "Java", "2026-04-20", "09:00", "12:00", "lecture", "Java Collections Review"),
+                curriculumRow(32L, "2026 Priority 1 Term", 4, "Java", "2026-04-24", "13:00", "18:00", "practice", "Spring Boot REST API")
+        ));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        CurriculumWeeksResponse response = service.curriculumWeeks("2026 Priority 1 Term", "Java", "done");
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().id()).isEqualTo(31L);
+        assertThat(response.items().getFirst().sessionCount()).isEqualTo(2);
+        assertThat(response.items().getFirst().sessions())
+                .extracting("title")
+                .containsExactly("Java Collections Review", "Spring Boot REST API");
+        verify(repository).findCurriculumWeekSchedules(USER.id(), "2026 Priority 1 Term", "Java");
+    }
+
+    @Test
+    void curriculumWeekDetailRejectsInvisibleWeek() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findCurriculumWeekSchedules(USER.id(), 404L)).willReturn(List.of());
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.curriculumWeek(404L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+    }
+
+    @Test
+    void curriculumWeekDetailReturnsGroupedSessions() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findCurriculumWeekSchedules(USER.id(), 31L)).willReturn(List.of(
+                curriculumRow(31L, "2026 Priority 1 Term", 4, "Java", "2026-04-20", "09:00", "12:00", "lecture", "Java Collections Review"),
+                curriculumRow(32L, "2026 Priority 1 Term", 4, "Java", "2026-04-24", "13:00", "18:00", "practice", "Spring Boot REST API")
+        ));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        CurriculumWeekDetailResponse response = service.curriculumWeek(31L);
+
+        assertThat(response.item().weekNumber()).isEqualTo(4);
+        assertThat(response.item().track()).isEqualTo("Java");
+        assertThat(response.item().sessions()).hasSize(2);
     }
 
     @Test
@@ -2617,6 +2671,34 @@ class PriorityApiServiceTest {
                 false,
                 1,
                 List.of()
+        );
+    }
+
+    private CurriculumScheduleRow curriculumRow(
+            long id,
+            String semester,
+            int weekNumber,
+            String track,
+            String classDate,
+            String startTime,
+            String endTime,
+            String sessionType,
+            String title
+    ) {
+        return new CurriculumScheduleRow(
+                id,
+                1L,
+                semester,
+                10L,
+                weekNumber,
+                track,
+                LocalDate.parse(classDate),
+                LocalTime.parse(startTime),
+                LocalTime.parse(endTime),
+                sessionType,
+                title,
+                "Demo Instructor",
+                "Seoul 1"
         );
     }
 

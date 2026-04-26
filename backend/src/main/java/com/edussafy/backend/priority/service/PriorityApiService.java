@@ -24,6 +24,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumScheduleRow;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumSessionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
@@ -160,10 +165,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -622,6 +631,29 @@ public class PriorityApiService {
     public CurriculumResponse curriculum() {
         UserProfile user = currentUser();
         return new CurriculumResponse(safe(() -> repository.findCurriculum(user.id()), List.of()));
+    }
+
+    public CurriculumWeeksResponse curriculumWeeks(String semester, String track, String status) {
+        UserProfile user = currentUser();
+        List<CurriculumWeekItem> weeks = toCurriculumWeeks(
+                safe(() -> repository.findCurriculumWeekSchedules(user.id(), semester, track), List.of())
+        );
+        String normalizedStatus = normalizeNullable(status);
+        if (normalizedStatus != null) {
+            weeks = weeks.stream()
+                    .filter(item -> normalizedStatus.equals(item.status()))
+                    .toList();
+        }
+        return new CurriculumWeeksResponse(weeks);
+    }
+
+    public CurriculumWeekDetailResponse curriculumWeek(long weekId) {
+        UserProfile user = currentUser();
+        List<CurriculumWeekItem> weeks = toCurriculumWeeks(repository.findCurriculumWeekSchedules(user.id(), weekId));
+        if (weeks.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Curriculum week not found.");
+        }
+        return new CurriculumWeekDetailResponse(weeks.getFirst());
     }
 
     public ReplayResponse replays() {
@@ -2188,6 +2220,92 @@ public class PriorityApiService {
             return List.of();
         }
         return new LinkedHashSet<>(optionIds).stream().toList();
+    }
+
+    private List<CurriculumWeekItem> toCurriculumWeeks(List<CurriculumScheduleRow> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<CurriculumScheduleRow>> grouped = new LinkedHashMap<>();
+        for (CurriculumScheduleRow row : rows) {
+            String key = row.termId() + ":" + row.contentScopeId() + ":" + row.weekNumber();
+            grouped.computeIfAbsent(key, ignored -> new ArrayList<>()).add(row);
+        }
+
+        return grouped.values().stream()
+                .map(this::toCurriculumWeek)
+                .sorted(Comparator
+                        .comparing(CurriculumWeekItem::startsAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(CurriculumWeekItem::id, Comparator.reverseOrder()))
+                .toList();
+    }
+
+    private CurriculumWeekItem toCurriculumWeek(List<CurriculumScheduleRow> rows) {
+        List<CurriculumScheduleRow> sortedRows = rows.stream()
+                .sorted(Comparator
+                        .comparing(CurriculumScheduleRow::classDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(CurriculumScheduleRow::startTime, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(CurriculumScheduleRow::id))
+                .toList();
+        CurriculumScheduleRow first = sortedRows.getFirst();
+        LocalDate startsAt = sortedRows.stream()
+                .map(CurriculumScheduleRow::classDate)
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+        LocalDate endsAt = sortedRows.stream()
+                .map(CurriculumScheduleRow::classDate)
+                .filter(Objects::nonNull)
+                .max(LocalDate::compareTo)
+                .orElse(null);
+        List<CurriculumSessionItem> sessions = sortedRows.stream()
+                .map(row -> new CurriculumSessionItem(
+                        row.id(),
+                        row.classDate(),
+                        formatPeriod(row.startTime(), row.endTime()),
+                        row.title(),
+                        row.instructor(),
+                        row.location(),
+                        row.sessionType()
+                ))
+                .toList();
+
+        return new CurriculumWeekItem(
+                sortedRows.stream().mapToLong(CurriculumScheduleRow::id).min().orElse(first.id()),
+                first.semester(),
+                first.weekNumber(),
+                first.track(),
+                startsAt,
+                endsAt,
+                curriculumStatus(startsAt, endsAt),
+                sessions.size(),
+                sessions
+        );
+    }
+
+    private String curriculumStatus(LocalDate startsAt, LocalDate endsAt) {
+        LocalDate today = LocalDate.now();
+        if (endsAt != null && endsAt.isBefore(today)) {
+            return "done";
+        }
+        if (startsAt != null && endsAt != null && !startsAt.isAfter(today) && !endsAt.isBefore(today)) {
+            return "current";
+        }
+        return "planned";
+    }
+
+    private String formatPeriod(LocalTime startTime, LocalTime endTime) {
+        if (startTime == null && endTime == null) {
+            return "-";
+        }
+        if (startTime == null) {
+            return "~ " + endTime;
+        }
+        if (endTime == null) {
+            return startTime + " ~";
+        }
+        return startTime + " ~ " + endTime;
     }
 
     private String trimRequired(String value, String message) {

@@ -303,6 +303,53 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record CurriculumWeeksResponse(List<CurriculumWeekItem> items) {
+    }
+
+    public record CurriculumWeekDetailResponse(CurriculumWeekItem item) {
+    }
+
+    public record CurriculumWeekItem(
+            long id,
+            String semester,
+            Integer weekNumber,
+            String track,
+            LocalDate startsAt,
+            LocalDate endsAt,
+            String status,
+            int sessionCount,
+            List<CurriculumSessionItem> sessions
+    ) {
+    }
+
+    public record CurriculumSessionItem(
+            long id,
+            LocalDate date,
+            String period,
+            String title,
+            String instructor,
+            String location,
+            String sessionType
+    ) {
+    }
+
+    public record CurriculumScheduleRow(
+            long id,
+            long termId,
+            String semester,
+            long contentScopeId,
+            Integer weekNumber,
+            String track,
+            LocalDate classDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            String sessionType,
+            String title,
+            String instructor,
+            String location
+    ) {
+    }
+
     public record ReplayResponse(List<ReplayItem> items) {
     }
 
