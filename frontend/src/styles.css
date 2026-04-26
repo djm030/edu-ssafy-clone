@@ -1400,6 +1400,58 @@ h2 {
 }
 
 
+.ebook-readiness-panel {
+  margin-bottom: 18px;
+}
+
+.ebook-readiness-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ebook-readiness-card {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.ebook-readiness-card span {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ebook-readiness-card strong {
+  color: #17458d;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.ebook-readiness-card small {
+  color: #667085;
+  line-height: 1.45;
+}
+
+.ebook-card-status {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ebook-viewer-policy {
+  background: #f9fafb;
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
 .education-achievement-panel {
   margin-bottom: 18px;
 }

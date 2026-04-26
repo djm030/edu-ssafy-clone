@@ -235,7 +235,13 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("accessEnabled")
                 .contains("disabledReason")
                 .contains("actionLabel")
-                .contains("이 계정으로는 e-book을 열람할 수 없습니다.");
+                .contains("EbookReadinessPanel")
+                .contains("EbookViewerPolicyPanel")
+                .contains("SSAFY e-book 권한 및 뷰어 상태")
+                .contains("ebook-readiness-grid")
+                .contains("준비중")
+                .contains("새 창 열기 · noopener")
+                .contains("ebookDisabledReason");
         assertThat(dashboard)
                 .contains("accessEnabled === false")
                 .contains("dashboard-widget-card")
