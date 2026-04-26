@@ -33,6 +33,7 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
     );
     private static final List<AccessRule> ACCESS_RULES = List.of(
             new AccessRule("*", "/api/admin/", null, Set.of("admin")),
+            new AccessRule("GET", "/api/attendance/appeals/pending", null, Set.of("coach", "admin")),
             new AccessRule("PATCH", "/api/attendance/appeals/", "/resolve", Set.of("coach", "admin")),
             new AccessRule("POST", "/api/community/classmates/", "/notifications", Set.of("coach", "admin")),
             new AccessRule("POST", "/api/learning/materials/", "/attachments", Set.of("coach", "admin")),

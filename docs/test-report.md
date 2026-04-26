@@ -1,5 +1,13 @@
 # Test Report
 
+## Attendance Pending Appeal Role Gate (2026-04-26 KST)
+- Added an interceptor role gate for `GET /api/attendance/appeals/pending` so learner requests are rejected before staff-only pending appeal data reaches the service layer.
+- Expanded `RoleAccessInterceptorTest` with learner/coach/admin pending-appeal matrix cases.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=RoleAccessInterceptorTest,PriorityApiServiceTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 182 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Public Readiness Auth Bypass (2026-04-26 KST)
 - Added `/api/readiness` to the public API path allow-list so Docker/Nginx smoke checks can run before login and still receive dependency-aware HTTP readiness status.
 - Added `RoleAccessInterceptorTest.publicReadinessEndpointSkipsSessionLookup` to ensure readiness probes do not require a session or repository lookup.
