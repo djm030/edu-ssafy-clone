@@ -11,6 +11,7 @@ function AcademicRulesPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [serverTotalRuleCount, setServerTotalRuleCount] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -22,6 +23,7 @@ function AcademicRulesPage() {
       .then((response) => {
         if (ignore) return;
         setCategories(response.categories);
+        setServerTotalRuleCount(response.totalRuleCount ?? response.categories.reduce((total, category) => total + category.rules.length, 0));
         setLoadState(response.categories.some((category) => category.rules.length > 0) ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -36,13 +38,19 @@ function AcademicRulesPage() {
   }, [keyword, selectedCategoryId]);
 
   const totalRuleCount = useMemo(
-    () => categories.reduce((total, category) => total + category.rules.length, 0),
-    [categories],
+    () => serverTotalRuleCount || categories.reduce((total, category) => total + category.rules.length, 0),
+    [categories, serverTotalRuleCount],
   );
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setKeyword(keywordInput.trim());
+  };
+
+  const resetFilters = () => {
+    setKeywordInput('');
+    setKeyword('');
+    setSelectedCategoryId(undefined);
   };
 
   return (
@@ -63,17 +71,27 @@ function AcademicRulesPage() {
             value={keywordInput}
           />
           <button className="primary-action" type="submit">검색</button>
+          {(keyword || selectedCategoryId) ? (
+            <button className="ghost-button" onClick={resetFilters} type="button">검색 초기화</button>
+          ) : null}
         </form>
         <div className="action-row" role="list" aria-label="학사규정 카테고리">
-          <button className="ghost-button" onClick={() => setSelectedCategoryId(undefined)} type="button">
+          <button className={selectedCategoryId === undefined ? 'primary-action' : 'ghost-button'} onClick={() => setSelectedCategoryId(undefined)} type="button">
             전체
           </button>
           {categories.map((category) => (
-            <button className="ghost-button" key={category.id} onClick={() => setSelectedCategoryId(category.id)} type="button">
+            <button
+              aria-pressed={selectedCategoryId === category.id}
+              className={selectedCategoryId === category.id ? 'primary-action' : 'ghost-button'}
+              key={category.id}
+              onClick={() => setSelectedCategoryId(category.id)}
+              type="button"
+            >
               {category.name} ({category.ruleCount})
             </button>
           ))}
         </div>
+        {keyword ? <p className="form-message" aria-live="polite">“{keyword}” 검색 결과 {totalRuleCount.toLocaleString('ko-KR')}건</p> : null}
       </section>
 
       {loadState === 'loading' ? <LoadingRows /> : null}
@@ -87,21 +105,40 @@ function AcademicRulesPage() {
           <a className="ghost-button" href="/help/qna/new">1:1 문의하기</a>
         </div>
       ) : null}
-      {loadState === 'loaded' ? <RuleCategoryList categories={categories} totalRuleCount={totalRuleCount} /> : null}
+      {loadState === 'loaded' ? <RuleCategoryList categories={categories} keyword={keyword} totalRuleCount={totalRuleCount} /> : null}
     </section>
   );
 }
 
-function RuleCategoryList({ categories, totalRuleCount }: { categories: AcademicRuleCategory[]; totalRuleCount: number }) {
+function RuleCategoryList({
+  categories,
+  keyword,
+  totalRuleCount,
+}: {
+  categories: AcademicRuleCategory[];
+  keyword: string;
+  totalRuleCount: number;
+}) {
+  const rules = categories.flatMap((category) => category.rules);
+
   return (
     <section className="panel">
       <div className="section-heading">
         <div>
           <h2>규정 {totalRuleCount.toLocaleString('ko-KR')}건</h2>
-          <p>각 항목을 열어 세부 기준을 확인하세요.</p>
+          <p>{keyword ? `“${keyword}”와 관련된 규정의 위치로 바로 이동할 수 있습니다.` : '각 항목을 열어 세부 기준을 확인하세요.'}</p>
         </div>
         <a className="ghost-button" href="/help/qna/new">추가 문의</a>
       </div>
+      {rules.length ? (
+        <nav className="action-row" aria-label="학사규정 바로가기">
+          {rules.slice(0, 8).map((rule) => (
+            <a className="ghost-button" href={`#${rule.anchorId || `rule-${rule.id}`}`} key={rule.id}>
+              {rule.question}
+            </a>
+          ))}
+        </nav>
+      ) : null}
       <div className="stack-list">
         {categories.map((category) => (
           <article className="card" key={category.id}>
@@ -121,10 +158,14 @@ function RuleList({ rules }: { rules: AcademicRuleItem[] }) {
   return (
     <div className="accordion-list">
       {rules.map((rule) => (
-        <details key={rule.id}>
+        <details id={rule.anchorId || `rule-${rule.id}`} key={rule.id} open={Boolean(rule.searchMatched)}>
           <summary>{rule.question}</summary>
           <p>{rule.answer}</p>
-          <span className="muted">최종 수정 {formatDate(rule.updatedAt)}</span>
+          <div className="action-row">
+            {rule.searchMatched ? <StatusPill tone="yellow">검색 일치</StatusPill> : null}
+            <span className="muted">최종 수정 {formatDate(rule.updatedAt)}</span>
+            <a className="ghost-button" href={rule.detailPath || `/help/academic-rules#rule-${rule.id}`}>규정 링크</a>
+          </div>
         </details>
       ))}
     </div>

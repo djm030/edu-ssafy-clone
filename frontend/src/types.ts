@@ -1171,6 +1171,7 @@ export interface MentoringMeetingReviewDetail extends MentoringMeetingReviewItem
 export interface AcademicRulesResponse {
   categories: AcademicRuleCategory[];
   keyword?: string | null;
+  totalRuleCount?: number;
 }
 
 export interface AcademicRuleCategory {
@@ -1188,6 +1189,9 @@ export interface AcademicRuleItem {
   question: string;
   answer: string;
   updatedAt?: string | null;
+  anchorId?: string;
+  detailPath?: string;
+  searchMatched?: boolean;
 }
 
 export interface SupportTicketDraft {

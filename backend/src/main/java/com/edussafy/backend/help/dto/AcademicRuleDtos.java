@@ -8,7 +8,14 @@ public final class AcademicRuleDtos {
     private AcademicRuleDtos() {
     }
 
-    public record AcademicRulesResponse(List<AcademicRuleCategoryItem> categories, String keyword) {
+    public record AcademicRulesResponse(List<AcademicRuleCategoryItem> categories, String keyword, long totalRuleCount) {
+        public AcademicRulesResponse(List<AcademicRuleCategoryItem> categories, String keyword) {
+            this(
+                    categories,
+                    keyword,
+                    categories.stream().mapToLong(AcademicRuleCategoryItem::ruleCount).sum()
+            );
+        }
     }
 
     public record AcademicRuleDetailResponse(AcademicRuleItem item) {
@@ -29,7 +36,20 @@ public final class AcademicRuleDtos {
             String categoryName,
             String question,
             String answer,
-            OffsetDateTime updatedAt
+            OffsetDateTime updatedAt,
+            String anchorId,
+            String detailPath,
+            boolean searchMatched
     ) {
+        public AcademicRuleItem(
+                long id,
+                long categoryId,
+                String categoryName,
+                String question,
+                String answer,
+                OffsetDateTime updatedAt
+        ) {
+            this(id, categoryId, categoryName, question, answer, updatedAt, "rule-" + id, "/help/academic-rules#" + "rule-" + id, false);
+        }
     }
 }

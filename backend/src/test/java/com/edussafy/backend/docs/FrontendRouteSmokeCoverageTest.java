@@ -269,6 +269,27 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("reportable: boolean");
     }
 
+    @Test
+    void academicRulesPageExposesAnchorsAndSearchMetadata() throws IOException {
+        String academicRulesPage = Files.readString(Path.of("..", "frontend", "src", "pages", "AcademicRulesPage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(academicRulesPage)
+                .contains("학사규정 바로가기")
+                .contains("검색 초기화")
+                .contains("rule.anchorId")
+                .contains("searchMatched")
+                .contains("규정 링크");
+        assertThat(appApi)
+                .contains("totalRuleCount")
+                .contains("detailPath: rule.detailPath || `/help/academic-rules#rule-${rule.id}`");
+        assertThat(types)
+                .contains("anchorId?: string")
+                .contains("detailPath?: string")
+                .contains("searchMatched?: boolean");
+    }
+
 
 
     @Test

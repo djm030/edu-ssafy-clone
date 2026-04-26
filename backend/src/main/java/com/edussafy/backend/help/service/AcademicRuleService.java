@@ -33,15 +33,16 @@ public class AcademicRuleService {
 
     public AcademicRulesResponse rules(Long categoryId, String keyword) {
         long boardId = requireBoardId();
+        String normalizedKeyword = normalizeKeyword(keyword);
         List<CategoryItem> categories = boardRepository.findCategories(boardId);
-        BoardQuery query = new BoardQuery(categoryId, normalizeKeyword(keyword), 1, MAX_RULES, "id,asc");
+        BoardQuery query = new BoardQuery(categoryId, normalizedKeyword, 1, MAX_RULES, "id,asc");
         List<BoardPostListItem> posts = boardRepository.findPosts(boardId, query, BoardSort.parse(query.sort()));
 
         Map<Long, List<AcademicRuleItem>> rulesByCategory = new LinkedHashMap<>();
         for (BoardPostListItem post : posts) {
             BoardPostDetail detail = boardRepository.findPostDetail(boardId, post.id())
                     .orElseThrow(() -> new BoardPostNotFoundException(post.id()));
-            AcademicRuleItem item = toRule(detail);
+            AcademicRuleItem item = toRule(detail, normalizedKeyword);
             rulesByCategory.computeIfAbsent(item.categoryId(), ignored -> new ArrayList<>()).add(item);
         }
 
@@ -57,17 +58,17 @@ public class AcademicRuleService {
                             rules
                     );
                 })
-                .filter(category -> !StringUtils.hasText(keyword) || !category.rules().isEmpty())
+                .filter(category -> !StringUtils.hasText(normalizedKeyword) || !category.rules().isEmpty())
                 .toList();
 
-        return new AcademicRulesResponse(grouped, normalizeKeyword(keyword));
+        return new AcademicRulesResponse(grouped, normalizedKeyword);
     }
 
     public AcademicRuleDetailResponse rule(long ruleId) {
         long boardId = requireBoardId();
         BoardPostDetail detail = boardRepository.findPostDetail(boardId, ruleId)
                 .orElseThrow(() -> new BoardPostNotFoundException(ruleId));
-        return new AcademicRuleDetailResponse(toRule(detail));
+        return new AcademicRuleDetailResponse(toRule(detail, null));
     }
 
     private long requireBoardId() {
@@ -75,18 +76,36 @@ public class AcademicRuleService {
                 .orElseThrow(() -> new BoardNotFoundException(BOARD_CODE));
     }
 
-    private AcademicRuleItem toRule(BoardPostDetail detail) {
+    private AcademicRuleItem toRule(BoardPostDetail detail, String keyword) {
         if (detail.category() == null) {
             throw new BoardPostNotFoundException(detail.id());
         }
+        String anchorId = "rule-" + detail.id();
         return new AcademicRuleItem(
                 detail.id(),
                 detail.category().id(),
                 detail.category().name(),
                 detail.title(),
                 detail.content(),
-                detail.updatedAt() == null ? detail.createdAt() : detail.updatedAt()
+                detail.updatedAt() == null ? detail.createdAt() : detail.updatedAt(),
+                anchorId,
+                "/help/academic-rules#" + anchorId,
+                matchesKeyword(detail, keyword)
         );
+    }
+
+    private boolean matchesKeyword(BoardPostDetail detail, String keyword) {
+        if (!StringUtils.hasText(keyword)) {
+            return false;
+        }
+        String normalized = keyword.toLowerCase();
+        return containsIgnoreCase(detail.title(), normalized)
+                || containsIgnoreCase(detail.content(), normalized)
+                || (detail.category() != null && containsIgnoreCase(detail.category().name(), normalized));
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedKeyword) {
+        return value != null && value.toLowerCase().contains(normalizedKeyword);
     }
 
     private String normalizeKeyword(String keyword) {

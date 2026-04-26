@@ -1357,11 +1357,20 @@ export function getAcademicRules(query: { categoryId?: number; keyword?: string 
             if (!normalizedKeyword) return true;
             const keyword = normalizedKeyword.toLowerCase();
             return rule.question.toLowerCase().includes(keyword) || rule.answer.toLowerCase().includes(keyword);
-          });
+          }).map((rule) => ({
+            ...rule,
+            anchorId: rule.anchorId || `rule-${rule.id}`,
+            detailPath: rule.detailPath || `/help/academic-rules#rule-${rule.id}`,
+            searchMatched: Boolean(normalizedKeyword),
+          }));
           return { ...category, ruleCount: rules.length, rules };
         })
         .filter((category) => !normalizedKeyword || category.rules.length > 0);
-      return { categories, keyword: normalizedKeyword || null };
+      return {
+        categories,
+        keyword: normalizedKeyword || null,
+        totalRuleCount: categories.reduce((total, category) => total + category.rules.length, 0),
+      };
     },
   });
 }

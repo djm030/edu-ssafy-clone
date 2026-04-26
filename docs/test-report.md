@@ -528,3 +528,11 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Academic Rules Anchors and Search Metadata (2026-04-27 KST)
+- Added backend total rule counts, stable `rule-{id}` anchors, detail hash links, and keyword match metadata to academic rule API responses.
+- Updated `/help/academic-rules` to show category active states, search result counts, reset filters, direct rule anchors, open matched rules, and 1:1 문의 fallback.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=AcademicRuleControllerTest,AcademicRuleServiceTest,FrontendRouteSmokeCoverageTest test` -> PASS, 20 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

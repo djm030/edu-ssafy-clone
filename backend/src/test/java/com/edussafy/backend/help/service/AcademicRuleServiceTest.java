@@ -37,9 +37,12 @@ class AcademicRuleServiceTest {
         AcademicRulesResponse response = service.rules(null, null);
 
         assertThat(response.categories()).hasSize(2);
+        assertThat(response.totalRuleCount()).isEqualTo(2);
         assertThat(response.categories().getFirst().name()).isEqualTo("출결");
         assertThat(response.categories().getFirst().rules()).extracting("question").containsExactly("지각 기준");
         assertThat(response.categories().get(1).rules()).extracting("categoryName").containsExactly("평가");
+        assertThat(response.categories().getFirst().rules().getFirst().anchorId()).isEqualTo("rule-10");
+        assertThat(response.categories().getFirst().rules().getFirst().detailPath()).isEqualTo("/help/academic-rules#rule-10");
     }
 
     @Test
@@ -61,6 +64,7 @@ class AcademicRuleServiceTest {
         assertThat(response.categories()).hasSize(1);
         assertThat(response.categories().getFirst().name()).isEqualTo("평가");
         assertThat(response.categories().getFirst().rules()).hasSize(1);
+        assertThat(response.categories().getFirst().rules().getFirst().searchMatched()).isTrue();
     }
 
     @Test
