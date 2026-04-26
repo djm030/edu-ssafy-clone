@@ -413,6 +413,7 @@ function toDashboardSummary(summary: BackendDashboardSummary): DashboardSummary 
     },
     home: {
       attendanceCheck: home.attendanceCheck || mockDashboard.home.attendanceCheck,
+      curriculumOverview: home.curriculumOverview || mockDashboard.home.curriculumOverview,
       curriculumSessions: home.curriculumSessions || [],
       quests: home.quests || [],
       materials: home.materials || [],

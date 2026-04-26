@@ -1,5 +1,13 @@
 # Test Report
 
+## Dashboard Curriculum Overview Parity (2026-04-27 KST)
+- Added a dashboard curriculum overview payload so the home weekly timetable exposes semester, week number, track, date range, status, session count, and a direct detail link before the session rows.
+- Updated the dashboard UI, fallback data, frontend types, and static/backend tests to keep the home widget aligned with the EduSSAFY weekly timetable fidelity plan.
+- `git diff --check` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test` -> PASS, 67 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## App Profile Runtime Smoke Stabilization (2026-04-27 KST)
 - Re-ran `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`; the child TTY became stuck around a background test terminal, so the verification/fix loop was completed directly with local commands.
 - Fixed runtime-only Spring startup failures by marking the production constructors in external-service and mentoring services with `@Autowired` while preserving their test constructors.

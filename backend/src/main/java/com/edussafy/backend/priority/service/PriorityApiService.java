@@ -38,6 +38,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardAttendanceCheck;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardBoardPost;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumOverview;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumSession;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardEbookCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardHomeWidgets;
@@ -536,6 +537,7 @@ public class PriorityApiService {
 
         return new DashboardHomeWidgets(
                 attendanceCheckWidget(attendance),
+                dashboardCurriculumOverview(weeks),
                 curriculumSessions,
                 quests,
                 materials,
@@ -543,6 +545,33 @@ public class PriorityApiService {
                 safe(() -> repository.findDashboardPosts("free", 4), List.<DashboardBoardPost>of()),
                 safe(() -> repository.findDashboardPosts("notice", 4), List.<DashboardBoardPost>of()),
                 ebooks
+        );
+    }
+
+    private DashboardCurriculumOverview dashboardCurriculumOverview(List<CurriculumWeekItem> weeks) {
+        if (weeks == null || weeks.isEmpty()) {
+            return null;
+        }
+
+        CurriculumWeekItem selected = weeks.stream()
+                .filter(week -> "current".equals(week.status()))
+                .findFirst()
+                .or(() -> weeks.stream()
+                        .filter(week -> "planned".equals(week.status()))
+                        .min(Comparator.comparing(CurriculumWeekItem::startsAt, Comparator.nullsLast(Comparator.naturalOrder()))))
+                .orElseGet(() -> weeks.stream()
+                        .max(Comparator.comparing(CurriculumWeekItem::startsAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                        .orElse(weeks.getFirst()));
+
+        return new DashboardCurriculumOverview(
+                selected.semester(),
+                selected.weekNumber(),
+                selected.track(),
+                selected.startsAt(),
+                selected.endsAt(),
+                selected.status(),
+                selected.sessionCount(),
+                "/learning/curriculum/" + selected.id()
         );
     }
 

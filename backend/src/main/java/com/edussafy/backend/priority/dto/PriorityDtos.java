@@ -141,6 +141,18 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record DashboardCurriculumOverview(
+            String semester,
+            Integer weekNumber,
+            String track,
+            LocalDate startsAt,
+            LocalDate endsAt,
+            String status,
+            int sessionCount,
+            String detailPath
+    ) {
+    }
+
     public record DashboardQuestCard(
             long id,
             String title,
@@ -187,6 +199,7 @@ public final class PriorityDtos {
 
     public record DashboardHomeWidgets(
             DashboardAttendanceCheck attendanceCheck,
+            DashboardCurriculumOverview curriculumOverview,
             List<DashboardCurriculumSession> curriculumSessions,
             List<DashboardQuestCard> quests,
             List<DashboardLearningCard> materials,

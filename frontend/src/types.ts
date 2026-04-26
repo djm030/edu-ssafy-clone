@@ -129,6 +129,17 @@ export interface DashboardCurriculumSession {
   detailPath: string;
 }
 
+export interface DashboardCurriculumOverview {
+  semester?: string | null;
+  weekNumber?: number | null;
+  track?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  status: 'done' | 'current' | 'planned' | string;
+  sessionCount: number;
+  detailPath: string;
+}
+
 export interface DashboardQuestCard {
   id: number;
   title: string;
@@ -171,6 +182,7 @@ export interface DashboardEbookCard {
 
 export interface DashboardHomeWidgets {
   attendanceCheck: DashboardAttendanceCheck;
+  curriculumOverview?: DashboardCurriculumOverview | null;
   curriculumSessions: DashboardCurriculumSession[];
   quests: DashboardQuestCard[];
   materials: DashboardLearningCard[];

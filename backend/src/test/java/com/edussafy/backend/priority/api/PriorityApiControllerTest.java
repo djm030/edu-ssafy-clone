@@ -46,6 +46,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardAttendanceCheck;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardBoardPost;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumOverview;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumSession;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardEbookCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardHomeWidgets;
@@ -423,6 +424,7 @@ class PriorityApiControllerTest {
                 new TodaySummary(null, null, null),
                 new DashboardHomeWidgets(
                         new DashboardAttendanceCheck("2026-04-26", true, true, "입·퇴실 가능", "오늘 출석을 확인하세요.", "/mycampus/attendance"),
+                        new DashboardCurriculumOverview("2026 1학기", 3, "Java", LocalDate.parse("2026-04-20"), LocalDate.parse("2026-04-24"), "current", 5, "/learning/curriculum/11"),
                         List.of(new DashboardCurriculumSession(11, 3, LocalDate.parse("2026-04-26"), "09:00 ~ 18:00", "React API 연동", "Coach", "Seoul", "current", "/learning/curriculum/11")),
                         List.of(new DashboardQuestCard(7, "Dashboard Quest", "assignment", "progress", null, null, "/quest/7")),
                         List.of(new DashboardLearningCard(5, "REST API", "Backend", "API 자료", 0, 10, 2, 1, "/learning/materials/5")),
@@ -440,6 +442,9 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.attendance.appealAvailable").value(true))
                 .andExpect(jsonPath("$.notifications.latest").isArray())
                 .andExpect(jsonPath("$.home.attendanceCheck.detailPath").value("/mycampus/attendance"))
+                .andExpect(jsonPath("$.home.curriculumOverview.semester").value("2026 1학기"))
+                .andExpect(jsonPath("$.home.curriculumOverview.weekNumber").value(3))
+                .andExpect(jsonPath("$.home.curriculumOverview.sessionCount").value(5))
                 .andExpect(jsonPath("$.home.curriculumSessions[0].title").value("React API 연동"))
                 .andExpect(jsonPath("$.home.quests[0].detailPath").value("/quest/7"))
                 .andExpect(jsonPath("$.home.notices[0].pinned").value(true));

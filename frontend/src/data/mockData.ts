@@ -49,6 +49,16 @@ export const mockDashboard: DashboardSummary = {
       message: '오늘 입실/퇴실 기록과 소명 가능 여부를 확인하세요.',
       detailPath: '/mycampus/attendance',
     },
+    curriculumOverview: {
+      semester: '2026 1학기',
+      weekNumber: 3,
+      track: 'Java',
+      startsAt: '2026-04-20',
+      endsAt: '2026-04-24',
+      status: 'current',
+      sessionCount: 5,
+      detailPath: '/learning/curriculum/3',
+    },
     curriculumSessions: [
       { id: 31, weekNumber: 3, date: '2026-04-24', period: '09:00 ~ 12:00', title: 'React API 연동', instructor: '프론트 코치', location: '서울 A반', status: 'current', detailPath: '/learning/curriculum/3' },
       { id: 32, weekNumber: 3, date: '2026-04-24', period: '13:00 ~ 18:00', title: '프로젝트 통합 실습', instructor: '담임 코치', location: '서울 A반', status: 'current', detailPath: '/learning/curriculum/3' },

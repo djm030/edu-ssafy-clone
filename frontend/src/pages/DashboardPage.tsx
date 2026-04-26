@@ -89,6 +89,15 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
 
         <section className="panel dashboard-wide-panel">
           <PanelHeader title="주차별 커리큘럼" moreHref="/learning/curriculum" />
+          {summary.home.curriculumOverview ? (
+            <a className="dashboard-curriculum-overview" href={summary.home.curriculumOverview.detailPath}>
+              <span className={`status-pill ${summary.home.curriculumOverview.status === 'current' ? 'green' : 'blue'}`}>
+                {formatCurriculumStatus(summary.home.curriculumOverview.status)}
+              </span>
+              <strong>{summary.home.curriculumOverview.weekNumber ? `${summary.home.curriculumOverview.weekNumber}주차` : '주차 미정'} · {summary.home.curriculumOverview.track || '공통'}</strong>
+              <p>{summary.home.curriculumOverview.semester || '학기 미정'} · {formatDateRange(summary.home.curriculumOverview.startsAt, summary.home.curriculumOverview.endsAt)} · {summary.home.curriculumOverview.sessionCount}개 세션</p>
+            </a>
+          ) : null}
           {summary.home.curriculumSessions.length === 0 ? (
             <DataState title="표시할 커리큘럼이 없습니다." message="학기/트랙 시간표가 등록되면 홈에 노출됩니다." />
           ) : (
@@ -220,6 +229,20 @@ function formatStatus(value?: string | null) {
   if (normalized === 'progress' || normalized === 'in_progress') return '진행 중';
   if (normalized === 'overdue') return '마감';
   return value;
+}
+
+function formatCurriculumStatus(value?: string | null) {
+  if (value === 'current') return '진행 중';
+  if (value === 'done') return '완료';
+  if (value === 'planned') return '예정';
+  return value || '예정';
+}
+
+function formatDateRange(startAt?: string | null, endAt?: string | null) {
+  const start = startAt?.slice(0, 10);
+  const end = endAt?.slice(0, 10);
+  if (start && end && start !== end) return `${start} ~ ${end}`;
+  return start || end || '일정 미정';
 }
 
 function formatPeriod(startAt?: string | null, endAt?: string | null) {
