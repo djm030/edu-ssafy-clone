@@ -153,6 +153,7 @@
     grid-template-columns: 1fr;
   }
 
+  .education-achievement-grid,
   .level-kpi-row,
   .pledge-version-summary,
   .tier-roadmap {

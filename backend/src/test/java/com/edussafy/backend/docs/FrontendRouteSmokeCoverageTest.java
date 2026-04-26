@@ -452,10 +452,15 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("trackName");
         assertThat(educationStatusPage)
                 .contains("EducationProfilePanel")
+                .contains("EducationAchievementPanel")
                 .contains("교육현황 학기 및 트랙 요약")
+                .contains("교육현황 성취도 차트와 표")
+                .contains("education-achievement-grid")
+                .contains("education-status-table")
                 .contains("SEMESTER / TRACK")
                 .contains("출석률")
                 .contains("필수학습 이수")
+                .contains("Quest 제출")
                 .contains("MetricBadge");
     }
 

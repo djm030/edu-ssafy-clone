@@ -71,6 +71,7 @@ function EducationStatusContent({ summary }: { summary: EducationStatusSummary }
         <StatusCard title="Quest" value={`${summary.quests.openCount}개 진행`} detail={`제출 ${summary.quests.submittedCount} · 지연 ${summary.quests.lateCount}`} href="/quest" />
         <StatusCard title="포인트" value={summary.points.levelName} detail={`EXP ${summary.points.experiencePoint.toLocaleString('ko-KR')} · 장학 ${summary.points.scholarshipPoint}점`} href="/mycampus/level" />
       </div>
+      <EducationAchievementPanel summary={summary} requiredStudyPercent={requiredStudyPercent} />
       <div className="content-grid">
         <section className="panel">
           <h2>출결 요약</h2>
@@ -92,6 +93,58 @@ function EducationStatusContent({ summary }: { summary: EducationStatusSummary }
         </section>
       </div>
     </>
+  );
+}
+
+function EducationAchievementPanel({ summary, requiredStudyPercent }: { summary: EducationStatusSummary; requiredStudyPercent: number }) {
+  const attendanceTotal = summary.attendance.presentDays + summary.attendance.lateDays + summary.attendance.absentDays;
+  const attendancePercent = attendanceTotal > 0 ? Math.round((summary.attendance.presentDays / attendanceTotal) * 100) : 0;
+  const questTotal = summary.quests.openCount + summary.quests.submittedCount + summary.quests.lateCount;
+  const questSubmitPercent = questTotal > 0 ? Math.round((summary.quests.submittedCount / questTotal) * 100) : 0;
+  const rows = [
+    { label: '출석률', value: `${attendancePercent}%`, detail: `${summary.attendance.presentDays}/${attendanceTotal || 0}일`, percent: attendancePercent, href: '/mycampus/attendance' },
+    { label: '필수학습 이수', value: `${requiredStudyPercent}%`, detail: `${summary.learning.completedRequiredStudyCount}/${summary.learning.totalRequiredStudyCount}개`, percent: requiredStudyPercent, href: '/learning/required-studies' },
+    { label: 'Quest 제출', value: `${questSubmitPercent}%`, detail: `제출 ${summary.quests.submittedCount} · 지연 ${summary.quests.lateCount}`, percent: questSubmitPercent, href: '/quest' },
+  ];
+
+  return (
+    <section className="panel education-achievement-panel" aria-label="교육현황 성취도 차트와 표">
+      <div className="section-heading compact-heading">
+        <div>
+          <p>ACHIEVEMENT</p>
+          <h2>학기/트랙 성취 지표</h2>
+        </div>
+        <span>{summary.profile?.semesterLabel || '학기 미정'} · {summary.profile?.trackName || '트랙 미정'}</span>
+      </div>
+      <div className="education-achievement-grid">
+        {rows.map((row) => (
+          <a className="education-achievement-card" href={row.href} key={row.label}>
+            <strong>{row.label}</strong>
+            <span>{row.value}</span>
+            <div className="progress-track" aria-label={`${row.label} ${row.value}`}>
+              <span style={{ width: `${row.percent}%` }} />
+            </div>
+            <small>{row.detail}</small>
+          </a>
+        ))}
+      </div>
+      <div className="simple-table education-status-table" role="table" aria-label="교육현황 성취 상세 표">
+        <div className="simple-row table-head" role="row">
+          <span role="columnheader">지표</span>
+          <span role="columnheader">현재값</span>
+          <span role="columnheader">상세</span>
+          <span role="columnheader">바로가기</span>
+        </div>
+        {rows.map((row) => (
+          <a className="simple-row" href={row.href} key={row.label} role="row">
+            <span role="cell">{row.label}</span>
+            <strong role="cell">{row.value}</strong>
+            <span role="cell">{row.detail}</span>
+            <span role="cell">상세 보기</span>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }
 

@@ -1399,6 +1399,45 @@ h2 {
   white-space: pre-wrap;
 }
 
+
+.education-achievement-panel {
+  margin-bottom: 18px;
+}
+
+.education-achievement-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.education-achievement-card {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+}
+
+.education-achievement-card strong {
+  color: #344054;
+}
+
+.education-achievement-card > span {
+  color: #17458d;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.education-achievement-card small {
+  color: #667085;
+}
+
+.education-status-table .simple-row {
+  grid-template-columns: 1fr 1fr 1.4fr 0.9fr;
+}
+
 .education-profile-panel {
   align-items: center;
   display: flex;
