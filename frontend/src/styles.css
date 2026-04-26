@@ -1986,3 +1986,81 @@ h2 {
 .list-card.joinable {
   border-color: #bfdbfe;
 }
+
+.notification-action {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.notification-badge {
+  align-items: center;
+  background: #e5e7eb;
+  border-radius: 999px;
+  color: #475467;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  justify-content: center;
+  min-width: 22px;
+  padding: 2px 7px;
+}
+
+.notification-badge.active {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.profile-menu {
+  position: relative;
+}
+
+.profile-dropdown {
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 14px;
+  box-shadow: 0 22px 45px rgba(20, 35, 55, 0.16);
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  padding: 14px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 30;
+}
+
+.profile-dropdown span {
+  color: #667085;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.profile-dropdown button {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 10px;
+  color: #1f2933;
+  font-weight: 800;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.profile-dropdown button:focus,
+.profile-dropdown button:hover {
+  border-color: #245db8;
+  color: #245db8;
+}
+
+.session-expired-banner {
+  align-items: center;
+  background: #fff7ed;
+  border-top: 1px solid #fed7aa;
+  color: #9a3412;
+  display: flex;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 12px;
+  justify-content: center;
+  padding: 10px 20px;
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AUTH_REQUIRED_EVENT, FORBIDDEN_EVENT, fetchJson, getErrorMessage } from './api/client';
 import AppShell from './components/AppShell';
 import BoardListPage from './components/BoardListPage';
-import { getCurrentRoleAccess, getMe, logout } from './api/app';
+import { getCurrentRoleAccess, getMe, getNotifications, logout } from './api/app';
 import { mockUser } from './data/mockData';
 import AcademicRulesPage from './pages/AcademicRulesPage';
 import AdminCampusPage from './pages/AdminCampusPage';
@@ -138,6 +138,7 @@ function App() {
   const [sessionStatus, setSessionStatus] = useState<AuthSessionStatus>();
   const [accessError, setAccessError] = useState<string>();
   const [accessMessage, setAccessMessage] = useState('');
+  const [notificationCount, setNotificationCount] = useState<number>();
 
   useEffect(() => {
     const onPopState = () => setPath(getCurrentPath());
@@ -219,6 +220,18 @@ function App() {
     return () => { cancelled = true; };
   }, [user.email]);
 
+  useEffect(() => {
+    let cancelled = false;
+    getNotifications()
+      .then((response) => {
+        if (!cancelled) setNotificationCount(response.items.filter((item) => !item.read).length);
+      })
+      .catch(() => {
+        if (!cancelled) setNotificationCount(undefined);
+      });
+    return () => { cancelled = true; };
+  }, [user.email, path]);
+
   const handleLogout = () => {
     logout()
       .catch((error) => console.warn(`[auth] logout fallback navigation: ${getErrorMessage(error)}`))
@@ -239,6 +252,7 @@ function App() {
     <AppShell
       accessError={accessError}
       currentPath={path}
+      notificationCount={notificationCount}
       onLogout={handleLogout}
       onNavigate={navigate}
       roleAccess={roleAccess}

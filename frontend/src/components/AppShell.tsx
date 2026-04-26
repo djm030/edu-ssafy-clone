@@ -11,6 +11,7 @@ interface AppShellProps {
   accessError?: string;
   sessionExpiresAt?: string;
   sessionSecondsRemaining?: number;
+  notificationCount?: number;
   onNavigate: (path: string) => void;
   onLogout: () => void;
 }
@@ -35,6 +36,7 @@ function AppShell({
   accessError,
   children,
   currentPath,
+  notificationCount,
   onLogout,
   onNavigate,
   roleAccess,
@@ -44,8 +46,10 @@ function AppShell({
 }: AppShellProps) {
   const [openSectionTitle, setOpenSectionTitle] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const sessionExpiryText = formatSessionExpiry(sessionExpiresAt);
   const sessionWarning = typeof sessionSecondsRemaining === 'number' && sessionSecondsRemaining < 300;
+  const sessionExpired = typeof sessionSecondsRemaining === 'number' && sessionSecondsRemaining <= 0;
   const isDeniedNavItem = (path: string) => Boolean(
     roleAccess?.deniedRoutes.some((route) => path === route || path.startsWith(`${route}/`))
   );
@@ -61,6 +65,7 @@ function AppShell({
     onNavigate(path);
     setOpenSectionTitle(null);
     setMobileMenuOpen(false);
+    setProfileMenuOpen(false);
   };
 
   return (
@@ -81,18 +86,33 @@ function AppShell({
             </span>
           </div>
           <div className="topbar-actions global-header__actions">
-            <button className="ghost-button" onClick={() => navigate('/mycampus/notifications')} type="button">
+            <button aria-label={`알림함으로 이동${notificationCount == null ? '' : `, 미확인 ${notificationCount}건`}`} className="ghost-button notification-action" onClick={() => navigate('/mycampus/notifications')} type="button">
               알림함
+              <span className={notificationCount ? 'notification-badge active' : 'notification-badge'}>{notificationCount ?? '-'}</span>
             </button>
             <button className="ghost-button" onClick={() => navigate('/external-services')} type="button">
               외부 서비스
             </button>
-            <button className="ghost-button" onClick={() => navigate('/profile/check')} type="button">
-              회원정보
-            </button>
-            <button className="ghost-button" onClick={onLogout} type="button">
-              로그아웃
-            </button>
+            <div className="profile-menu">
+              <button
+                aria-controls="global-profile-menu"
+                aria-expanded={profileMenuOpen}
+                className="ghost-button profile-menu-button"
+                onClick={() => setProfileMenuOpen((value) => !value)}
+                type="button"
+              >
+                프로필
+              </button>
+              {profileMenuOpen ? (
+                <div className="profile-dropdown" id="global-profile-menu" role="menu" aria-label="사용자 프로필 메뉴">
+                  <strong>{user.name}</strong>
+                  <span>{user.email}</span>
+                  <button onClick={() => navigate('/profile/check')} role="menuitem" type="button">회원정보 확인</button>
+                  <button onClick={() => navigate('/profile/edit')} role="menuitem" type="button">회원정보 수정</button>
+                  <button onClick={() => { setProfileMenuOpen(false); onLogout(); }} role="menuitem" type="button">로그아웃</button>
+                </div>
+              ) : null}
+            </div>
             <button
               aria-controls="global-mobile-menu"
               aria-expanded={mobileMenuOpen}
@@ -104,6 +124,13 @@ function AppShell({
             </button>
           </div>
         </div>
+
+        {sessionExpired ? (
+          <div className="session-expired-banner" role="alert">
+            세션이 만료되었습니다. 저장 중인 작업을 보호하려면 다시 로그인하세요.
+            <button className="text-link" onClick={() => navigate('/login')} type="button">로그인 화면으로 이동</button>
+          </div>
+        ) : null}
 
         <nav className="global-nav" aria-label="EduSSAFY 상단 대메뉴">
           {visibleSections.map((section) => {

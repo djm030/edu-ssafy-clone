@@ -700,19 +700,29 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("onMouseEnter")
                 .contains("onFocus")
                 .contains("세션")
+                .contains("sessionExpired")
+                .contains("notificationCount")
+                .contains("notification-badge")
+                .contains("profile-dropdown")
+                .contains("사용자 프로필 메뉴")
                 .contains("알림함")
                 .contains("외부 서비스")
-                .contains("회원정보")
+                .contains("회원정보 확인")
                 .contains("로그아웃")
                 .contains("전체메뉴");
         assertThat(styles)
                 .contains(".global-header")
                 .contains(".global-nav__item.active")
                 .contains(".mega-menu-panel__links")
-                .contains(".mega-menu-link.active");
+                .contains(".mega-menu-link.active")
+                .contains(".notification-badge.active")
+                .contains(".profile-dropdown")
+                .contains(".session-expired-banner");
         assertThat(responsive)
                 .contains(".global-mobile-menu.open")
-                .contains(".global-menu-toggle");
+                .contains(".global-menu-toggle")
+                .contains(".profile-dropdown")
+                .contains(".session-expired-banner");
     }
 
     @Test
