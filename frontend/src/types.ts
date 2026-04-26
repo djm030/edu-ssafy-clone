@@ -91,6 +91,8 @@ export interface LevelTierItem {
   maxLevel: number;
   current: boolean;
   progressPercent: number;
+  visualState?: 'completed' | 'active' | 'locked' | string;
+  scholarshipLabel?: string | null;
   description: string;
 }
 

@@ -99,6 +99,8 @@ public final class PriorityDtos {
             int maxLevel,
             boolean current,
             int progressPercent,
+            String visualState,
+            String scholarshipLabel,
             String description
     ) {
     }

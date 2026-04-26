@@ -493,3 +493,11 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 ### Remaining Risks
 - Full backend test status is unknown until Maven or Dockerized Maven can run in a CI/host environment with Docker pipe access.
 - Smoke write endpoints create demo records/comments/reactions against the running seeded environment; keep using disposable/local compose data for repeated runs.
+
+## Level Scholarship Visual States (2026-04-27 KST)
+- Added completed/active/locked visual states and scholarship labels to level tier payloads so Bronze/Silver roadmap cards distinguish 달성 완료, 현재 단계, 미달성 states.
+- Updated Level page UI, fallback mock data, frontend types, and backend/static smoke assertions.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test` -> PASS, 67 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

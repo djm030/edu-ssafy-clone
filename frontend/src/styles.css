@@ -840,6 +840,21 @@ h2 {
   padding: 14px;
 }
 
+
+.tier-card.completed {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.tier-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.tier-card.locked {
+  opacity: 0.78;
+}
+
 .tier-card.current {
   border-color: #2d7d68;
   box-shadow: inset 0 0 0 1px #2d7d68;

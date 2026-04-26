@@ -109,12 +109,17 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
 
 
 function TierCard({ tier }: { tier: LevelTierItem }) {
+  const visualState = tier.visualState || (tier.current ? 'active' : tier.progressPercent >= 100 ? 'completed' : 'locked');
+
   return (
-    <article className={`tier-card ${tier.current ? 'current' : ''}`}>
+    <article className={`tier-card ${tier.current ? 'current' : ''} ${visualState}`}>
       <div>
         <strong>{tier.name}</strong>
         <span>Lv.{tier.minLevel} ~ Lv.{tier.maxLevel}</span>
       </div>
+      <span className={`status-pill ${visualState === 'completed' ? 'green' : visualState === 'active' ? 'blue' : 'gray'}`}>
+        {tier.scholarshipLabel || (visualState === 'completed' ? '달성 완료' : visualState === 'active' ? '현재 단계' : '미달성')}
+      </span>
       <div className="progress-track" aria-label={`${tier.name} 단계 진행률 ${tier.progressPercent}%`}>
         <span style={{ width: `${tier.progressPercent}%` }} />
       </div>

@@ -232,7 +232,9 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("Bronze/Silver 단계")
                 .contains("tier-roadmap")
                 .contains("LevelTierItem")
-                .contains("progressPercent");
+                .contains("progressPercent")
+                .contains("visualState")
+                .contains("scholarshipLabel");
     }
 
     @Test

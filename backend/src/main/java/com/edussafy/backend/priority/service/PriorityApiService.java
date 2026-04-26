@@ -2525,7 +2525,13 @@ public class PriorityApiService {
         int span = Math.max(1, maxLevel - minLevel + 1);
         int completed = currentLevel < minLevel ? 0 : Math.min(span, currentLevel - minLevel + 1);
         int progress = current ? Math.min(100, Math.max(0, (int) Math.round((completed * 100.0) / span))) : currentLevel > maxLevel ? 100 : 0;
-        return new LevelTierItem(name, minLevel, maxLevel, current, progress, description);
+        String visualState = current ? "active" : currentLevel > maxLevel ? "completed" : "locked";
+        String scholarshipLabel = switch (visualState) {
+            case "active" -> "현재 단계";
+            case "completed" -> "달성 완료";
+            default -> "미달성";
+        };
+        return new LevelTierItem(name, minLevel, maxLevel, current, progress, visualState, scholarshipLabel, description);
     }
 
     private List<ScholarshipPointItem> scholarshipPointBreakdown(LevelSummary level, List<LevelHistoryItem> history) {

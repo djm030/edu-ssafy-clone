@@ -468,8 +468,8 @@ class PriorityApiControllerTest {
                 84,
                 800,
                 List.of(
-                        new LevelTierItem("Bronze", 1, 4, false, 100, "기초 학습 단계"),
-                        new LevelTierItem("Silver", 5, 8, true, 25, "프로젝트 실습 단계")
+                        new LevelTierItem("Bronze", 1, 4, false, 100, "completed", "달성 완료", "기초 학습 단계"),
+                        new LevelTierItem("Silver", 5, 8, true, 25, "active", "현재 단계", "프로젝트 실습 단계")
                 ),
                 List.of(new LevelHistoryItem(LocalDate.parse("2026-04-24"), 12, 4200, 85)),
                 List.of(new ScholarshipPointItem("누적 장학 포인트", 85, "현재 사용자 기준 누적 장학 포인트입니다."))
@@ -479,6 +479,8 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.detail.levelName").value("Silver Lv.5"))
                 .andExpect(jsonPath("$.detail.current.level").value(5))
+                .andExpect(jsonPath("$.detail.tiers[0].visualState").value("completed"))
+                .andExpect(jsonPath("$.detail.tiers[1].scholarshipLabel").value("현재 단계"))
                 .andExpect(jsonPath("$.detail.expPercent").value(84))
                 .andExpect(jsonPath("$.detail.expRemaining").value(800))
                 .andExpect(jsonPath("$.detail.tiers[1].name").value("Silver"))
