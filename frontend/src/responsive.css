@@ -153,6 +153,7 @@
     grid-template-columns: 1fr;
   }
 
+  .required-study-policy-grid,
   .curriculum-density-grid,
   .replay-filter-grid,
   .live-access-summary-grid,

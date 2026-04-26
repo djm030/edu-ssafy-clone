@@ -265,6 +265,24 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("curriculum-timetable-row");
     }
 
+    @Test
+    void requiredStudiesPageExposesCompletionPolicyAndExpiredStates() throws IOException {
+        String requiredStudiesPage = Files.readString(Path.of("..", "frontend", "src", "pages", "RequiredStudiesPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(requiredStudiesPage)
+                .contains("RequiredStudyPolicyPanel")
+                .contains("필수학습 이수 조건과 만료 상태")
+                .contains("RequiredStudyCompletionPolicy")
+                .contains("canCompleteRequiredStudy")
+                .contains("재학습/관리자 확인 필요")
+                .contains("진행률 100%")
+                .contains("pendingStudyId");
+        assertThat(styles)
+                .contains("required-study-policy-grid")
+                .contains("required-study-completion-policy");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {
