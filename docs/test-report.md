@@ -519,3 +519,12 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Anonymous Board Safety States (2026-04-27 KST)
+- Added DB-backed anonymous board safety summaries from `board_post_reactions` report entries so anonymous detail responses expose `normal`, `watch`, and `blinded` moderation states without exposing author identifiers.
+- Reused the existing board reaction persistence flow for `report` actions and restricted board reaction request validation to `bookmark`, `like`, or `report`.
+- Updated `/community/anonymous/:id` to show the anonymous safety policy banner, report counts, and report submission action while preserving loading/error/empty and masked-author states.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=BoardControllerTest,BoardServiceTest,FrontendRouteSmokeCoverageTest test` -> PASS, 52 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

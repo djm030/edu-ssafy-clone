@@ -5,6 +5,7 @@ import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardSafetySummary;
 import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardCommentCreateRequest;
@@ -470,23 +471,39 @@ public class BoardService {
     }
 
     private BoardPostDetail anonymousDetail(BoardPostDetail post) {
+        BoardSafetySummary safety = anonymousSafety(post.safety());
+        boolean blinded = "blinded".equals(safety.status());
         return new BoardPostDetail(
                 post.id(),
                 post.boardCode(),
                 post.category(),
-                post.title(),
-                post.content(),
+                blinded ? "신고 누적으로 블라인드 처리된 게시글입니다." : post.title(),
+                blinded ? "커뮤니티 운영 정책에 따라 블라인드 처리되어 본문을 표시하지 않습니다." : post.content(),
                 null,
                 "익명",
                 post.createdAt(),
                 post.updatedAt(),
                 post.viewCount(),
                 post.engagement(),
-                anonymousComments(post.comments()),
+                blinded ? List.of() : anonymousComments(post.comments()),
                 post.attachments(),
                 post.hasAttachment(),
-                post.isPinned()
+                post.isPinned(),
+                safety
         );
+    }
+
+    private BoardSafetySummary anonymousSafety(BoardSafetySummary safety) {
+        if (safety == null) {
+            return new BoardSafetySummary(
+                    "normal",
+                    "익명 보호",
+                    0,
+                    true,
+                    "작성자 정보는 익명으로 보호되며 신고가 누적되면 자동 블라인드됩니다."
+            );
+        }
+        return safety;
     }
 
     private List<BoardCommentItem> anonymousComments(List<BoardCommentItem> comments) {
@@ -645,7 +662,8 @@ public class BoardService {
                 comments,
                 attachments,
                 !attachments.isEmpty() || post.hasAttachment(),
-                post.isPinned()
+                post.isPinned(),
+                post.safety()
         );
     }
 }

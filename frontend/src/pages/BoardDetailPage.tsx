@@ -16,7 +16,15 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { BoardAttachmentDraft, BoardAttachmentItem, BoardCode, BoardCommentItem, BoardPostListItem, LoadState } from '../types';
+import type {
+  BoardAttachmentDraft,
+  BoardAttachmentItem,
+  BoardCode,
+  BoardCommentItem,
+  BoardPostListItem,
+  BoardSafetySummary,
+  LoadState,
+} from '../types';
 
 interface BoardDetailPageProps {
   boardCode: BoardCode;
@@ -146,6 +154,7 @@ function DetailContent({ boardCode, post, readOnly, listPath }: { boardCode: Boa
           <dd>{(currentPost.viewCount || 0).toLocaleString('ko-KR')}</dd>
         </div>
       </dl>
+      {boardCode === 'anonymous' && currentPost.safety ? <AnonymousSafetyPanel safety={currentPost.safety} /> : null}
       <div className="detail-body">{currentPost.content || '등록된 본문이 없습니다.'}</div>
       {readOnly ? (
         <section className="board-actions readonly-board-actions" aria-label="읽기 전용 안내">
@@ -199,6 +208,20 @@ function DetailContent({ boardCode, post, readOnly, listPath }: { boardCode: Boa
         <a className="ghost-button" href={listPath}>목록</a>
       </div>
     </article>
+  );
+}
+
+function AnonymousSafetyPanel({ safety }: { safety: BoardSafetySummary }) {
+  const tone = safety.status === 'blinded' ? 'red' : safety.status === 'watch' ? 'yellow' : 'blue';
+
+  return (
+    <section className="callout-card" aria-label="익명 게시판 보호 정책">
+      <div className="action-row">
+        <StatusPill tone={tone}>{safety.label}</StatusPill>
+        <span className="muted-text">신고 {safety.reportCount.toLocaleString('ko-KR')}건</span>
+      </div>
+      <p>{safety.notice || '작성자 정보는 익명으로 보호됩니다.'}</p>
+    </section>
   );
 }
 
@@ -368,7 +391,8 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
   const [submittingComment, setSubmittingComment] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
   const [submittingCommentMutation, setSubmittingCommentMutation] = useState(false);
-  const [submittingReaction, setSubmittingReaction] = useState<'bookmark' | 'like'>();
+  const [submittingReaction, setSubmittingReaction] = useState<'bookmark' | 'like' | 'report'>();
+  const [safety, setSafety] = useState(post.safety);
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [message, setMessage] = useState('댓글을 등록하면 서버에 저장됩니다.');
@@ -380,8 +404,9 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
     setReplyParentId(undefined);
     setEditingCommentId(undefined);
     setEditCommentContent('');
+    setSafety(post.safety);
     setMessage('댓글을 등록하면 서버에 저장됩니다.');
-  }, [post.id, post.comments]);
+  }, [post.id, post.comments, post.safety]);
 
   const submitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -491,6 +516,20 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
     }
   };
 
+  const reportAnonymousPost = async () => {
+    setSubmittingReaction('report');
+    setMessage('익명 게시글 신고를 접수하는 중입니다.');
+    try {
+      await createReaction(boardCode, post.id, 'report');
+      setSafety((current) => nextReportedSafety(current));
+      setMessage('익명 게시글 신고가 접수되었습니다.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmittingReaction(undefined);
+    }
+  };
+
   return (
     <section className="board-actions" aria-label="게시글 반응">
       <div className="action-row">
@@ -510,6 +549,16 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
         >
           찜 {(post.bookmarkCount || 0) + (bookmarked ? 1 : 0)}
         </button>
+        {boardCode === 'anonymous' && safety?.reportable ? (
+          <button
+            className="ghost-button danger"
+            disabled={submittingReaction === 'report'}
+            onClick={() => { void reportAnonymousPost(); }}
+            type="button"
+          >
+            신고 {safety.reportCount.toLocaleString('ko-KR')}
+          </button>
+        ) : null}
       </div>
       <form className="comment-form" onSubmit={submitComment}>
         <label className="visually-hidden" htmlFor={`comment-${post.id}`}>댓글</label>
@@ -549,6 +598,35 @@ function BoardActions({ boardCode, post }: { boardCode: BoardCode; post: BoardPo
       </section>
     </section>
   );
+}
+
+function nextReportedSafety(current?: BoardSafetySummary | null): BoardSafetySummary {
+  const reportCount = (current?.reportCount ?? 0) + 1;
+  if (reportCount >= 3) {
+    return {
+      status: 'blinded',
+      label: '블라인드',
+      reportCount,
+      reportable: true,
+      notice: '신고 누적으로 운영 정책에 따라 본문과 댓글이 숨김 처리될 수 있습니다.',
+    };
+  }
+  if (reportCount >= 2) {
+    return {
+      status: 'watch',
+      label: '신고 검토',
+      reportCount,
+      reportable: true,
+      notice: '신고가 누적되어 운영자 검토 대기 상태입니다.',
+    };
+  }
+  return {
+    status: 'normal',
+    label: '익명 보호',
+    reportCount,
+    reportable: true,
+    notice: '작성자 정보는 익명으로 보호되며 신고가 누적되면 자동 블라인드됩니다.',
+  };
 }
 
 function CommentList({

@@ -22,11 +22,58 @@ public record BoardPostDetailResponse(BoardPostDetail post) {
             List<BoardCommentItem> comments,
             List<BoardAttachmentItem> attachments,
             boolean hasAttachment,
-            boolean isPinned
+            boolean isPinned,
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            BoardSafetySummary safety
     ) {
+        public BoardPostDetail(
+                long id,
+                String boardCode,
+                CategorySummary category,
+                String title,
+                String content,
+                Long authorUserId,
+                String authorName,
+                OffsetDateTime createdAt,
+                OffsetDateTime updatedAt,
+                int viewCount,
+                EngagementSummary engagement,
+                List<BoardCommentItem> comments,
+                List<BoardAttachmentItem> attachments,
+                boolean hasAttachment,
+                boolean isPinned
+        ) {
+            this(
+                    id,
+                    boardCode,
+                    category,
+                    title,
+                    content,
+                    authorUserId,
+                    authorName,
+                    createdAt,
+                    updatedAt,
+                    viewCount,
+                    engagement,
+                    comments,
+                    attachments,
+                    hasAttachment,
+                    isPinned,
+                    null
+            );
+        }
     }
 
     public record EngagementSummary(long commentCount, long reactionCount, long bookmarkCount) {
+    }
+
+    public record BoardSafetySummary(
+            String status,
+            String label,
+            long reportCount,
+            boolean reportable,
+            String notice
+    ) {
     }
 
     public record BoardCommentItem(

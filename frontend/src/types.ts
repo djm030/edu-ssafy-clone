@@ -694,6 +694,15 @@ export interface BoardPostListItem {
   authorUserId?: number | null;
   comments?: BoardCommentItem[];
   attachments?: BoardAttachmentItem[];
+  safety?: BoardSafetySummary | null;
+}
+
+export interface BoardSafetySummary {
+  status: 'normal' | 'watch' | 'blinded' | string;
+  label: string;
+  reportCount: number;
+  reportable: boolean;
+  notice?: string | null;
 }
 
 export interface BoardCommentItem {

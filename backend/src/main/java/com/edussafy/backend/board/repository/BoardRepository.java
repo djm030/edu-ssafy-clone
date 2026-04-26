@@ -3,6 +3,7 @@ package com.edussafy.backend.board.repository;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardSafetySummary;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.CategoryItem;
@@ -133,6 +134,7 @@ public class BoardRepository {
                     COALESCE(comments.comment_count, 0) AS comment_count,
                     COALESCE(reactions.reaction_count, 0) AS reaction_count,
                     COALESCE(reactions.bookmark_count, 0) AS bookmark_count,
+                    COALESCE(reports.report_count, 0) AS report_count,
                     COALESCE(attachments.attachment_count, 0) AS attachment_count
                 FROM board_posts p
                 JOIN boards b ON b.board_id = p.board_id
@@ -151,6 +153,12 @@ public class BoardRepository {
                     FROM board_post_reactions
                     GROUP BY board_post_id
                 ) reactions ON reactions.board_post_id = p.board_post_id
+                LEFT JOIN (
+                    SELECT board_post_id, COUNT(*) AS report_count
+                    FROM board_post_reactions
+                    WHERE LOWER(reaction_type_code) = 'report'
+                    GROUP BY board_post_id
+                ) reports ON reports.board_post_id = p.board_post_id
                 LEFT JOIN (
                     SELECT board_post_id, COUNT(*) AS attachment_count
                     FROM board_post_attachments
@@ -184,6 +192,7 @@ public class BoardRepository {
                     COALESCE(comments.comment_count, 0) AS comment_count,
                     COALESCE(reactions.reaction_count, 0) AS reaction_count,
                     COALESCE(reactions.bookmark_count, 0) AS bookmark_count,
+                    COALESCE(reports.report_count, 0) AS report_count,
                     COALESCE(attachments.attachment_count, 0) AS attachment_count
                 FROM board_posts p
                 JOIN boards b ON b.board_id = p.board_id
@@ -202,6 +211,12 @@ public class BoardRepository {
                     FROM board_post_reactions
                     GROUP BY board_post_id
                 ) reactions ON reactions.board_post_id = p.board_post_id
+                LEFT JOIN (
+                    SELECT board_post_id, COUNT(*) AS report_count
+                    FROM board_post_reactions
+                    WHERE LOWER(reaction_type_code) = 'report'
+                    GROUP BY board_post_id
+                ) reports ON reports.board_post_id = p.board_post_id
                 LEFT JOIN (
                     SELECT board_post_id, COUNT(*) AS attachment_count
                     FROM board_post_attachments
@@ -520,7 +535,39 @@ public class BoardRepository {
                 List.of(),
                 List.of(),
                 rs.getLong("attachment_count") > 0,
-                rs.getBoolean("notice_yn")
+                rs.getBoolean("notice_yn"),
+                anonymousSafety(rs.getString("board_code"), rs.getLong("report_count"))
+        );
+    }
+
+    private BoardSafetySummary anonymousSafety(String boardCode, long reportCount) {
+        if (!"anonymous".equalsIgnoreCase(boardCode)) {
+            return null;
+        }
+        if (reportCount >= 3) {
+            return new BoardSafetySummary(
+                    "blinded",
+                    "블라인드",
+                    reportCount,
+                    true,
+                    "신고 누적으로 운영 정책에 따라 본문과 댓글이 숨김 처리되었습니다."
+            );
+        }
+        if (reportCount >= 2) {
+            return new BoardSafetySummary(
+                    "watch",
+                    "신고 검토",
+                    reportCount,
+                    true,
+                    "신고가 누적되어 운영자 검토 대기 상태입니다."
+            );
+        }
+        return new BoardSafetySummary(
+                "normal",
+                "익명 보호",
+                reportCount,
+                true,
+                "작성자 정보는 익명으로 보호되며 신고가 누적되면 자동 블라인드됩니다."
         );
     }
 

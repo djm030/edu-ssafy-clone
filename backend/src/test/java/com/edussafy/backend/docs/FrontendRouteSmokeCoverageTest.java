@@ -249,6 +249,26 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("disabledReason?: string | null");
     }
 
+    @Test
+    void anonymousBoardDetailExposesSafetyAndReportStates() throws IOException {
+        String boardDetail = Files.readString(Path.of("..", "frontend", "src", "pages", "BoardDetailPage.tsx"));
+        String boardApi = Files.readString(Path.of("..", "frontend", "src", "api", "boards.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(boardDetail)
+                .contains("AnonymousSafetyPanel")
+                .contains("익명 게시글 신고가 접수되었습니다.")
+                .contains("nextReportedSafety")
+                .contains("createReaction(boardCode, post.id, 'report')")
+                .contains("신고 {safety.reportCount.toLocaleString('ko-KR')}");
+        assertThat(boardApi)
+                .contains("type: 'bookmark' | 'like' | 'report'");
+        assertThat(types)
+                .contains("BoardSafetySummary")
+                .contains("reportCount: number")
+                .contains("reportable: boolean");
+    }
+
 
 
     @Test

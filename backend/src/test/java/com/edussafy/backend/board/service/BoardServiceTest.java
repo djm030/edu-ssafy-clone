@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardCommentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardSafetySummary;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListItem;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateRequest;
@@ -233,6 +234,65 @@ class BoardServiceTest {
         assertThat(response.comments()).hasSize(1);
         assertThat(response.comments().getFirst().authorUserId()).isNull();
         assertThat(response.comments().getFirst().authorName()).isEqualTo("익명");
+    }
+
+    @Test
+    void anonymousPostDetailExposesWatchSafetyFromReportCount() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detailWithSafety(
+                73L,
+                "anonymous",
+                "검토 대상 질문",
+                "아직 표시되는 본문",
+                7L,
+                "Real Student",
+                new BoardSafetySummary("watch", "신고 검토", 2, true, "신고가 누적되어 운영자 검토 대기 상태입니다."),
+                List.of()
+        );
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.findPostDetail(2L, 73L)).willReturn(Optional.of(post));
+        given(repository.findComments(73L)).willReturn(List.of());
+        given(repository.findAttachments(73L)).willReturn(List.of());
+        BoardService service = new BoardService(repository);
+
+        BoardPostDetail response = service.getPost("anonymous", 73L).post();
+
+        assertThat(response.authorUserId()).isNull();
+        assertThat(response.authorName()).isEqualTo("익명");
+        assertThat(response.title()).isEqualTo("검토 대상 질문");
+        assertThat(response.content()).isEqualTo("아직 표시되는 본문");
+        assertThat(response.safety()).isNotNull();
+        assertThat(response.safety().status()).isEqualTo("watch");
+        assertThat(response.safety().reportCount()).isEqualTo(2);
+    }
+
+    @Test
+    void anonymousPostDetailBlindsBodyAndCommentsAfterReportThreshold() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detailWithSafety(
+                74L,
+                "anonymous",
+                "원문 제목",
+                "원문 본문",
+                7L,
+                "Real Student",
+                new BoardSafetySummary("blinded", "블라인드", 3, true, "신고 누적으로 숨김 처리되었습니다."),
+                List.of(new BoardCommentItem(81L, 74L, null, "원문 댓글", 8L, "Classmate", OffsetDateTime.now(), List.of()))
+        );
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.findPostDetail(2L, 74L)).willReturn(Optional.of(post));
+        given(repository.findComments(74L)).willReturn(post.comments());
+        given(repository.findAttachments(74L)).willReturn(List.of());
+        BoardService service = new BoardService(repository);
+
+        BoardPostDetail response = service.getPost("anonymous", 74L).post();
+
+        assertThat(response.authorUserId()).isNull();
+        assertThat(response.title()).contains("블라인드");
+        assertThat(response.content()).contains("본문을 표시하지 않습니다");
+        assertThat(response.comments()).isEmpty();
+        assertThat(response.safety().status()).isEqualTo("blinded");
+        assertThat(response.safety().reportCount()).isEqualTo(3);
     }
 
     @Test
@@ -531,6 +591,23 @@ class BoardServiceTest {
         verify(repository).deleteReaction(10L, 7L, "like");
     }
 
+    @Test
+    void persistsAnonymousBoardReportReaction() {
+        BoardRepository repository = mock(BoardRepository.class);
+        BoardPostDetail post = detail(75L, "anonymous", "Secret", "Body", 7L, "Demo Student", List.of());
+        given(repository.findBoardId("anonymous")).willReturn(Optional.of(2L));
+        given(repository.findPostDetail(2L, 75L)).willReturn(Optional.of(post));
+        given(repository.findDefaultAuthorUserId()).willReturn(Optional.of(8L));
+        BoardService service = new BoardService(repository);
+
+        var created = service.createReaction("anonymous", 75L, new BoardReactionCreateRequest(" Report "));
+
+        assertThat(created.item().postId()).isEqualTo(75L);
+        assertThat(created.item().type()).isEqualTo("report");
+        assertThat(created.item().active()).isTrue();
+        verify(repository).createReaction(75L, 8L, "report");
+    }
+
     private BoardPostDetail detail(long id, String title, List<BoardCommentItem> comments) {
         return detail(id, title, "Body", comments);
     }
@@ -564,6 +641,36 @@ class BoardServiceTest {
                 List.of(),
                 false,
                 false
+        );
+    }
+
+    private BoardPostDetail detailWithSafety(
+            long id,
+            String boardCode,
+            String title,
+            String content,
+            long authorUserId,
+            String authorName,
+            BoardSafetySummary safety,
+            List<BoardCommentItem> comments
+    ) {
+        return new BoardPostDetail(
+                id,
+                boardCode,
+                new CategorySummary("anonymous".equals(boardCode) ? 11L : 4L, "General"),
+                title,
+                content,
+                authorUserId,
+                authorName,
+                OffsetDateTime.now(),
+                OffsetDateTime.now(),
+                0,
+                new EngagementSummary(comments.size(), 0, 0),
+                comments,
+                List.of(),
+                false,
+                false,
+                safety
         );
     }
 }

@@ -17,6 +17,7 @@ import com.edussafy.backend.board.dto.BoardCategoryListResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardAttachmentItem;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardPostDetail;
+import com.edussafy.backend.board.dto.BoardPostDetailResponse.BoardSafetySummary;
 import com.edussafy.backend.board.dto.BoardPostDetailResponse.EngagementSummary;
 import com.edussafy.backend.board.dto.BoardPostListResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardAttachmentCreateResponse;
@@ -183,7 +184,14 @@ class BoardControllerTest {
                 )),
                 List.of(),
                 false,
-                false
+                false,
+                new BoardSafetySummary(
+                        "watch",
+                        "신고 검토",
+                        2,
+                        true,
+                        "신고가 누적되어 운영자 검토 대기 상태입니다."
+                )
         )));
 
         mockMvc.perform(get("/api/boards/anonymous/posts/70"))
@@ -191,6 +199,8 @@ class BoardControllerTest {
                 .andExpect(jsonPath("$.post.id").value(70))
                 .andExpect(jsonPath("$.post.authorName").value("익명"))
                 .andExpect(jsonPath("$.post.authorUserId").doesNotExist())
+                .andExpect(jsonPath("$.post.safety.status").value("watch"))
+                .andExpect(jsonPath("$.post.safety.reportCount").value(2))
                 .andExpect(jsonPath("$.post.comments[0].authorName").value("익명"))
                 .andExpect(jsonPath("$.post.comments[0].authorUserId").doesNotExist());
     }

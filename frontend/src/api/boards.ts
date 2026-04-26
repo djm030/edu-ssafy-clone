@@ -260,7 +260,7 @@ export function deleteComment(
 export function createReaction(
   boardCode: BoardCode,
   postId: number,
-  type: 'bookmark' | 'like',
+  type: 'bookmark' | 'like' | 'report',
 ): Promise<BoardReactionResponse['item']> {
   return fetchJson<BoardReactionResponse>(`/api/boards/${boardCode}/posts/${postId}/reactions`, {
     body: JSON.stringify({ type }),
@@ -273,7 +273,7 @@ export function createReaction(
 export function deleteReaction(
   boardCode: BoardCode,
   postId: number,
-  type: 'bookmark' | 'like',
+  type: 'bookmark' | 'like' | 'report',
 ): Promise<BoardReactionResponse['item']> {
   return fetchJson<BoardReactionResponse>(`/api/boards/${boardCode}/posts/${postId}/reactions/${type}`, {
     fallback: () => ({ item: { postId, type, active: false, demo: true } }),

@@ -63,7 +63,12 @@ public final class BoardWriteDtos {
     public record BoardCommentDeletedItem(long id, long postId, boolean deleted, boolean demo) {
     }
 
-    public record BoardReactionCreateRequest(@NotBlank @Size(max = 50) String type) {
+    public record BoardReactionCreateRequest(
+            @NotBlank
+            @Size(max = 50)
+            @Pattern(regexp = "(?i)bookmark|like|report", message = "type must be bookmark, like, or report")
+            String type
+    ) {
     }
 
     public record BoardReactionCreateResponse(BoardReactionCreatedItem item) {
