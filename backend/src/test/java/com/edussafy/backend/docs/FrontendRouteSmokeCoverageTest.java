@@ -248,6 +248,23 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("lastWatchedAt?: string | null");
     }
 
+    @Test
+    void curriculumPageExposesDenseTimetableAndMeetingMaterialStates() throws IOException {
+        String curriculumPage = Files.readString(Path.of("..", "frontend", "src", "pages", "CurriculumPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(curriculumPage)
+                .contains("CurriculumSessionDensityPanel")
+                .contains("커리큘럼 오전 오후 과제 교재 Meeting 요약")
+                .contains("CurriculumMiniSchedule")
+                .contains("curriculum-timetable")
+                .contains("교재/Meeting 추후 공지")
+                .contains("sessionSlotLabel");
+        assertThat(styles)
+                .contains("curriculum-density-grid")
+                .contains("curriculum-timetable-row");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {

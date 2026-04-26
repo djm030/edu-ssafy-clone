@@ -153,6 +153,7 @@
     grid-template-columns: 1fr;
   }
 
+  .curriculum-density-grid,
   .replay-filter-grid,
   .live-access-summary-grid,
   .ebook-readiness-grid,

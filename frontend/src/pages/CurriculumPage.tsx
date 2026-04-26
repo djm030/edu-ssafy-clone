@@ -98,39 +98,80 @@ function CurriculumPage({ weekId }: CurriculumPageProps) {
       {loadState === 'empty' ? <DataState title="조건에 맞는 커리큘럼이 없습니다." message="학기, 트랙, 상태 필터를 조정해 보세요." /> : null}
       {loadState === 'loaded' && detail ? <CurriculumDetail item={detail} /> : null}
       {loadState === 'loaded' && !detail ? (
-        <div className="card-list">
-          {items.map((item) => {
-            const statusInfo = statusMap[item.status];
-            return (
-              <article className="list-card curriculum-card" key={item.id}>
-                <div>
-                  <p className="eyebrow">{item.semester || '학기 미지정'} · {item.track || '공통'} · {item.week}주차</p>
-                  <h2>{item.title}</h2>
-                  <p>{item.period}</p>
-                  <p className="muted">총 {item.sessionCount || item.sessions?.length || item.lessons.length}개 세션</p>
-                  <ul>
-                    {(item.sessions?.length ? item.sessions : []).map((session) => (
-                      <li key={session.id}>
-                        {[session.date, session.period, session.title, session.instructor, session.location, session.sessionType]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </li>
-                    ))}
-                    {!item.sessions?.length
-                      ? item.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)
-                      : null}
-                  </ul>
-                  <div className="action-row">
-                    <a className="text-link" href={`/learning/curriculum/${item.id}`}>주차 상세 보기</a>
+        <>
+          <CurriculumSessionDensityPanel items={items} />
+          <div className="card-list">
+            {items.map((item) => {
+              const statusInfo = statusMap[item.status];
+              return (
+                <article className="list-card curriculum-card" key={item.id}>
+                  <div>
+                    <p className="eyebrow">{item.semester || '학기 미지정'} · {item.track || '공통'} · {item.week}주차</p>
+                    <h2>{item.title}</h2>
+                    <p>{item.period}</p>
+                    <p className="muted">총 {item.sessionCount || item.sessions?.length || item.lessons.length}개 세션</p>
+                    <CurriculumMiniSchedule item={item} />
+                    <div className="action-row">
+                      <a className="text-link" href={`/learning/curriculum/${item.id}`}>주차 상세 보기</a>
+                    </div>
                   </div>
-                </div>
-                <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-              </article>
-            );
-          })}
-        </div>
+                  <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+                </article>
+              );
+            })}
+          </div>
+        </>
       ) : null}
     </section>
+  );
+}
+
+function CurriculumSessionDensityPanel({ items }: { items: CurriculumWeek[] }) {
+  const sessions = items.flatMap((item) => normalizedSessions(item));
+  const morningCount = sessions.filter((session) => sessionSlotLabel(session) === '오전').length;
+  const afternoonCount = sessions.filter((session) => sessionSlotLabel(session) === '오후').length;
+  const assignmentCount = sessions.filter((session) => session.sessionType?.toLowerCase().includes('assignment') || session.title.includes('과제')).length;
+
+  return (
+    <section className="panel curriculum-density-panel" aria-label="커리큘럼 오전 오후 과제 교재 Meeting 요약">
+      <div className="section-heading compact-heading">
+        <div>
+          <p>WEEKLY SCHEDULE</p>
+          <h2>시간표 밀도 요약</h2>
+        </div>
+        <span>{items.length}개 주차 · {sessions.length}개 세션</span>
+      </div>
+      <div className="curriculum-density-grid">
+        <MetricCard label="오전 세션" value={`${morningCount}개`} />
+        <MetricCard label="오후 세션" value={`${afternoonCount}개`} />
+        <MetricCard label="과제/실습" value={`${assignmentCount}개`} />
+        <MetricCard label="교재/Meeting" value="상세에서 확인" />
+      </div>
+    </section>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="curriculum-density-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function CurriculumMiniSchedule({ item }: { item: CurriculumWeek }) {
+  const sessions = normalizedSessions(item).slice(0, 4);
+  return (
+    <div className="curriculum-mini-schedule" aria-label={`${item.week}주차 오전 오후 시간표`}>
+      {sessions.map((session) => (
+        <div className="curriculum-time-block" key={session.id}>
+          <strong>{sessionSlotLabel(session)}</strong>
+          <span>{[session.period, session.title].filter(Boolean).join(' · ')}</span>
+          <small>{[session.instructor, session.location || 'Meeting/강의실 추후 공지'].filter(Boolean).join(' · ')}</small>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -185,17 +226,22 @@ function CurriculumDetail({ item }: CurriculumDetailProps) {
 
       <section aria-label="일자별 시간표" className="detail-section">
         <h3>일자별 시간표</h3>
-        <div className="card-list compact-list">
+        <div className="curriculum-timetable" role="table" aria-label="커리큘럼 상세 시간표">
+          <div className="curriculum-timetable-row table-head" role="row">
+            <span role="columnheader">일자</span>
+            <span role="columnheader">구분</span>
+            <span role="columnheader">시간/제목</span>
+            <span role="columnheader">강사/장소</span>
+            <span role="columnheader">교재/Meeting</span>
+          </div>
           {sessions.map((session) => (
-            <article className="list-card curriculum-session-card" key={session.id}>
-              <div>
-                <p className="eyebrow">{[session.date, session.period, session.sessionType].filter(Boolean).join(' · ')}</p>
-                <h4>{session.title}</h4>
-                <p className="muted">
-                  {[session.instructor, session.location].filter(Boolean).join(' · ') || '담당자/장소는 추후 안내됩니다.'}
-                </p>
-              </div>
-            </article>
+            <div className="curriculum-timetable-row" key={session.id} role="row">
+              <span role="cell">{session.date || item.period}</span>
+              <strong role="cell">{sessionSlotLabel(session)}</strong>
+              <span role="cell">{[session.period, session.title].filter(Boolean).join(' · ')}</span>
+              <span role="cell">{[session.instructor, session.location].filter(Boolean).join(' · ') || '담당자/장소는 추후 안내됩니다.'}</span>
+              <span role="cell">{session.sessionType || '교재/Meeting 추후 공지'}</span>
+            </div>
           ))}
         </div>
       </section>
@@ -205,6 +251,28 @@ function CurriculumDetail({ item }: CurriculumDetailProps) {
       </div>
     </article>
   );
+}
+
+function normalizedSessions(item: CurriculumWeek) {
+  return item.sessions?.length
+    ? item.sessions
+    : item.lessons.map((lesson, index) => ({
+      id: index + 1,
+      title: lesson,
+      date: item.period,
+      period: index === 0 ? '09:00-12:00' : '13:00-18:00',
+      instructor: '',
+      location: '',
+      sessionType: 'LESSON',
+    }));
+}
+
+function sessionSlotLabel(session: { period?: string | null; sessionType?: string | null; title: string }) {
+  const text = `${session.period || ''} ${session.sessionType || ''} ${session.title}`.toLowerCase();
+  if (text.includes('assignment') || text.includes('과제')) return '과제';
+  if (text.includes('pm') || text.includes('오후') || /1[3-9]:|2[0-3]:/.test(text)) return '오후';
+  if (text.includes('am') || text.includes('오전') || /0[8-9]:|1[0-2]:/.test(text)) return '오전';
+  return session.sessionType || '세션';
 }
 
 export default CurriculumPage;
