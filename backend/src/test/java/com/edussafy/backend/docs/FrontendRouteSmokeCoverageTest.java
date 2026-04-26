@@ -23,6 +23,8 @@ class FrontendRouteSmokeCoverageTest {
             "/profile/edit",
             "/mycampus/attendance",
             "/mycampus/attendance/appeals/new",
+            "/mycampus/elearning",
+            "/mycampus/elearning/1",
             "/community/free",
             "/community/free/1",
             "/community/free/write",
@@ -62,6 +64,8 @@ class FrontendRouteSmokeCoverageTest {
 
         assertThat(app).contains("if (path === '/login')");
         assertThat(app).contains("if (path === '/ops/readiness')");
+        assertThat(app).contains("if (path === '/mycampus/elearning')");
+        assertThat(app).contains("match(/^\\/mycampus\\/elearning\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/learning\\/materials\\/(\\d+)\\/viewer$/)");
         assertThat(app).contains("match(/^\\/quest\\/(\\d+)\\/submit$/)");
         assertThat(app).contains("match(/^\\/survey\\/(\\d+)\\/respond$/)");
@@ -80,6 +84,7 @@ class FrontendRouteSmokeCoverageTest {
                 "survey", Path.of("..", "frontend", "src", "pages", "SurveyPage.tsx"),
                 "notifications", Path.of("..", "frontend", "src", "pages", "NotificationsPage.tsx"),
                 "learning", Path.of("..", "frontend", "src", "pages", "MaterialsPage.tsx"),
+                "elearning", Path.of("..", "frontend", "src", "pages", "ElearningPage.tsx"),
                 "quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx"),
                 "support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx")
         );

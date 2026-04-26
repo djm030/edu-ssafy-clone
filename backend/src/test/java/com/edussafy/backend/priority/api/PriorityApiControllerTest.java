@@ -29,6 +29,13 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
@@ -110,6 +117,7 @@ import org.springframework.web.context.WebApplicationContext;
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
+        ElearningController.class,
         QuestSurveyController.class,
         SupportController.class,
         CommunityController.class,
@@ -495,6 +503,62 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/learning/replays"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void elearningProgressEndpointsReturnUserScopedShapes() throws Exception {
+        PageMeta page = new PageMeta(1, 10, 1, 1);
+        ElearningProgressItem item = new ElearningProgressItem(
+                10L,
+                "Java 객체지향 이러닝",
+                "Java",
+                null,
+                "SSAFY e-Learning",
+                "객체지향 복습",
+                50,
+                3,
+                6,
+                14400L,
+                "인터페이스 설계",
+                OffsetDateTime.parse("2026-04-25T10:15:00+09:00"),
+                "in_progress",
+                "/mycampus/elearning/10"
+        );
+        ElearningProgressDetail detail = new ElearningProgressDetail(
+                10L,
+                "Java 객체지향 이러닝",
+                "Java",
+                null,
+                "SSAFY e-Learning",
+                "객체지향 복습",
+                50,
+                3,
+                6,
+                14400L,
+                "인터페이스 설계",
+                OffsetDateTime.parse("2026-04-25T10:15:00+09:00"),
+                "in_progress",
+                "/mycampus/elearning/10",
+                List.of(new ElearningLessonItem(100L, 1, "클래스와 객체", 2400L, true, OffsetDateTime.parse("2026-04-25T10:00:00+09:00")))
+        );
+        given(priorityApiService.elearningInProgress(eq("in_progress"), eq("java"), eq(1), eq(10)))
+                .willReturn(new ElearningProgressResponse(List.of(item), page));
+        given(priorityApiService.elearningProgressDetail(10L))
+                .willReturn(new ElearningProgressDetailResponse(detail));
+        given(priorityApiService.resumeElearning(10L))
+                .willReturn(new ElearningResumeResponse(new ElearningResumeItem(10L, "/mycampus/elearning/10", OffsetDateTime.parse("2026-04-25T10:20:00+09:00"), "in_progress")));
+
+        mockMvc.perform(get("/api/elearning/in-progress?status=in_progress&keyword=java"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].courseId").value(10))
+                .andExpect(jsonPath("$.items[0].progressPercent").value(50))
+                .andExpect(jsonPath("$.page.totalItems").value(1));
+        mockMvc.perform(get("/api/elearning/in-progress/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.lessons[0].completed").value(true));
+        mockMvc.perform(post("/api/elearning/in-progress/10/resume"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.resumeUrl").value("/mycampus/elearning/10"));
     }
 
     @Test

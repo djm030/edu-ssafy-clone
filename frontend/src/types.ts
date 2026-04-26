@@ -153,6 +153,47 @@ export interface ReplayItem {
   watched: boolean;
 }
 
+export type ElearningProgressStatus = 'not_started' | 'in_progress' | 'completed';
+
+export interface ElearningProgressItem {
+  courseId: number;
+  title: string;
+  category?: string | null;
+  thumbnailUrl?: string | null;
+  provider?: string | null;
+  description?: string | null;
+  progressPercent: number;
+  completedLessons: number;
+  totalLessons: number;
+  totalDurationSeconds: number;
+  lastLessonTitle?: string | null;
+  lastLearningAt?: string | null;
+  status: ElearningProgressStatus;
+  resumeUrl?: string | null;
+}
+
+export interface ElearningLessonItem {
+  lessonId: number;
+  lessonNo: number;
+  title: string;
+  durationSeconds: number;
+  completed: boolean;
+  completedAt?: string | null;
+}
+
+export interface ElearningProgressDetail extends ElearningProgressItem {
+  lessons: ElearningLessonItem[];
+}
+
+export interface ElearningResumeResult {
+  item: {
+    courseId: number;
+    resumeUrl?: string | null;
+    resumedAt?: string | null;
+    status: ElearningProgressStatus;
+  };
+}
+
 export interface Classmate {
   id: number;
   name: string;

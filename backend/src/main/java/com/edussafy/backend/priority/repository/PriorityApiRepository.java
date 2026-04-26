@@ -4,6 +4,9 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
@@ -527,6 +530,144 @@ public class PriorityApiRepository {
                 .list();
     }
 
+    public long countElearningProgress(long userId, String status, String keyword) {
+        SqlParts parts = elearningProgressWhere(userId, status, keyword);
+        return jdbcClient.sql("""
+                SELECT COUNT(*)
+                FROM learner_elearning_progress lep
+                JOIN elearning_courses ec ON ec.elearning_course_id = lep.elearning_course_id
+                """ + parts.whereClause())
+                .params(parts.params())
+                .query(Long.class)
+                .single();
+    }
+
+    public List<ElearningProgressItem> findElearningProgress(
+            long userId,
+            String status,
+            String keyword,
+            int limit,
+            int offset
+    ) {
+        SqlParts parts = elearningProgressWhere(userId, status, keyword);
+        return jdbcClient.sql("""
+                SELECT
+                    ec.elearning_course_id,
+                    ec.title,
+                    ec.category,
+                    ec.thumbnail_url,
+                    ec.provider,
+                    ec.description,
+                    lep.progress_percent,
+                    lep.completed_lessons,
+                    ec.total_lessons,
+                    ec.total_duration_seconds,
+                    lep.last_lesson_title,
+                    lep.last_learning_at,
+                    lep.status_code,
+                    lep.resume_url
+                FROM learner_elearning_progress lep
+                JOIN elearning_courses ec ON ec.elearning_course_id = lep.elearning_course_id
+                """ + parts.whereClause() + """
+                ORDER BY COALESCE(lep.last_learning_at, lep.updated_at, lep.created_at) DESC, ec.elearning_course_id DESC
+                LIMIT :limit OFFSET :offset
+                """)
+                .params(parts.params())
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapElearningProgress)
+                .list();
+    }
+
+    public Optional<ElearningProgressDetail> findElearningProgressDetail(long userId, long courseId) {
+        return jdbcClient.sql("""
+                SELECT
+                    ec.elearning_course_id,
+                    ec.title,
+                    ec.category,
+                    ec.thumbnail_url,
+                    ec.provider,
+                    ec.description,
+                    lep.progress_percent,
+                    lep.completed_lessons,
+                    ec.total_lessons,
+                    ec.total_duration_seconds,
+                    lep.last_lesson_title,
+                    lep.last_learning_at,
+                    lep.status_code,
+                    lep.resume_url
+                FROM learner_elearning_progress lep
+                JOIN elearning_courses ec ON ec.elearning_course_id = lep.elearning_course_id
+                WHERE lep.user_id = :userId
+                  AND lep.elearning_course_id = :courseId
+                  AND ec.active_yn = TRUE
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("courseId", courseId)
+                .query((rs, rowNum) -> new ElearningProgressDetail(
+                        rs.getLong("elearning_course_id"),
+                        rs.getString("title"),
+                        rs.getString("category"),
+                        rs.getString("thumbnail_url"),
+                        rs.getString("provider"),
+                        rs.getString("description"),
+                        rs.getInt("progress_percent"),
+                        rs.getInt("completed_lessons"),
+                        rs.getInt("total_lessons"),
+                        rs.getLong("total_duration_seconds"),
+                        rs.getString("last_lesson_title"),
+                        toOffset(rs.getTimestamp("last_learning_at")),
+                        rs.getString("status_code"),
+                        rs.getString("resume_url"),
+                        List.of()
+                ))
+                .optional();
+    }
+
+    public List<ElearningLessonItem> findElearningLessons(long userId, long courseId) {
+        return jdbcClient.sql("""
+                SELECT
+                    el.elearning_lesson_id,
+                    el.lesson_no,
+                    el.title,
+                    el.duration_seconds,
+                    CASE WHEN lelp.completed_at IS NULL THEN FALSE ELSE TRUE END AS completed,
+                    lelp.completed_at
+                FROM elearning_lessons el
+                LEFT JOIN learner_elearning_lesson_progress lelp
+                    ON lelp.elearning_lesson_id = el.elearning_lesson_id
+                   AND lelp.user_id = :userId
+                WHERE el.elearning_course_id = :courseId
+                ORDER BY el.lesson_no ASC, el.elearning_lesson_id ASC
+                """)
+                .param("userId", userId)
+                .param("courseId", courseId)
+                .query((rs, rowNum) -> new ElearningLessonItem(
+                        rs.getLong("elearning_lesson_id"),
+                        rs.getInt("lesson_no"),
+                        rs.getString("title"),
+                        rs.getLong("duration_seconds"),
+                        rs.getBoolean("completed"),
+                        toOffset(rs.getTimestamp("completed_at"))
+                ))
+                .list();
+    }
+
+    public int touchElearningResume(long userId, long courseId) {
+        return jdbcClient.sql("""
+                UPDATE learner_elearning_progress
+                SET last_learning_at = CURRENT_TIMESTAMP,
+                    status_code = CASE WHEN status_code = 'not_started' THEN 'in_progress' ELSE status_code END,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = :userId
+                  AND elearning_course_id = :courseId
+                """)
+                .param("userId", userId)
+                .param("courseId", courseId)
+                .update();
+    }
+
     public long countMaterials(long userId, String keyword, String type) {
         SqlParts parts = materialWhere(keyword, type);
         return jdbcClient.sql("SELECT COUNT(*) FROM learning_materials lm " + parts.whereClause())
@@ -747,6 +888,45 @@ public class PriorityApiRepository {
 
     private SqlParts attendanceWhere(long userId, LocalDate dateFrom, LocalDate dateTo, String status) {
         return attendanceWhere(null, userId, dateFrom, dateTo, status);
+    }
+
+    private SqlParts elearningProgressWhere(long userId, String status, String keyword) {
+        StringBuilder where = new StringBuilder("WHERE lep.user_id = :userId AND ec.active_yn = TRUE");
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("userId", userId);
+        if (StringUtils.hasText(status)) {
+            where.append(" AND LOWER(lep.status_code) = :status");
+            params.put("status", status.trim().toLowerCase());
+        }
+        if (StringUtils.hasText(keyword)) {
+            where.append("""
+                     AND (LOWER(ec.title) LIKE :keyword
+                       OR LOWER(ec.category) LIKE :keyword
+                       OR LOWER(ec.provider) LIKE :keyword
+                       OR LOWER(COALESCE(lep.last_lesson_title, '')) LIKE :keyword)
+                    """);
+            params.put("keyword", "%" + keyword.trim().toLowerCase() + "%");
+        }
+        return new SqlParts(" " + where, params);
+    }
+
+    private ElearningProgressItem mapElearningProgress(ResultSet rs, int rowNum) throws SQLException {
+        return new ElearningProgressItem(
+                rs.getLong("elearning_course_id"),
+                rs.getString("title"),
+                rs.getString("category"),
+                rs.getString("thumbnail_url"),
+                rs.getString("provider"),
+                rs.getString("description"),
+                rs.getInt("progress_percent"),
+                rs.getInt("completed_lessons"),
+                rs.getInt("total_lessons"),
+                rs.getLong("total_duration_seconds"),
+                rs.getString("last_lesson_title"),
+                toOffset(rs.getTimestamp("last_learning_at")),
+                rs.getString("status_code"),
+                rs.getString("resume_url")
+        );
     }
 
     private SqlParts attendanceWhere(String tableAlias, long userId, LocalDate dateFrom, LocalDate dateTo, String status) {

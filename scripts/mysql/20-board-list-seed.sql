@@ -207,6 +207,81 @@ WHERE content_external_id IN (
   'material-priority1-community-link'
 );
 
+INSERT INTO elearning_courses (content_scope_id, course_external_id, title, category, thumbnail_url, provider, description, total_lessons, total_duration_seconds, active_yn)
+VALUES
+  (@class_scope_id, 'elearning-java-oop', 'Java 객체지향 이러닝', 'Java', '/assets/elearning/java-oop.png', 'SSAFY e-Learning', '객체지향 핵심 개념을 복습하는 온라인 과정입니다.', 6, 14400, TRUE),
+  (@class_scope_id, 'elearning-spring-rest', 'Spring REST API 이러닝', 'Backend', '/assets/elearning/spring-rest.png', 'SSAFY e-Learning', 'Spring Boot 기반 REST API 설계를 실습합니다.', 5, 10800, TRUE)
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  category = VALUES(category),
+  thumbnail_url = VALUES(thumbnail_url),
+  provider = VALUES(provider),
+  description = VALUES(description),
+  total_lessons = VALUES(total_lessons),
+  total_duration_seconds = VALUES(total_duration_seconds),
+  active_yn = VALUES(active_yn);
+
+SET @oop_course_id := (SELECT elearning_course_id FROM elearning_courses WHERE course_external_id = 'elearning-java-oop' LIMIT 1);
+SET @rest_course_id := (SELECT elearning_course_id FROM elearning_courses WHERE course_external_id = 'elearning-spring-rest' LIMIT 1);
+
+INSERT INTO elearning_lessons (elearning_course_id, lesson_no, title, duration_seconds)
+SELECT @oop_course_id, seed.lesson_no, seed.title, seed.duration_seconds
+FROM (
+  SELECT 1 AS lesson_no, '클래스와 객체', 2400 AS duration_seconds
+  UNION ALL SELECT 2, '상속과 다형성', 2400
+  UNION ALL SELECT 3, '인터페이스 설계', 2400
+  UNION ALL SELECT 4, '예외 처리 전략', 2400
+  UNION ALL SELECT 5, '컬렉션 활용', 2400
+  UNION ALL SELECT 6, '객체지향 리팩터링', 2400
+) seed
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM elearning_lessons el
+  WHERE el.elearning_course_id = @oop_course_id
+    AND el.lesson_no = seed.lesson_no
+);
+
+INSERT INTO elearning_lessons (elearning_course_id, lesson_no, title, duration_seconds)
+SELECT @rest_course_id, seed.lesson_no, seed.title, seed.duration_seconds
+FROM (
+  SELECT 1 AS lesson_no, 'REST 컨트롤러 설계', 2160 AS duration_seconds
+  UNION ALL SELECT 2, 'DTO와 Validation', 2160
+  UNION ALL SELECT 3, 'Service/Repository 분리', 2160
+  UNION ALL SELECT 4, '예외 응답 표준화', 2160
+  UNION ALL SELECT 5, 'API 테스트 자동화', 2160
+) seed
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM elearning_lessons el
+  WHERE el.elearning_course_id = @rest_course_id
+    AND el.lesson_no = seed.lesson_no
+);
+
+INSERT INTO learner_elearning_progress (user_id, elearning_course_id, progress_percent, completed_lessons, last_lesson_title, last_learning_at, status_code, resume_url)
+VALUES
+  (@student_id, @oop_course_id, 50, 3, '인터페이스 설계', '2026-04-25 10:15:00', 'in_progress', CONCAT('/mycampus/elearning/', @oop_course_id)),
+  (@student_id, @rest_course_id, 100, 5, 'API 테스트 자동화', '2026-04-24 16:40:00', 'completed', CONCAT('/mycampus/elearning/', @rest_course_id))
+ON DUPLICATE KEY UPDATE
+  progress_percent = VALUES(progress_percent),
+  completed_lessons = VALUES(completed_lessons),
+  last_lesson_title = VALUES(last_lesson_title),
+  last_learning_at = VALUES(last_learning_at),
+  status_code = VALUES(status_code),
+  resume_url = VALUES(resume_url);
+
+INSERT INTO learner_elearning_lesson_progress (user_id, elearning_lesson_id, completed_at)
+SELECT @student_id, el.elearning_lesson_id, TIMESTAMPADD(HOUR, el.lesson_no, '2026-04-25 09:00:00')
+FROM elearning_lessons el
+WHERE el.elearning_course_id = @oop_course_id
+  AND el.lesson_no <= 3
+ON DUPLICATE KEY UPDATE completed_at = VALUES(completed_at);
+
+INSERT INTO learner_elearning_lesson_progress (user_id, elearning_lesson_id, completed_at)
+SELECT @student_id, el.elearning_lesson_id, TIMESTAMPADD(HOUR, el.lesson_no, '2026-04-24 10:00:00')
+FROM elearning_lessons el
+WHERE el.elearning_course_id = @rest_course_id
+ON DUPLICATE KEY UPDATE completed_at = VALUES(completed_at);
+
 INSERT INTO quest_evaluations (content_scope_id, external_task_id, quest_type_code, task_classification_code, title, start_at, end_at, max_exp, progress_status_code)
 VALUES
   (@class_scope_id, 'quest-priority1-board-api', 'assignment', 'required', 'Implement board API', '2026-04-24 09:00:00', '2026-04-25 18:00:00', 100, 'in_progress'),

@@ -207,6 +207,89 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record ElearningProgressResponse(List<ElearningProgressItem> items, PageMeta page) {
+    }
+
+    public record ElearningProgressDetailResponse(ElearningProgressDetail item) {
+    }
+
+    public record ElearningResumeResponse(ElearningResumeItem item) {
+    }
+
+    public record ElearningProgressItem(
+            long courseId,
+            String title,
+            String category,
+            String thumbnailUrl,
+            String provider,
+            String description,
+            int progressPercent,
+            int completedLessons,
+            int totalLessons,
+            long totalDurationSeconds,
+            String lastLessonTitle,
+            OffsetDateTime lastLearningAt,
+            String status,
+            String resumeUrl
+    ) {
+    }
+
+    public record ElearningProgressDetail(
+            long courseId,
+            String title,
+            String category,
+            String thumbnailUrl,
+            String provider,
+            String description,
+            int progressPercent,
+            int completedLessons,
+            int totalLessons,
+            long totalDurationSeconds,
+            String lastLessonTitle,
+            OffsetDateTime lastLearningAt,
+            String status,
+            String resumeUrl,
+            List<ElearningLessonItem> lessons
+    ) {
+        public ElearningProgressDetail withLessons(List<ElearningLessonItem> lessons) {
+            return new ElearningProgressDetail(
+                    courseId,
+                    title,
+                    category,
+                    thumbnailUrl,
+                    provider,
+                    description,
+                    progressPercent,
+                    completedLessons,
+                    totalLessons,
+                    totalDurationSeconds,
+                    lastLessonTitle,
+                    lastLearningAt,
+                    status,
+                    resumeUrl,
+                    lessons
+            );
+        }
+    }
+
+    public record ElearningLessonItem(
+            long lessonId,
+            int lessonNo,
+            String title,
+            long durationSeconds,
+            boolean completed,
+            OffsetDateTime completedAt
+    ) {
+    }
+
+    public record ElearningResumeItem(
+            long courseId,
+            String resumeUrl,
+            OffsetDateTime resumedAt,
+            String status
+    ) {
+    }
+
     public record MaterialsResponse(List<MaterialItem> items, PageMeta page) {
     }
 

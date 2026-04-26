@@ -12,6 +12,8 @@ import BoardPostWritePage from './pages/BoardPostWritePage';
 import ClassmatesPage from './pages/ClassmatesPage';
 import CurriculumPage from './pages/CurriculumPage';
 import DashboardPage from './pages/DashboardPage';
+import ElearningDetailPage from './pages/ElearningDetailPage';
+import ElearningPage from './pages/ElearningPage';
 import LevelPage from './pages/LevelPage';
 import LoginPage from './pages/LoginPage';
 import MaterialDetailPage from './pages/MaterialDetailPage';
@@ -229,6 +231,7 @@ function isDeniedPath(path: string, roleAccess?: RoleAccess): boolean {
 
 function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: (nextPath: string) => void) {
   const match = (pattern: RegExp) => path.match(pattern);
+  const elearningMatch = match(/^\/mycampus\/elearning\/(\d+)$/);
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
   const freePostMatch = match(/^\/community\/free\/(\d+)$/);
@@ -246,6 +249,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/attendance/appeals/new') return <AttendanceAppealPage />;
   if (path === '/mycampus/level') return <LevelPage />;
   if (path === '/mycampus/notifications') return <NotificationsPage />;
+  if (path === '/mycampus/elearning') return <ElearningPage />;
   if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
@@ -259,6 +263,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/survey') return <SurveyPage canManageSurveys={canManageSurveys(roleAccess)} />;
   if (path === '/help/qna/new') return <QnaNewPage />;
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
+  if (elearningMatch) return <ElearningDetailPage courseId={Number(elearningMatch[1])} />;
   if (questSubmitMatch) return <QuestSubmitPage questId={Number(questSubmitMatch[1])} />;
   if (surveyRespondMatch) return <SurveyRespondPage surveyId={Number(surveyRespondMatch[1])} />;
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;

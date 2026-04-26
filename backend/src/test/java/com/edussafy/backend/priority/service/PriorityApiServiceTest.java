@@ -24,6 +24,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
@@ -326,6 +331,99 @@ class PriorityApiServiceTest {
         assertThat(response.deleted()).isTrue();
         assertThat(response.unreadCount()).isEqualTo(1L);
         verify(repository).deleteNotification(1L, 8L);
+    }
+
+    @Test
+    void elearningInProgressReturnsFilteredCurrentUserProgress() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        ElearningProgressItem item = new ElearningProgressItem(
+                10L,
+                "Java 객체지향 이러닝",
+                "Java",
+                null,
+                "SSAFY e-Learning",
+                "객체지향 복습",
+                50,
+                3,
+                6,
+                14400L,
+                "인터페이스 설계",
+                OffsetDateTime.parse("2026-04-25T10:15:00+09:00"),
+                "in_progress",
+                "/mycampus/elearning/10"
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countElearningProgress(USER.id(), "in_progress", "java")).willReturn(1L);
+        given(repository.findElearningProgress(USER.id(), "in_progress", "java", 10, 0)).willReturn(List.of(item));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        ElearningProgressResponse response = service.elearningInProgress("IN_PROGRESS", "java", 1, 10);
+
+        assertThat(response.items()).containsExactly(item);
+        assertThat(response.page().totalItems()).isEqualTo(1);
+        verify(repository).findElearningProgress(USER.id(), "in_progress", "java", 10, 0);
+    }
+
+    @Test
+    void elearningDetailAndResumeUseOnlyCurrentUserProgress() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        ElearningProgressDetail detail = new ElearningProgressDetail(
+                10L,
+                "Java 객체지향 이러닝",
+                "Java",
+                null,
+                "SSAFY e-Learning",
+                "객체지향 복습",
+                50,
+                3,
+                6,
+                14400L,
+                "인터페이스 설계",
+                OffsetDateTime.parse("2026-04-25T10:15:00+09:00"),
+                "in_progress",
+                "/mycampus/elearning/10",
+                List.of()
+        );
+        ElearningLessonItem lesson = new ElearningLessonItem(100L, 1, "클래스와 객체", 2400L, true, OffsetDateTime.parse("2026-04-25T10:00:00+09:00"));
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findElearningProgressDetail(USER.id(), 10L)).willReturn(Optional.of(detail));
+        given(repository.findElearningLessons(USER.id(), 10L)).willReturn(List.of(lesson));
+        given(repository.touchElearningResume(USER.id(), 10L)).willReturn(1);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThat(service.elearningProgressDetail(10L).item().lessons()).containsExactly(lesson);
+        ElearningResumeResponse response = service.resumeElearning(10L);
+
+        assertThat(response.item().courseId()).isEqualTo(10L);
+        assertThat(response.item().resumeUrl()).isEqualTo("/mycampus/elearning/10");
+        verify(repository).touchElearningResume(USER.id(), 10L);
+    }
+
+    @Test
+    void elearningRejectsUnsupportedStatusAndMissingProgress() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.touchElearningResume(USER.id(), 99L)).willReturn(0);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThatThrownBy(() -> service.elearningInProgress("archived", null, 1, 10))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        assertThatThrownBy(() -> service.resumeElearning(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
     }
 
     @Test

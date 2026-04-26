@@ -19,6 +19,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
@@ -149,6 +155,7 @@ public class PriorityApiService {
     private static final Set<String> CLOSED_ATTENDANCE_APPEAL_STATUSES = Set.of("rejected", "canceled");
     private static final Set<String> SURVEY_CATEGORIES = Set.of("satisfaction", "course", "lecture", "etc");
     private static final Set<String> SURVEY_STATUSES = Set.of("draft", "scheduled", "in_progress", "completed", "closed", "archived");
+    private static final Set<String> ELEARNING_PROGRESS_STATUSES = Set.of("not_started", "in_progress", "completed");
     private static final Set<String> SURVEY_QUESTION_TYPES = Set.of(
             "single_choice", "multiple_choice", "short_text", "long_text", "score"
     );
@@ -552,6 +559,44 @@ public class PriorityApiService {
     public ReplayResponse replays() {
         UserProfile user = currentUser();
         return new ReplayResponse(safe(() -> repository.findReplays(user.id()), List.of()));
+    }
+
+    public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {
+        UserProfile user = currentUser();
+        String normalizedStatus = normalizeElearningStatus(status);
+        long total = safe(() -> repository.countElearningProgress(user.id(), normalizedStatus, keyword), 0L);
+        List<com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem> items = total == 0
+                ? List.of()
+                : safe(
+                        () -> repository.findElearningProgress(user.id(), normalizedStatus, keyword, size, offset(page, size)),
+                        List.of()
+                );
+        return new ElearningProgressResponse(items, pageMeta(page, size, total));
+    }
+
+    public ElearningProgressDetailResponse elearningProgressDetail(long courseId) {
+        UserProfile user = currentUser();
+        ElearningProgressDetail item = repository.findElearningProgressDetail(user.id(), courseId)
+                .map(detail -> detail.withLessons(safe(() -> repository.findElearningLessons(user.id(), courseId), List.of())))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-learning progress not found."));
+        return new ElearningProgressDetailResponse(item);
+    }
+
+    @Transactional
+    public ElearningResumeResponse resumeElearning(long courseId) {
+        UserProfile user = currentUser();
+        int updated = repository.touchElearningResume(user.id(), courseId);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "E-learning progress not found.");
+        }
+        ElearningProgressDetail item = repository.findElearningProgressDetail(user.id(), courseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-learning progress not found."));
+        return new ElearningResumeResponse(new ElearningResumeItem(
+                item.courseId(),
+                item.resumeUrl(),
+                item.lastLearningAt() == null ? OffsetDateTime.now(ZoneOffset.UTC) : item.lastLearningAt(),
+                item.status()
+        ));
     }
 
     public MaterialsResponse materials(String keyword, String type, int page, int size) {
@@ -1240,6 +1285,20 @@ public class PriorityApiService {
 
     private boolean hasCurrentRequest() {
         return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes;
+    }
+
+    private String normalizeElearningStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return null;
+        }
+        String normalized = status.trim().toLowerCase(Locale.ROOT);
+        if ("all".equals(normalized)) {
+            return null;
+        }
+        if (!ELEARNING_PROGRESS_STATUSES.contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported e-learning progress status.");
+        }
+        return normalized;
     }
 
     private String normalizeAccessRole(String role) {

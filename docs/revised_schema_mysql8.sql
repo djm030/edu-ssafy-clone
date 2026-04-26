@@ -32,6 +32,10 @@ DROP TABLE IF EXISTS survey_questions;
 DROP TABLE IF EXISTS surveys;
 DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
+DROP TABLE IF EXISTS learner_elearning_lesson_progress;
+DROP TABLE IF EXISTS learner_elearning_progress;
+DROP TABLE IF EXISTS elearning_lessons;
+DROP TABLE IF EXISTS elearning_courses;
 DROP TABLE IF EXISTS learning_material_reactions;
 DROP TABLE IF EXISTS learning_material_resource_attachments;
 DROP TABLE IF EXISTS learning_material_resources;
@@ -94,6 +98,7 @@ INSERT INTO code_groups (code_group, group_name, description) VALUES
   ('ATTENDANCE_APPEAL_TYPE', '출석 이의신청 유형', NULL),
   ('APPROVAL_STATUS', '승인 상태', NULL),
   ('PROGRESS_STATUS', '진행 상태', NULL),
+  ('ELEARNING_PROGRESS_STATUS', '이러닝 진행 상태', NULL),
   ('CURRICULUM_TYPE', '커리큘럼 유형', NULL),
   ('MATERIAL_TYPE', '학습자료 유형', NULL),
   ('RESOURCE_TYPE', '학습자료 리소스 유형', NULL),
@@ -153,6 +158,9 @@ INSERT INTO codes (code_group, code, code_name, sort_order) VALUES
   ('PROGRESS_STATUS', 'completed', '완료', 4),
   ('PROGRESS_STATUS', 'closed', '종료', 5),
   ('PROGRESS_STATUS', 'archived', '보관', 6),
+  ('ELEARNING_PROGRESS_STATUS', 'not_started', '미시작', 1),
+  ('ELEARNING_PROGRESS_STATUS', 'in_progress', '학습중', 2),
+  ('ELEARNING_PROGRESS_STATUS', 'completed', '완료', 3),
   ('CURRICULUM_TYPE', 'lecture', '강의', 1),
   ('CURRICULUM_TYPE', 'practice', '실습', 2),
   ('CURRICULUM_TYPE', 'project', '프로젝트', 3),
@@ -680,6 +688,92 @@ CREATE TABLE learning_material_resource_attachments (
     ON DELETE CASCADE,
   CONSTRAINT fk_learning_material_resource_attachments_attachment
     FOREIGN KEY (attachment_id) REFERENCES attachments (attachment_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE elearning_courses (
+  elearning_course_id BIGINT NOT NULL AUTO_INCREMENT,
+  content_scope_id BIGINT NOT NULL,
+  course_external_id VARCHAR(100),
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(100),
+  thumbnail_url VARCHAR(500),
+  provider VARCHAR(100),
+  description TEXT,
+  total_lessons INT NOT NULL DEFAULT 0,
+  total_duration_seconds BIGINT NOT NULL DEFAULT 0,
+  active_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (elearning_course_id),
+  UNIQUE KEY uk_elearning_courses_external (course_external_id),
+  KEY idx_elearning_courses_scope_active (content_scope_id, active_yn),
+  CONSTRAINT chk_elearning_courses_total_lessons CHECK (total_lessons >= 0),
+  CONSTRAINT chk_elearning_courses_total_duration CHECK (total_duration_seconds >= 0),
+  CONSTRAINT fk_elearning_courses_scope
+    FOREIGN KEY (content_scope_id) REFERENCES content_scopes (content_scope_id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE elearning_lessons (
+  elearning_lesson_id BIGINT NOT NULL AUTO_INCREMENT,
+  elearning_course_id BIGINT NOT NULL,
+  lesson_no INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  duration_seconds BIGINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (elearning_lesson_id),
+  UNIQUE KEY uk_elearning_lessons_course_no (elearning_course_id, lesson_no),
+  CONSTRAINT chk_elearning_lessons_lesson_no CHECK (lesson_no > 0),
+  CONSTRAINT chk_elearning_lessons_duration CHECK (duration_seconds >= 0),
+  CONSTRAINT fk_elearning_lessons_course
+    FOREIGN KEY (elearning_course_id) REFERENCES elearning_courses (elearning_course_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_elearning_progress (
+  learner_elearning_progress_id BIGINT NOT NULL AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  elearning_course_id BIGINT NOT NULL,
+  progress_percent INT NOT NULL DEFAULT 0,
+  completed_lessons INT NOT NULL DEFAULT 0,
+  last_lesson_title VARCHAR(255),
+  last_learning_at DATETIME,
+  status_code_group VARCHAR(50) NOT NULL DEFAULT 'ELEARNING_PROGRESS_STATUS',
+  status_code VARCHAR(50) NOT NULL DEFAULT 'not_started',
+  resume_url VARCHAR(500),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (learner_elearning_progress_id),
+  UNIQUE KEY uk_learner_elearning_progress_user_course (user_id, elearning_course_id),
+  KEY idx_learner_elearning_progress_status (user_id, status_code, last_learning_at),
+  CONSTRAINT chk_learner_elearning_progress_status_group CHECK (status_code_group = 'ELEARNING_PROGRESS_STATUS'),
+  CONSTRAINT chk_learner_elearning_progress_percent CHECK (progress_percent BETWEEN 0 AND 100),
+  CONSTRAINT chk_learner_elearning_progress_completed CHECK (completed_lessons >= 0),
+  CONSTRAINT fk_learner_elearning_progress_status
+    FOREIGN KEY (status_code_group, status_code) REFERENCES codes (code_group, code),
+  CONSTRAINT fk_learner_elearning_progress_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_learner_elearning_progress_course
+    FOREIGN KEY (elearning_course_id) REFERENCES elearning_courses (elearning_course_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_elearning_lesson_progress (
+  user_id BIGINT NOT NULL,
+  elearning_lesson_id BIGINT NOT NULL,
+  completed_at DATETIME,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, elearning_lesson_id),
+  KEY idx_learner_elearning_lesson_progress_lesson (elearning_lesson_id),
+  CONSTRAINT fk_learner_elearning_lesson_progress_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_learner_elearning_lesson_progress_lesson
+    FOREIGN KEY (elearning_lesson_id) REFERENCES elearning_lessons (elearning_lesson_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

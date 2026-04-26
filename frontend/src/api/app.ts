@@ -25,6 +25,9 @@ import type {
   Classmate,
   CurriculumWeek,
   DashboardSummary,
+  ElearningProgressDetail,
+  ElearningProgressItem,
+  ElearningResumeResult,
   LearningMaterial,
   LearningMaterialResource,
   LearningMaterialViewResult,
@@ -98,6 +101,12 @@ type BackendReplayItem = Partial<ReplayItem> & {
   curriculumScheduleId?: number | null;
   versionNo?: number | null;
   publishedAt?: string | null;
+};
+
+type BackendElearningProgressItem = Partial<ElearningProgressItem> & {
+  courseId?: number | null;
+  id?: number | null;
+  lessons?: ElearningProgressDetail['lessons'];
 };
 
 type BackendMaterialResource = {
@@ -250,6 +259,44 @@ function toReplayItem(item: BackendReplayItem): ReplayItem {
     duration: item.duration || '-',
     category: item.category || `v${item.versionNo ?? 1}`,
     watched: Boolean(item.watched),
+  };
+}
+
+function toElearningStatus(status?: string | null): ElearningProgressItem['status'] {
+  if (status === 'not_started' || status === 'completed') return status;
+  return 'in_progress';
+}
+
+function toElearningProgressItem(item: BackendElearningProgressItem): ElearningProgressItem {
+  return {
+    courseId: Number(item.courseId ?? item.id),
+    title: item.title || '이러닝 과정',
+    category: item.category || undefined,
+    thumbnailUrl: item.thumbnailUrl || undefined,
+    provider: item.provider || 'SSAFY e-Learning',
+    description: item.description || undefined,
+    progressPercent: Math.min(100, Math.max(0, item.progressPercent ?? 0)),
+    completedLessons: item.completedLessons ?? 0,
+    totalLessons: item.totalLessons ?? 0,
+    totalDurationSeconds: item.totalDurationSeconds ?? 0,
+    lastLessonTitle: item.lastLessonTitle || undefined,
+    lastLearningAt: item.lastLearningAt || undefined,
+    status: toElearningStatus(item.status),
+    resumeUrl: item.resumeUrl || undefined,
+  };
+}
+
+function toElearningProgressDetail(item: BackendElearningProgressItem): ElearningProgressDetail {
+  return {
+    ...toElearningProgressItem(item),
+    lessons: (item.lessons || []).map((lesson) => ({
+      lessonId: Number(lesson.lessonId),
+      lessonNo: Number(lesson.lessonNo),
+      title: lesson.title || '차시',
+      durationSeconds: Number(lesson.durationSeconds ?? 0),
+      completed: Boolean(lesson.completed),
+      completedAt: lesson.completedAt || undefined,
+    })),
   };
 }
 
@@ -519,6 +566,36 @@ export function getReplays(query: { keyword?: string }): Promise<{ items: Replay
       items: mockReplays.filter((replay) => !keyword || replay.title.toLowerCase().includes(keyword)),
     }),
   }).then((response) => ({ items: response.items.map(toReplayItem) }));
+}
+
+export function getElearningProgress(query: {
+  keyword?: string;
+  status?: string;
+  page?: number;
+  size?: number;
+}): Promise<{ items: ElearningProgressItem[] }> {
+  const params = buildQuery({
+    keyword: query.keyword?.trim(),
+    page: query.page,
+    size: query.size,
+    status: query.status && query.status !== 'all' ? query.status : undefined,
+  });
+
+  return fetchJson<{ items: BackendElearningProgressItem[] }>(`/api/elearning/in-progress${params}`)
+    .then((response) => ({ items: response.items.map(toElearningProgressItem) }));
+}
+
+export function getElearningProgressDetail(courseId: number): Promise<ElearningProgressDetail | undefined> {
+  return fetchJson<ItemResponse<BackendElearningProgressItem>>(`/api/elearning/in-progress/${courseId}`)
+    .then((response) => toElearningProgressDetail(response.item))
+    .catch((error) => {
+      if (error instanceof ApiError && error.status === 404) return undefined;
+      throw error;
+    });
+}
+
+export function resumeElearning(courseId: number): Promise<ElearningResumeResult> {
+  return fetchJson<ElearningResumeResult>(`/api/elearning/in-progress/${courseId}/resume`, { method: 'POST' });
 }
 
 export function getLearningMaterials(query: { keyword?: string; type?: string }): Promise<{ items: LearningMaterial[] }> {

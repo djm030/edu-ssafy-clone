@@ -11,6 +11,8 @@ routes=(
   "/profile/edit"
   "/mycampus/attendance"
   "/mycampus/attendance/appeals/new"
+  "/mycampus/elearning"
+  "/mycampus/elearning/1"
   "/mycampus/level"
   "/community/free"
   "/community/free/1"
