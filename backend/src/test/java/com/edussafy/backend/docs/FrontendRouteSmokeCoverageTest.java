@@ -134,6 +134,7 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("match(/^\\/help\\/qna\\/tickets\\/(\\d+)$/)");
         String boardList = Files.readString(Path.of("..", "frontend", "src", "components", "BoardListPage.tsx"));
         String boardApi = Files.readString(Path.of("..", "frontend", "src", "api", "boards.ts"));
+        String boardDetail = Files.readString(Path.of("..", "frontend", "src", "pages", "BoardDetailPage.tsx"));
         assertThat(readinessPage)
                 .contains("getAccessPolicy")
                 .contains("screenSmokeRoutes.map")
@@ -146,6 +147,13 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("FaqAccordion")
                 .contains("FAQ 목록")
                 .contains("상세 보기");
+        assertThat(app)
+                .contains("boardCode=\"notice\" readOnly")
+                .contains("boardCode=\"faq\" readOnly");
+        assertThat(boardDetail)
+                .contains("readOnly?: boolean")
+                .contains("읽기 전용")
+                .contains("공지/FAQ는 운영자가 관리하는 읽기 전용 콘텐츠입니다.");
     }
     @Test
     void priorityDataPagesExposeLoadingErrorAndEmptyStates() throws IOException {

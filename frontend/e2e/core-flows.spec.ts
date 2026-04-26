@@ -35,6 +35,15 @@ test('demo learner can log in and navigate priority screens', async ({ page }) =
       await expect(page.locator('.inline-alert, .access-state')).toHaveCount(0);
     });
   }
+
+  await test.step('공지/FAQ 상세는 운영자 관리 읽기 전용으로 노출한다', async () => {
+    await page.goto('/help/faq/301');
+    await expect(page.getByRole('heading', { name: 'FAQ 상세' })).toBeVisible();
+    await expect(page.getByText('공지/FAQ는 운영자가 관리하는 읽기 전용 콘텐츠입니다.')).toBeVisible();
+    await expect(page.getByRole('button', { name: '수정' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '삭제' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '댓글 등록' })).toHaveCount(0);
+  });
 });
 
 test('external service links expose enabled and disabled states without credentials', async ({ page }) => {

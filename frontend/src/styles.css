@@ -584,3 +584,12 @@ h2 {
   display: inline-flex;
   margin-bottom: 16px;
 }
+
+.readonly-board-actions {
+  background: #f8fbff;
+  border-color: #c9dfff;
+}
+
+.readonly-board-actions .form-message {
+  margin-bottom: 0;
+}

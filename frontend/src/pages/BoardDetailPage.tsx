@@ -20,12 +20,13 @@ import type { BoardAttachmentDraft, BoardAttachmentItem, BoardCode, BoardComment
 
 interface BoardDetailPageProps {
   boardCode: BoardCode;
+  readOnly?: boolean;
   postId: number;
   title: string;
   listPath: string;
 }
 
-function BoardDetailPage({ boardCode, postId, title, listPath }: BoardDetailPageProps) {
+function BoardDetailPage({ boardCode, readOnly = false, postId, title, listPath }: BoardDetailPageProps) {
   const [post, setPost] = useState<BoardPostListItem>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -57,18 +58,19 @@ function BoardDetailPage({ boardCode, postId, title, listPath }: BoardDetailPage
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="게시글을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="게시글을 찾을 수 없습니다." message="목록에서 다시 선택해 주세요." /> : null}
-      {post ? <DetailContent boardCode={boardCode} post={post} listPath={listPath} /> : null}
+      {post ? <DetailContent boardCode={boardCode} post={post} readOnly={readOnly} listPath={listPath} /> : null}
     </section>
   );
 }
 
-function DetailContent({ boardCode, post, listPath }: { boardCode: BoardCode; post: BoardPostListItem; listPath: string }) {
+function DetailContent({ boardCode, post, readOnly, listPath }: { boardCode: BoardCode; post: BoardPostListItem; readOnly: boolean; listPath: string }) {
   const [currentPost, setCurrentPost] = useState(post);
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(post.title);
   const [draftContent, setDraftContent] = useState(post.content ?? '');
   const [submittingPost, setSubmittingPost] = useState(false);
-  const [postMessage, setPostMessage] = useState('게시글 수정 또는 삭제가 가능합니다.');
+  const readonlyMessage = '공지/FAQ는 운영자가 관리하는 읽기 전용 콘텐츠입니다.';
+  const [postMessage, setPostMessage] = useState(readOnly ? readonlyMessage : '게시글 수정 또는 삭제가 가능합니다.');
 
   useEffect(() => {
     setCurrentPost(post);
@@ -76,8 +78,8 @@ function DetailContent({ boardCode, post, listPath }: { boardCode: BoardCode; po
     setDraftContent(post.content ?? '');
     setEditing(false);
     setSubmittingPost(false);
-    setPostMessage('게시글 수정 또는 삭제가 가능합니다.');
-  }, [post]);
+    setPostMessage(readOnly ? readonlyMessage : '게시글 수정 또는 삭제가 가능합니다.');
+  }, [post, readOnly, readonlyMessage]);
 
   const submitUpdate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -145,45 +147,54 @@ function DetailContent({ boardCode, post, listPath }: { boardCode: BoardCode; po
         </div>
       </dl>
       <div className="detail-body">{currentPost.content || '등록된 본문이 없습니다.'}</div>
-      <section className="board-actions" aria-label="게시글 관리">
-        <div className="action-row">
-          <button className="ghost-button" disabled={submittingPost} onClick={() => setEditing((value) => !value)} type="button">
-            {editing ? '수정 취소' : '수정'}
-          </button>
-          <button className="ghost-button danger" disabled={submittingPost} onClick={() => { void requestDelete(); }} type="button">
-            삭제
-          </button>
-        </div>
-        {editing ? (
-          <form className="stack-form" onSubmit={submitUpdate}>
-            <label htmlFor={`post-title-${currentPost.id}`}>제목</label>
-            <input
-              disabled={submittingPost}
-              id={`post-title-${currentPost.id}`}
-              onChange={(event) => setDraftTitle(event.target.value)}
-              required
-              value={draftTitle}
-            />
-            <label htmlFor={`post-content-${currentPost.id}`}>내용</label>
-            <textarea
-              disabled={submittingPost}
-              id={`post-content-${currentPost.id}`}
-              onChange={(event) => setDraftContent(event.target.value)}
-              required
-              rows={8}
-              value={draftContent}
-            />
-            <button className="primary-action" disabled={submittingPost} type="submit">
-              {submittingPost ? '저장 중' : '저장'}
-            </button>
-          </form>
-        ) : null}
-        <p className="form-message" aria-live="polite">{postMessage}</p>
-      </section>
-      <AttachmentManager boardCode={boardCode} post={currentPost} onChange={(attachments) => {
-        setCurrentPost((previous) => ({ ...previous, attachments, hasAttachment: attachments.length > 0 }));
-      }} />
-      <BoardActions boardCode={boardCode} post={currentPost} />
+      {readOnly ? (
+        <section className="board-actions readonly-board-actions" aria-label="읽기 전용 안내">
+          <StatusPill tone="blue">읽기 전용</StatusPill>
+          <p className="form-message" aria-live="polite">{postMessage}</p>
+        </section>
+      ) : (
+        <>
+          <section className="board-actions" aria-label="게시글 관리">
+            <div className="action-row">
+              <button className="ghost-button" disabled={submittingPost} onClick={() => setEditing((value) => !value)} type="button">
+                {editing ? '수정 취소' : '수정'}
+              </button>
+              <button className="ghost-button danger" disabled={submittingPost} onClick={() => { void requestDelete(); }} type="button">
+                삭제
+              </button>
+            </div>
+            {editing ? (
+              <form className="stack-form" onSubmit={submitUpdate}>
+                <label htmlFor={`post-title-${currentPost.id}`}>제목</label>
+                <input
+                  disabled={submittingPost}
+                  id={`post-title-${currentPost.id}`}
+                  onChange={(event) => setDraftTitle(event.target.value)}
+                  required
+                  value={draftTitle}
+                />
+                <label htmlFor={`post-content-${currentPost.id}`}>내용</label>
+                <textarea
+                  disabled={submittingPost}
+                  id={`post-content-${currentPost.id}`}
+                  onChange={(event) => setDraftContent(event.target.value)}
+                  required
+                  rows={8}
+                  value={draftContent}
+                />
+                <button className="primary-action" disabled={submittingPost} type="submit">
+                  {submittingPost ? '저장 중' : '저장'}
+                </button>
+              </form>
+            ) : null}
+            <p className="form-message" aria-live="polite">{postMessage}</p>
+          </section>
+          <AttachmentManager boardCode={boardCode} post={currentPost} onChange={(attachments) => {
+            setCurrentPost((previous) => ({ ...previous, attachments, hasAttachment: attachments.length > 0 }));
+          }} />
+          <BoardActions boardCode={boardCode} post={currentPost} />
+        </>
+      )}
       <div className="action-row">
         <a className="ghost-button" href={listPath}>목록</a>
       </div>

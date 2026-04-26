@@ -338,8 +338,8 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (requiredStudyMatch) return <RequiredStudiesPage studyId={Number(requiredStudyMatch[1])} />;
   if (anonymousPostMatch) return <BoardDetailPage boardCode="anonymous" postId={Number(anonymousPostMatch[1])} title="익명 게시판 상세" listPath="/community/anonymous" />;
   if (freePostMatch) return <BoardDetailPage boardCode="free" postId={Number(freePostMatch[1])} title="자유게시판 상세" listPath="/community/free" />;
-  if (noticePostMatch) return <BoardDetailPage boardCode="notice" postId={Number(noticePostMatch[1])} title="공지 상세" listPath="/help/notice" />;
-  if (faqPostMatch) return <BoardDetailPage boardCode="faq" postId={Number(faqPostMatch[1])} title="FAQ 상세" listPath="/help/faq" />;
+  if (noticePostMatch) return <BoardDetailPage boardCode="notice" readOnly postId={Number(noticePostMatch[1])} title="공지 상세" listPath="/help/notice" />;
+  if (faqPostMatch) return <BoardDetailPage boardCode="faq" readOnly postId={Number(faqPostMatch[1])} title="FAQ 상세" listPath="/help/faq" />;
   if (questMatch) return <QuestDetailPage questId={Number(questMatch[1])} />;
   if (surveyMatch) return <SurveyDetailPage surveyId={Number(surveyMatch[1])} />;
   if (boardScreens[path]) return <BoardListPage config={boardScreens[path]} key={path} />;
