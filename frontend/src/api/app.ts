@@ -30,6 +30,7 @@ import type {
   AttendanceAppeal,
   AttendanceRecord,
   AttendanceDaySummary,
+  AttendanceMonthSummary,
   AttendanceRecordsResponse,
   AttendanceAppealDraft,
   AttendanceAppealResolveDraft,
@@ -336,11 +337,48 @@ function summarizeAttendance(records: AttendanceRecord[]) {
   };
 }
 
-function toAttendanceRecordsResponse(response: { summary?: AttendanceRecordsResponse['summary']; range?: AttendanceRecordsResponse['range']; days?: AttendanceDaySummary[]; items: BackendAttendanceRecord[] }, filters: AttendanceRecordFilters): AttendanceRecordsResponse {
+function attendanceMonthSource(filters: AttendanceRecordFilters, records: AttendanceRecord[]) {
+  return filters.dateFrom || filters.dateTo || records[0]?.date || new Date().toISOString().slice(0, 10);
+}
+
+function buildAttendanceMonthSummary(records: AttendanceRecord[], filters: AttendanceRecordFilters): AttendanceMonthSummary {
+  const source = attendanceMonthSource(filters, records);
+  const [year, month] = source.split('-').map(Number);
+  const safeYear = Number.isFinite(year) ? year : new Date().getFullYear();
+  const safeMonth = Number.isFinite(month) ? month : new Date().getMonth() + 1;
+  const lastDay = new Date(safeYear, safeMonth, 0).getDate();
+  const recordsByDate = new Map(records.map((record) => [record.date, record]));
+  const days = Array.from({ length: lastDay }, (_, index) => {
+    const date = `${safeYear}-${String(safeMonth).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`;
+    const weekday = new Date(safeYear, safeMonth - 1, index + 1).getDay();
+    const record = recordsByDate.get(date);
+    return {
+      date,
+      weekend: weekday === 0 || weekday === 6,
+      status: record?.status || null,
+      firstCheckInAt: record?.checkIn || null,
+      lastCheckOutAt: record?.checkOut || null,
+      appealAvailable: Boolean(record?.appealAvailable),
+      appealStatus: record?.appealStatus || null,
+    };
+  });
+  return {
+    month: `${safeYear}-${String(safeMonth).padStart(2, '0')}`,
+    weekdayCount: days.filter((day) => !day.weekend).length,
+    presentCount: records.filter((record) => record.status === 'present').length,
+    lateCount: records.filter((record) => record.status === 'late').length,
+    absentCount: records.filter((record) => record.status === 'absent').length,
+    appealableCount: records.filter((record) => record.appealAvailable).length,
+    days,
+  };
+}
+
+function toAttendanceRecordsResponse(response: { summary?: AttendanceRecordsResponse['summary']; range?: AttendanceRecordsResponse['range']; month?: AttendanceMonthSummary; days?: AttendanceDaySummary[]; items: BackendAttendanceRecord[] }, filters: AttendanceRecordFilters): AttendanceRecordsResponse {
   const items = response.items.map(toAttendanceRecord);
   return {
     summary: response.summary || summarizeAttendance(items),
     range: response.range || { dateFrom: filters.dateFrom || null, dateTo: filters.dateTo || null, status: filters.status || null },
+    month: response.month || buildAttendanceMonthSummary(items, filters),
     days: response.days || items.map(toAttendanceDaySummary),
     items,
   };
@@ -845,12 +883,13 @@ export function getAttendanceRecords(filters: AttendanceRecordFilters = {}): Pro
     dateTo: filters.dateTo,
     status: filters.status,
   });
-  return fetchJson<{ summary?: AttendanceRecordsResponse['summary']; range?: AttendanceRecordsResponse['range']; days?: AttendanceDaySummary[]; items: BackendAttendanceRecord[] }>(`/api/attendance/records${query}`, {
+  return fetchJson<{ summary?: AttendanceRecordsResponse['summary']; range?: AttendanceRecordsResponse['range']; month?: AttendanceMonthSummary; days?: AttendanceDaySummary[]; items: BackendAttendanceRecord[] }>(`/api/attendance/records${query}`, {
     fallback: () => {
       const items = filterMockAttendanceRecords(filters);
       return {
         summary: summarizeAttendance(items),
         range: { dateFrom: filters.dateFrom || null, dateTo: filters.dateTo || null, status: filters.status || null },
+        month: buildAttendanceMonthSummary(items, filters),
         days: items.map(toAttendanceDaySummary),
         items,
       };

@@ -2010,6 +2010,7 @@ class PriorityApiServiceTest {
         given(repository.findAttendanceSummary(1L, from, to, "late"))
                 .willReturn(new AttendanceSummary(0, 1, 0, true));
         given(repository.findAttendanceRecords(1L, from, to, "late")).willReturn(List.of(lateRecord));
+        given(repository.findAttendanceRecords(1L, from, to, null)).willReturn(List.of(lateRecord));
         PriorityApiService service = new PriorityApiService(
                 repository,
                 mock(PriorityP2Repository.class),
@@ -2024,9 +2025,15 @@ class PriorityApiServiceTest {
         assertThat(response.range().status()).isEqualTo("late");
         assertThat(response.days()).hasSize(1);
         assertThat(response.days().get(0).status()).isEqualTo("late");
+        assertThat(response.month().month()).isEqualTo("2026-04");
+        assertThat(response.month().weekdayCount()).isEqualTo(22);
+        assertThat(response.month().lateCount()).isEqualTo(1);
+        assertThat(response.month().days()).hasSize(30);
+        assertThat(response.month().days().get(22).status()).isEqualTo("late");
         assertThat(response.items()).containsExactly(lateRecord);
         verify(repository).findAttendanceSummary(1L, from, to, "late");
         verify(repository).findAttendanceRecords(1L, from, to, "late");
+        verify(repository).findAttendanceRecords(1L, from, to, null);
     }
 
     @Test

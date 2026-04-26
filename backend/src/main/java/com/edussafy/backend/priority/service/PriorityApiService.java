@@ -8,6 +8,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRange;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceMonthDay;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceMonthSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceDaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
@@ -181,6 +183,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -628,9 +631,14 @@ public class PriorityApiService {
                 EMPTY_ATTENDANCE
         );
         List<AttendanceRecordItem> records = safe(() -> repository.findAttendanceRecords(user.id(), dateFrom, dateTo, filterStatus), List.of());
+        LocalDate monthDate = attendanceMonthDate(dateFrom, dateTo, records);
+        LocalDate monthStart = monthDate.withDayOfMonth(1);
+        LocalDate monthEnd = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
+        List<AttendanceRecordItem> monthRecords = safe(() -> repository.findAttendanceRecords(user.id(), monthStart, monthEnd, null), List.of());
         return new AttendanceRecordsResponse(
                 summary,
                 new AttendanceRange(dateFrom, dateTo, filterStatus),
+                toAttendanceMonthSummary(monthStart, monthRecords),
                 records.stream().map(this::toAttendanceDaySummary).toList(),
                 records
         );
@@ -2122,6 +2130,57 @@ public class PriorityApiService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 digest is unavailable.", exception);
         }
+    }
+
+    private LocalDate attendanceMonthDate(LocalDate dateFrom, LocalDate dateTo, List<AttendanceRecordItem> records) {
+        if (dateFrom != null) {
+            return dateFrom;
+        }
+        if (dateTo != null) {
+            return dateTo;
+        }
+        if (!records.isEmpty()) {
+            return records.get(0).date();
+        }
+        return LocalDate.now(ZoneOffset.ofHours(9));
+    }
+
+    private AttendanceMonthSummary toAttendanceMonthSummary(LocalDate monthStart, List<AttendanceRecordItem> records) {
+        Map<LocalDate, AttendanceRecordItem> recordsByDate = records.stream()
+                .collect(Collectors.toMap(
+                        AttendanceRecordItem::date,
+                        record -> record,
+                        (first, second) -> first,
+                        LinkedHashMap::new
+                ));
+        List<AttendanceMonthDay> days = new ArrayList<>();
+        int weekdayCount = 0;
+        for (int day = 0; day < monthStart.lengthOfMonth(); day++) {
+            LocalDate date = monthStart.plusDays(day);
+            boolean weekend = date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+            if (!weekend) {
+                weekdayCount++;
+            }
+            AttendanceRecordItem record = recordsByDate.get(date);
+            days.add(new AttendanceMonthDay(
+                    date,
+                    weekend,
+                    record == null ? null : record.status(),
+                    record == null ? null : record.checkInAt(),
+                    record == null ? null : record.checkOutAt(),
+                    record != null && record.appealAvailable(),
+                    record == null ? null : record.appealStatus()
+            ));
+        }
+        return new AttendanceMonthSummary(
+                monthStart.toString().substring(0, 7),
+                weekdayCount,
+                (int) records.stream().filter(record -> "present".equals(record.status())).count(),
+                (int) records.stream().filter(record -> "late".equals(record.status())).count(),
+                (int) records.stream().filter(record -> "absent".equals(record.status())).count(),
+                (int) records.stream().filter(AttendanceRecordItem::appealAvailable).count(),
+                days
+        );
     }
 
     private AttendanceDaySummary toAttendanceDaySummary(AttendanceRecordItem record) {

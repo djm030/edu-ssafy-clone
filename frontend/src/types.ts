@@ -325,9 +325,30 @@ export interface AttendanceDaySummary {
   appealStatus?: string | null;
 }
 
+export interface AttendanceMonthDay {
+  date: string;
+  weekend: boolean;
+  status?: AttendanceRecord['status'] | null;
+  firstCheckInAt?: string | null;
+  lastCheckOutAt?: string | null;
+  appealAvailable: boolean;
+  appealStatus?: string | null;
+}
+
+export interface AttendanceMonthSummary {
+  month: string;
+  weekdayCount: number;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+  appealableCount: number;
+  days: AttendanceMonthDay[];
+}
+
 export interface AttendanceRecordsResponse {
   summary: AttendanceSummary;
   range: AttendanceRange;
+  month: AttendanceMonthSummary;
   days: AttendanceDaySummary[];
   items: AttendanceRecord[];
 }

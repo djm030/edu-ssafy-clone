@@ -318,12 +318,35 @@ public final class PriorityDtos {
     public record AttendanceRecordsResponse(
             AttendanceSummary summary,
             AttendanceRange range,
+            AttendanceMonthSummary month,
             List<AttendanceDaySummary> days,
             List<AttendanceRecordItem> items
     ) {
     }
 
     public record AttendanceRange(LocalDate dateFrom, LocalDate dateTo, String status) {
+    }
+
+    public record AttendanceMonthSummary(
+            String month,
+            int weekdayCount,
+            int presentCount,
+            int lateCount,
+            int absentCount,
+            int appealableCount,
+            List<AttendanceMonthDay> days
+    ) {
+    }
+
+    public record AttendanceMonthDay(
+            LocalDate date,
+            boolean weekend,
+            String status,
+            LocalTime firstCheckInAt,
+            LocalTime lastCheckOutAt,
+            boolean appealAvailable,
+            String appealStatus
+    ) {
     }
 
     public record AttendanceDaySummary(

@@ -4,7 +4,7 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { AttendanceAppeal, AttendanceDaySummary, AttendanceRecord, AttendanceRecordFilters, AttendanceSummary, LoadState } from '../types';
+import type { AttendanceAppeal, AttendanceDaySummary, AttendanceMonthSummary, AttendanceRecord, AttendanceRecordFilters, AttendanceSummary, LoadState } from '../types';
 
 const statusLabel: Record<AttendanceRecord['status'], string> = {
   absent: '결석',
@@ -18,6 +18,7 @@ function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [appeals, setAppeals] = useState<AttendanceAppeal[]>([]);
   const [summary, setSummary] = useState<AttendanceSummary>();
+  const [monthSummary, setMonthSummary] = useState<AttendanceMonthSummary>();
   const [days, setDays] = useState<AttendanceDaySummary[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -36,6 +37,7 @@ function AttendancePage() {
       .then(([recordsResponse, appealsResponse]) => {
         if (ignore) return;
         setRecords(recordsResponse.items);
+        setMonthSummary(recordsResponse.month);
         setDays(recordsResponse.days);
         setSummary(recordsResponse.summary);
         setAppeals(appealsResponse.items);
@@ -149,6 +151,7 @@ function AttendancePage() {
       {loadState === 'empty' ? <DataState title="출석 기록이 없습니다." /> : null}
       {loadState === 'loaded' ? (
         <>
+          {monthSummary ? <MonthlyAttendancePanel month={monthSummary} /> : null}
           <DailySummaryPanel days={days} />
           <AttendanceTable records={records} />
           <AttendanceAppealsPanel
@@ -163,6 +166,46 @@ function AttendancePage() {
   );
 }
 
+
+
+function MonthlyAttendancePanel({ month }: { month: AttendanceMonthSummary }) {
+  return (
+    <section className="panel">
+      <div className="section-heading">
+        <div>
+          <p>월간 상세</p>
+          <h2>월간 출석현황</h2>
+        </div>
+        <span>{month.month} · 평일 {month.weekdayCount}일</span>
+      </div>
+      <div className="attendance-month-summary" aria-label="월간 출석 집계">
+        <span>출석 {month.presentCount}일</span>
+        <span>지각 {month.lateCount}일</span>
+        <span>결석 {month.absentCount}일</span>
+        <span>소명 가능 {month.appealableCount}건</span>
+      </div>
+      {month.days.length === 0 ? (
+        <DataState title="월간 출석 캘린더가 없습니다." message="출석 월간 집계를 다시 조회해 주세요." />
+      ) : (
+        <div className="attendance-month-grid" aria-label="월간 출석 캘린더">
+          {month.days.map((day) => (
+            <article className={`attendance-month-cell ${day.weekend ? 'weekend' : ''}`} key={day.date}>
+              <strong>{day.date.slice(8)}</strong>
+              <span>{weekdayLabel(day.date)}</span>
+              {day.status ? (
+                <StatusPill tone={statusTone(day.status)}>{statusLabel[day.status]}</StatusPill>
+              ) : (
+                <StatusPill tone={day.weekend ? 'gray' : 'blue'}>{day.weekend ? '주말' : '기록 대기'}</StatusPill>
+              )}
+              <small>{formatTime(day.firstCheckInAt)} 입실 · {formatTime(day.lastCheckOutAt)} 퇴실</small>
+              {day.appealAvailable ? <small className="accent-text">소명 가능</small> : day.appealStatus ? <small>{appealStatusLabel(day.appealStatus)}</small> : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function DailySummaryPanel({ days }: { days: AttendanceDaySummary[] }) {
   return (
@@ -306,6 +349,11 @@ function AttendanceTable({ records }: { records: AttendanceRecord[] }) {
   );
 }
 
+
+function weekdayLabel(date: string) {
+  const weekday = new Date(`${date}T00:00:00`).getDay();
+  return ['일', '월', '화', '수', '목', '금', '토'][weekday] || '-';
+}
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();

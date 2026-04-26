@@ -203,6 +203,26 @@ class FrontendRouteSmokeCoverageTest {
 
 
     @Test
+    void attendancePageExposesMonthlyCalendarMatrix() throws IOException {
+        String attendancePage = Files.readString(Path.of("..", "frontend", "src", "pages", "AttendancePage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(attendancePage)
+                .contains("MonthlyAttendancePanel")
+                .contains("월간 출석현황")
+                .contains("attendance-month-grid")
+                .contains("기록 대기");
+        assertThat(appApi)
+                .contains("buildAttendanceMonthSummary")
+                .contains("month: response.month");
+        assertThat(types)
+                .contains("AttendanceMonthSummary")
+                .contains("AttendanceMonthDay");
+    }
+
+
+    @Test
     void levelPageExposesTierRoadmap() throws IOException {
         String levelPage = Files.readString(Path.of("..", "frontend", "src", "pages", "LevelPage.tsx"));
 
