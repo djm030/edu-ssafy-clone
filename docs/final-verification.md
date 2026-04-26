@@ -1,6 +1,6 @@
 # Final Verification
 
-Date: 2026-04-26 KST
+Date: 2026-04-27 KST
 Role: final verification owner
 Decision: **PASS / PRODUCTION-HARDENING VERIFIED**
 
@@ -8,7 +8,7 @@ Decision: **PASS / PRODUCTION-HARDENING VERIFIED**
 
 `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`를 TTY로 실행했지만 Docker/Maven 검증 단계에서 approval 대기와 장시간 `Working` 상태로 멈춰 직접 검증으로 전환했다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, app-profile image rebuild, 실행 중인 컨테이너 health, Nginx reverse proxy smoke가 통과했다. 그 과정에서 Spring 런타임 constructor injection, MySQL healthcheck, smoke route guard, board seed 결함을 코드로 수정했다.
 
-프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 최신 이미지 rebuild, app profile 기동, backend/frontend/Nginx smoke, Dockerized full backend test 290개까지 재검증되어 요청된 우선순위 1~9 기능 기준 PASS로 판정한다.
+프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 최신 이미지 rebuild, app profile 기동, backend/frontend/Nginx smoke, Dockerized full backend test까지 재검증되어 요청된 우선순위 1~9 기능 기준 PASS로 판정한다. 2026-04-27에는 런타임 API 문서를 Spring REST Docs HTML에서 Swagger UI/OpenAPI JSON으로 전환하고 Docker 빌드/기동 smoke를 재검증했다.
 
 ## 2. 실행한 명령어
 
@@ -25,13 +25,17 @@ docker compose config --services
 docker compose --profile app config --services
 docker compose --profile app ps
 
-docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B test
+docker run --rm -v "$PWD:/workspace" -v "$HOME/.m2:/root/.m2" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B test
+docker run --rm -v "$PWD:/workspace" -v "$HOME/.m2:/root/.m2" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=ApiDocsControllerTest,SwaggerOpenApiControllerTest,NginxReverseProxyConfigTest test
 cd frontend && npm run build
 cd frontend && npm run lint
 
 curl -fsS -i http://localhost:18080/actuator/health
 curl -fsS -I http://localhost:18000/
 curl -fsS -i http://localhost:18000/api/health
+curl -fsS -I http://localhost/swagger-ui.html
+curl -fsS http://localhost/v3/api-docs
+curl -fsS -I http://localhost/api/docs
 curl -fsS -c "$tmp_cookie" -H 'Content-Type: application/json' \
   -d '{"email":"student@ssafy.com","password":"password"}' http://localhost:18000/api/auth/login
 curl -fsS -b "$tmp_cookie" http://localhost:18000/api/me
@@ -55,7 +59,7 @@ git diff --stat
 | Gate | Result | Evidence |
 |---|---:|---|
 | 저장소/최근 커밋 확인 | PASS | 최근 커밋은 auth 세션/비밀번호, board 작성자 권한, 보안 헤더, REST Docs, cookie hardening을 포함한다. |
-| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 290, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; targeted runtime hardening/service tests also pass. |
+| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 312, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; targeted Swagger/Nginx docs tests also pass. |
 | Frontend build | PASS | `tsc -b && vite build`, 88 modules transformed, build completed. |
 | Frontend lint | PASS | `npm run lint` completed without errors. |
 | Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx; backend container healthcheck uses dependency-aware `/api/readiness`; app-profile services use `no-new-privileges:true` and backend drops Linux capabilities. |
@@ -69,6 +73,7 @@ git diff --stat
 | Docker image rebuild | PASS | `docker compose --profile app build --progress=plain backend frontend nginx` completed after Docker Hub metadata eventually resolved; `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password docker compose --profile app up -d` started mysql/redis/rabbitmq/backend/frontend/nginx healthy on the existing local volume. Backend runtime Dockerfile drops root privileges, app-profile services set `no-new-privileges:true`, backend drops Linux capabilities, and these are guarded by `DockerImageHardeningTest` plus `DockerComposeRuntimeHardeningTest`. |
 | Screen route smoke | PASS | `/ops/readiness` renders the priority 1~9 screen smoke manifest and backend access-policy matrix, `FrontendRouteSmokeCoverageTest` guards route/access-policy coverage, `scripts/dev/smoke.sh` covers API/Nginx smoke, and `scripts/dev/smoke-routes.sh` curls all 30 declared SPA routes against the built Vite preview. |
 | CI production hardening gates | PASS | `.github/workflows/ci.yml` validates Compose rendering, POSIX smoke script syntax/static wiring, frontend route smoke manifest, backend tests, REST Docs snippets, frontend lint/build; `CiWorkflowHardeningTest` prevents this gate from being removed silently. |
+| Swagger/OpenAPI runtime docs | PASS | `/swagger-ui.html` redirects to bundled Swagger UI, `/v3/api-docs` returns generated OpenAPI JSON for the implemented controller surface, `/api/docs` redirects to Swagger UI, and Nginx proxies all Swagger/OpenAPI routes to the backend. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 

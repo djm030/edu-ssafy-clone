@@ -566,3 +566,9 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Swagger/OpenAPI Runtime Docs Switch (2026-04-27 KST)
+- Replaced the packaged REST Docs HTML runtime route with Swagger UI powered by springdoc-openapi.
+- `GET /api/docs` and `GET /api/docs/` now redirect to `/swagger-ui.html`; Nginx proxies `/swagger-ui.html`, `/swagger-ui/`, and `/v3/api-docs` to the backend.
+- Added `SwaggerOpenApiControllerTest` to verify representative implemented API routes and catalog coverage in generated OpenAPI JSON.
+- Verification: Dockerized Maven targeted Swagger/Nginx/docs tests, full backend test suite, frontend build/lint, Docker Compose app rebuild, and live Swagger/OpenAPI HTTP smoke.

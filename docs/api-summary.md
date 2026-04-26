@@ -10,7 +10,7 @@
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
 - Error responses keep `{ error: { code, message } }` compatibility and now add `status`, `path`, `requestId`, and `timestamp`; `X-Request-Id` is echoed/generated for support correlation.
-- Remaining API gaps before final service readiness: mutation E2E coverage, browser-level role-flow checks, and broader Spring REST Docs/OpenAPI coverage beyond the documented auth/health/survey endpoints.
+- Remaining API gaps before final service readiness: mutation E2E coverage and browser-level role-flow checks; runtime Swagger/OpenAPI now inventories the implemented backend controller surface.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -65,23 +65,19 @@
 | `/api/readiness` | GET | none | same readiness payload as `/api/health`; HTTP 503 when required checks are down | No | `/ops/readiness` |
 | `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
 
-## Spring REST Docs Coverage (2026-04-26 KST)
-- Runtime HTML entrypoint: `GET /api/docs` serves the generated Spring REST Docs HTML from the backend so it is available through the existing Nginx `/api/` reverse proxy.
-- Complete implemented endpoint catalog: the runtime Spring REST Docs HTML now includes every controller route currently implemented in `backend/src/main/java` (141 endpoints), including endpoints without dedicated snippet examples.
-- Static build artifact: `backend/target/generated-docs/index.html`; packaged runtime copy: `backend/src/main/resources/static/api-docs/index.html`.
-- `health-check`: documents `GET /api/health` overall status plus database and temporary storage readiness probes for production smoke checks.
-- `readiness-check`: documents `GET /api/readiness` with the same probe payload and HTTP 503 semantics for failed required checks.
-- `auth-access-policy`: documents `GET /api/auth/access-policy` staff/admin API policy matrix fields consumed by `/ops/readiness`.
-- `survey-create`: documents `POST /api/surveys` request fields for survey metadata, first question, and choice options plus the persisted `{ item }` response shape.
-- `survey-update`: documents `PUT /api/surveys/{id}` replacement semantics, including response reset when questions are replaced.
-- `survey-delete`: documents `DELETE /api/surveys/{id}` deleted marker response.
-- `scripts/dev/verify-restdocs.sh`: POSIX guard that regenerates and verifies the required Spring REST Docs snippets for health/readiness/auth/survey documentation.
+## Swagger/OpenAPI Runtime Documentation (2026-04-27 KST)
+- Swagger UI entrypoint: `GET /swagger-ui.html` is served by the backend through Nginx and redirects to the bundled Swagger UI application.
+- OpenAPI JSON entrypoint: `GET /v3/api-docs` is generated from the running Spring MVC controller surface and includes the implemented `/api/**` routes.
+- Legacy compatibility: `GET /api/docs` and `GET /api/docs/` now redirect to `/swagger-ui.html` so old bookmarks do not break.
+- Nginx proxies `/swagger-ui.html`, `/swagger-ui/`, and `/v3/api-docs` to the backend; the frontend fallback no longer captures the docs assets.
+- Regression guard: `SwaggerOpenApiControllerTest` verifies representative auth/attendance/board/survey/support/learning/quest paths and checks that the cataloged backend `/api/**` routes are present in OpenAPI JSON.
+- Legacy Spring REST Docs snippet tests remain as internal contract examples for health/readiness/auth/survey until fully retired, but runtime API documentation is Swagger/OpenAPI.
 
 ## Task 66 API Documentation Status (2026-04-24)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
 - Most learner-facing endpoints currently use demo-session semantics; final auth requirement is **not complete** until RBAC/session/token enforcement is implemented and documented per endpoint.
 - Frontend connection screens are mapped in `frontend/src/App.tsx` and page components; high-level coverage is: dashboard `/`, attendance `/mycampus/attendance`, learning `/learning/**`, quest `/quest/**`, survey `/survey/**`, board/community `/community/**`, help/QNA `/help/**`, and profile `/profile/**`.
-- Keep `docs/openapi.yaml` and `scripts/dev/verify-openapi.ps1` aligned with this summary whenever request/response wrappers change.
+- Runtime Swagger/OpenAPI at `/v3/api-docs` is the source of truth for route inventory; keep this summary aligned whenever request/response wrappers change.
 
 
 ## R7.0 Contract Guardrails Added (2026-04-24)
@@ -141,4 +137,4 @@
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.
-- OpenAPI/Swagger generation or maintained machine-readable API spec.
+- Broader schema descriptions/examples on top of the generated Swagger/OpenAPI spec.

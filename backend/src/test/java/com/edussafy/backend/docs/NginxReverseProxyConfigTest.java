@@ -17,6 +17,9 @@ class NginxReverseProxyConfigTest {
 
         assertThat(config).contains("location /api/");
         assertThat(config).contains("location /actuator/");
+        assertThat(config).contains("location = /swagger-ui.html");
+        assertThat(config).contains("location /swagger-ui/");
+        assertThat(config).contains("location /v3/api-docs");
         assertThat(config).contains("proxy_pass http://ssafy_backend;");
         assertThat(config).contains("proxy_set_header X-Real-IP $remote_addr;");
         assertThat(config).contains("proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");

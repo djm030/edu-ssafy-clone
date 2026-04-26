@@ -122,12 +122,19 @@ SKIP_HTTP=true scripts/dev/smoke-routes.sh
 RUN_TESTS=false scripts/dev/verify-restdocs.sh
 ```
 
-The generated Spring REST Docs HTML is also exposed by the backend at:
-The generated Spring REST Docs HTML includes a complete implemented endpoint catalog for every current backend controller route. It is exposed by the backend at:
+Swagger UI is exposed by the backend and Nginx at:
 
 ```text
-http://localhost/api/docs
+http://localhost/swagger-ui.html
 ```
+
+The machine-readable OpenAPI JSON is available at:
+
+```text
+http://localhost/v3/api-docs
+```
+
+The legacy docs entrypoint `http://localhost/api/docs` redirects to Swagger UI.
 
 If `mvn` is installed locally, `mvn -B test` from `backend/` is also valid.
 
