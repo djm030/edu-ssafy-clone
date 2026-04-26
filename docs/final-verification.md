@@ -58,7 +58,7 @@ docker compose --profile app up -d --build
 | Nginx/frontend | PASS | `http://localhost:18000/` -> HTTP 200 via Nginx. |
 | Nginx API proxy | PASS | `http://localhost:18000/api/health` -> HTTP 200, backend health payload. |
 | Auth/session smoke | PASS | login with seeded `student@ssafy.com` / `password` returned session cookie and `/api/me` returned the current user. |
-| Domain read smoke | PASS | attendance, board, survey, quest, support list endpoints returned HTTP 200 through Nginx with session cookie. |
+| Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` stalled while loading Docker Hub metadata for base images and was cancelled; existing running app profile remained healthy. |
 | Browser E2E / visual | UNKNOWN | No Playwright/Cypress/visual baseline was available or executed. |
 

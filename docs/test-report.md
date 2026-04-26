@@ -1,5 +1,10 @@
 # Test Report
 
+## Operations Readiness Domain Smoke Expansion (2026-04-26 KST)
+- Expanded the frontend `/ops/readiness` smoke runner to include notifications, learning materials, and learning replay list endpoints in addition to auth/session, profile, attendance, board, survey, quest, support, Nginx, backend health, and actuator checks.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## Backend Health Readiness Probe (2026-04-26 KST)
 - Expanded `GET /api/health` from a static status payload to production smoke probes for database connectivity, writable temporary attachment storage, service id, active profile, and checked timestamp.
 - Frontend operations readiness now requires all required backend health checks to be `UP` instead of only checking the top-level status field.

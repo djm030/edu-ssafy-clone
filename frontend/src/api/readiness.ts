@@ -120,6 +120,24 @@ export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
     run: () => expectJson('/api/attendance/records?size=1', (payload) => hasArrayField(payload, 'items'), '출석 목록 API가 응답했습니다.'),
   },
   {
+    id: 'notifications',
+    label: 'Notifications',
+    target: '/api/notifications?size=1',
+    run: () => expectJson('/api/notifications?size=1', (payload) => hasArrayField(payload, 'items'), '알림 목록 API가 응답했습니다.'),
+  },
+  {
+    id: 'learning-materials',
+    label: 'Learning materials',
+    target: '/api/learning/materials?size=1',
+    run: () => expectJson('/api/learning/materials?size=1', (payload) => hasArrayField(payload, 'items'), '학습자료 목록 API가 응답했습니다.'),
+  },
+  {
+    id: 'learning-replays',
+    label: 'Learning replays',
+    target: '/api/learning/replays?size=1',
+    run: () => expectJson('/api/learning/replays?size=1', (payload) => hasArrayField(payload, 'items'), '강의 다시보기 목록 API가 응답했습니다.'),
+  },
+  {
     id: 'board',
     label: 'Board',
     target: '/api/boards/free/posts?size=1',
