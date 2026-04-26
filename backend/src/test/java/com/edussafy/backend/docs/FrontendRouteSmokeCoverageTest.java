@@ -326,6 +326,24 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("community-board-table .table-row");
     }
 
+    @Test
+    void anonymousBoardDetailExposesBlindAndDisplayPolicies() throws IOException {
+        String boardDetail = Files.readString(Path.of("..", "frontend", "src", "pages", "BoardDetailPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(boardDetail)
+                .contains("AnonymousDisplayPolicy")
+                .contains("익명 표시 규칙")
+                .contains("AnonymousBlockedContent")
+                .contains("anonymousBlocked")
+                .contains("블라인드 처리된 게시글입니다")
+                .contains("익명 게시글 제한 액션");
+        assertThat(styles)
+                .contains("anonymous-display-policy")
+                .contains("anonymous-blocked-content")
+                .contains("anonymous-restricted-actions");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {

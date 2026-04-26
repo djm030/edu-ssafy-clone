@@ -79,6 +79,7 @@ function DetailContent({ boardCode, post, readOnly, listPath }: { boardCode: Boa
   const [submittingPost, setSubmittingPost] = useState(false);
   const readonlyMessage = '공지/FAQ는 운영자가 관리하는 읽기 전용 콘텐츠입니다.';
   const [postMessage, setPostMessage] = useState(readOnly ? readonlyMessage : '게시글 수정 또는 삭제가 가능합니다.');
+  const anonymousBlocked = boardCode === 'anonymous' && currentPost.safety?.status === 'blinded';
 
   useEffect(() => {
     setCurrentPost(post);
@@ -155,7 +156,12 @@ function DetailContent({ boardCode, post, readOnly, listPath }: { boardCode: Boa
         </div>
       </dl>
       {boardCode === 'anonymous' && currentPost.safety ? <AnonymousSafetyPanel safety={currentPost.safety} /> : null}
-      <div className="detail-body">{currentPost.content || '등록된 본문이 없습니다.'}</div>
+      {boardCode === 'anonymous' ? <AnonymousDisplayPolicy safety={currentPost.safety} /> : null}
+      {anonymousBlocked ? (
+        <AnonymousBlockedContent />
+      ) : (
+        <div className="detail-body">{currentPost.content || '등록된 본문이 없습니다.'}</div>
+      )}
       {readOnly ? (
         <section className="board-actions readonly-board-actions" aria-label="읽기 전용 안내">
           <StatusPill tone="blue">읽기 전용</StatusPill>
@@ -198,16 +204,45 @@ function DetailContent({ boardCode, post, readOnly, listPath }: { boardCode: Boa
             ) : null}
             <p className="form-message" aria-live="polite">{postMessage}</p>
           </section>
-          <AttachmentManager boardCode={boardCode} post={currentPost} onChange={(attachments) => {
-            setCurrentPost((previous) => ({ ...previous, attachments, hasAttachment: attachments.length > 0 }));
-          }} />
-          <BoardActions boardCode={boardCode} post={currentPost} />
+          {anonymousBlocked ? (
+            <section className="board-actions anonymous-restricted-actions" aria-label="익명 게시글 제한 액션">
+              <StatusPill tone="red">블라인드</StatusPill>
+              <p className="form-message">신고 누적으로 블라인드 처리된 게시글은 댓글, 첨부, 추천, 찜, 추가 신고 액션이 제한됩니다.</p>
+            </section>
+          ) : (
+            <>
+              <AttachmentManager boardCode={boardCode} post={currentPost} onChange={(attachments) => {
+                setCurrentPost((previous) => ({ ...previous, attachments, hasAttachment: attachments.length > 0 }));
+              }} />
+              <BoardActions boardCode={boardCode} post={currentPost} />
+            </>
+          )}
         </>
       )}
       <div className="action-row">
         <a className="ghost-button" href={listPath}>목록</a>
       </div>
     </article>
+  );
+}
+
+function AnonymousDisplayPolicy({ safety }: { safety?: BoardSafetySummary | null }) {
+  return (
+    <section className="anonymous-display-policy" aria-label="익명 표시 규칙">
+      <StatusPill tone={safety?.status === 'blinded' ? 'red' : safety?.status === 'watch' ? 'yellow' : 'blue'}>
+        {safety?.label || '익명 보호'}
+      </StatusPill>
+      <p>{safety?.notice || '익명 게시판은 작성자 이름을 공개하지 않고, 신고 누적 상태에 따라 본문과 댓글 노출이 제한됩니다.'}</p>
+    </section>
+  );
+}
+
+function AnonymousBlockedContent() {
+  return (
+    <div className="anonymous-blocked-content" role="status">
+      <strong>블라인드 처리된 게시글입니다.</strong>
+      <p>운영 정책에 따라 본문과 댓글이 숨김 처리되었습니다. 필요한 경우 HELP DESK를 통해 문의해 주세요.</p>
+    </div>
   );
 }
 

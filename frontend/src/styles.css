@@ -1400,6 +1400,28 @@ h2 {
 }
 
 
+.anonymous-display-policy,
+.anonymous-blocked-content,
+.anonymous-restricted-actions {
+  background: #fff8f0;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 14px;
+}
+
+.anonymous-display-policy p,
+.anonymous-blocked-content p {
+  color: #7c2d12;
+  margin: 0;
+}
+
+.anonymous-blocked-content strong {
+  color: #9a3412;
+}
+
 .board-category-select {
   color: #475467;
   display: grid;
