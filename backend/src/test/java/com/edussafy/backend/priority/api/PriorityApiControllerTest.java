@@ -723,7 +723,8 @@ class PriorityApiControllerTest {
                 new EducationAttendanceSummary("2026-04", 18, 1, 0, 1),
                 new EducationLearningSummary(3, 5, 8, 320),
                 new EducationQuestSummary(2, 5, 0),
-                new EducationPointSummary(0, 1153, "Bronze Lv.3")
+                new EducationPointSummary(0, 1153, "Bronze Lv.3"),
+                new com.edussafy.backend.priority.dto.PriorityDtos.EducationProfileSummary("Seoul", "12th", "Java", "2026년 상반기")
         ));
 
         mockMvc.perform(get("/api/mycampus/education-status"))
@@ -732,7 +733,9 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.attendance.appealPendingCount").value(1))
                 .andExpect(jsonPath("$.learning.inProgressElearningCount").value(3))
                 .andExpect(jsonPath("$.quests.submittedCount").value(5))
-                .andExpect(jsonPath("$.points.levelName").value("Bronze Lv.3"));
+                .andExpect(jsonPath("$.points.levelName").value("Bronze Lv.3"))
+                .andExpect(jsonPath("$.profile.trackName").value("Java"))
+                .andExpect(jsonPath("$.profile.semesterLabel").value("2026년 상반기"));
     }
 
     private AttendanceMonthSummary emptyAttendanceMonth() {

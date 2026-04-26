@@ -47,6 +47,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationProfileSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationStatusResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
@@ -610,7 +611,13 @@ public class PriorityApiService {
                 () -> repository.findEducationPointSummary(user.id()).orElseGet(() -> educationPointFallback(DEMO_LEVEL)),
                 educationPointFallback(DEMO_LEVEL)
         );
-        return new EducationStatusResponse(attendance, learning, quests, points);
+        EducationProfileSummary profile = new EducationProfileSummary(
+                user.campusName(),
+                user.cohortName(),
+                user.trackName(),
+                semesterLabel(LocalDate.now())
+        );
+        return new EducationStatusResponse(attendance, learning, quests, points, profile);
     }
 
     public AttendanceRecordsResponse attendanceRecords() {
@@ -2679,6 +2686,10 @@ public class PriorityApiService {
     private String normalizeWithDefault(String value, String defaultValue) {
         String normalized = normalizeNullable(value);
         return normalized == null ? defaultValue : normalized;
+    }
+
+    private String semesterLabel(LocalDate date) {
+        return "%d년 %s".formatted(date.getYear(), date.getMonthValue() <= 6 ? "상반기" : "하반기");
     }
 
     private <T> T safe(Supplier<T> supplier, T fallback) {

@@ -853,3 +853,35 @@ h2 {
   padding: 16px;
   white-space: pre-wrap;
 }
+
+.education-profile-panel {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.education-metric-strip {
+  display: flex;
+  gap: 10px;
+}
+
+.education-metric-strip div {
+  background: #f8fafc;
+  border: 1px solid #d8dee8;
+  border-radius: 999px;
+  display: grid;
+  gap: 2px;
+  min-width: 110px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.education-metric-strip span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.education-metric-strip strong {
+  color: #1f2933;
+}

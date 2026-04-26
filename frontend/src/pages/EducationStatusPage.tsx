@@ -64,6 +64,7 @@ function EducationStatusContent({ summary }: { summary: EducationStatusSummary }
 
   return (
     <>
+      <EducationProfilePanel summary={summary} />
       <div className="summary-grid">
         <StatusCard title="이번 달 출석" value={`${summary.attendance.presentDays}일`} detail={`${summary.attendance.month} · 지각 ${summary.attendance.lateDays} · 결석 ${summary.attendance.absentDays}`} href="/mycampus/attendance" />
         <StatusCard title="학습 진행" value={`${summary.learning.inProgressElearningCount}개`} detail={`이수 ${requiredStudyPercent}% · 다시보기 ${summary.learning.replayWatchMinutes}분`} href="/mycampus/elearning" />
@@ -94,6 +95,32 @@ function EducationStatusContent({ summary }: { summary: EducationStatusSummary }
   );
 }
 
+function EducationProfilePanel({ summary }: { summary: EducationStatusSummary }) {
+  const profile = summary.profile;
+  if (!profile) return null;
+
+  const requiredStudyPercent = summary.learning.totalRequiredStudyCount > 0
+    ? Math.round((summary.learning.completedRequiredStudyCount / summary.learning.totalRequiredStudyCount) * 100)
+    : 0;
+  const attendanceTotal = summary.attendance.presentDays + summary.attendance.lateDays + summary.attendance.absentDays;
+  const attendancePercent = attendanceTotal > 0 ? Math.round((summary.attendance.presentDays / attendanceTotal) * 100) : 0;
+
+  return (
+    <section className="panel education-profile-panel" aria-label="교육현황 학기 및 트랙 요약">
+      <div>
+        <p className="eyebrow">SEMESTER / TRACK</p>
+        <h2>{profile.semesterLabel} 교육현황</h2>
+        <p>{profile.campusName} · {profile.cohortName} · {profile.trackName}</p>
+      </div>
+      <div className="education-metric-strip">
+        <MetricBadge label="출석률" value={`${attendancePercent}%`} />
+        <MetricBadge label="필수학습 이수" value={`${requiredStudyPercent}%`} />
+        <MetricBadge label="EXP" value={summary.points.experiencePoint.toLocaleString('ko-KR')} />
+      </div>
+    </section>
+  );
+}
+
 function StatusCard({ title, value, detail, href }: { title: string; value: string; detail: string; href: string }) {
   return (
     <section className="stat-card">
@@ -102,6 +129,15 @@ function StatusCard({ title, value, detail, href }: { title: string; value: stri
       <p>{detail}</p>
       <a className="text-link" href={href}>상세 보기</a>
     </section>
+  );
+}
+
+function MetricBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

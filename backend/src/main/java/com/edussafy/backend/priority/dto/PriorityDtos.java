@@ -211,7 +211,16 @@ public final class PriorityDtos {
             EducationAttendanceSummary attendance,
             EducationLearningSummary learning,
             EducationQuestSummary quests,
-            EducationPointSummary points
+            EducationPointSummary points,
+            EducationProfileSummary profile
+    ) {
+    }
+
+    public record EducationProfileSummary(
+            String campusName,
+            String cohortName,
+            String trackName,
+            String semesterLabel
     ) {
     }
 

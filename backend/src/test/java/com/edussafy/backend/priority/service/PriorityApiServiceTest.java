@@ -47,6 +47,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionResponse
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationProfileSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationStatusResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
@@ -636,6 +637,7 @@ class PriorityApiServiceTest {
         assertThat(response.learning().replayWatchMinutes()).isEqualTo(320);
         assertThat(response.quests().openCount()).isEqualTo(2);
         assertThat(response.points().levelName()).isEqualTo("Bronze Lv.3");
+        assertThat(response.profile()).isEqualTo(new EducationProfileSummary("Seoul", "12th", "Java", "2026년 상반기"));
         verify(repository).findEducationAttendanceSummary(eq(USER.id()), any());
     }
 

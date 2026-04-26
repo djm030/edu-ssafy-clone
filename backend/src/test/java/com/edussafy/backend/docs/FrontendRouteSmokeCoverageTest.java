@@ -289,6 +289,24 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("excerpt(item.content)");
     }
 
+    @Test
+    void educationStatusPageExposesSemesterTrackAndAchievementMetrics() throws IOException {
+        String educationStatusPage = Files.readString(Path.of("..", "frontend", "src", "pages", "EducationStatusPage.tsx"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(types)
+                .contains("semesterLabel")
+                .contains("cohortName")
+                .contains("trackName");
+        assertThat(educationStatusPage)
+                .contains("EducationProfilePanel")
+                .contains("교육현황 학기 및 트랙 요약")
+                .contains("SEMESTER / TRACK")
+                .contains("출석률")
+                .contains("필수학습 이수")
+                .contains("MetricBadge");
+    }
+
 
     @Test
     void elearningPageExposesOperationalSummaryAndMeta() throws IOException {

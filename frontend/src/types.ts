@@ -202,6 +202,12 @@ export interface DashboardSummary {
 }
 
 export interface EducationStatusSummary {
+  profile?: {
+    campusName: string;
+    cohortName: string;
+    trackName: string;
+    semesterLabel: string;
+  };
   attendance: {
     month: string;
     presentDays: number;
