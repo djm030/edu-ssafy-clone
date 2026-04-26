@@ -37,6 +37,69 @@ test('external service links expose enabled and disabled states without credenti
   await expect(page.getByText('비활성')).toBeVisible();
 });
 
+test('demo learner can complete mycampus learning actions without real credentials', async ({ page }) => {
+  await loginAsDemoLearner(page);
+
+  await test.step('이러닝 이어보기 이력을 저장한다', async () => {
+    await page.goto('/mycampus/elearning');
+    await expect(page.getByRole('heading', { name: '학습중 이러닝' })).toBeVisible();
+    await page.getByRole('button', { name: '이어보기' }).first().click();
+    await expect(page).toHaveURL(/\/mycampus\/elearning\/1$/);
+    await expect(page.getByRole('heading', { name: '학습중 이러닝 상세' })).toBeVisible();
+  });
+
+  await test.step('찜한 항목을 해제한다', async () => {
+    await page.goto('/mycampus/bookmarks');
+    await expect(page.getByRole('heading', { name: '찜한 목록' })).toBeVisible();
+    await page.getByRole('button', { name: '찜 해제' }).first().click();
+    await expect(page.getByText('찜이 해제되었습니다.')).toBeVisible();
+  });
+
+  await test.step('서류 파일을 제출한다', async () => {
+    await page.goto('/mycampus/documents');
+    await expect(page.getByRole('heading', { name: '서류제출' })).toBeVisible();
+    const fileInput = page.locator('input[type="file"]').first();
+    await fileInput.setInputFiles({
+      name: 'proof.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('demo document proof'),
+    });
+    await expect(fileInput).toHaveValue(/proof\.pdf/);
+    await page.waitForTimeout(100);
+    await page.locator('.list-card .primary-action').first().click();
+    await expect(page.getByText('서류 제출이 완료되었습니다.')).toBeVisible();
+  });
+
+  await test.step('교육생 서약서에 동의한다', async () => {
+    await page.goto('/mycampus/pledges');
+    await expect(page.getByRole('heading', { name: '교육생 서약서' })).toBeVisible();
+    await page.getByLabel(/서약 내용을 확인했고 동의합니다/).first().check();
+    await page.getByRole('button', { name: '동의 제출' }).first().click();
+    await expect(page.getByText('서약 동의가 저장되었습니다.')).toBeVisible();
+  });
+
+  await test.step('필수학습 이수 상태를 저장한다', async () => {
+    await page.goto('/learning/required-studies');
+    await expect(page.getByRole('heading', { name: '필수학습', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '이수 처리' }).click();
+    await expect(page.getByText('이수 처리가 완료되었습니다.')).toBeVisible();
+  });
+
+  await test.step('라이브 입장 기록을 저장한다', async () => {
+    await page.goto('/learning/live');
+    await expect(page.getByRole('heading', { name: '라이브 바로가기' })).toBeVisible();
+    await page.getByRole('button', { name: '입장' }).first().click();
+    await expect(page.getByText('입장 기록을 저장했습니다.')).toBeVisible();
+  });
+
+  await test.step('내강의 다시보기 시청 기록을 저장한다', async () => {
+    await page.goto('/learning/replays/my');
+    await expect(page.getByRole('heading', { name: '내강의 다시보기' })).toBeVisible();
+    await page.getByRole('button', { name: '시청 기록' }).first().click();
+    await expect(page.getByText('시청 기록을 저장했습니다.')).toBeVisible();
+  });
+});
+
 test('demo learner can complete core write flows without real EduSSAFY credentials', async ({ page }) => {
   await loginAsDemoLearner(page);
 
