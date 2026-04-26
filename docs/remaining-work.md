@@ -1,5 +1,16 @@
 # Remaining Work
 
+## Docker Image Rebuild Recheck (2026-04-26 KST)
+
+기능: Docker, 테스트, Spring REST Docs, 프로덕션 하드닝
+상태: BLOCKED
+원인: `docker compose --profile app build backend frontend nginx`가 Docker Hub base image metadata loading 단계(`maven:3.9.9-eclipse-temurin-21`, `eclipse-temurin:21-jre`)에서 90초 이상 진행되지 않아 중단했다.
+시도한 작업: app profile backend/frontend/nginx 이미지 rebuild 재검증.
+수정된 파일: 없음(검증/기록만 수행).
+검증 명령: `docker compose --profile app build backend frontend nginx`
+실패 로그 요약: backend Dockerfile metadata load 단계에서 장시간 정지, 이전 `docker compose --profile app up -d --build`와 동일한 Docker Hub metadata/pull 계열 blocker로 판단.
+다음에 해야 할 일: Docker Hub 접근이 안정적인 네트워크 또는 base image cache가 준비된 CI/호스트에서 app profile rebuild를 재실행하고, 성공 시 `docs/final-verification.md`의 Docker image rebuild row를 PASS로 갱신한다.
+
 ## Final Verification Remaining Work (2026-04-26 KST)
 - Overall status: **PARTIAL**, not final complete.
 - PASS evidence now exists for auth/profile, attendance/appeals, board/post/comment/reaction, notifications, learning materials/resources/reactions, quests/submissions, support tickets/answers/attachments, local compose health, backend tests, frontend lint/build.

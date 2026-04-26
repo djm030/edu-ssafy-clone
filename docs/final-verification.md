@@ -60,7 +60,7 @@ docker compose --profile app up -d --build
 | Auth/session smoke | PASS | login with seeded `student@ssafy.com` / `password` returned session cookie and `/api/me` returned the current user. |
 | Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
-| Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` stalled while loading Docker Hub metadata for base images and was cancelled; existing running app profile remained healthy. Backend runtime Dockerfile now drops root privileges and is guarded by `DockerImageHardeningTest`. |
+| Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` and a later `docker compose --profile app build backend frontend nginx` recheck both stalled while loading Docker Hub metadata for base images and were cancelled; existing running app profile remained healthy. Backend runtime Dockerfile now drops root privileges and is guarded by `DockerImageHardeningTest`. |
 | Screen route smoke | PASS | `/ops/readiness` renders the priority 1~9 screen smoke manifest and backend access-policy matrix, `FrontendRouteSmokeCoverageTest` guards route/access-policy coverage, `scripts/dev/smoke.sh` covers API/Nginx smoke, and `scripts/dev/smoke-routes.sh` curls all 30 declared SPA routes against the built Vite preview. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
