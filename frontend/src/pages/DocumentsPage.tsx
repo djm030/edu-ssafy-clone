@@ -45,9 +45,21 @@ function DocumentsPage({ requestId }: DocumentsPageProps) {
   useEffect(load, [requestId]);
 
   const handleSubmit = async (requestId: number, file?: File) => {
+    const request = items.find((item) => item.id === requestId);
     if (!file) {
       setMutationMessage('제출할 파일을 선택해 주세요.');
       return;
+    }
+    if (request) {
+      const validation = validateDocumentFile(file, request);
+      if (!validation.valid) {
+        setMutationMessage(validation.message);
+        return;
+      }
+      if (!canSubmitDocument(request)) {
+        setMutationMessage(documentActionDisabledReason(request));
+        return;
+      }
     }
     if (pendingDocumentAction !== null) return;
     setPendingDocumentAction(`submit:${requestId}`);
@@ -110,6 +122,10 @@ function DocumentList({ items, pendingAction, onCancel, onSubmit }: DocumentList
         const submitPending = pendingAction === `submit:${item.id}`;
         const cancelPending = pendingAction === `cancel:${item.id}`;
         const actionPending = pendingAction !== null;
+        const selectedFile = selectedFiles[item.id];
+        const validation = validateDocumentFile(selectedFile, item);
+        const canSubmit = canSubmitDocument(item) && validation.valid;
+        const disabledReason = !canSubmitDocument(item) ? documentActionDisabledReason(item) : validation.message;
         return (
           <article className="list-card" key={item.id}>
             <div>
@@ -140,13 +156,16 @@ function DocumentList({ items, pendingAction, onCancel, onSubmit }: DocumentList
             <div className="action-row">
               <a className="ghost-button" href={`/mycampus/documents/${item.id}`}>상세 이력</a>
               <input
+                accept={fileAcceptValue(item.allowedExtensions)}
                 aria-label={`${item.title} 파일 선택`}
                 onChange={(event) => setSelectedFiles((current) => ({ ...current, [item.id]: event.target.files?.[0] }))}
                 type="file"
               />
-              <button className="primary-action" disabled={actionPending} onClick={() => onSubmit(item.id, selectedFiles[item.id])} type="button">
+              {selectedFile ? <small className={validation.valid ? 'document-file-validation ok' : 'document-file-validation error'}>{validation.message}</small> : null}
+              <button className="primary-action" disabled={actionPending || !canSubmit} onClick={() => onSubmit(item.id, selectedFile)} type="button">
                 {submitPending ? '제출 중' : '제출'}
               </button>
+              {!canSubmit ? <small className="document-disabled-reason">{disabledReason}</small> : null}
               {canCancel ? (
                 <button className="ghost-button" disabled={actionPending} onClick={() => onCancel(item.id, attachment?.submissionId)} type="button">
                   {cancelPending ? '취소 중' : '제출 취소'}
@@ -175,6 +194,9 @@ function DocumentDetailPanel({ item, pendingAction, onCancel, onSubmit }: Docume
   const submitPending = pendingAction === `submit:${item.id}`;
   const cancelPending = pendingAction === `cancel:${item.id}`;
   const actionPending = pendingAction !== null;
+  const validation = validateDocumentFile(selectedFile, item);
+  const canSubmit = canSubmitDocument(item) && validation.valid;
+  const disabledReason = !canSubmitDocument(item) ? documentActionDisabledReason(item) : validation.message;
 
   return (
     <div className="document-detail-grid">
@@ -223,11 +245,13 @@ function DocumentDetailPanel({ item, pendingAction, onCancel, onSubmit }: Docume
             <p>아직 등록된 검토 의견이 없습니다.</p>
           </div>
         )}
-        <div className="action-row">
-          <input aria-label={`${item.title} 상세 파일 선택`} onChange={(event) => setSelectedFile(event.target.files?.[0])} type="file" />
-          <button className="primary-action" disabled={actionPending} onClick={() => onSubmit(item.id, selectedFile)} type="button">
-            {submitPending ? '제출 중' : '다시 제출'}
+        <div className="action-row document-upload-actions">
+          <input accept={fileAcceptValue(item.allowedExtensions)} aria-label={`${item.title} 상세 파일 선택`} onChange={(event) => setSelectedFile(event.target.files?.[0])} type="file" />
+          {selectedFile ? <small className={validation.valid ? 'document-file-validation ok' : 'document-file-validation error'}>{validation.message}</small> : null}
+          <button className="primary-action" disabled={actionPending || !canSubmit} onClick={() => onSubmit(item.id, selectedFile)} type="button">
+            {submitPending ? '제출 중' : item.status === 'rejected' ? '보완 제출' : '다시 제출'}
           </button>
+          {!canSubmit ? <small className="document-disabled-reason">{disabledReason}</small> : null}
           {canCancel ? (
             <button className="ghost-button" disabled={actionPending} onClick={() => onCancel(item.id, latestSubmissionId)} type="button">
               {cancelPending ? '취소 중' : '제출 취소'}
@@ -287,6 +311,58 @@ function DocumentFileHistory({ item }: { item: DocumentRequestItem }) {
       )}
     </article>
   );
+}
+
+
+interface FileValidationResult {
+  valid: boolean;
+  message: string;
+}
+
+function validateDocumentFile(file: File | undefined, item: DocumentRequestItem): FileValidationResult {
+  if (!file) return { valid: false, message: '제출할 파일을 선택해 주세요.' };
+  const allowedExtensions = parseAllowedExtensions(item.allowedExtensions);
+  const extension = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : '';
+  if (allowedExtensions.length && extension && !allowedExtensions.includes(extension)) {
+    return { valid: false, message: `허용되지 않는 확장자입니다. 허용: ${allowedExtensions.join(', ')}` };
+  }
+  if (allowedExtensions.length && !extension) {
+    return { valid: false, message: `파일 확장자를 확인해 주세요. 허용: ${allowedExtensions.join(', ')}` };
+  }
+  if (item.maxFileSizeBytes > 0 && file.size > item.maxFileSizeBytes) {
+    return { valid: false, message: `파일 크기가 초과되었습니다. 최대 ${formatBytes(item.maxFileSizeBytes)}까지 제출할 수 있습니다.` };
+  }
+  return { valid: true, message: `${file.name} · ${formatBytes(file.size)} · 제출 가능` };
+}
+
+function parseAllowedExtensions(value: string): string[] {
+  return value
+    .split(/[ ,/]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((item) => item !== '*' && item !== 'all')
+    .map((item) => (item.startsWith('.') ? item : `.${item}`));
+}
+
+function fileAcceptValue(value: string): string {
+  return parseAllowedExtensions(value).join(',');
+}
+
+function canSubmitDocument(item: DocumentRequestItem): boolean {
+  if (item.status === 'approved' || item.status === 'submitted') return false;
+  if (!item.dueAt) return true;
+  const due = new Date(item.dueAt).getTime();
+  return Number.isNaN(due) || due >= Date.now();
+}
+
+function documentActionDisabledReason(item: DocumentRequestItem): string {
+  if (item.status === 'approved') return '검토 완료된 서류는 다시 제출할 수 없습니다.';
+  if (item.status === 'submitted') return '검토 대기 중인 제출 건은 취소 후 다시 제출할 수 있습니다.';
+  if (item.dueAt) {
+    const due = new Date(item.dueAt).getTime();
+    if (!Number.isNaN(due) && due < Date.now()) return '제출 마감일이 지나 제출할 수 없습니다.';
+  }
+  return '제출할 파일을 선택해 주세요.';
 }
 
 function fileToDocumentDraft(file: File): Promise<{ filename: string; mimeType?: string; contentBase64: string }> {

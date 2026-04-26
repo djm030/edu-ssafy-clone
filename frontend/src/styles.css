@@ -1270,6 +1270,27 @@ h2 {
   font-weight: 800;
 }
 
+
+.document-upload-actions {
+  align-items: flex-start;
+}
+
+.document-file-validation,
+.document-disabled-reason {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.document-file-validation.ok {
+  color: #1f7a4d;
+}
+
+.document-file-validation.error,
+.document-disabled-reason {
+  color: #b42318;
+}
+
 .document-detail-grid {
   display: grid;
   gap: 16px;

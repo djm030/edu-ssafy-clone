@@ -410,6 +410,11 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("제출 파일 이력")
                 .contains("보완 요청/검토 의견")
                 .contains("deadlineLabel")
+                .contains("validateDocumentFile")
+                .contains("fileAcceptValue")
+                .contains("documentActionDisabledReason")
+                .contains("document-file-validation")
+                .contains("검토 완료된 서류는 다시 제출할 수 없습니다")
                 .contains("pendingDocumentAction")
                 .contains("제출 중")
                 .contains("취소 중");
