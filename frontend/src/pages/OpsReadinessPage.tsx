@@ -42,7 +42,7 @@ function OpsReadinessPage() {
     <main className="page">
       <PageHeader
         action={<button className="primary-action" disabled={state === 'loading'} onClick={refresh} type="button">다시 점검</button>}
-        description="Nginx, backend health, session, 핵심 도메인 API를 실제 엔드포인트로 호출해 배포 직전 smoke 상태를 확인합니다."
+        description="Nginx, backend health, actuator metrics, session, 핵심 도메인 API를 실제 엔드포인트로 호출해 배포 직전 smoke 상태를 확인합니다."
         eyebrow="PRODUCTION SMOKE"
         title="운영 준비 점검"
       />

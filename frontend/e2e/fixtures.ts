@@ -115,11 +115,27 @@ export async function installApiFixture(page: Page, options: FixtureOptions = {}
 
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
+    const method = route.request().method();
+    const json = (body: unknown) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname === '/nginx-health') {
+      return route.fulfill({ contentType: 'text/plain', body: 'ok' });
+    }
+    if (url.pathname === '/actuator/health') {
+      return json({ status: 'UP' });
+    }
+    if (url.pathname === '/actuator/metrics') {
+      return json({ names: ['application.started.time', 'http.server.requests', 'jvm.memory.used'] });
+    }
+    if (url.pathname === '/actuator/prometheus') {
+      return route.fulfill({
+        contentType: 'text/plain; version=0.0.4',
+        body: '# HELP jvm_memory_used_bytes The amount of used memory\n# TYPE jvm_memory_used_bytes gauge\njvm_memory_used_bytes{area="heap",id="G1 Eden Space"} 1.0\n# HELP http_server_requests_seconds_count HTTP server request count\n# TYPE http_server_requests_seconds_count counter\nhttp_server_requests_seconds_count{method="GET",uri="/api/readiness",status="200"} 1.0\n',
+      });
+    }
     if (!url.pathname.startsWith('/api/')) {
       return route.continue();
     }
 
-    const json = (body: unknown) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
     if (url.pathname === '/api/auth/login' || url.pathname === '/api/me') {
       return json({ user: currentUser });
     }
@@ -128,6 +144,91 @@ export async function installApiFixture(page: Page, options: FixtureOptions = {}
     }
     if (url.pathname === '/api/auth/session') {
       return json({ authenticated: true, expiresAt: '2026-12-31T23:59:59.000Z', maxInactiveSeconds: 3600, secondsRemaining: 3600 });
+    }
+    if (url.pathname === '/api/readiness') {
+      return json({
+        status: 'UP',
+        checkedAt: timestamp,
+        service: 'edussafy-backend',
+        profile: 'e2e',
+        checks: [
+          { name: 'database', status: 'UP', required: true, message: 'fixture database ready' },
+          { name: 'temp-storage', status: 'UP', required: true, message: 'fixture storage ready' },
+        ],
+      });
+    }
+    if (url.pathname === '/api/auth/access-policy') {
+      return json({
+        items: [
+          { id: 'classmate-notification', feature: '우리반 알림', method: 'POST', pathPattern: '/api/community/classmates/{id}/notifications', allowedRoles: ['coach', 'admin'] },
+        ],
+      });
+    }
+    if (url.pathname === '/api/attendance/records') {
+      return json({
+        items: [{
+          id: 1,
+          date: '2026-04-26',
+          status: 'late',
+          checkIn: '09:17',
+          checkOut: '18:00',
+          appealAvailable: true,
+        }],
+      });
+    }
+    if (url.pathname === '/api/attendance/appeals' && method === 'POST') {
+      return json({ item: { id: 9001, status: 'requested' } });
+    }
+    if (url.pathname === '/api/attendance/appeals') {
+      return json({ items: [] });
+    }
+    if (url.pathname === '/api/notifications') {
+      return json({ items: [{ id: 1, title: '운영 smoke 알림', read: false, createdAt: timestamp }] });
+    }
+    if (url.pathname === '/api/learning/materials') {
+      return json({ items: [{ id: 1, title: '운영 smoke 학습자료', category: 'Java' }] });
+    }
+    if (url.pathname === '/api/learning/replays') {
+      return json({ items: [replayItem] });
+    }
+    if (url.pathname === '/api/boards/free/posts' && method === 'POST') {
+      return json({ item: { id: 201, boardCode: 'free', title: '브라우저 E2E 게시글', content: '실제 계정 없이 데모 세션에서 작성 흐름을 검증합니다.', authorName: '김싸피', createdAt: timestamp } });
+    }
+    if (url.pathname === '/api/boards/free/posts') {
+      return json({ items: [{ id: 201, boardCode: 'free', title: '운영 smoke 게시글', authorName: '김싸피', createdAt: timestamp }], page: { page: 1, size: 1, totalItems: 1, totalPages: 1 } });
+    }
+    if (url.pathname === '/api/boards/free/posts/201') {
+      return json({ post: { id: 201, boardCode: 'free', title: '운영 smoke 게시글', content: '게시글 상세 본문', authorName: '김싸피', createdAt: timestamp, viewCount: 3, commentCount: 0, reactionCount: 0, bookmarkCount: 0, comments: [], attachments: [] } });
+    }
+    if (url.pathname === '/api/boards/free/posts/201/comments') {
+      return json({ item: { id: 301, postId: 201, content: '브라우저 E2E 댓글', authorName: '김싸피', createdAt: timestamp, replies: [] } });
+    }
+    if (url.pathname === '/api/surveys') {
+      return json({ items: [{ id: 1, title: '운영 smoke 설문', status: 'open', questionCount: 2, questions: [{ id: 1, text: '만족도', type: 'long_text' }, { id: 2, text: '추가 의견', type: 'long_text' }] }] });
+    }
+    if (url.pathname === '/api/surveys/1') {
+      return json({ item: { id: 1, title: '운영 smoke 설문', status: 'open', questionCount: 2, questions: [{ id: 1, text: '만족도', type: 'long_text' }, { id: 2, text: '추가 의견', type: 'long_text' }] } });
+    }
+    if (url.pathname === '/api/surveys/1/responses') {
+      return json({ item: { id: 501, completed: true, answerCount: 2 } });
+    }
+    if (url.pathname === '/api/quests') {
+      return json({ items: [{ id: 1, title: '운영 smoke Quest', status: 'open', dueAt: '2026-05-01T00:00:00.000Z' }] });
+    }
+    if (url.pathname === '/api/quests/1') {
+      return json({ item: { id: 1, title: '운영 smoke Quest', status: 'open', description: 'Quest 제출 smoke', dueAt: '2026-05-01T00:00:00.000Z' } });
+    }
+    if (url.pathname === '/api/quests/1/submission') {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: { message: 'quest submission not found' } }) });
+    }
+    if (url.pathname === '/api/quests/1/submissions') {
+      return json({ item: { id: 701, questId: 1, status: 'submitted', demo: true } });
+    }
+    if (url.pathname === '/api/support/tickets' && method === 'POST') {
+      return json({ item: { id: 801, title: '브라우저 E2E 문의', status: 'open', messageCount: 1, latestMessageAt: timestamp } });
+    }
+    if (url.pathname === '/api/support/tickets') {
+      return json({ items: [{ id: 1, title: '운영 smoke 문의', status: 'waiting' }] });
     }
     if (url.pathname === '/api/community/classmates') {
       return json({

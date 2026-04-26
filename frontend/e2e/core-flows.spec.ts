@@ -21,6 +21,11 @@ test('demo learner can log in and navigate priority screens', async ({ page }) =
     await test.step(label, async () => {
       await page.goto(route);
       await expect(page.getByRole('main').first()).toContainText(heading);
+      if (route === '/ops/readiness') {
+        await expect(page.getByRole('cell', { name: 'Actuator metrics', exact: true })).toBeVisible();
+        await expect(page.getByRole('cell', { name: 'Prometheus metrics', exact: true })).toBeVisible();
+        await expect(page.getByText('READY')).toBeVisible();
+      }
       await expect(page.locator('.inline-alert, .access-state')).toHaveCount(0);
     });
   }

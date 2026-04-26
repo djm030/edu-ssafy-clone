@@ -33,6 +33,10 @@ function hasStatusUp(value: unknown): boolean {
   return isRecord(value) && value.status === 'UP';
 }
 
+function hasMetricCatalog(value: unknown): boolean {
+  return isRecord(value) && Array.isArray(value.names) && value.names.length > 0;
+}
+
 function isRequiredCheckUp(value: unknown): boolean {
   return isRecord(value) && value.required !== false && value.status === 'UP';
 }
@@ -82,6 +86,27 @@ async function expectBackendHealth(): Promise<string> {
   return `Backend API health payload가 UP입니다. 필수 점검 ${checks.length}개를 확인했습니다.`;
 }
 
+async function expectMetricCatalog(): Promise<string> {
+  const payload = await fetchJson<unknown>('/actuator/metrics');
+  if (!hasMetricCatalog(payload)) {
+    throw new Error('Actuator metrics catalog가 비어 있습니다.');
+  }
+  const metricCount = isRecord(payload) && Array.isArray(payload.names) ? payload.names.length : 0;
+  return `Actuator metrics catalog ${metricCount}개가 노출됩니다.`;
+}
+
+async function expectPrometheusMetrics(): Promise<string> {
+  const response = await fetch('/actuator/prometheus', { credentials: 'include' });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const body = await response.text();
+  if (!body.includes('# HELP') || !body.includes('# TYPE')) {
+    throw new Error('Prometheus scrape payload에 HELP/TYPE 메타데이터가 없습니다.');
+  }
+  return 'Prometheus scrape payload가 노출됩니다.';
+}
+
 export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
   {
     id: 'nginx-health',
@@ -100,6 +125,18 @@ export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
     label: 'Actuator health',
     target: '/actuator/health',
     run: () => expectJson('/actuator/health', hasStatusUp, 'Actuator health payload가 UP입니다.'),
+  },
+  {
+    id: 'actuator-metrics',
+    label: 'Actuator metrics',
+    target: '/actuator/metrics',
+    run: expectMetricCatalog,
+  },
+  {
+    id: 'prometheus-metrics',
+    label: 'Prometheus metrics',
+    target: '/actuator/prometheus',
+    run: expectPrometheusMetrics,
   },
   {
     id: 'session',

@@ -68,4 +68,22 @@ class ObservabilityConfigTest {
         assertThat(script).contains("SKIP_HTTP=true");
     }
 
+    @Test
+    void opsReadinessScreenRunsActuatorMetricsAndPrometheusChecks() throws IOException {
+        String readinessApi = Files.readString(Path.of("..", "frontend", "src", "api", "readiness.ts"));
+        String readinessPage = Files.readString(Path.of("..", "frontend", "src", "pages", "OpsReadinessPage.tsx"));
+        String coreFlows = Files.readString(Path.of("..", "frontend", "e2e", "core-flows.spec.ts"));
+
+        assertThat(readinessApi)
+                .contains("id: 'actuator-metrics'")
+                .contains("target: '/actuator/metrics'")
+                .contains("id: 'prometheus-metrics'")
+                .contains("target: '/actuator/prometheus'");
+        assertThat(readinessPage).contains("actuator metrics");
+        assertThat(coreFlows)
+                .contains("Actuator metrics")
+                .contains("Prometheus metrics")
+                .contains("READY");
+    }
+
 }
