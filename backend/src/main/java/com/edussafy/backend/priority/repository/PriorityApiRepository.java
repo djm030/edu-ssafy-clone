@@ -20,6 +20,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
@@ -1846,6 +1847,29 @@ public class PriorityApiRepository {
                 """ + parts.whereClause())
                 .params(parts.params())
                 .query(Long.class)
+                .single();
+    }
+
+    public ElearningProgressSummary findElearningProgressSummary(long userId, String keyword) {
+        SqlParts parts = elearningProgressWhere(userId, null, keyword);
+        return jdbcClient.sql("""
+                SELECT
+                    SUM(CASE WHEN lep.status_code = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count,
+                    SUM(CASE WHEN lep.status_code = 'completed' THEN 1 ELSE 0 END) AS completed_count,
+                    SUM(CASE WHEN lep.status_code = 'not_started' THEN 1 ELSE 0 END) AS not_started_count,
+                    SUM(COALESCE(ec.total_duration_seconds, 0)) AS total_duration_seconds,
+                    SUM(GREATEST(COALESCE(ec.total_lessons, 0) - COALESCE(lep.completed_lessons, 0), 0)) AS remaining_lesson_count
+                FROM learner_elearning_progress lep
+                JOIN elearning_courses ec ON ec.elearning_course_id = lep.elearning_course_id
+                """ + parts.whereClause())
+                .params(parts.params())
+                .query((rs, rowNum) -> new ElearningProgressSummary(
+                        rs.getLong("in_progress_count"),
+                        rs.getLong("completed_count"),
+                        rs.getLong("not_started_count"),
+                        rs.getLong("total_duration_seconds"),
+                        rs.getLong("remaining_lesson_count")
+                ))
                 .single();
     }
 

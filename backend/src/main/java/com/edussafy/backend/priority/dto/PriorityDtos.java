@@ -529,7 +529,16 @@ public final class PriorityDtos {
     public record ReplayWatchLogItem(long id, long replayId, OffsetDateTime watchedAt) {
     }
 
-    public record ElearningProgressResponse(List<ElearningProgressItem> items, PageMeta page) {
+    public record ElearningProgressResponse(List<ElearningProgressItem> items, PageMeta page, ElearningProgressSummary summary) {
+    }
+
+    public record ElearningProgressSummary(
+            long inProgressCount,
+            long completedCount,
+            long notStartedCount,
+            long totalDurationSeconds,
+            long remainingLessonCount
+    ) {
     }
 
     public record ElearningProgressDetailResponse(ElearningProgressDetail item) {

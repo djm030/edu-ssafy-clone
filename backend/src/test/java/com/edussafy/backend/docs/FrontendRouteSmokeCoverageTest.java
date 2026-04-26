@@ -234,6 +234,26 @@ class FrontendRouteSmokeCoverageTest {
     }
 
     @Test
+    void elearningPageExposesOperationalSummaryAndMeta() throws IOException {
+        String elearningPage = Files.readString(Path.of("..", "frontend", "src", "pages", "ElearningPage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(elearningPage)
+                .contains("ElearningSummaryPanel")
+                .contains("학습중 이러닝 운영 요약")
+                .contains("elearning-meta-row")
+                .contains("남은 차시");
+        assertThat(appApi)
+                .contains("ElearningProgressResponse")
+                .contains("remainingLessonCount");
+        assertThat(types)
+                .contains("ElearningProgressSummary")
+                .contains("ElearningProgressResponse");
+    }
+
+
+    @Test
     void dashboardPageExposesEduSsafyHomeWidgets() throws IOException {
         String dashboard = Files.readString(Path.of("..", "frontend", "src", "pages", "DashboardPage.tsx"));
 

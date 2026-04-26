@@ -461,6 +461,19 @@ export interface ElearningLessonItem {
   completedAt?: string | null;
 }
 
+export interface ElearningProgressSummary {
+  inProgressCount: number;
+  completedCount: number;
+  notStartedCount: number;
+  totalDurationSeconds: number;
+  remainingLessonCount: number;
+}
+
+export interface ElearningProgressResponse {
+  items: ElearningProgressItem[];
+  summary: ElearningProgressSummary;
+}
+
 export interface ElearningProgressDetail extends ElearningProgressItem {
   lessons: ElearningLessonItem[];
 }

@@ -55,6 +55,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
@@ -1075,6 +1076,8 @@ class PriorityApiServiceTest {
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
         given(repository.countElearningProgress(USER.id(), "in_progress", "java")).willReturn(1L);
         given(repository.findElearningProgress(USER.id(), "in_progress", "java", 10, 0)).willReturn(List.of(item));
+        given(repository.findElearningProgressSummary(USER.id(), "java"))
+                .willReturn(new ElearningProgressSummary(1, 0, 0, 14400, 3));
         PriorityApiService service = new PriorityApiService(
                 repository,
                 mock(PriorityP2Repository.class),
@@ -1085,7 +1088,10 @@ class PriorityApiServiceTest {
 
         assertThat(response.items()).containsExactly(item);
         assertThat(response.page().totalItems()).isEqualTo(1);
+        assertThat(response.summary().inProgressCount()).isEqualTo(1);
+        assertThat(response.summary().remainingLessonCount()).isEqualTo(3);
         verify(repository).findElearningProgress(USER.id(), "in_progress", "java", 10, 0);
+        verify(repository).findElearningProgressSummary(USER.id(), "java");
     }
 
     @Test

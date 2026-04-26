@@ -62,6 +62,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
@@ -1107,7 +1108,11 @@ public class PriorityApiService {
                         () -> repository.findElearningProgress(user.id(), normalizedStatus, keyword, size, offset(page, size)),
                         List.of()
                 );
-        return new ElearningProgressResponse(items, pageMeta(page, size, total));
+        ElearningProgressSummary summary = safe(
+                () -> repository.findElearningProgressSummary(user.id(), keyword),
+                new ElearningProgressSummary(0, 0, 0, 0, 0)
+        );
+        return new ElearningProgressResponse(items, pageMeta(page, size, total), summary);
     }
 
     public ElearningProgressDetailResponse elearningProgressDetail(long courseId) {

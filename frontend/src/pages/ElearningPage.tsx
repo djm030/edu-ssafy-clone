@@ -4,7 +4,7 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { ElearningProgressItem, LoadState } from '../types';
+import type { ElearningProgressItem, ElearningProgressSummary, LoadState } from '../types';
 
 const statusOptions = [
   { label: '전체', value: 'all' },
@@ -20,6 +20,7 @@ const statusLabels = {
 
 function ElearningPage() {
   const [items, setItems] = useState<ElearningProgressItem[]>([]);
+  const [summary, setSummary] = useState<ElearningProgressSummary>();
   const [status, setStatus] = useState<(typeof statusOptions)[number]['value']>('all');
   const [keyword, setKeyword] = useState('');
   const [submittedKeyword, setSubmittedKeyword] = useState('');
@@ -34,6 +35,7 @@ function ElearningPage() {
       .then((response) => {
         if (ignore) return;
         setItems(response.items);
+        setSummary(response.summary);
         setLoadState(response.items.length ? 'loaded' : 'empty');
       })
       .catch((error) => {
@@ -79,11 +81,34 @@ function ElearningPage() {
           <button type="submit">검색</button>
         </form>
       </div>
+      {summary ? <ElearningSummaryPanel summary={summary} /> : null}
       {resumeMessage ? <p className="helper-text" role="status">{resumeMessage}</p> : null}
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="학습중 이러닝을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="학습중인 이러닝이 없습니다." message="상태 필터 또는 검색어를 바꿔 보세요." /> : null}
       {loadState === 'loaded' ? <ElearningList items={items} onResume={handleResume} /> : null}
+    </section>
+  );
+}
+
+
+function ElearningSummaryPanel({ summary }: { summary: ElearningProgressSummary }) {
+  return (
+    <div className="elearning-summary-grid" aria-label="학습중 이러닝 운영 요약">
+      <SummaryCard title="학습중" value={`${summary.inProgressCount}개`} />
+      <SummaryCard title="완료" value={`${summary.completedCount}개`} />
+      <SummaryCard title="미시작" value={`${summary.notStartedCount}개`} />
+      <SummaryCard title="남은 차시" value={`${summary.remainingLessonCount}차시`} />
+      <SummaryCard title="전체 분량" value={`${Math.round(summary.totalDurationSeconds / 60).toLocaleString('ko-KR')}분`} />
+    </div>
+  );
+}
+
+function SummaryCard({ title, value }: { title: string; value: string }) {
+  return (
+    <section className="stat-card compact">
+      <span>{title}</span>
+      <strong>{value}</strong>
     </section>
   );
 }
@@ -99,6 +124,11 @@ function ElearningList({ items, onResume }: { items: ElearningProgressItem[]; on
               <p className="eyebrow">{[item.category, item.provider].filter(Boolean).join(' · ') || 'SSAFY e-Learning'}</p>
               <h2>{item.title}</h2>
               <p>{item.description || '등록된 설명이 없습니다.'}</p>
+              <div className="elearning-meta-row" aria-label={`${item.title} 콘텐츠 메타`}>
+                <span>운영자 {item.provider || 'SSAFY e-Learning'}</span>
+                <span>총 {Math.round(item.totalDurationSeconds / 60).toLocaleString('ko-KR')}분</span>
+                <span>남은 {Math.max(item.totalLessons - item.completedLessons, 0)}차시</span>
+              </div>
               <div className="progress-track" aria-label={`${item.title} 진행률 ${item.progressPercent}%`}>
                 <span style={{ width: `${item.progressPercent}%` }} />
               </div>

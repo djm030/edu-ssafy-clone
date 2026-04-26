@@ -70,6 +70,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogItem;
@@ -1109,7 +1110,7 @@ class PriorityApiControllerTest {
                 List.of(new ElearningLessonItem(100L, 1, "클래스와 객체", 2400L, true, OffsetDateTime.parse("2026-04-25T10:00:00+09:00")))
         );
         given(priorityApiService.elearningInProgress(eq("in_progress"), eq("java"), eq(1), eq(10)))
-                .willReturn(new ElearningProgressResponse(List.of(item), page));
+                .willReturn(new ElearningProgressResponse(List.of(item), page, new ElearningProgressSummary(1, 0, 0, 14400, 3)));
         given(priorityApiService.elearningProgressDetail(10L))
                 .willReturn(new ElearningProgressDetailResponse(detail));
         given(priorityApiService.resumeElearning(10L))
@@ -1119,6 +1120,8 @@ class PriorityApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].courseId").value(10))
                 .andExpect(jsonPath("$.items[0].progressPercent").value(50))
+                .andExpect(jsonPath("$.summary.inProgressCount").value(1))
+                .andExpect(jsonPath("$.summary.remainingLessonCount").value(3))
                 .andExpect(jsonPath("$.page.totalItems").value(1));
         mockMvc.perform(get("/api/elearning/in-progress/10"))
                 .andExpect(status().isOk())

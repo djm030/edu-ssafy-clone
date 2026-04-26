@@ -56,6 +56,7 @@ import type {
   EbookItem,
   ElearningProgressDetail,
   ElearningProgressItem,
+  ElearningProgressResponse,
   ElearningResumeResult,
   LearningMaterial,
   LearningMaterialResource,
@@ -1370,7 +1371,7 @@ export function getElearningProgress(query: {
   status?: string;
   page?: number;
   size?: number;
-}): Promise<{ items: ElearningProgressItem[] }> {
+}): Promise<ElearningProgressResponse> {
   const params = buildQuery({
     keyword: query.keyword?.trim(),
     page: query.page,
@@ -1378,8 +1379,20 @@ export function getElearningProgress(query: {
     status: query.status && query.status !== 'all' ? query.status : undefined,
   });
 
-  return fetchJson<{ items: BackendElearningProgressItem[] }>(`/api/elearning/in-progress${params}`)
-    .then((response) => ({ items: response.items.map(toElearningProgressItem) }));
+  return fetchJson<{ items: BackendElearningProgressItem[]; summary?: ElearningProgressResponse['summary'] }>(`/api/elearning/in-progress${params}`)
+    .then((response) => {
+      const items = response.items.map(toElearningProgressItem);
+      return {
+        items,
+        summary: response.summary || {
+          inProgressCount: items.filter((item) => item.status === 'in_progress').length,
+          completedCount: items.filter((item) => item.status === 'completed').length,
+          notStartedCount: items.filter((item) => item.status === 'not_started').length,
+          totalDurationSeconds: items.reduce((sum, item) => sum + item.totalDurationSeconds, 0),
+          remainingLessonCount: items.reduce((sum, item) => sum + Math.max(item.totalLessons - item.completedLessons, 0), 0),
+        },
+      };
+    });
 }
 
 export function getElearningProgressDetail(courseId: number): Promise<ElearningProgressDetail | undefined> {
