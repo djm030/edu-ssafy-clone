@@ -37,6 +37,25 @@ interface PostQuery {
   sort?: string;
 }
 
+
+function helpBoardBasePath(boardCode: BoardCode): string | undefined {
+  if (boardCode === 'notice') return '/api/help/notices';
+  if (boardCode === 'faq') return '/api/help/faqs';
+  return undefined;
+}
+
+function boardCategoriesPath(boardCode: BoardCode): string {
+  return helpBoardBasePath(boardCode)?.concat('/categories') || `/api/boards/${boardCode}/categories`;
+}
+
+function boardPostsPath(boardCode: BoardCode): string {
+  return helpBoardBasePath(boardCode) || `/api/boards/${boardCode}/posts`;
+}
+
+function boardPostPath(boardCode: BoardCode, postId: number): string {
+  return helpBoardBasePath(boardCode)?.concat(`/${postId}`) || `/api/boards/${boardCode}/posts/${postId}`;
+}
+
 function filterPosts(boardCode: BoardCode, query: PostQuery): BoardPostListResponse {
   const keyword = query.keyword?.trim().toLowerCase();
   const page = query.page || 1;
@@ -64,7 +83,7 @@ function filterPosts(boardCode: BoardCode, query: PostQuery): BoardPostListRespo
 }
 
 export function getCategories(boardCode: BoardCode): Promise<{ items: BoardCategory[] }> {
-  return fetchJson<{ items: BoardCategory[] }>(`/api/boards/${boardCode}/categories`, {
+  return fetchJson<{ items: BoardCategory[] }>(boardCategoriesPath(boardCode), {
     fallback: () => ({ items: mockCategories[boardCode] }),
   });
 }
@@ -78,13 +97,13 @@ export function getPosts(boardCode: BoardCode, query: PostQuery): Promise<BoardP
     sort: query.sort || 'createdAt,desc',
   });
 
-  return fetchJson<BoardPostListResponse>(`/api/boards/${boardCode}/posts${params}`, {
+  return fetchJson<BoardPostListResponse>(`${boardPostsPath(boardCode)}${params}`, {
     fallback: () => filterPosts(boardCode, query),
   });
 }
 
 export function getPost(boardCode: BoardCode, postId: number): Promise<BoardPostListItem | undefined> {
-  return fetchJson<BoardPostDetailResponse>(`/api/boards/${boardCode}/posts/${postId}`, {
+  return fetchJson<BoardPostDetailResponse>(boardPostPath(boardCode, postId), {
     fallback: () => ({ post: mockPosts.find((item) => item.boardCode === boardCode && item.id === postId) }),
   }).then((response) => normalizePost(response.post ?? response.item));
 }

@@ -550,3 +550,37 @@ h2 {
   padding: 11px 12px;
   resize: vertical;
 }
+
+.faq-accordion {
+  display: grid;
+  gap: 10px;
+}
+
+.faq-item {
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 0 18px;
+}
+
+.faq-item summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  min-height: 58px;
+}
+
+.faq-item p {
+  border-top: 1px solid #edf1f6;
+  color: #344054;
+  line-height: 1.7;
+  margin: 0;
+  padding: 16px 0;
+  white-space: pre-wrap;
+}
+
+.faq-item .ghost-button {
+  display: inline-flex;
+  margin-bottom: 16px;
+}

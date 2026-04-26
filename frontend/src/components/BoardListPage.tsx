@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { getCategories, getPosts } from '../api/boards';
+import { getCategories, getPost, getPosts } from '../api/boards';
 import { getErrorMessage } from '../api/client';
 import type { BoardCategory, BoardPostListItem, BoardScreenConfig, LoadState, PageMeta } from '../types';
 import DataState, { LoadingRows } from './DataState';
@@ -21,6 +21,7 @@ function BoardListPage({ config }: BoardListPageProps) {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [retryToken, setRetryToken] = useState(0);
+  const [faqAnswers, setFaqAnswers] = useState<Record<number, string>>({});
 
   useEffect(() => {
     setCategories([]);
@@ -29,6 +30,7 @@ function BoardListPage({ config }: BoardListPageProps) {
     setKeyword('');
     setSubmittedKeyword('');
     setPageMeta({ page: 1, size: PAGE_SIZE, totalItems: 0, totalPages: 0 });
+    setFaqAnswers({});
   }, [config.boardCode]);
 
   useEffect(() => {
@@ -44,9 +46,14 @@ function BoardListPage({ config }: BoardListPageProps) {
           getPosts(config.boardCode, { categoryId, keyword: submittedKeyword, page: pageMeta.page, size: PAGE_SIZE }),
         ]);
 
+        const nextFaqAnswers = config.boardCode === 'faq' && postResponse.items.length > 0
+          ? await loadFaqAnswers(postResponse.items)
+          : {};
+
         if (ignore) return;
         setCategories(categoryResponse.items);
         setPosts(postResponse.items);
+        setFaqAnswers(nextFaqAnswers);
         setPageMeta(postResponse.page);
         setLoadState(postResponse.items.length > 0 ? 'loaded' : 'empty');
       } catch (error) {
@@ -113,12 +120,30 @@ function BoardListPage({ config }: BoardListPageProps) {
       {loadState === 'empty' ? <DataState title={config.emptyMessage} message="검색어 또는 카테고리를 바꿔 보세요." /> : null}
       {(loadState === 'loaded' || loadState === 'refreshing') && posts.length > 0 ? (
         <>
-          <PostTable posts={posts} showEngagement={config.showEngagement} />
+          {config.boardCode === 'faq' ? <FaqAccordion posts={posts} answers={faqAnswers} /> : <PostTable posts={posts} showEngagement={config.showEngagement} />}
           <Pagination page={pageMeta.page} totalPages={totalPages} onMove={(nextPage) => setPageMeta((current) => ({ ...current, page: nextPage }))} />
         </>
       ) : null}
     </section>
   );
+}
+
+
+async function loadFaqAnswers(posts: BoardPostListItem[]): Promise<Record<number, string>> {
+  const details = await Promise.all(posts.map(async (post) => {
+    try {
+      return await getPost('faq', post.id);
+    } catch {
+      return undefined;
+    }
+  }));
+
+  return details.reduce<Record<number, string>>((answers, detail) => {
+    if (detail?.content) {
+      answers[detail.id] = detail.content;
+    }
+    return answers;
+  }, {});
 }
 
 function renderWriteAction(config: BoardScreenConfig) {
@@ -156,6 +181,25 @@ function CategoryFilter({
           {category.name}
           {typeof category.postCount === 'number' ? <span className="chip-count">{category.postCount}</span> : null}
         </button>
+      ))}
+    </div>
+  );
+}
+
+
+function FaqAccordion({ posts, answers }: { posts: BoardPostListItem[]; answers: Record<number, string> }) {
+  return (
+    <div className="faq-accordion" aria-label="FAQ 목록">
+      {posts.map((post) => (
+        <details className="faq-item" key={post.id}>
+          <summary>
+            <span className="category-cell">{post.category?.name || 'FAQ'}</span>
+            <strong>{post.title}</strong>
+            {post.isNew ? <span className="badge muted">NEW</span> : null}
+          </summary>
+          <p>{answers[post.id] || '답변을 불러오는 중입니다.'}</p>
+          <a className="ghost-button" href={`/help/faq/${post.id}`}>상세 보기</a>
+        </details>
       ))}
     </div>
   );

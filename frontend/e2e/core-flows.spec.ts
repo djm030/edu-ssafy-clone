@@ -9,6 +9,7 @@ test('demo learner can log in and navigate priority screens', async ({ page }) =
     ['게시판', '/community/free', /자유게시판/],
     ['설문', '/survey', /설문/],
     ['1:1 문의', '/help/qna', /문의/],
+    ['FAQ', '/help/faq', /FAQ/],
     ['학습자료', '/learning/materials', /학습자료/],
     ['Quest', '/quest', /Quest|퀘스트/],
     ['운영 readiness', '/ops/readiness', /운영/],
@@ -25,6 +26,11 @@ test('demo learner can log in and navigate priority screens', async ({ page }) =
         await expect(page.getByRole('cell', { name: 'Actuator metrics', exact: true })).toBeVisible();
         await expect(page.getByRole('cell', { name: 'Prometheus metrics', exact: true })).toBeVisible();
         await expect(page.getByText('READY')).toBeVisible();
+      }
+      if (route === '/help/faq') {
+        await expect(page.locator('[aria-label="FAQ 목록"]')).toBeVisible();
+        await page.locator('[aria-label="FAQ 목록"] summary').first().click();
+        await expect(page.getByText('출결 소명은 발생일 기준')).toBeVisible();
       }
       await expect(page.locator('.inline-alert, .access-state')).toHaveCount(0);
     });
