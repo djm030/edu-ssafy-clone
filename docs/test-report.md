@@ -1,5 +1,15 @@
 # Test Report
 
+## Ops Access Policy Matrix (2026-04-26 KST)
+- Added `GET /api/auth/access-policy` to expose the backend staff/admin API policy matrix consumed by the production readiness screen.
+- `/ops/readiness` now renders the access-control matrix next to API and screen smoke results so operators can verify protected mutation coverage before deployment.
+- Added backend controller/service assertions and static frontend smoke coverage for the access-policy UI integration.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=AuthRestDocsTest,PriorityApiServiceTest,PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 191 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Backend Runtime Image Non-root Hardening (2026-04-26 KST)
 - Updated the backend runtime Docker image to create an `app` system user, chown `/app`, and run the Spring Boot jar as that non-root user.
 - Added `DockerImageHardeningTest` to prevent the backend runtime image from regressing to root execution.

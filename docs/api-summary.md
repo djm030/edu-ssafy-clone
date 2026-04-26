@@ -1,7 +1,7 @@
 # API Summary
 
 ## Final Verification API Delta (2026-04-26 KST)
-- Auth/session endpoints are verified as session-backed with hashed password login: `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/session`, `POST /api/auth/logout`.
+- Auth/session endpoints are verified as session-backed with hashed password login: `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/session`, `POST /api/auth/logout`, plus `GET /api/auth/access-policy` for the staff/admin API policy matrix.
 - Attendance appeals now include list, pending staff list, create, cancel, and resolve endpoints.
 - Notifications include list, read one, read all, delete, plus classmate notification send.
 - Learning materials include list/detail/resources/view-count, staff resource attachment upload/download, and like/bookmark reaction create/delete.
@@ -9,7 +9,7 @@
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: full role-matrix documentation/tests, mutation E2E coverage, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
+- Remaining API gaps before final service readiness: mutation E2E coverage, browser-level role-flow checks, and broader Spring REST Docs/OpenAPI coverage beyond the documented auth/health/survey endpoints.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -20,7 +20,8 @@
 |---|---|---|---|---|---|
 | `/api/auth/login` | POST | body `{ email, password }` | `{ user }` demo login profile | No | `/login` |
 | `/api/me` | GET | none | `{ user }` current learner profile | Yes (demo) | app shell/session bootstrap, `/` |
-| `/api/auth/roles/current` | GET | none | current role and permission summary | Yes (demo) | role/authorization future UI |
+| `/api/auth/roles/current` | GET | none | current role and permission summary | Yes (demo) | app shell authorization state |
+| `/api/auth/access-policy` | GET | none | protected API policy matrix `{ items[] }` with method/path/allowed roles | Yes (demo) | `/ops/readiness` access policy matrix |
 | `/api/auth/logout` | POST | none | `{ success, message }` | Yes (demo) | app shell/logout action |
 | `/api/profile/password-check` | POST | body `{ password }` | `{ valid }` | Yes (demo) | `/profile/check` |
 | `/api/profile` | GET | none | `{ profile }` | Yes (demo) | `/profile/edit` |
@@ -66,6 +67,7 @@
 ## Spring REST Docs Coverage (2026-04-26 KST)
 - `health-check`: documents `GET /api/health` overall status plus database and temporary storage readiness probes for production smoke checks.
 - `readiness-check`: documents `GET /api/readiness` with the same probe payload and HTTP 503 semantics for failed required checks.
+- `auth-access-policy`: documents `GET /api/auth/access-policy` staff/admin API policy matrix fields consumed by `/ops/readiness`.
 - `survey-create`: documents `POST /api/surveys` request fields for survey metadata, first question, and choice options plus the persisted `{ item }` response shape.
 - `survey-update`: documents `PUT /api/surveys/{id}` replacement semantics, including response reset when questions are replaced.
 - `survey-delete`: documents `DELETE /api/surveys/{id}` deleted marker response.
@@ -89,7 +91,7 @@
 - Added maintained contract bootstrap `docs/openapi.yaml` and drift-marker command `scripts/dev/verify-openapi.ps1`; keep both updated as endpoints/wrappers change.
 
 ## Implemented API Surface
-- `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/roles/current`, `POST /api/auth/logout`
+- `POST /api/auth/login`, `GET /api/me`, `GET /api/auth/roles/current`, `GET /api/auth/access-policy`, `POST /api/auth/logout`
 - `POST /api/profile/password-check`, `GET /api/profile`, `PUT /api/profile`
 - `GET /api/dashboard/summary`
 - `GET /api/attendance/records`, `POST /api/attendance/appeals`

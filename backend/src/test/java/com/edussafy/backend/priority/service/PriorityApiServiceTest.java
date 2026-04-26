@@ -18,6 +18,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
@@ -187,6 +188,34 @@ class PriorityApiServiceTest {
         assertThat(response.role()).isEqualTo("coach");
         assertThat(response.permissions()).contains("attendance:resolve", "support:answer", "board:moderate");
         assertThat(response.deniedRoutes()).containsExactly("/admin");
+    }
+
+    @Test
+    void accessPolicyExposesProductionStaffApiMatrix() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(STAFF_USER));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AccessPolicyResponse response = service.accessPolicy();
+
+        assertThat(response.items())
+                .extracting("id")
+                .contains(
+                        "attendance-appeal-resolve",
+                        "survey-manage",
+                        "classmate-notification-send",
+                        "learning-material-attachment",
+                        "support-answer",
+                        "admin-campus-structure"
+                );
+        assertThat(response.items())
+                .filteredOn(item -> item.id().equals("support-answer"))
+                .singleElement()
+                .satisfies(item -> assertThat(item.allowedRoles()).containsExactly("coach", "admin"));
     }
 
     @Test

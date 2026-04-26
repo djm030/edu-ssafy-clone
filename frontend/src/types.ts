@@ -47,6 +47,19 @@ export interface RoleAccess {
   deniedRoutes: string[];
 }
 
+export interface AccessPolicyItem {
+  id: string;
+  method: string;
+  pathPattern: string;
+  allowedRoles: string[];
+  feature: string;
+  description: string;
+}
+
+export interface AccessPolicyResponse {
+  items: AccessPolicyItem[];
+}
+
 export interface DashboardSummary {
   user: Omit<UserProfile, 'id' | 'email' | 'role'>;
   level: {

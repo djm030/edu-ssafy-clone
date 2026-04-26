@@ -15,6 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
@@ -200,6 +202,26 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.role").value("learner"))
                 .andExpect(jsonPath("$.permissions[0]").value("dashboard:read"))
                 .andExpect(jsonPath("$.deniedRoutes[0]").value("/admin"));
+    }
+
+    @Test
+    void accessPolicyReturnsStaffOnlyApiMatrix() throws Exception {
+        given(priorityApiService.accessPolicy()).willReturn(new AccessPolicyResponse(List.of(
+                new AccessPolicyItem(
+                        "support-answer",
+                        "POST",
+                        "/api/support/tickets/{ticketId}/answers",
+                        List.of("coach", "admin"),
+                        "1:1 문의",
+                        "문의 답변 등록은 지원 담당 staff 역할 이상으로 제한한다."
+                )
+        )));
+
+        mockMvc.perform(get("/api/auth/access-policy"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value("support-answer"))
+                .andExpect(jsonPath("$.items[0].allowedRoles[0]").value("coach"))
+                .andExpect(jsonPath("$.items[0].allowedRoles[1]").value("admin"));
     }
 
     @Test

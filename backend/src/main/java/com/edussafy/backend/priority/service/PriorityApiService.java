@@ -8,6 +8,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
@@ -184,6 +186,64 @@ public class PriorityApiService {
             "coach", List.of("/admin"),
             "admin", List.of()
     );
+    private static final List<AccessPolicyItem> ACCESS_POLICY = List.of(
+            new AccessPolicyItem(
+                    "attendance-appeal-resolve",
+                    "PATCH",
+                    "/api/attendance/appeals/{appealId}/resolve",
+                    List.of("coach", "admin"),
+                    "출석 이의신청",
+                    "출석 이의신청 처리와 출석 상태 정정은 staff 역할 이상만 수행한다."
+            ),
+            new AccessPolicyItem(
+                    "attendance-appeal-pending",
+                    "GET",
+                    "/api/attendance/appeals/pending",
+                    List.of("coach", "admin"),
+                    "출석 이의신청",
+                    "처리 대기 이의신청 목록은 coach/admin 운영자에게만 노출한다."
+            ),
+            new AccessPolicyItem(
+                    "survey-manage",
+                    "POST|PUT|DELETE",
+                    "/api/surveys",
+                    List.of("coach", "admin"),
+                    "설문",
+                    "설문 생성, 수정, 삭제는 coach/admin만 가능하고 learner는 응답 제출만 가능하다."
+            ),
+            new AccessPolicyItem(
+                    "classmate-notification-send",
+                    "POST",
+                    "/api/community/classmates/{userId}/notifications",
+                    List.of("coach", "admin"),
+                    "알림",
+                    "동료 학습자에게 운영 알림을 발송하는 기능은 staff 역할 이상으로 제한한다."
+            ),
+            new AccessPolicyItem(
+                    "learning-material-attachment",
+                    "POST",
+                    "/api/learning/materials/{id}/resources/{resourceId}/attachments",
+                    List.of("coach", "admin"),
+                    "학습자료",
+                    "학습자료 첨부파일 업로드는 콘텐츠 운영 권한이 있는 coach/admin만 가능하다."
+            ),
+            new AccessPolicyItem(
+                    "support-answer",
+                    "POST",
+                    "/api/support/tickets/{ticketId}/answers",
+                    List.of("coach", "admin"),
+                    "1:1 문의",
+                    "문의 답변 등록은 지원 담당 staff 역할 이상으로 제한한다."
+            ),
+            new AccessPolicyItem(
+                    "admin-campus-structure",
+                    "GET|POST",
+                    "/api/admin/campus-structure/**",
+                    List.of("admin"),
+                    "관리",
+                    "캠퍼스, 기수, 트랙, 반 구조 조회/변경은 admin만 가능하다."
+            )
+    );
 
     private final PriorityApiRepository repository;
     private final PriorityP2Repository p2Repository;
@@ -257,6 +317,11 @@ public class PriorityApiService {
                 ROLE_PERMISSIONS.getOrDefault(role, ROLE_PERMISSIONS.get("learner")),
                 ROLE_DENIED_ROUTES.getOrDefault(role, ROLE_DENIED_ROUTES.get("learner"))
         );
+    }
+
+    public AccessPolicyResponse accessPolicy() {
+        currentUser();
+        return new AccessPolicyResponse(ACCESS_POLICY);
     }
 
     public AuthSessionResponse authSession() {

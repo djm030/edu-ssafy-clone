@@ -65,7 +65,11 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("match(/^\\/quest\\/(\\d+)\\/submit$/)");
         assertThat(app).contains("match(/^\\/survey\\/(\\d+)\\/respond$/)");
         assertThat(app).contains("match(/^\\/help\\/qna\\/tickets\\/(\\d+)$/)");
-        assertThat(readinessPage).contains("screenSmokeRoutes.map");
+        assertThat(readinessPage)
+                .contains("getAccessPolicy")
+                .contains("screenSmokeRoutes.map")
+                .contains("accessPolicies.map")
+                .contains("권한 정책 매트릭스");
     }
     @Test
     void priorityDataPagesExposeLoadingErrorAndEmptyStates() throws IOException {

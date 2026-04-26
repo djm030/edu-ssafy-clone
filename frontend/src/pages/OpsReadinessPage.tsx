@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getAccessPolicy } from '../api/app';
 import { runReadinessChecks, summarizeReadiness, type ReadinessCheckResult } from '../api/readiness';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
 import { screenSmokeRoutes } from '../routes';
+import type { AccessPolicyItem } from '../types';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
 function OpsReadinessPage() {
   const [results, setResults] = useState<ReadinessCheckResult[]>([]);
+  const [accessPolicies, setAccessPolicies] = useState<AccessPolicyItem[]>([]);
   const [state, setState] = useState<LoadState>('idle');
   const [error, setError] = useState('');
   const [checkedAt, setCheckedAt] = useState('');
@@ -18,9 +21,10 @@ function OpsReadinessPage() {
   const refresh = () => {
     setState('loading');
     setError('');
-    runReadinessChecks()
-      .then((nextResults) => {
+    Promise.all([runReadinessChecks(), getAccessPolicy()])
+      .then(([nextResults, policyResponse]) => {
         setResults(nextResults);
+        setAccessPolicies(policyResponse.items);
         setCheckedAt(new Date().toLocaleString('ko-KR'));
         setState('loaded');
       })
@@ -93,6 +97,33 @@ function OpsReadinessPage() {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="panel" aria-labelledby="ops-access-policy">
+            <h2 id="ops-access-policy">권한 정책 매트릭스</h2>
+            <p className="muted">
+              운영 전 staff/admin 전용 API가 백엔드 정책으로 잠겨 있는지 확인하는 접근 제어 기준입니다.
+            </p>
+            {accessPolicies.length === 0 ? (
+              <DataState title="권한 정책이 없습니다." message="백엔드 접근 정책 응답을 확인하세요." />
+            ) : (
+              <div className="simple-table readiness-table" role="table" aria-label="권한 정책 매트릭스">
+                <div className="simple-table-row simple-table-head" role="row">
+                  <span role="columnheader">기능</span>
+                  <span role="columnheader">메서드</span>
+                  <span role="columnheader">경로</span>
+                  <span role="columnheader">허용 역할</span>
+                </div>
+                {accessPolicies.map((policy) => (
+                  <div className="simple-table-row" key={policy.id} role="row">
+                    <strong role="cell">{policy.feature}</strong>
+                    <code role="cell">{policy.method}</code>
+                    <code role="cell">{policy.pathPattern}</code>
+                    <span role="cell">{policy.allowedRoles.join(', ')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="panel" aria-labelledby="ops-screen-smoke">

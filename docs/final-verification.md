@@ -61,7 +61,7 @@ docker compose --profile app up -d --build
 | Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
 | Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` stalled while loading Docker Hub metadata for base images and was cancelled; existing running app profile remained healthy. Backend runtime Dockerfile now drops root privileges and is guarded by `DockerImageHardeningTest`. |
-| Screen route smoke / visual | PARTIAL | `/ops/readiness` now renders the priority 1~9 screen smoke manifest, `FrontendRouteSmokeCoverageTest` guards route coverage, and `scripts/dev/smoke.sh` provides POSIX HTTP smoke coverage; Playwright/Cypress/visual baseline is still not executed. |
+| Screen route smoke / visual | PARTIAL | `/ops/readiness` now renders the priority 1~9 screen smoke manifest and backend access-policy matrix, `FrontendRouteSmokeCoverageTest` guards route/access-policy coverage, and `scripts/dev/smoke.sh` provides POSIX HTTP smoke coverage; Playwright/Cypress/visual baseline is still not executed. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
@@ -92,7 +92,7 @@ docker compose --profile app up -d --build
 | 1:1 문의 | PASS | support ticket list/detail/create, message thread, frontend QNA list/detail/new 연결, tests 존재. |
 | 문의 답변 | PASS | staff answer endpoint, status/message persistence, learner forbidden test 존재. |
 | 문의 첨부파일 | PASS | support message attachment metadata create와 stored byte download endpoint/tests 존재. |
-| 권한별 접근 제어 | PARTIAL | session auth와 admin/staff/owner guard, pending attendance staff gate, public readiness bypass, 핵심 mutation interceptor matrix test가 있으나 전체 도메인 조합의 브라우저/E2E 권한 검증은 부족하다. |
+| 권한별 접근 제어 | PASS | session auth와 admin/staff/owner guard, pending attendance staff gate, public readiness bypass, 핵심 mutation interceptor matrix test, `GET /api/auth/access-policy`, `/ops/readiness` 권한 매트릭스가 존재한다. 브라우저 E2E 권한 플로우는 screen smoke 보강 항목으로 분리했다. |
 | 에러 처리 | PARTIAL | Spring error response, invalid request tests, static frontend loading/error/empty state smoke coverage가 있으나 모든 mutation/permission edge case는 브라우저 E2E로 검증되지 않았다. |
 | 로컬 실행 | PASS | app profile 컨테이너 6개가 healthy이고 backend/frontend/Nginx smoke가 통과했다. |
 | 테스트 | PASS | backend 111 tests, frontend lint/build, REST Docs/security headers tests 통과. Browser E2E는 별도 남은 작업으로 분리. |

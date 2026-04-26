@@ -15,6 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.priority.api.AuthController;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
@@ -134,6 +136,38 @@ class AuthRestDocsTest {
                                 fieldWithPath("role").description("Normalized role used by frontend and backend authorization."),
                                 fieldWithPath("permissions").description("Action permissions granted to the current role."),
                                 fieldWithPath("deniedRoutes").description("Frontend route prefixes hidden or blocked for the current role.")
+                        )
+                ));
+    }
+
+    @Test
+    void documentsAccessPolicyEndpoint() throws Exception {
+        given(priorityApiService.accessPolicy()).willReturn(new AccessPolicyResponse(List.of(
+                new AccessPolicyItem(
+                        "support-answer",
+                        "POST",
+                        "/api/support/tickets/{ticketId}/answers",
+                        List.of("coach", "admin"),
+                        "1:1 문의",
+                        "문의 답변 등록은 지원 담당 staff 역할 이상으로 제한한다."
+                )
+        )));
+
+        mockMvc.perform(get("/api/auth/access-policy").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value("support-answer"))
+                .andDo(document(
+                        "auth-access-policy",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        responseFields(
+                                fieldWithPath("items").description("Protected API access policy entries."),
+                                fieldWithPath("items[].id").description("Stable policy identifier."),
+                                fieldWithPath("items[].method").description("HTTP method or method group covered by the policy."),
+                                fieldWithPath("items[].pathPattern").description("Protected API path pattern."),
+                                fieldWithPath("items[].allowedRoles").description("Roles allowed to call the protected endpoint."),
+                                fieldWithPath("items[].feature").description("Product feature guarded by the policy."),
+                                fieldWithPath("items[].description").description("Human-readable policy rationale for operations review.")
                         )
                 ));
     }

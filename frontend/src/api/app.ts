@@ -15,6 +15,7 @@ import type {
   AdminCampusStructure,
   AdminClassGroupDraft,
   AdminClassGroupItem,
+  AccessPolicyResponse,
   AttendanceAppeal,
   AttendanceRecord,
   AttendanceAppealDraft,
@@ -404,6 +405,31 @@ export function getCurrentRoleAccess(): Promise<RoleAccess> {
       role: mockUser.role || 'learner',
       permissions: ['dashboard:read', 'attendance:read', 'profile:update', 'quest:submit'],
       deniedRoutes: ['/admin'],
+    }),
+  });
+}
+
+export function getAccessPolicy(): Promise<AccessPolicyResponse> {
+  return fetchJson<AccessPolicyResponse>('/api/auth/access-policy', {
+    fallback: () => ({
+      items: [
+        {
+          id: 'attendance-appeal-resolve',
+          method: 'PATCH',
+          pathPattern: '/api/attendance/appeals/{appealId}/resolve',
+          allowedRoles: ['coach', 'admin'],
+          feature: '출석 이의신청',
+          description: '출석 이의신청 처리와 출석 상태 정정은 staff 역할 이상만 수행한다.',
+        },
+        {
+          id: 'support-answer',
+          method: 'POST',
+          pathPattern: '/api/support/tickets/{ticketId}/answers',
+          allowedRoles: ['coach', 'admin'],
+          feature: '1:1 문의',
+          description: '문의 답변 등록은 지원 담당 staff 역할 이상으로 제한한다.',
+        },
+      ],
     }),
   });
 }

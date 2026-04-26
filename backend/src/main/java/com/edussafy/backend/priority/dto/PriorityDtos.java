@@ -46,6 +46,19 @@ public final class PriorityDtos {
     public record RoleAccessResponse(String role, List<String> permissions, List<String> deniedRoutes) {
     }
 
+    public record AccessPolicyResponse(List<AccessPolicyItem> items) {
+    }
+
+    public record AccessPolicyItem(
+            String id,
+            String method,
+            String pathPattern,
+            List<String> allowedRoles,
+            String feature,
+            String description
+    ) {
+    }
+
     public record UserResponse(UserProfile user) {
     }
 
