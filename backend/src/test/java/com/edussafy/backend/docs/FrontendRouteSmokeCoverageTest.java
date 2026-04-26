@@ -283,6 +283,30 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("required-study-completion-policy");
     }
 
+    @Test
+    void questPagesExposeTypeResultAndResubmissionPolicies() throws IOException {
+        String questPage = Files.readString(Path.of("..", "frontend", "src", "pages", "QuestPage.tsx"));
+        String questDetailPage = Files.readString(Path.of("..", "frontend", "src", "pages", "QuestDetailPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(questPage)
+                .contains("QuestTypeSummary")
+                .contains("Quest 평가 타입과 결과 공개 요약")
+                .contains("questTypeLabel")
+                .contains("결과가 공개되어 점수와 피드백 확인이 가능합니다");
+        assertThat(questDetailPage)
+                .contains("QuestSubmissionPolicy")
+                .contains("SubmissionEvidencePanel")
+                .contains("Quest 제출 및 재제출 정책")
+                .contains("Quest 제출 evidence")
+                .contains("재제출하기")
+                .contains("questSubmitDisabledReason");
+        assertThat(styles)
+                .contains("quest-type-summary-grid")
+                .contains("quest-submission-policy")
+                .contains("quest-evidence-panel");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {

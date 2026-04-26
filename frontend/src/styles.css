@@ -1400,6 +1400,39 @@ h2 {
 }
 
 
+.quest-type-summary {
+  margin: 16px 0;
+}
+
+.quest-type-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quest-submission-policy {
+  align-items: center;
+  background: #f9fafb;
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.quest-submission-policy p {
+  color: #475467;
+  margin: 0;
+}
+
+.quest-evidence-panel {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  padding: 12px;
+}
+
 .required-study-policy-panel {
   margin-bottom: 18px;
 }

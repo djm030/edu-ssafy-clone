@@ -60,10 +60,12 @@ function QuestContent({ quest, submission }: { quest: QuestItem; submission?: Qu
     <article className="panel detail-panel">
       <div className="detail-meta">
         <StatusPill tone={status.tone}>{status.label}</StatusPill>
+        <StatusPill tone="gray">{questTypeLabel(quest)}</StatusPill>
         <StatusPill tone="gray">{quest.startsAt} ~ {quest.endsAt}</StatusPill>
       </div>
       <h2>{quest.title}</h2>
       <div className="detail-body">{quest.description || 'Quest 설명이 없습니다.'}</div>
+      <QuestSubmissionPolicy quest={quest} submission={submission} />
       <ul className="task-list">
         {(quest.tasks || []).map((task) => (
           <li key={task}>{task}</li>
@@ -72,38 +74,92 @@ function QuestContent({ quest, submission }: { quest: QuestItem; submission?: Qu
       <section className="board-actions" aria-label="제출 결과">
         <h3>내 제출 결과</h3>
         {submission ? (
-          <dl className="info-list detail-info">
-            <div>
-              <dt>제출 상태</dt>
-              <dd>{submission.status}</dd>
-            </div>
-            <div>
-              <dt>평가 상태</dt>
-              <dd>{submission.resultStatus || 'pending'}</dd>
-            </div>
-            <div>
-              <dt>점수</dt>
-              <dd>{typeof submission.score === 'number' ? submission.score.toLocaleString('ko-KR') : '-'}</dd>
-            </div>
-            <div>
-              <dt>제출일</dt>
-              <dd>{formatDate(submission.submittedAt)}</dd>
-            </div>
-            <div>
-              <dt>채점일</dt>
-              <dd>{formatDate(submission.gradedAt)}</dd>
-            </div>
-          </dl>
+          <SubmissionEvidencePanel submission={submission} />
         ) : (
           <p className="muted-text">아직 제출 내역이 없습니다.</p>
         )}
       </section>
       <div className="action-row">
         <a className="ghost-button" href="/quest">목록</a>
-        <a className="primary-action" href={`/quest/${quest.id}/submit`}>제출하기</a>
+        {canSubmitQuest(quest, submission) ? (
+          <a className="primary-action" href={`/quest/${quest.id}/submit`}>{submission?.status === 'rejected' ? '재제출하기' : '제출하기'}</a>
+        ) : (
+          <button className="primary-action" disabled type="button" title={questSubmitDisabledReason(quest, submission)}>{quest.status === 'graded' ? '결과 공개 완료' : '제출 불가'}</button>
+        )}
       </div>
     </article>
   );
+}
+
+function QuestSubmissionPolicy({ quest, submission }: { quest: QuestItem; submission?: QuestSubmissionResult }) {
+  return (
+    <section className="quest-submission-policy" aria-label="Quest 제출 및 재제출 정책">
+      <StatusPill tone={canSubmitQuest(quest, submission) ? 'green' : quest.status === 'overdue' ? 'red' : 'gray'}>{canSubmitQuest(quest, submission) ? '제출 가능' : '제출 제한'}</StatusPill>
+      <p>{canSubmitQuest(quest, submission) ? '기간 내 evidence를 첨부해 제출할 수 있습니다.' : questSubmitDisabledReason(quest, submission)}</p>
+    </section>
+  );
+}
+
+function SubmissionEvidencePanel({ submission }: { submission: QuestSubmissionResult }) {
+  return (
+    <dl className="info-list detail-info quest-evidence-panel" aria-label="Quest 제출 evidence">
+      <div>
+        <dt>제출 상태</dt>
+        <dd>{formatCode(submission.status)}</dd>
+      </div>
+      <div>
+        <dt>평가 상태</dt>
+        <dd>{formatCode(submission.resultStatus || 'pending')}</dd>
+      </div>
+      <div>
+        <dt>점수</dt>
+        <dd>{typeof submission.score === 'number' ? submission.score.toLocaleString('ko-KR') : '-'}</dd>
+      </div>
+      <div>
+        <dt>제출일</dt>
+        <dd>{formatDate(submission.submittedAt)}</dd>
+      </div>
+      <div>
+        <dt>채점일</dt>
+        <dd>{formatDate(submission.gradedAt)}</dd>
+      </div>
+      <div>
+        <dt>증빙</dt>
+        <dd>{submission.demo ? '데모 제출' : '저장된 제출 evidence'}</dd>
+      </div>
+    </dl>
+  );
+}
+
+function canSubmitQuest(quest: QuestItem, submission?: QuestSubmissionResult): boolean {
+  if (quest.status === 'overdue' || quest.status === 'graded') return false;
+  if (submission?.resultStatus === 'graded') return false;
+  if (submission?.status === 'submitted' && submission.resultStatus !== 'rejected') return false;
+  return quest.status === 'progress' || submission?.status === 'rejected';
+}
+
+function questSubmitDisabledReason(quest: QuestItem, submission?: QuestSubmissionResult): string {
+  if (quest.status === 'overdue') return '마감이 지나 신규 제출 또는 재제출이 제한됩니다.';
+  if (quest.status === 'graded' || submission?.resultStatus === 'graded') return '채점 결과가 공개되어 제출을 변경할 수 없습니다.';
+  if (submission?.status === 'submitted') return '이미 제출되어 채점 결과 공개를 기다리고 있습니다.';
+  return '현재 제출할 수 없는 상태입니다.';
+}
+
+function questTypeLabel(quest: QuestItem): 'Quest' | '평가' {
+  const text = `${quest.title} ${quest.description || ''}`.toLowerCase();
+  return text.includes('평가') || text.includes('evaluation') || text.includes('exam') ? '평가' : 'Quest';
+}
+
+function formatCode(value?: string | null): string {
+  if (!value) return '미제출';
+  const labels: Record<string, string> = {
+    submitted: '제출완료',
+    done: '제출완료',
+    pending: '채점대기',
+    graded: '채점완료',
+    rejected: '반려',
+  };
+  return labels[value] || value;
 }
 
 function formatDate(value?: string | null): string {

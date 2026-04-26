@@ -90,7 +90,12 @@ function QuestPage() {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="Quest 목록을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="조건에 맞는 Quest가 없습니다." message="상태 필터 또는 검색어를 바꿔 보세요." /> : null}
-      {loadState === 'loaded' ? <QuestList items={items} /> : null}
+      {loadState === 'loaded' ? (
+        <>
+          <QuestTypeSummary items={items} />
+          <QuestList items={items} />
+        </>
+      ) : null}
     </section>
   );
 }
@@ -105,6 +110,29 @@ function SummaryCard({ title, value, description }: { title: string; value: numb
   );
 }
 
+function QuestTypeSummary({ items }: { items: QuestItem[] }) {
+  const questCount = items.filter((item) => questTypeLabel(item) === 'Quest').length;
+  const evaluationCount = items.length - questCount;
+  const resultOpenCount = items.filter((item) => item.resultStatus === 'graded' || item.status === 'graded').length;
+
+  return (
+    <section className="panel quest-type-summary" aria-label="Quest 평가 타입과 결과 공개 요약">
+      <div className="section-heading compact-heading">
+        <div>
+          <p>QUEST / EVALUATION</p>
+          <h2>유형별 제출 현황</h2>
+        </div>
+        <span>{resultOpenCount}건 결과 공개</span>
+      </div>
+      <div className="quest-type-summary-grid">
+        <SummaryCard title="Quest" value={questCount} description="실습/과제형 제출" />
+        <SummaryCard title="평가" value={evaluationCount} description="평가/시험형 항목" />
+        <SummaryCard title="결과 공개" value={resultOpenCount} description="채점 결과 확인 가능" />
+      </div>
+    </section>
+  );
+}
+
 function QuestList({ items }: { items: QuestItem[] }) {
   return (
     <div className="card-list" aria-label="Quest 목록">
@@ -113,7 +141,7 @@ function QuestList({ items }: { items: QuestItem[] }) {
         return (
           <article className="list-card" key={item.id}>
             <div>
-              <p className="eyebrow">{item.description || 'SSAFY Quest'}</p>
+              <p className="eyebrow">{questTypeLabel(item)} · {item.description || 'SSAFY Quest'}</p>
               <h2>{item.title}</h2>
               <p>
                 {item.startsAt || '-'} ~ {item.endsAt || '-'}
@@ -121,6 +149,7 @@ function QuestList({ items }: { items: QuestItem[] }) {
               <p>
                 제출: {formatCode(item.submitStatus)} · 결과: {formatCode(item.resultStatus)}{item.maxExp ? ` · 최대 EXP ${item.maxExp}` : ''}
               </p>
+              <p className="muted">{questActionPolicy(item)}</p>
               {item.tasks?.length ? <p>{item.tasks.join(' · ')}</p> : null}
             </div>
             <StatusPill tone={status.tone}>{status.label}</StatusPill>
@@ -132,6 +161,18 @@ function QuestList({ items }: { items: QuestItem[] }) {
       })}
     </div>
   );
+}
+
+function questTypeLabel(item: QuestItem): 'Quest' | '평가' {
+  const text = `${item.title} ${item.description || ''}`.toLowerCase();
+  return text.includes('평가') || text.includes('evaluation') || text.includes('exam') ? '평가' : 'Quest';
+}
+
+function questActionPolicy(item: QuestItem): string {
+  if (item.status === 'graded' || item.resultStatus === 'graded') return '결과가 공개되어 점수와 피드백 확인이 가능합니다.';
+  if (item.submitStatus === 'submitted' || item.status === 'submitted') return '제출 완료 상태이며 채점 결과 공개를 기다리고 있습니다.';
+  if (item.status === 'overdue') return '마감이 지나 신규 제출 또는 재제출이 제한됩니다.';
+  return '제출 전 evidence를 확인하고 기간 내 제출할 수 있습니다.';
 }
 
 function formatCode(value?: string | null): string {
