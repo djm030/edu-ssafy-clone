@@ -61,7 +61,7 @@ docker compose --profile app up -d --build
 | Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
 | Docker image rebuild | BLOCKED | `docker compose --profile app up -d --build` stalled while loading Docker Hub metadata for base images and was cancelled; existing running app profile remained healthy. |
-| Screen route smoke / visual | PARTIAL | `/ops/readiness` now renders the priority 1~9 screen smoke manifest and `FrontendRouteSmokeCoverageTest` guards route coverage; Playwright/Cypress/visual baseline is still not executed. |
+| Screen route smoke / visual | PARTIAL | `/ops/readiness` now renders the priority 1~9 screen smoke manifest, `FrontendRouteSmokeCoverageTest` guards route coverage, and `scripts/dev/smoke.sh` provides POSIX HTTP smoke coverage; Playwright/Cypress/visual baseline is still not executed. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 

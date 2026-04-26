@@ -1,5 +1,16 @@
 # Test Report
 
+## POSIX Deployment Smoke Script (2026-04-26 KST)
+- Added `scripts/dev/smoke.sh` as a curl/bash smoke runner for CI and macOS/Linux hosts that do not have PowerShell installed.
+- The script statically checks priority frontend/API wiring and exercises Nginx readiness, backend readiness, login, and core list endpoints without mock fallback.
+- Added `DeploymentSmokeScriptTest` coverage for the POSIX smoke script.
+- `bash -n scripts/dev/smoke.sh` -> PASS.
+- `SKIP_HTTP=true scripts/dev/smoke.sh` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=DeploymentSmokeScriptTest,DockerComposeSecretDefaultsTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 184 tests, 0 failures, 0 errors.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Compose Backend Readiness Healthcheck (2026-04-26 KST)
 - Updated the app-profile backend container healthcheck to call public `/api/readiness` instead of actuator-only health so Compose reports unhealthy when required application dependencies are down.
 - Added a compose regression assertion that prevents the backend healthcheck from drifting back to actuator-only status.
