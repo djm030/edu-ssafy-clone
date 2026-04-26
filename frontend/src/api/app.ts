@@ -7,6 +7,8 @@ import {
   mockDashboard,
   mockMaterials,
   mockMentoringMeetingApplications,
+  mockMentoringMeetingResults,
+  mockMentoringMeetingReviews,
   mockMentoringMeetings,
   mockMentoringNotices,
   mockMentoringQuestions,
@@ -52,6 +54,10 @@ import type {
   LoginResponse,
   MentoringMeetingApplicationItem,
   MentoringMeetingItem,
+  MentoringMeetingResultDetail,
+  MentoringMeetingResultsResponse,
+  MentoringMeetingReviewDetail,
+  MentoringMeetingReviewsResponse,
   MentoringMeetingsResponse,
   MentoringNoticeItem,
   MentoringNoticesResponse,
@@ -1067,6 +1073,65 @@ export function getMyMentoringMeetingApplications(): Promise<MentoringMeetingApp
   return fetchJson<{ items: MentoringMeetingApplicationItem[] }>('/api/mentoring/meetings/applications/me', {
     fallback: () => ({ items: mockMentoringMeetingApplications }),
   }).then((response) => response.items);
+}
+
+
+export function getMentoringMeetingResults(query: { page?: number; size?: number } = {}): Promise<MentoringMeetingResultsResponse> {
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ page, size });
+  return fetchJson<MentoringMeetingResultsResponse>(`/api/mentoring/meeting-results${params}`, {
+    fallback: () => ({
+      items: mockMentoringMeetingResults.slice((page - 1) * size, page * size),
+      page: { page, size, totalItems: mockMentoringMeetingResults.length, totalPages: Math.ceil(mockMentoringMeetingResults.length / size) },
+    }),
+  });
+}
+
+export function getMentoringMeetingResult(meetingId: number): Promise<MentoringMeetingResultDetail> {
+  return fetchJson<{ item: MentoringMeetingResultDetail }>(`/api/mentoring/meeting-results/${meetingId}`, {
+    fallback: () => ({ item: mockMentoringMeetingResults.find((result) => result.meetingId === meetingId) || mockMentoringMeetingResults[0] }),
+  }).then((response) => response.item);
+}
+
+export function getMentoringMeetingReviews(query: { page?: number; size?: number } = {}): Promise<MentoringMeetingReviewsResponse> {
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ page, size });
+  return fetchJson<MentoringMeetingReviewsResponse>(`/api/mentoring/meeting-reviews${params}`, {
+    fallback: () => ({
+      items: mockMentoringMeetingReviews.slice((page - 1) * size, page * size),
+      page: { page, size, totalItems: mockMentoringMeetingReviews.length, totalPages: Math.ceil(mockMentoringMeetingReviews.length / size) },
+    }),
+  });
+}
+
+export function getMentoringMeetingReview(reviewId: number): Promise<MentoringMeetingReviewDetail> {
+  return fetchJson<{ item: MentoringMeetingReviewDetail }>(`/api/mentoring/meeting-reviews/${reviewId}`, {
+    fallback: () => ({ item: mockMentoringMeetingReviews.find((review) => review.id === reviewId) || mockMentoringMeetingReviews[0] }),
+  }).then((response) => response.item);
+}
+
+export function createMentoringMeetingReview(input: { meetingId: number; title: string; content: string; rating: number }): Promise<MentoringMeetingReviewDetail> {
+  return fetchJson<{ item: MentoringMeetingReviewDetail }>('/api/mentoring/meeting-reviews', {
+    body: JSON.stringify(input),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function updateMentoringMeetingReview(reviewId: number, input: { title: string; content: string; rating: number }): Promise<MentoringMeetingReviewDetail> {
+  return fetchJson<{ item: MentoringMeetingReviewDetail }>(`/api/mentoring/meeting-reviews/${reviewId}`, {
+    body: JSON.stringify(input),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'PUT',
+  }).then((response) => response.item);
+}
+
+export function deleteMentoringMeetingReview(reviewId: number): Promise<MentoringMeetingReviewDetail> {
+  return fetchJson<{ item: MentoringMeetingReviewDetail }>(`/api/mentoring/meeting-reviews/${reviewId}`, {
+    method: 'DELETE',
+  }).then((response) => response.item);
 }
 
 export function getAcademicRules(query: { categoryId?: number; keyword?: string } = {}): Promise<AcademicRulesResponse> {

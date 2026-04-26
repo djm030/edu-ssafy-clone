@@ -28,6 +28,7 @@ import MaterialsPage from './pages/MaterialsPage';
 import MentorStoriesPage from './pages/MentorStoriesPage';
 import MentoringNoticesPage from './pages/MentoringNoticesPage';
 import MentoringMeetingsPage from './pages/MentoringMeetingsPage';
+import MentoringMeetingResultsPage from './pages/MentoringMeetingResultsPage';
 import MentoringQuestionsPage from './pages/MentoringQuestionsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import OpsReadinessPage from './pages/OpsReadinessPage';
@@ -274,6 +275,8 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   const mentoringNoticeMatch = match(/^\/mentoring\/notices\/(\d+)$/);
   const mentoringQuestionMatch = match(/^\/mentoring\/questions\/(\d+)$/);
   const mentoringMeetingMatch = match(/^\/mentoring\/meetings\/(\d+)$/);
+  const meetingResultMatch = match(/^\/mentoring\/meeting-results\/(\d+)$/);
+  const meetingReviewMatch = match(/^\/mentoring\/meeting-reviews\/(\d+)$/);
   const anonymousPostMatch = match(/^\/community\/anonymous\/(\d+)$/);
 
   if (path === '/') return <DashboardPage />;
@@ -307,6 +310,9 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mentoring/notices') return <MentoringNoticesPage />;
   if (path === '/mentoring/meetings') return <MentoringMeetingsPage />;
   if (path === '/mentoring/meetings/my-applications') return <MentoringMeetingsPage mode="my-applications" />;
+  if (path === '/mentoring/meeting-results') return <MentoringMeetingResultsPage />;
+  if (path === '/mentoring/meeting-reviews') return <MentoringMeetingResultsPage mode="reviews" />;
+  if (path === '/mentoring/meeting-reviews/write') return <MentoringMeetingResultsPage mode="review-write" />;
   if (path === '/mentoring/questions') return <MentoringQuestionsPage canAnswer={canAnswerMentoring(roleAccess)} />;
   if (path === '/mentoring/questions/new') return <MentoringQuestionsPage mode="new" />;
   if (path === '/help/qna') return <QnaListPage canAnswerSupport={canAnswerSupport(roleAccess)} />;
@@ -317,6 +323,8 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (mentoringNoticeMatch) return <MentoringNoticesPage noticeId={Number(mentoringNoticeMatch[1])} />;
   if (mentoringQuestionMatch) return <MentoringQuestionsPage canAnswer={canAnswerMentoring(roleAccess)} questionId={Number(mentoringQuestionMatch[1])} />;
   if (mentoringMeetingMatch) return <MentoringMeetingsPage meetingId={Number(mentoringMeetingMatch[1])} />;
+  if (meetingResultMatch) return <MentoringMeetingResultsPage mode="result-detail" meetingId={Number(meetingResultMatch[1])} />;
+  if (meetingReviewMatch) return <MentoringMeetingResultsPage mode="review-detail" reviewId={Number(meetingReviewMatch[1])} />;
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (elearningMatch) return <ElearningDetailPage courseId={Number(elearningMatch[1])} />;
   if (pledgeMatch) return <PledgesPage pledgeId={Number(pledgeMatch[1])} />;

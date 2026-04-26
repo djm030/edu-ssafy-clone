@@ -533,6 +533,8 @@ VALUES
   ('mentoring_qna', 'Mentoring Q&A', 'mentoring', 'authenticated'),
   ('mentoring_notice', 'Mentoring Notice', 'mentoring', 'public'),
   ('mentoring_meeting', 'Mentoring Meeting', 'mentoring', 'authenticated'),
+  ('mentoring_meeting_result', 'Mentoring Meeting Result', 'mentoring', 'public'),
+  ('mentoring_meeting_review', 'Mentoring Meeting Review', 'mentoring', 'authenticated'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -574,6 +576,10 @@ JOIN (
   SELECT 'mentoring_meeting', '커리어', 1
   UNION ALL
   SELECT 'mentoring_meeting', '포트폴리오', 2
+  UNION ALL
+  SELECT 'mentoring_meeting_result', '결과', 1
+  UNION ALL
+  SELECT 'mentoring_meeting_review', '후기', 1
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -634,6 +640,33 @@ JOIN (
  -->
  현업 멘토와 백엔드 커리어 준비 방향을 이야기합니다.', FALSE, 8
   UNION ALL
+  UNION ALL
+  SELECT 'mentoring_meeting', '커리어', '완료된 백엔드 커리어 간담회', '<!--MENTORING_MEETING
+ type=ONLINE
+ topic=커리어
+ capacity=20
+ startsAt=2026-04-01T19:00:00+09:00
+ endsAt=2026-04-01T20:30:00+09:00
+ applicationStartsAt=2026-03-01T00:00:00+09:00
+ applicationEndsAt=2026-03-31T23:59:59+09:00
+ location=온라인
+ -->
+ 백엔드 커리어 준비와 포트폴리오 개선 방향을 나눈 완료 간담회입니다.', FALSE, 11
+  UNION ALL
+  SELECT 'mentoring_meeting_result', '결과', '완료된 백엔드 커리어 간담회 결과', '<!--MENTORING_MEETING_RESULT
+ meetingId=993
+ startsAt=2026-04-01T19:00:00+09:00
+ endedAt=2026-04-01T20:30:00+09:00
+ participantCount=12
+ -->
+ 멘토는 프로젝트 경험을 문제 상황, 의사결정, 검증 결과 순서로 정리하라고 안내했습니다.', FALSE, 7
+  UNION ALL
+  SELECT 'mentoring_meeting_review', '후기', '실무 관점이 도움이 됐습니다', '<!--MENTORING_MEETING_REVIEW
+ meetingId=993
+ rating=5
+ -->
+ 포트폴리오에 장애 대응과 검증 결과를 어떻게 넣을지 이해했습니다.', FALSE, 3
+  UNION ALL
   SELECT 'mentoring_meeting', '포트폴리오', '프론트엔드 포트폴리오 오프라인 간담회', '<!--MENTORING_MEETING
  type=OFFLINE
  topic=포트폴리오
@@ -666,6 +699,12 @@ SET @free_post_id := (SELECT board_post_id FROM board_posts WHERE title = 'REST 
 SET @anonymous_post_id := (SELECT board_post_id FROM board_posts WHERE title = '익명 학습 고민 공유' LIMIT 1);
 SET @mentoring_qna_post_id := (SELECT board_post_id FROM board_posts WHERE title = '백엔드 프로젝트 경험을 어떻게 포트폴리오로 정리할까요?' LIMIT 1);
 SET @mentoring_meeting_post_id := (SELECT board_post_id FROM board_posts WHERE title = '프론트엔드 포트폴리오 오프라인 간담회' LIMIT 1);
+SET @completed_meeting_post_id := (SELECT board_post_id FROM board_posts WHERE title = '완료된 백엔드 커리어 간담회' LIMIT 1);
+
+UPDATE board_posts
+SET content = REPLACE(content, 'meetingId=993', CONCAT('meetingId=', @completed_meeting_post_id))
+WHERE title IN ('완료된 백엔드 커리어 간담회 결과', '실무 관점이 도움이 됐습니다')
+  AND content LIKE '%meetingId=993%';
 SET @attachment_id := (SELECT attachment_id FROM attachments WHERE checksum_sha256 = SHA2('rest-api-study.pdf', 256) LIMIT 1);
 
 INSERT IGNORE INTO board_post_attachments (board_post_id, attachment_id)
@@ -682,6 +721,15 @@ WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @anonymous_
 INSERT INTO board_comments (board_post_id, author_user_id, content)
 SELECT @mentoring_qna_post_id, @manager_id, '문제 상황, 본인 의사결정, 검증 결과를 한 흐름으로 정리하면 실무 역량이 잘 드러납니다.'
 WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @mentoring_qna_post_id);
+
+INSERT INTO board_comments (board_post_id, author_user_id, content)
+SELECT @completed_meeting_post_id, @student_id, '<!--MENTORING_MEETING_APPLICATION-->\n참여 후기를 작성할 완료 간담회 신청 내역입니다.'
+WHERE NOT EXISTS (
+  SELECT 1 FROM board_comments
+  WHERE board_post_id = @completed_meeting_post_id
+    AND author_user_id = @student_id
+    AND content LIKE '<!--MENTORING_MEETING_APPLICATION-->%'
+);
 
 INSERT INTO board_comments (board_post_id, author_user_id, content)
 SELECT @mentoring_meeting_post_id, @student_id, '<!--MENTORING_MEETING_APPLICATION-->\n포트폴리오 개선 방향을 듣고 싶습니다.'

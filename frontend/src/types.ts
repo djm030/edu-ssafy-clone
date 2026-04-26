@@ -835,6 +835,51 @@ export interface MentoringMeetingApplicationItem {
   cancelledAt?: string | null;
 }
 
+
+export interface MentoringMeetingResultsResponse {
+  items: MentoringMeetingResultItem[];
+  page: PageMeta;
+}
+
+export interface MentoringMeetingResultItem {
+  meetingId: number;
+  resultId: number;
+  title: string;
+  summary: string;
+  startsAt?: string | null;
+  endedAt?: string | null;
+  participantCount: number;
+  reviewCount: number;
+  averageRating: number;
+}
+
+export interface MentoringMeetingResultDetail extends MentoringMeetingResultItem {
+  content: string;
+  reviews: MentoringMeetingReviewItem[];
+}
+
+export interface MentoringMeetingReviewsResponse {
+  items: MentoringMeetingReviewItem[];
+  page: PageMeta;
+}
+
+export interface MentoringMeetingReviewItem {
+  id: number;
+  meetingId: number;
+  meetingTitle: string;
+  title: string;
+  excerpt: string;
+  rating: number;
+  authorName: string;
+  createdAt?: string | null;
+  editable: boolean;
+}
+
+export interface MentoringMeetingReviewDetail extends MentoringMeetingReviewItem {
+  content: string;
+  updatedAt?: string | null;
+}
+
 export interface AcademicRulesResponse {
   categories: AcademicRuleCategory[];
   keyword?: string | null;

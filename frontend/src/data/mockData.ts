@@ -10,6 +10,8 @@ import type {
   LearningMaterial,
   MentoringMeetingApplicationItem,
   MentoringMeetingItem,
+  MentoringMeetingResultDetail,
+  MentoringMeetingReviewDetail,
   MentoringNoticeItem,
   MentoringQuestionItem,
   MentorStoryItem,
@@ -227,6 +229,41 @@ export const mockMentoringMeetingApplications: MentoringMeetingApplicationItem[]
     appliedAt: '2026-04-12T10:00:00+09:00',
   },
 ];
+
+
+export const mockMentoringMeetingResults: MentoringMeetingResultDetail[] = [
+  {
+    meetingId: 993,
+    resultId: 1201,
+    title: '백엔드 커리어 간담회 결과',
+    summary: '프로젝트 경험 정리, 면접 질문 대비, 현업 코드 리뷰 문화를 다룬 간담회 결과입니다.',
+    content: '멘토는 장애 대응 경험과 API 설계 의사결정을 STAR 구조로 정리하라고 제안했습니다. 참여자는 포트폴리오 개선 체크리스트를 받았습니다.',
+    startsAt: '2026-04-01T19:00:00+09:00',
+    endedAt: '2026-04-01T20:30:00+09:00',
+    participantCount: 12,
+    reviewCount: 1,
+    averageRating: 5,
+    reviews: [],
+  },
+];
+
+export const mockMentoringMeetingReviews: MentoringMeetingReviewDetail[] = [
+  {
+    id: 1301,
+    meetingId: 993,
+    meetingTitle: '백엔드 커리어 간담회',
+    title: '실무 관점이 도움이 됐습니다',
+    excerpt: '포트폴리오에 장애 대응과 검증 결과를 어떻게 넣을지 이해했습니다.',
+    content: '포트폴리오에 장애 대응과 검증 결과를 어떻게 넣을지 이해했습니다. 다음 프로젝트 회고부터 바로 적용할 계획입니다.',
+    rating: 5,
+    authorName: 'Demo Student',
+    createdAt: '2026-04-02T09:00:00+09:00',
+    updatedAt: '2026-04-02T09:00:00+09:00',
+    editable: true,
+  },
+];
+
+mockMentoringMeetingResults[0].reviews = mockMentoringMeetingReviews;
 
 export const mockAcademicRuleCategories: AcademicRuleCategory[] = [
   {

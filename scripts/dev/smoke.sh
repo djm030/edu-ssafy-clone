@@ -66,6 +66,8 @@ for route in \
   /mentoring/questions \
   /mentoring/notices \
   /mentoring/meetings \
+  /mentoring/meeting-results \
+  /mentoring/meeting-reviews \
   /help/qna \
   /quest \
   /survey \
@@ -96,7 +98,9 @@ for api_path in \
   /api/mentoring/stories \
   /api/mentoring/questions \
   /api/mentoring/notices \
-  /api/mentoring/meetings; do
+  /api/mentoring/meetings \
+  /api/mentoring/meeting-results \
+  /api/mentoring/meeting-reviews; do
   require_any_file_contains "$api_path" frontend/src/api/app.ts frontend/src/api/readiness.ts
 done
 
@@ -130,3 +134,5 @@ request GET "$BACKEND_URL/api/quests?page=1&size=5"
 request GET "$BACKEND_URL/api/surveys?page=1&size=5"
 request GET "$BACKEND_URL/api/support/tickets?page=1&size=5"
 request GET "$BACKEND_URL/api/mentoring/meetings?page=1&size=5"
+request GET "$BACKEND_URL/api/mentoring/meeting-results?page=1&size=5"
+request GET "$BACKEND_URL/api/mentoring/meeting-reviews?page=1&size=5"

@@ -51,6 +51,11 @@ class FrontendRouteSmokeCoverageTest {
             "/mentoring/meetings",
             "/mentoring/meetings/1",
             "/mentoring/meetings/my-applications",
+            "/mentoring/meeting-results",
+            "/mentoring/meeting-results/993",
+            "/mentoring/meeting-reviews",
+            "/mentoring/meeting-reviews/write",
+            "/mentoring/meeting-reviews/1301",
             "/help/qna",
             "/help/qna/new",
             "/help/qna/tickets/1",
@@ -109,6 +114,11 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/mentoring/meetings')");
         assertThat(app).contains("if (path === '/mentoring/meetings/my-applications')");
         assertThat(app).contains("match(/^\\/mentoring\\/meetings\\/(\\d+)$/)");
+        assertThat(app).contains("if (path === '/mentoring/meeting-results')");
+        assertThat(app).contains("if (path === '/mentoring/meeting-reviews')");
+        assertThat(app).contains("if (path === '/mentoring/meeting-reviews/write')");
+        assertThat(app).contains("match(/^\\/mentoring\\/meeting-results\\/(\\d+)$/)");
+        assertThat(app).contains("match(/^\\/mentoring\\/meeting-reviews\\/(\\d+)$/)");
         assertThat(app).contains("if (path === '/community/anonymous/write' || path === '/community/anonymous/new')");
         assertThat(app).contains("match(/^\\/community\\/anonymous\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
@@ -147,7 +157,8 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("mentor-stories", Path.of("..", "frontend", "src", "pages", "MentorStoriesPage.tsx")),
                 Map.entry("mentoring-questions", Path.of("..", "frontend", "src", "pages", "MentoringQuestionsPage.tsx")),
                 Map.entry("mentoring-notices", Path.of("..", "frontend", "src", "pages", "MentoringNoticesPage.tsx")),
-                Map.entry("mentoring-meetings", Path.of("..", "frontend", "src", "pages", "MentoringMeetingsPage.tsx"))
+                Map.entry("mentoring-meetings", Path.of("..", "frontend", "src", "pages", "MentoringMeetingsPage.tsx")),
+                Map.entry("mentoring-meeting-results", Path.of("..", "frontend", "src", "pages", "MentoringMeetingResultsPage.tsx"))
         );
 
         for (Map.Entry<String, Path> entry : pages.entrySet()) {
