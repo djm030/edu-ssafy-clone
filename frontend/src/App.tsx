@@ -18,6 +18,7 @@ import MaterialDetailPage from './pages/MaterialDetailPage';
 import MaterialViewerPage from './pages/MaterialViewerPage';
 import MaterialsPage from './pages/MaterialsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import OpsReadinessPage from './pages/OpsReadinessPage';
 import ProfileCheckPage from './pages/ProfileCheckPage';
 import ProfileEditPage from './pages/ProfileEditPage';
 import QnaDetailPage from './pages/QnaDetailPage';
@@ -245,6 +246,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/attendance/appeals/new') return <AttendanceAppealPage />;
   if (path === '/mycampus/level') return <LevelPage />;
   if (path === '/mycampus/notifications') return <NotificationsPage />;
+  if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
   if (path === '/learning/replays') return <ReplaysPage />;

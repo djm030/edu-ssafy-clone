@@ -475,3 +475,14 @@ h2 {
 .admin-campus-grid .panel {
   min-height: 180px;
 }
+
+.readiness-table .simple-table-row {
+  grid-template-columns: 96px minmax(140px, 0.7fr) minmax(220px, 1fr) minmax(280px, 1.3fr);
+}
+
+.readiness-table code {
+  color: #344054;
+  font-size: 13px;
+  white-space: normal;
+  word-break: break-all;
+}

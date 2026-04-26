@@ -32,6 +32,7 @@ net localgroup docker-users "DESKTOP-KPGHMRC\CodexSandboxUsers" /add
 - Login: http://localhost/login
 - Backend health: http://localhost:8080/actuator/health
 - Backend API through Nginx: http://localhost/api/me
+- Production readiness smoke screen: http://localhost/ops/readiness
 - Nginx health: http://localhost/nginx-health
 - RabbitMQ management: http://localhost:15672
   - user: `ssafy`
@@ -64,6 +65,7 @@ Production profile notes:
 - http://localhost/mycampus/attendance/appeals/new
 - http://localhost/mycampus/level
 - http://localhost/mycampus/notifications
+- http://localhost/ops/readiness
 - http://localhost/learning/curriculum
 - http://localhost/learning/replays
 - http://localhost/learning/materials

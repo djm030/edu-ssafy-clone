@@ -1,5 +1,12 @@
 # Test Report
 
+## Frontend Production Readiness Smoke Screen (2026-04-26 KST)
+- Added `/ops/readiness` frontend screen that calls real Nginx/backend/session/domain endpoints and reports PASS/FAIL without mock fallback.
+- `cd frontend && npm run build` -> PASS, Vite transformed 71 modules.
+- `cd frontend && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
+
 ## Nginx Reverse Proxy Config Verification (2026-04-26 KST)
 - Added a backend regression test that reads `infra/nginx/conf.d/default.conf` and guards API/actuator backend proxying, frontend fallback, health check, forwarded headers, and baseline security headers.
 
