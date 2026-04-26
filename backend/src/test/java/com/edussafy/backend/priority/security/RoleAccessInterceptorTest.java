@@ -59,6 +59,18 @@ class RoleAccessInterceptorTest {
     }
 
     @Test
+    void publicApiDocsEndpointSkipsSessionLookup() throws Exception {
+        MockHttpServletRequest request = request("GET", "/api/docs", null);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        boolean allowed = interceptor.preHandle(request, response, new Object());
+
+        assertThat(allowed).isTrue();
+        assertThat(response.getStatus()).isEqualTo(200);
+        verify(repository, never()).findUserById(1L);
+    }
+
+    @Test
     void missingSessionReturnsUnauthorizedJson() throws Exception {
         MockHttpServletRequest request = request("GET", "/api/surveys", null);
         MockHttpServletResponse response = new MockHttpServletResponse();

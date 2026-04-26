@@ -66,6 +66,8 @@
 | `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
 
 ## Spring REST Docs Coverage (2026-04-26 KST)
+- Runtime HTML entrypoint: `GET /api/docs` serves the generated Spring REST Docs HTML from the backend so it is available through the existing Nginx `/api/` reverse proxy.
+- Static build artifact: `backend/target/generated-docs/index.html`; packaged runtime copy: `backend/src/main/resources/static/api-docs/index.html`.
 - `health-check`: documents `GET /api/health` overall status plus database and temporary storage readiness probes for production smoke checks.
 - `readiness-check`: documents `GET /api/readiness` with the same probe payload and HTTP 503 semantics for failed required checks.
 - `auth-access-policy`: documents `GET /api/auth/access-policy` staff/admin API policy matrix fields consumed by `/ops/readiness`.

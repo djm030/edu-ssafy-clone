@@ -122,6 +122,12 @@ SKIP_HTTP=true scripts/dev/smoke-routes.sh
 RUN_TESTS=false scripts/dev/verify-restdocs.sh
 ```
 
+The generated Spring REST Docs HTML is also exposed by the backend at:
+
+```text
+http://localhost/api/docs
+```
+
 If `mvn` is installed locally, `mvn -B test` from `backend/` is also valid.
 
 
