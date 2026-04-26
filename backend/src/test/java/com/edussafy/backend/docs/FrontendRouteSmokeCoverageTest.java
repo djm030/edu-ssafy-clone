@@ -436,7 +436,9 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("ElearningSummaryPanel")
                 .contains("학습중 이러닝 운영 요약")
                 .contains("elearning-meta-row")
-                .contains("남은 차시");
+                .contains("남은 차시")
+                .contains("다시 불러오기")
+                .contains("setRetryToken");
         assertThat(appApi)
                 .contains("ElearningProgressResponse")
                 .contains("remainingLessonCount");

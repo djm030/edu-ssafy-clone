@@ -27,10 +27,12 @@ function ElearningPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [resumeMessage, setResumeMessage] = useState('');
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     let ignore = false;
     setLoadState('loading');
+    setErrorMessage('');
     getElearningProgress({ keyword: submittedKeyword, size: 20, status })
       .then((response) => {
         if (ignore) return;
@@ -46,10 +48,11 @@ function ElearningPage() {
     return () => {
       ignore = true;
     };
-  }, [submittedKeyword, status]);
+  }, [retryToken, submittedKeyword, status]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setResumeMessage('');
     setSubmittedKeyword(keyword.trim());
   };
 
@@ -71,7 +74,7 @@ function ElearningPage() {
       <div className="filter-bar">
         <div className="category-strip">
           {statusOptions.map((option) => (
-            <button className={status === option.value ? 'category-chip active' : 'category-chip'} key={option.value} onClick={() => setStatus(option.value)} type="button">
+            <button className={status === option.value ? 'category-chip active' : 'category-chip'} key={option.value} onClick={() => { setResumeMessage(''); setStatus(option.value); }} type="button">
               {option.label}
             </button>
           ))}
@@ -84,7 +87,14 @@ function ElearningPage() {
       {summary ? <ElearningSummaryPanel summary={summary} /> : null}
       {resumeMessage ? <p className="helper-text" role="status">{resumeMessage}</p> : null}
       {loadState === 'loading' ? <LoadingRows /> : null}
-      {loadState === 'error' ? <DataState title="학습중 이러닝을 불러오지 못했습니다." message={errorMessage} /> : null}
+      {loadState === 'error' ? (
+        <DataState
+          title="학습중 이러닝을 불러오지 못했습니다."
+          message={errorMessage}
+          actionLabel="다시 불러오기"
+          onAction={() => setRetryToken((value) => value + 1)}
+        />
+      ) : null}
       {loadState === 'empty' ? <DataState title="학습중인 이러닝이 없습니다." message="상태 필터 또는 검색어를 바꿔 보세요." /> : null}
       {loadState === 'loaded' ? <ElearningList items={items} onResume={handleResume} /> : null}
     </section>
