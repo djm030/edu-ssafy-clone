@@ -363,7 +363,9 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("BookmarkSummaryPanel")
                 .contains("찜한 목록 유형별 요약")
                 .contains("decrementBookmarkSummary")
-                .contains("summaryCount");
+                .contains("summaryCount")
+                .contains("deletingId")
+                .contains("해제 중");
         assertThat(appApi)
                 .contains("BookmarksResponse")
                 .contains("materialCount");

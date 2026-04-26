@@ -26,6 +26,7 @@ function BookmarksPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [mutationMessage, setMutationMessage] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -48,6 +49,8 @@ function BookmarksPage() {
   }, [targetType]);
 
   const removeBookmark = (bookmarkId: number) => {
+    if (deletingId !== null) return;
+    setDeletingId(bookmarkId);
     setMutationMessage('찜을 해제하는 중입니다.');
     deleteBookmark(bookmarkId)
       .then(() => {
@@ -60,7 +63,8 @@ function BookmarksPage() {
         setLoadState(nextItems.length ? 'loaded' : 'empty');
         setMutationMessage('찜이 해제되었습니다.');
       })
-      .catch((error) => setMutationMessage(getErrorMessage(error)));
+      .catch((error) => setMutationMessage(getErrorMessage(error)))
+      .finally(() => setDeletingId(null));
   };
 
   return (
@@ -80,7 +84,7 @@ function BookmarksPage() {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="찜한 목록을 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="찜한 콘텐츠가 없습니다." message="학습자료나 이러닝 상세에서 찜을 추가해 보세요." /> : null}
-      {loadState === 'loaded' ? <BookmarkList items={items} onDelete={removeBookmark} /> : null}
+      {loadState === 'loaded' ? <BookmarkList items={items} deletingId={deletingId} onDelete={removeBookmark} /> : null}
     </section>
   );
 }
@@ -125,7 +129,7 @@ function decrementBookmarkSummary(summary: BookmarkSummary | undefined, targetTy
   };
 }
 
-function BookmarkList({ items, onDelete }: { items: BookmarkItem[]; onDelete: (bookmarkId: number) => void }) {
+function BookmarkList({ items, deletingId, onDelete }: { items: BookmarkItem[]; deletingId: number | null; onDelete: (bookmarkId: number) => void }) {
   return (
     <div className="card-list" aria-label="찜한 목록">
       {items.map((item) => {
@@ -140,7 +144,9 @@ function BookmarkList({ items, onDelete }: { items: BookmarkItem[]; onDelete: (b
             <StatusPill tone={target.tone}>{target.label}</StatusPill>
             <div className="action-row">
               <a className="ghost-button" href={item.targetUrl || '/learning/materials'}>이동</a>
-              <button className="ghost-button" onClick={() => onDelete(item.id)} type="button">찜 해제</button>
+              <button className="ghost-button" disabled={deletingId !== null} onClick={() => onDelete(item.id)} type="button">
+                {deletingId === item.id ? '해제 중' : '찜 해제'}
+              </button>
             </div>
           </article>
         );
