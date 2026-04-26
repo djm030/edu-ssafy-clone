@@ -40,6 +40,40 @@ export const mockDashboard: DashboardSummary = {
   attendance: { present: 18, late: 1, absent: 0, appealAvailable: true },
   notifications: { unreadCount: 3, latest: ['공지사항 확인 필요', '이번 주 설문 미응답', 'Quest 채점 완료'] },
   today: { curriculumTitle: 'Spring Boot REST API', questTitle: '게시판 API 구현', surveyTitle: '주간 만족도 조사' },
+  home: {
+    attendanceCheck: {
+      todayLabel: '2026-04-24',
+      checkInAvailable: true,
+      checkOutAvailable: true,
+      statusText: '입·퇴실 가능',
+      message: '오늘 입실/퇴실 기록과 소명 가능 여부를 확인하세요.',
+      detailPath: '/mycampus/attendance',
+    },
+    curriculumSessions: [
+      { id: 31, weekNumber: 3, date: '2026-04-24', period: '09:00 ~ 12:00', title: 'React API 연동', instructor: '프론트 코치', location: '서울 A반', status: 'current', detailPath: '/learning/curriculum/3' },
+      { id: 32, weekNumber: 3, date: '2026-04-24', period: '13:00 ~ 18:00', title: '프로젝트 통합 실습', instructor: '담임 코치', location: '서울 A반', status: 'current', detailPath: '/learning/curriculum/3' },
+    ],
+    quests: [
+      { id: 1, title: '게시판 API 구현', type: 'assignment', status: 'progress', startAt: '2026-04-20T09:00:00+09:00', endAt: '2026-04-26T18:00:00+09:00', detailPath: '/quest/1' },
+      { id: 2, title: 'React 목록 화면 평가', type: 'evaluation', status: 'submitted', startAt: '2026-04-23T09:00:00+09:00', endAt: '2026-04-24T18:00:00+09:00', detailPath: '/quest/2' },
+    ],
+    materials: [
+      { id: 1, title: 'Spring Boot REST API', category: 'Backend', description: 'Controller/Service/Repository 계층 실습 자료', progressPercent: 0, viewCount: 142, likeCount: 24, bookmarkCount: 11, detailPath: '/learning/materials/1' },
+      { id: 2, title: 'React 상태 관리', category: 'Frontend', description: '컴포넌트 상태와 API 로딩 처리 패턴', progressPercent: 0, viewCount: 98, likeCount: 18, bookmarkCount: 7, detailPath: '/learning/materials/2' },
+    ],
+    elearnings: [
+      { id: 1, title: 'Java 기초 이러닝', category: 'Java', description: '객체지향 핵심', progressPercent: 42, viewCount: 0, likeCount: 0, bookmarkCount: 0, detailPath: '/mycampus/elearning/1' },
+    ],
+    freePosts: [
+      { id: 201, boardCode: 'free', title: '알고리즘 스터디 같이 하실 분 모집합니다', authorLabel: '박싸피', createdAt: '2026-04-24T13:40:00+09:00', pinned: false, detailPath: '/community/free/201' },
+    ],
+    notices: [
+      { id: 101, boardCode: 'notice', title: '4월 공통 프로젝트 일정 안내', authorLabel: '교육지원팀', createdAt: '2026-04-24T09:00:00+09:00', pinned: true, detailPath: '/help/notice/101' },
+    ],
+    ebooks: [
+      { id: 1, title: 'SSAFY Java e-book', category: 'Java', description: 'Java 트랙 실습 전자책', detailPath: '/mycampus/ebooks/1' },
+    ],
+  },
 };
 
 export const mockLevelDetail: LevelDetailResponse = {

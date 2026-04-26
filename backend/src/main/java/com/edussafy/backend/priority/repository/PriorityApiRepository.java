@@ -6,6 +6,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardBoardPost;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumScheduleRow;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
@@ -1079,6 +1080,49 @@ public class PriorityApiRepository {
                 FROM notification_recipients nr
                 WHERE nr.recipient_user_id = :userId AND nr.deleted_at IS NULL AND nr.read_at IS NULL
                 """, userId);
+    }
+
+    public List<DashboardBoardPost> findDashboardPosts(String boardCode, int limit) {
+        return jdbcClient.sql("""
+                SELECT
+                    p.board_post_id,
+                    b.board_code,
+                    p.title,
+                    COALESCE(u.name, '운영자') AS author_label,
+                    p.created_at,
+                    p.notice_yn
+                FROM board_posts p
+                JOIN boards b ON b.board_id = p.board_id
+                LEFT JOIN users u ON u.user_id = p.author_user_id
+                WHERE b.board_code = :boardCode
+                ORDER BY p.notice_yn DESC, p.created_at DESC, p.board_post_id DESC
+                LIMIT :limit
+                """)
+                .param("boardCode", boardCode)
+                .param("limit", limit)
+                .query((rs, rowNum) -> new DashboardBoardPost(
+                        rs.getLong("board_post_id"),
+                        rs.getString("board_code"),
+                        rs.getString("title"),
+                        rs.getString("author_label"),
+                        toOffset(rs.getTimestamp("created_at")),
+                        rs.getBoolean("notice_yn"),
+                        dashboardPostPath(rs.getString("board_code"), rs.getLong("board_post_id"))
+                ))
+                .list();
+    }
+
+    private String dashboardPostPath(String boardCode, long postId) {
+        if ("notice".equalsIgnoreCase(boardCode)) {
+            return "/help/notice/" + postId;
+        }
+        if ("faq".equalsIgnoreCase(boardCode)) {
+            return "/help/faq/" + postId;
+        }
+        if ("anonymous".equalsIgnoreCase(boardCode)) {
+            return "/community/anonymous/" + postId;
+        }
+        return "/community/free/" + postId;
     }
 
     public List<NotificationItem> findNotifications(long userId, int limit, int offset) {

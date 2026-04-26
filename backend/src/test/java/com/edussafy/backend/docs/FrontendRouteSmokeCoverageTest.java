@@ -200,6 +200,26 @@ class FrontendRouteSmokeCoverageTest {
         }
     }
 
+
+    @Test
+    void dashboardPageExposesEduSsafyHomeWidgets() throws IOException {
+        String dashboard = Files.readString(Path.of("..", "frontend", "src", "pages", "DashboardPage.tsx"));
+
+        assertThat(dashboard)
+                .contains("출석체크 & 현황")
+                .contains("장학포인트")
+                .contains("레벨&경험치")
+                .contains("주차별 커리큘럼")
+                .contains("Quest/평가")
+                .contains("학습자료")
+                .contains("학습중 이러닝")
+                .contains("자유게시판")
+                .contains("e-book")
+                .contains("공지사항")
+                .contains("DataState")
+                .contains("LoadingRows");
+    }
+
     @Test
     void frontendApiClientSurfacesBackendRequestIds() throws IOException {
         String client = Files.readString(CLIENT_TS);

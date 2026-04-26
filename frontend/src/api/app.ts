@@ -363,11 +363,23 @@ function toNotificationItem(item: BackendNotificationItem): NotificationItem {
 }
 
 function toDashboardSummary(summary: BackendDashboardSummary): DashboardSummary {
+  const home = summary.home || mockDashboard.home;
+
   return {
     ...summary,
     notifications: {
       unreadCount: summary.notifications.unreadCount,
       latest: summary.notifications.latest.map((item) => (typeof item === 'string' ? item : toNotificationItem(item).title)),
+    },
+    home: {
+      attendanceCheck: home.attendanceCheck || mockDashboard.home.attendanceCheck,
+      curriculumSessions: home.curriculumSessions || [],
+      quests: home.quests || [],
+      materials: home.materials || [],
+      elearnings: home.elearnings || [],
+      freePosts: home.freePosts || [],
+      notices: home.notices || [],
+      ebooks: home.ebooks || [],
     },
   };
 }

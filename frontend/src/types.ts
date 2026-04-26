@@ -98,6 +98,78 @@ export interface LevelDetailResponse {
   detail: LevelDetail;
 }
 
+export interface DashboardAttendanceCheck {
+  todayLabel: string;
+  checkInAvailable: boolean;
+  checkOutAvailable: boolean;
+  statusText: string;
+  message: string;
+  detailPath: string;
+}
+
+export interface DashboardCurriculumSession {
+  id: number;
+  weekNumber?: number | null;
+  date?: string | null;
+  period?: string | null;
+  title: string;
+  instructor?: string | null;
+  location?: string | null;
+  status: 'done' | 'current' | 'planned' | string;
+  detailPath: string;
+}
+
+export interface DashboardQuestCard {
+  id: number;
+  title: string;
+  type?: string | null;
+  status?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  detailPath: string;
+}
+
+export interface DashboardLearningCard {
+  id: number;
+  title: string;
+  category?: string | null;
+  description?: string | null;
+  progressPercent: number;
+  viewCount: number;
+  likeCount: number;
+  bookmarkCount: number;
+  detailPath: string;
+}
+
+export interface DashboardBoardPost {
+  id: number;
+  boardCode: string;
+  title: string;
+  authorLabel?: string | null;
+  createdAt?: string | null;
+  pinned: boolean;
+  detailPath: string;
+}
+
+export interface DashboardEbookCard {
+  id: number;
+  title: string;
+  category?: string | null;
+  description?: string | null;
+  detailPath: string;
+}
+
+export interface DashboardHomeWidgets {
+  attendanceCheck: DashboardAttendanceCheck;
+  curriculumSessions: DashboardCurriculumSession[];
+  quests: DashboardQuestCard[];
+  materials: DashboardLearningCard[];
+  elearnings: DashboardLearningCard[];
+  freePosts: DashboardBoardPost[];
+  notices: DashboardBoardPost[];
+  ebooks: DashboardEbookCard[];
+}
+
 export interface DashboardSummary {
   user: Omit<UserProfile, 'id' | 'email' | 'role'>;
   level: LevelSummary;
@@ -116,6 +188,7 @@ export interface DashboardSummary {
     questTitle: string;
     surveyTitle: string;
   };
+  home: DashboardHomeWidgets;
 }
 
 export interface EducationStatusSummary {

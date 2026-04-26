@@ -4,6 +4,16 @@ import { loginAsDemoCoach, loginAsDemoLearner } from './fixtures';
 test('demo learner can log in and navigate priority screens', async ({ page }) => {
   await loginAsDemoLearner(page);
 
+  await test.step('홈 대시보드가 EduSSAFY 주요 위젯을 노출한다', async () => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '출석체크 & 현황' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '주차별 커리큘럼' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Quest/평가' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '학습자료' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '학습중 이러닝' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '공지사항' })).toBeVisible();
+  });
+
   const routes = [
     ['출석현황', '/mycampus/attendance', /출석/],
     ['게시판', '/community/free', /자유게시판/],

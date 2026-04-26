@@ -593,3 +593,72 @@ h2 {
 .readonly-board-actions .form-message {
   margin-bottom: 0;
 }
+
+.dashboard-home-grid {
+  align-items: start;
+}
+
+.dashboard-wide-panel {
+  grid-column: 1 / -1;
+}
+
+.compact-heading {
+  margin-bottom: 14px;
+}
+
+.dashboard-attendance-card {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-attendance-card .primary-action {
+  justify-self: start;
+}
+
+.dashboard-mini-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-mini-list li,
+.dashboard-widget-card {
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.dashboard-widget-card {
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-widget-card strong,
+.dashboard-table strong {
+  color: #1f2933;
+}
+
+.dashboard-widget-card small,
+.dashboard-table small {
+  color: #667085;
+  display: block;
+  margin-top: 3px;
+}
+
+.dashboard-table {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+}
+
+.dashboard-table > div,
+.dashboard-table > a {
+  display: grid;
+  grid-template-columns: 90px 190px minmax(0, 1fr) 140px;
+}
+
+.dashboard-table > a:hover {
+  background: #f7f9fc;
+}

@@ -41,6 +41,13 @@ import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumSessionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardAttendanceCheck;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardBoardPost;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumSession;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardEbookCard;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardHomeWidgets;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardLearningCard;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardQuestCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
@@ -408,7 +415,17 @@ class PriorityApiControllerTest {
                 new LevelSummary(1, 0, 1000, 0, null),
                 new AttendanceSummary(0, 0, 0, true),
                 new NotificationsSummary(0, List.of()),
-                new TodaySummary(null, null, null)
+                new TodaySummary(null, null, null),
+                new DashboardHomeWidgets(
+                        new DashboardAttendanceCheck("2026-04-26", true, true, "입·퇴실 가능", "오늘 출석을 확인하세요.", "/mycampus/attendance"),
+                        List.of(new DashboardCurriculumSession(11, 3, LocalDate.parse("2026-04-26"), "09:00 ~ 18:00", "React API 연동", "Coach", "Seoul", "current", "/learning/curriculum/11")),
+                        List.of(new DashboardQuestCard(7, "Dashboard Quest", "assignment", "progress", null, null, "/quest/7")),
+                        List.of(new DashboardLearningCard(5, "REST API", "Backend", "API 자료", 0, 10, 2, 1, "/learning/materials/5")),
+                        List.of(new DashboardLearningCard(6, "Java e-learning", "Java", "객체지향", 40, 0, 0, 0, "/mycampus/elearning/6")),
+                        List.of(new DashboardBoardPost(9, "free", "자유게시판 글", "Demo", null, false, "/community/free/9")),
+                        List.of(new DashboardBoardPost(10, "notice", "공지사항", "운영자", null, true, "/help/notice/10")),
+                        List.of(new DashboardEbookCard(3, "Java e-book", "Java", "전자책", "/mycampus/ebooks/3"))
+                )
         ));
 
         mockMvc.perform(get("/api/dashboard/summary"))
@@ -416,7 +433,11 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.user.trackName").value("Java"))
                 .andExpect(jsonPath("$.level.nextLevelExp").value(1000))
                 .andExpect(jsonPath("$.attendance.appealAvailable").value(true))
-                .andExpect(jsonPath("$.notifications.latest").isArray());
+                .andExpect(jsonPath("$.notifications.latest").isArray())
+                .andExpect(jsonPath("$.home.attendanceCheck.detailPath").value("/mycampus/attendance"))
+                .andExpect(jsonPath("$.home.curriculumSessions[0].title").value("React API 연동"))
+                .andExpect(jsonPath("$.home.quests[0].detailPath").value("/quest/7"))
+                .andExpect(jsonPath("$.home.notices[0].pinned").value(true));
     }
 
     @Test

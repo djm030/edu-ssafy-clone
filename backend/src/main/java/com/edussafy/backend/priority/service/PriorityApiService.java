@@ -33,6 +33,13 @@ import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumSessionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardAttendanceCheck;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardBoardPost;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardCurriculumSession;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardEbookCard;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardHomeWidgets;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardLearningCard;
+import com.edussafy.backend.priority.dto.PriorityDtos.DashboardQuestCard;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
@@ -436,13 +443,127 @@ public class PriorityApiService {
         List<NotificationItem> latest = safe(() -> repository.findNotifications(user.id(), 5, 0), List.of());
         long unreadCount = safe(() -> repository.countUnreadNotifications(user.id()), 0L);
 
+        TodaySummary today = safe(() -> repository.findTodaySummary(user.id()), EMPTY_TODAY);
+
         return new DashboardSummary(
                 new UserSummary(user.name(), user.campusName(), user.cohortName(), user.trackName()),
                 level,
                 attendance,
                 new NotificationsSummary(unreadCount, latest),
-                safe(() -> repository.findTodaySummary(user.id()), EMPTY_TODAY)
+                today,
+                dashboardHomeWidgets(user.id(), attendance)
         );
+    }
+
+    private DashboardHomeWidgets dashboardHomeWidgets(long userId, AttendanceSummary attendance) {
+        List<CurriculumWeekItem> weeks = toCurriculumWeeks(
+                safe(() -> repository.findCurriculumWeekSchedules(userId, null, null), List.of())
+        );
+        List<DashboardCurriculumSession> curriculumSessions = weeks.stream()
+                .limit(3)
+                .flatMap(week -> week.sessions().stream()
+                        .limit(2)
+                        .map(session -> new DashboardCurriculumSession(
+                                session.id(),
+                                week.weekNumber(),
+                                session.date(),
+                                session.period(),
+                                session.title(),
+                                session.instructor(),
+                                session.location(),
+                                week.status(),
+                                "/learning/curriculum/" + week.id()
+                        )))
+                .limit(5)
+                .toList();
+
+        List<DashboardQuestCard> quests = safe(() -> repository.findQuests(userId, 4, 0), List.<QuestItem>of()).stream()
+                .map(item -> new DashboardQuestCard(
+                        item.id(),
+                        item.title(),
+                        item.type(),
+                        firstText(item.resultStatus(), item.submitStatus(), item.status(), "scheduled"),
+                        item.startAt(),
+                        item.endAt(),
+                        "/quest/" + item.id()
+                ))
+                .toList();
+
+        List<DashboardLearningCard> materials = safe(() -> attachResources(repository.findMaterials(userId, null, null, 6, 0)), List.<MaterialItem>of()).stream()
+                .map(item -> new DashboardLearningCard(
+                        item.id(),
+                        item.title(),
+                        item.type(),
+                        item.summary(),
+                        0,
+                        item.viewCount(),
+                        item.likeCount(),
+                        item.bookmarkCount(),
+                        "/learning/materials/" + item.id()
+                ))
+                .toList();
+
+        List<DashboardLearningCard> elearnings = safe(() -> repository.findElearningProgress(userId, null, null, 4, 0), List.<com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem>of()).stream()
+                .map(item -> new DashboardLearningCard(
+                        item.courseId(),
+                        item.title(),
+                        item.category(),
+                        item.lastLessonTitle(),
+                        item.progressPercent(),
+                        0,
+                        0,
+                        0,
+                        "/mycampus/elearning/" + item.courseId()
+                ))
+                .toList();
+
+        List<DashboardEbookCard> ebooks = safe(() -> repository.findEbooks(userId, 4, 0), List.<EbookItem>of()).stream()
+                .map(item -> new DashboardEbookCard(
+                        item.id(),
+                        item.title(),
+                        item.category(),
+                        item.description(),
+                        "/mycampus/ebooks/" + item.id()
+                ))
+                .toList();
+
+        return new DashboardHomeWidgets(
+                attendanceCheckWidget(attendance),
+                curriculumSessions,
+                quests,
+                materials,
+                elearnings,
+                safe(() -> repository.findDashboardPosts("free", 4), List.<DashboardBoardPost>of()),
+                safe(() -> repository.findDashboardPosts("notice", 4), List.<DashboardBoardPost>of()),
+                ebooks
+        );
+    }
+
+    private DashboardAttendanceCheck attendanceCheckWidget(AttendanceSummary attendance) {
+        LocalDate today = LocalDate.now(ZoneOffset.ofHours(9));
+        boolean weekday = today.getDayOfWeek().getValue() < 6;
+        boolean available = weekday && attendance.appealAvailable();
+        String statusText = available ? "입·퇴실 가능" : weekday ? "출석 확인" : "주말 비활성";
+        String message = available
+                ? "오늘 입실/퇴실 기록과 소명 가능 여부를 확인하세요."
+                : weekday ? "오늘 출석 현황을 확인하고 필요한 경우 소명을 신청하세요." : "주말에는 입·퇴실 체크가 비활성화됩니다.";
+        return new DashboardAttendanceCheck(
+                today.toString(),
+                available,
+                available,
+                statusText,
+                message,
+                "/mycampus/attendance"
+        );
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 
     public LevelDetailResponse levelDetail() {

@@ -107,12 +107,92 @@ public final class PriorityDtos {
     public record TodaySummary(String curriculumTitle, String questTitle, String surveyTitle) {
     }
 
+    public record DashboardAttendanceCheck(
+            String todayLabel,
+            boolean checkInAvailable,
+            boolean checkOutAvailable,
+            String statusText,
+            String message,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardCurriculumSession(
+            long id,
+            Integer weekNumber,
+            LocalDate date,
+            String period,
+            String title,
+            String instructor,
+            String location,
+            String status,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardQuestCard(
+            long id,
+            String title,
+            String type,
+            String status,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardLearningCard(
+            long id,
+            String title,
+            String category,
+            String description,
+            int progressPercent,
+            long viewCount,
+            long likeCount,
+            long bookmarkCount,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardBoardPost(
+            long id,
+            String boardCode,
+            String title,
+            String authorLabel,
+            OffsetDateTime createdAt,
+            boolean pinned,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardEbookCard(
+            long id,
+            String title,
+            String category,
+            String description,
+            String detailPath
+    ) {
+    }
+
+    public record DashboardHomeWidgets(
+            DashboardAttendanceCheck attendanceCheck,
+            List<DashboardCurriculumSession> curriculumSessions,
+            List<DashboardQuestCard> quests,
+            List<DashboardLearningCard> materials,
+            List<DashboardLearningCard> elearnings,
+            List<DashboardBoardPost> freePosts,
+            List<DashboardBoardPost> notices,
+            List<DashboardEbookCard> ebooks
+    ) {
+    }
+
     public record DashboardSummary(
             UserSummary user,
             LevelSummary level,
             AttendanceSummary attendance,
             NotificationsSummary notifications,
-            TodaySummary today
+            TodaySummary today,
+            DashboardHomeWidgets home
     ) {
     }
 
