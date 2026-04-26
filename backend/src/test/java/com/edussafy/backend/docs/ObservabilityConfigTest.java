@@ -21,6 +21,21 @@ class ObservabilityConfigTest {
     }
 
     @Test
+    void requestCorrelationIsAddedToBackendLogsAndResponses() throws IOException {
+        String application = new ClassPathResource("application.yml").getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        String filter = Files.readString(Path.of("src", "main", "java", "com", "edussafy", "backend", "config", "RequestCorrelationFilter.java"));
+
+        assertThat(application)
+                .contains("requestId=%X{requestId}")
+                .contains("logger=%logger{36}");
+        assertThat(filter)
+                .contains("REQUEST_ID_HEADER")
+                .contains("X-Request-Id")
+                .contains("MDC.put(\"requestId\"")
+                .contains("MDC.remove(\"requestId\"");
+    }
+
+    @Test
     void observabilityComposeDeclaresMetricsStackWithHealthchecks() throws IOException {
         String compose = Files.readString(Path.of("..", "compose.observability.yml"));
 

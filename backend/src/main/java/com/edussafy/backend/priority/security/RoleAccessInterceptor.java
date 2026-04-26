@@ -1,6 +1,7 @@
 package com.edussafy.backend.priority.security;
 
 import com.edussafy.backend.board.dto.ErrorResponse;
+import com.edussafy.backend.config.RequestCorrelationFilter;
 import com.edussafy.backend.priority.dto.PriorityDtos.UserProfile;
 import com.edussafy.backend.priority.repository.PriorityApiRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -144,7 +145,11 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
     }
 
     private String requestId(HttpServletRequest request) {
-        String existing = request.getHeader("X-Request-Id");
+        Object correlated = request.getAttribute(RequestCorrelationFilter.REQUEST_ID_ATTRIBUTE);
+        if (correlated instanceof String requestId && !requestId.isBlank()) {
+            return requestId;
+        }
+        String existing = request.getHeader(RequestCorrelationFilter.REQUEST_ID_HEADER);
         if (existing != null && !existing.isBlank()) {
             return existing.trim();
         }

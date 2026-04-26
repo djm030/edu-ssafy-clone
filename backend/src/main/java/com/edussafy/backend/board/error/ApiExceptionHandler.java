@@ -1,6 +1,7 @@
 package com.edussafy.backend.board.error;
 
 import com.edussafy.backend.board.dto.ErrorResponse;
+import com.edussafy.backend.config.RequestCorrelationFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.util.UUID;
@@ -60,7 +61,11 @@ public class ApiExceptionHandler {
     }
 
     private String requestId(HttpServletRequest request) {
-        String existing = request.getHeader("X-Request-Id");
+        Object correlated = request.getAttribute(RequestCorrelationFilter.REQUEST_ID_ATTRIBUTE);
+        if (correlated instanceof String requestId && !requestId.isBlank()) {
+            return requestId;
+        }
+        String existing = request.getHeader(RequestCorrelationFilter.REQUEST_ID_HEADER);
         if (existing != null && !existing.isBlank()) {
             return existing.trim();
         }
