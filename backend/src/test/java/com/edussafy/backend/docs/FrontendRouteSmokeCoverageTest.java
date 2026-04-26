@@ -377,6 +377,24 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("academic-rule-anchor-summary");
     }
 
+    @Test
+    void mentoringMeetingPageExposesApplicationPolicyGuards() throws IOException {
+        String mentoringMeetings = Files.readString(Path.of("..", "frontend", "src", "pages", "MentoringMeetingsPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(mentoringMeetings)
+                .contains("MeetingApplicationPolicy")
+                .contains("간담회 모집 기간 정원 중복 신청 정책")
+                .contains("canApplyMeeting")
+                .contains("meetingApplyDisabledReason")
+                .contains("정원이 마감되어 신청할 수 없습니다")
+                .contains("이미 신청한 간담회는 중복 신청할 수 없습니다")
+                .contains("submittingApplication");
+        assertThat(styles)
+                .contains("meeting-application-policy")
+                .contains("meeting-policy-grid");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {

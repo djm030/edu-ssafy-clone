@@ -84,6 +84,7 @@ function MentoringMeetingDetail({ meetingId }: { meetingId: number }) {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [actionMessage, setActionMessage] = useState('');
+  const [submittingApplication, setSubmittingApplication] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -105,23 +106,35 @@ function MentoringMeetingDetail({ meetingId }: { meetingId: number }) {
 
   const apply = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!meeting || !canApplyMeeting(meeting)) {
+      setActionMessage(meeting ? meetingApplyDisabledReason(meeting) : '간담회 정보를 확인하지 못했습니다.');
+      return;
+    }
     setActionMessage('');
+    setSubmittingApplication(true);
     applyMentoringMeeting(meetingId, motivation)
       .then((application) => {
         setMeeting((current) => current ? { ...current, myApplicationStatus: application.status, myMotivation: application.motivation, appliedCount: current.appliedCount + 1 } : current);
         setActionMessage('간담회 신청이 완료되었습니다.');
       })
-      .catch((error) => setActionMessage(getErrorMessage(error)));
+      .catch((error) => setActionMessage(getErrorMessage(error)))
+      .finally(() => setSubmittingApplication(false));
   };
 
   const cancel = () => {
+    if (!meeting || !canCancelMeeting(meeting)) {
+      setActionMessage(meeting ? meetingCancelDisabledReason(meeting) : '간담회 정보를 확인하지 못했습니다.');
+      return;
+    }
     setActionMessage('');
+    setSubmittingApplication(true);
     cancelMentoringMeetingApplication(meetingId)
       .then(() => {
         setMeeting((current) => current ? { ...current, myApplicationStatus: null, myMotivation: null, appliedCount: Math.max(0, current.appliedCount - 1) } : current);
         setActionMessage('간담회 신청을 취소했습니다.');
       })
-      .catch((error) => setActionMessage(getErrorMessage(error)));
+      .catch((error) => setActionMessage(getErrorMessage(error)))
+      .finally(() => setSubmittingApplication(false));
   };
 
   return (
@@ -137,23 +150,44 @@ function MentoringMeetingDetail({ meetingId }: { meetingId: number }) {
           <p className="muted">{meeting.topic} · {meeting.meetingType} · {meeting.location || '장소 미정'} · 신청 {meeting.appliedCount}/{meeting.capacity}명</p>
           <p className="muted">행사: {formatDateTime(meeting.startsAt)} ~ {formatDateTime(meeting.endsAt)}</p>
           <p className="muted">신청: {formatDateTime(meeting.applicationStartsAt)} ~ {formatDateTime(meeting.applicationEndsAt)}</p>
+          <MeetingApplicationPolicy meeting={meeting} />
           {meeting.myApplicationStatus ? (
             <section className="stack-form">
               <StatusPill tone="blue">내 신청 상태: {applicationStatusLabel(meeting.myApplicationStatus)}</StatusPill>
               <p>{meeting.myMotivation}</p>
-              <button className="ghost-button" onClick={cancel} type="button">신청 취소</button>
+              <button className="ghost-button" disabled={!canCancelMeeting(meeting) || submittingApplication} onClick={cancel} title={canCancelMeeting(meeting) ? undefined : meetingCancelDisabledReason(meeting)} type="button">
+                {submittingApplication ? '처리 중' : '신청 취소'}
+              </button>
             </section>
           ) : (
             <form className="stack-form" onSubmit={apply}>
               <label htmlFor="meeting-motivation">신청 동기</label>
               <textarea id="meeting-motivation" maxLength={1000} required rows={4} value={motivation} onChange={(event) => setMotivation(event.target.value)} />
-              <button className="primary-action" disabled={meeting.status !== 'RECRUITING'} type="submit">간담회 신청</button>
+              <button className="primary-action" disabled={!canApplyMeeting(meeting) || submittingApplication} title={canApplyMeeting(meeting) ? undefined : meetingApplyDisabledReason(meeting)} type="submit">
+                {submittingApplication ? '신청 중' : '간담회 신청'}
+              </button>
             </form>
           )}
           {actionMessage ? <p className="muted">{actionMessage}</p> : null}
           <a className="ghost-button" href="/mentoring/meetings">목록으로</a>
         </article>
       ) : null}
+    </section>
+  );
+}
+
+function MeetingApplicationPolicy({ meeting }: { meeting: MentoringMeetingItem }) {
+  const remaining = Math.max(0, meeting.capacity - meeting.appliedCount);
+  return (
+    <section className="meeting-application-policy" aria-label="간담회 모집 기간 정원 중복 신청 정책">
+      <StatusPill tone={canApplyMeeting(meeting) ? 'green' : meeting.status === 'RECRUITING' ? 'yellow' : 'gray'}>
+        {canApplyMeeting(meeting) ? '신청 가능' : '신청 제한'}
+      </StatusPill>
+      <div className="meeting-policy-grid">
+        <span>잔여 {remaining}/{meeting.capacity}명</span>
+        <span>{meeting.myApplicationStatus ? `내 상태 ${applicationStatusLabel(meeting.myApplicationStatus)}` : '중복 신청 없음'}</span>
+        <span>{meetingApplyDisabledReason(meeting)}</span>
+      </div>
     </section>
   );
 }
@@ -213,6 +247,45 @@ function applicationStatusLabel(status: MentoringMeetingApplicationItem['status'
   if (status === 'SELECTED') return '선정';
   if (status === 'REJECTED') return '미선정';
   return '신청 완료';
+}
+
+function canApplyMeeting(meeting: MentoringMeetingItem): boolean {
+  return meeting.status === 'RECRUITING'
+    && !meeting.myApplicationStatus
+    && meeting.appliedCount < meeting.capacity
+    && isWithinApplicationPeriod(meeting);
+}
+
+function canCancelMeeting(meeting: MentoringMeetingItem): boolean {
+  return Boolean(meeting.myApplicationStatus)
+    && meeting.myApplicationStatus !== 'CANCELLED'
+    && meeting.status === 'RECRUITING'
+    && isWithinApplicationPeriod(meeting);
+}
+
+function meetingApplyDisabledReason(meeting: MentoringMeetingItem): string {
+  if (meeting.myApplicationStatus) return '이미 신청한 간담회는 중복 신청할 수 없습니다.';
+  if (meeting.appliedCount >= meeting.capacity) return '정원이 마감되어 신청할 수 없습니다.';
+  if (meeting.status !== 'RECRUITING') return '모집 중인 간담회만 신청할 수 있습니다.';
+  if (!isWithinApplicationPeriod(meeting)) return '신청 기간이 아니어서 신청할 수 없습니다.';
+  return '신청 조건을 충족했습니다.';
+}
+
+function meetingCancelDisabledReason(meeting: MentoringMeetingItem): string {
+  if (!meeting.myApplicationStatus) return '취소할 신청 내역이 없습니다.';
+  if (meeting.myApplicationStatus === 'CANCELLED') return '이미 취소된 신청입니다.';
+  if (meeting.status !== 'RECRUITING') return '모집 마감 후에는 신청을 취소할 수 없습니다.';
+  if (!isWithinApplicationPeriod(meeting)) return '신청 기간이 지나 취소할 수 없습니다.';
+  return '신청 취소가 가능합니다.';
+}
+
+function isWithinApplicationPeriod(meeting: MentoringMeetingItem): boolean {
+  const now = Date.now();
+  const startsAt = meeting.applicationStartsAt ? new Date(meeting.applicationStartsAt).getTime() : undefined;
+  const endsAt = meeting.applicationEndsAt ? new Date(meeting.applicationEndsAt).getTime() : undefined;
+  if (startsAt && !Number.isNaN(startsAt) && now < startsAt) return false;
+  if (endsAt && !Number.isNaN(endsAt) && now > endsAt) return false;
+  return true;
 }
 
 function formatDate(value?: string | null): string {

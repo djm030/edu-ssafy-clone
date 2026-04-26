@@ -153,6 +153,7 @@
     grid-template-columns: 1fr;
   }
 
+  .meeting-policy-grid,
   .support-ticket-status-grid,
   .board-result-summary-grid,
   .quest-type-summary-grid,
