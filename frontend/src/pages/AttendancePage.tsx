@@ -4,7 +4,7 @@ import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
 import StatusPill from '../components/StatusPill';
-import type { AttendanceAppeal, AttendanceRecord, AttendanceRecordFilters, LoadState } from '../types';
+import type { AttendanceAppeal, AttendanceDaySummary, AttendanceRecord, AttendanceRecordFilters, AttendanceSummary, LoadState } from '../types';
 
 const statusLabel: Record<AttendanceRecord['status'], string> = {
   absent: '결석',
@@ -17,6 +17,8 @@ const statusLabel: Record<AttendanceRecord['status'], string> = {
 function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [appeals, setAppeals] = useState<AttendanceAppeal[]>([]);
+  const [summary, setSummary] = useState<AttendanceSummary>();
+  const [days, setDays] = useState<AttendanceDaySummary[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [appealMessage, setAppealMessage] = useState('');
@@ -34,6 +36,8 @@ function AttendancePage() {
       .then(([recordsResponse, appealsResponse]) => {
         if (ignore) return;
         setRecords(recordsResponse.items);
+        setDays(recordsResponse.days);
+        setSummary(recordsResponse.summary);
         setAppeals(appealsResponse.items);
         setLoadState(recordsResponse.items.length || appealsResponse.items.length ? 'loaded' : 'empty');
       })
@@ -61,6 +65,17 @@ function AttendancePage() {
     setAppliedFilters({ dateFrom: '', dateTo: '', status: '' });
   };
 
+  const applyMonthRange = (offset: number) => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
+    const nextDateFrom = toDateInputValue(firstDay);
+    const nextDateTo = toDateInputValue(lastDay);
+    setDateFrom(nextDateFrom);
+    setDateTo(nextDateTo);
+    setAppliedFilters({ dateFrom: nextDateFrom, dateTo: nextDateTo, status });
+  };
+
   const handleCancelAppeal = async (appealId: number) => {
     setCancelingAppealId(appealId);
     setAppealMessage('');
@@ -80,13 +95,17 @@ function AttendancePage() {
 
   const counts = useMemo(
     () => ({
-      absent: records.filter((record) => record.status === 'absent').length,
+      absent: summary?.absent ?? records.filter((record) => record.status === 'absent').length,
       appeal: records.filter((record) => record.appealAvailable).length,
-      late: records.filter((record) => record.status === 'late').length,
-      present: records.filter((record) => record.status === 'present').length,
+      late: summary?.late ?? records.filter((record) => record.status === 'late').length,
+      present: summary?.present ?? records.filter((record) => record.status === 'present').length,
     }),
-    [records],
+    [records, summary],
   );
+
+  const rangeText = appliedFilters.dateFrom || appliedFilters.dateTo
+    ? `${appliedFilters.dateFrom || '처음'} ~ ${appliedFilters.dateTo || '오늘'}`
+    : '전체 기간';
 
   return (
     <section className="page">
@@ -118,8 +137,11 @@ function AttendancePage() {
           </select>
           <div className="button-row">
             <button className="primary-action" type="submit">조회</button>
+            <button className="ghost-button" type="button" onClick={() => applyMonthRange(0)}>이번 달</button>
+            <button className="ghost-button" type="button" onClick={() => applyMonthRange(-1)}>지난 달</button>
             <button className="ghost-button" type="button" onClick={resetFilters}>초기화</button>
           </div>
+          <p className="form-hint">조회 범위: {rangeText}</p>
         </form>
       </section>
       {loadState === 'loading' ? <LoadingRows /> : null}
@@ -127,6 +149,7 @@ function AttendancePage() {
       {loadState === 'empty' ? <DataState title="출석 기록이 없습니다." /> : null}
       {loadState === 'loaded' ? (
         <>
+          <DailySummaryPanel days={days} />
           <AttendanceTable records={records} />
           <AttendanceAppealsPanel
             appeals={appeals}
@@ -136,6 +159,35 @@ function AttendancePage() {
           />
         </>
       ) : null}
+    </section>
+  );
+}
+
+
+function DailySummaryPanel({ days }: { days: AttendanceDaySummary[] }) {
+  return (
+    <section className="panel">
+      <div className="section-heading">
+        <div>
+          <p>일간 상세</p>
+          <h2>조회 기간 출석 캘린더</h2>
+        </div>
+        <span>{days.length}일</span>
+      </div>
+      {days.length === 0 ? (
+        <DataState title="일간 상세가 없습니다." message="월간 또는 일자 필터를 조정하면 해당 기간의 출석 상세가 표시됩니다." />
+      ) : (
+        <div className="daily-attendance-grid" aria-label="일간 출석 상세">
+          {days.map((day) => (
+            <article className="daily-attendance-card" key={day.date}>
+              <strong>{day.date}</strong>
+              <StatusPill tone={statusTone(day.status)}>{statusLabel[day.status]}</StatusPill>
+              <span>{formatTime(day.firstCheckInAt)} 입실 · {formatTime(day.lastCheckOutAt)} 퇴실</span>
+              <small>{day.appealAvailable ? '소명 가능' : day.appealStatus ? appealStatusLabel(day.appealStatus) : '소명 없음'}</small>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -252,6 +304,18 @@ function AttendanceTable({ records }: { records: AttendanceRecord[] }) {
       ))}
     </div>
   );
+}
+
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatTime(value?: string | null) {
+  return value ? value.slice(0, 5) : '-';
 }
 
 function statusTone(status: AttendanceRecord['status']) {

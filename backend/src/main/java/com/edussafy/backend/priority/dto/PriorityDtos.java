@@ -224,7 +224,25 @@ public final class PriorityDtos {
     public record LiveSessionJoinLogItem(long id, long sessionId, OffsetDateTime joinedAt) {
     }
 
-    public record AttendanceRecordsResponse(AttendanceSummary summary, List<AttendanceRecordItem> items) {
+    public record AttendanceRecordsResponse(
+            AttendanceSummary summary,
+            AttendanceRange range,
+            List<AttendanceDaySummary> days,
+            List<AttendanceRecordItem> items
+    ) {
+    }
+
+    public record AttendanceRange(LocalDate dateFrom, LocalDate dateTo, String status) {
+    }
+
+    public record AttendanceDaySummary(
+            LocalDate date,
+            String status,
+            LocalTime firstCheckInAt,
+            LocalTime lastCheckOutAt,
+            boolean appealAvailable,
+            String appealStatus
+    ) {
     }
 
     public record AttendanceRecordItem(

@@ -15,6 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRange;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceDaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
@@ -700,7 +702,7 @@ class PriorityApiControllerTest {
     void priorityListsReturnEmptyPageShapes() throws Exception {
         PageMeta page = new PageMeta(1, 20, 0, 0);
         given(priorityApiService.attendanceRecords(null, null, null))
-                .willReturn(new AttendanceRecordsResponse(new AttendanceSummary(0, 0, 0, true), List.of()));
+                .willReturn(new AttendanceRecordsResponse(new AttendanceSummary(0, 0, 0, true), new AttendanceRange(null, null, null), List.of(), List.of()));
         given(priorityApiService.notifications(1, 20)).willReturn(new NotificationsResponse(List.of(), page));
         given(priorityApiService.materials(eq("spring"), eq("file"), eq(1), eq(20)))
                 .willReturn(new MaterialsResponse(List.of(), page));
@@ -711,12 +713,15 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/attendance/records"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.days").isArray())
                 .andExpect(jsonPath("$.summary.present").value(0));
         given(priorityApiService.attendanceRecords(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), "late"))
-                .willReturn(new AttendanceRecordsResponse(new AttendanceSummary(0, 1, 0, true), List.of()));
+                .willReturn(new AttendanceRecordsResponse(new AttendanceSummary(0, 1, 0, true), new AttendanceRange(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), "late"), List.of(new AttendanceDaySummary(LocalDate.of(2026, 4, 23), "late", null, null, true, null)), List.of()));
         mockMvc.perform(get("/api/attendance/records?dateFrom=2026-04-01&dateTo=2026-04-30&status=late"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.late").value(1));
+                .andExpect(jsonPath("$.summary.late").value(1))
+                .andExpect(jsonPath("$.range.status").value("late"))
+                .andExpect(jsonPath("$.days[0].date").value("2026-04-23"));
         mockMvc.perform(get("/api/notifications"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page.totalItems").value(0));

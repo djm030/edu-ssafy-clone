@@ -1950,6 +1950,11 @@ class PriorityApiServiceTest {
         AttendanceRecordsResponse response = service.attendanceRecords(from, to, "late");
 
         assertThat(response.summary().late()).isEqualTo(1);
+        assertThat(response.range().dateFrom()).isEqualTo(from);
+        assertThat(response.range().dateTo()).isEqualTo(to);
+        assertThat(response.range().status()).isEqualTo("late");
+        assertThat(response.days()).hasSize(1);
+        assertThat(response.days().get(0).status()).isEqualTo("late");
         assertThat(response.items()).containsExactly(lateRecord);
         verify(repository).findAttendanceSummary(1L, from, to, "late");
         verify(repository).findAttendanceRecords(1L, from, to, "late");

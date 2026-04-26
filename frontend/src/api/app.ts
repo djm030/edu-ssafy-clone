@@ -29,6 +29,8 @@ import type {
   AccessPolicyResponse,
   AttendanceAppeal,
   AttendanceRecord,
+  AttendanceDaySummary,
+  AttendanceRecordsResponse,
   AttendanceAppealDraft,
   AttendanceAppealResolveDraft,
   AttendanceRecordFilters,
@@ -303,6 +305,36 @@ function filterMockAttendanceRecords(filters: AttendanceRecordFilters): Attendan
     if (filters.status && record.status !== filters.status) return false;
     return true;
   });
+}
+
+function toAttendanceDaySummary(record: AttendanceRecord): AttendanceDaySummary {
+  return {
+    date: record.date,
+    status: record.status,
+    firstCheckInAt: record.checkIn || null,
+    lastCheckOutAt: record.checkOut || null,
+    appealAvailable: Boolean(record.appealAvailable),
+    appealStatus: record.appealStatus || null,
+  };
+}
+
+function summarizeAttendance(records: AttendanceRecord[]) {
+  return {
+    present: records.filter((record) => record.status === 'present').length,
+    late: records.filter((record) => record.status === 'late').length,
+    absent: records.filter((record) => record.status === 'absent').length,
+    appealAvailable: records.some((record) => record.appealAvailable),
+  };
+}
+
+function toAttendanceRecordsResponse(response: { summary?: AttendanceRecordsResponse['summary']; range?: AttendanceRecordsResponse['range']; days?: AttendanceDaySummary[]; items: BackendAttendanceRecord[] }, filters: AttendanceRecordFilters): AttendanceRecordsResponse {
+  const items = response.items.map(toAttendanceRecord);
+  return {
+    summary: response.summary || summarizeAttendance(items),
+    range: response.range || { dateFrom: filters.dateFrom || null, dateTo: filters.dateTo || null, status: filters.status || null },
+    days: response.days || items.map(toAttendanceDaySummary),
+    items,
+  };
 }
 
 function toNotificationCategory(value?: string | null): NotificationItem['category'] {
@@ -756,15 +788,23 @@ export function getEducationStatus(): Promise<EducationStatusSummary> {
   return fetchJson<EducationStatusSummary>('/api/mycampus/education-status');
 }
 
-export function getAttendanceRecords(filters: AttendanceRecordFilters = {}): Promise<{ items: AttendanceRecord[] }> {
+export function getAttendanceRecords(filters: AttendanceRecordFilters = {}): Promise<AttendanceRecordsResponse> {
   const query = buildQuery({
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     status: filters.status,
   });
-  return fetchJson<{ items: BackendAttendanceRecord[] }>(`/api/attendance/records${query}`, {
-    fallback: () => ({ items: filterMockAttendanceRecords(filters) }),
-  }).then((response) => ({ items: response.items.map(toAttendanceRecord) }));
+  return fetchJson<{ summary?: AttendanceRecordsResponse['summary']; range?: AttendanceRecordsResponse['range']; days?: AttendanceDaySummary[]; items: BackendAttendanceRecord[] }>(`/api/attendance/records${query}`, {
+    fallback: () => {
+      const items = filterMockAttendanceRecords(filters);
+      return {
+        summary: summarizeAttendance(items),
+        range: { dateFrom: filters.dateFrom || null, dateTo: filters.dateTo || null, status: filters.status || null },
+        days: items.map(toAttendanceDaySummary),
+        items,
+      };
+    },
+  }).then((response) => toAttendanceRecordsResponse(response, filters));
 }
 
 export function getNotifications(): Promise<{ items: NotificationItem[] }> {

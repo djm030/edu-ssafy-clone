@@ -7,6 +7,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveReq
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRange;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceDaySummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
@@ -497,9 +499,12 @@ public class PriorityApiService {
                 () -> repository.findAttendanceSummary(user.id(), dateFrom, dateTo, filterStatus),
                 EMPTY_ATTENDANCE
         );
+        List<AttendanceRecordItem> records = safe(() -> repository.findAttendanceRecords(user.id(), dateFrom, dateTo, filterStatus), List.of());
         return new AttendanceRecordsResponse(
                 summary,
-                safe(() -> repository.findAttendanceRecords(user.id(), dateFrom, dateTo, filterStatus), List.of())
+                new AttendanceRange(dateFrom, dateTo, filterStatus),
+                records.stream().map(this::toAttendanceDaySummary).toList(),
+                records
         );
     }
 
@@ -1919,6 +1924,17 @@ public class PriorityApiService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 digest is unavailable.", exception);
         }
+    }
+
+    private AttendanceDaySummary toAttendanceDaySummary(AttendanceRecordItem record) {
+        return new AttendanceDaySummary(
+                record.date(),
+                record.status(),
+                record.checkInAt(),
+                record.checkOutAt(),
+                record.appealAvailable(),
+                record.appealStatus()
+        );
     }
 
     private boolean isAttendanceAppealAvailable(AttendanceRecordItem record) {

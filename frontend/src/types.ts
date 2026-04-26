@@ -220,6 +220,35 @@ export interface AttendanceRecord {
   appealRequestedAt?: string;
 }
 
+export interface AttendanceSummary {
+  present: number;
+  late: number;
+  absent: number;
+  appealAvailable: boolean;
+}
+
+export interface AttendanceRange {
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  status?: AttendanceRecord['status'] | '' | null;
+}
+
+export interface AttendanceDaySummary {
+  date: string;
+  status: AttendanceRecord['status'];
+  firstCheckInAt?: string | null;
+  lastCheckOutAt?: string | null;
+  appealAvailable: boolean;
+  appealStatus?: string | null;
+}
+
+export interface AttendanceRecordsResponse {
+  summary: AttendanceSummary;
+  range: AttendanceRange;
+  days: AttendanceDaySummary[];
+  items: AttendanceRecord[];
+}
+
 export interface AttendanceRecordFilters {
   dateFrom?: string;
   dateTo?: string;

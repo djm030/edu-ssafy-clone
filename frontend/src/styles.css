@@ -509,3 +509,27 @@ h2 {
   font-size: 13px;
   font-weight: 800;
 }
+
+.daily-attendance-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.daily-attendance-card {
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.daily-attendance-card strong {
+  color: #101828;
+}
+
+.daily-attendance-card span,
+.daily-attendance-card small,
+.form-hint {
+  color: #667085;
+}
