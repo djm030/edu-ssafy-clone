@@ -522,6 +522,24 @@ WHERE NOT EXISTS (
   WHERE support_ticket_id = @support_ticket_id
 );
 
+INSERT INTO codes (code_group, code, code_name, sort_order)
+VALUES
+  ('BOARD_GROUP', 'notice', '공지', 1),
+  ('BOARD_GROUP', 'community', '커뮤니티', 2),
+  ('BOARD_GROUP', 'qna', '질문답변', 3),
+  ('BOARD_GROUP', 'faq', 'FAQ', 4),
+  ('BOARD_GROUP', 'help', '도움말', 5),
+  ('BOARD_GROUP', 'mentoring', '멘토링', 6),
+  ('BOARD_GROUP', 'external', '외부 서비스', 7),
+  ('ACCESS_SCOPE', 'public', '공개', 1),
+  ('ACCESS_SCOPE', 'authenticated', '인증 사용자', 2),
+  ('ACCESS_SCOPE', 'class_group', '반 제한', 3),
+  ('ACCESS_SCOPE', 'admin', '관리자', 4)
+ON DUPLICATE KEY UPDATE
+  code_name = VALUES(code_name),
+  sort_order = VALUES(sort_order),
+  active_yn = TRUE;
+
 INSERT INTO boards (board_code, board_name, board_group_code, access_scope_code)
 VALUES
   ('notice', 'Notice', 'notice', 'public'),
@@ -643,7 +661,6 @@ JOIN (
  -->
  현업 멘토와 백엔드 커리어 준비 방향을 이야기합니다.', FALSE, 8
   UNION ALL
-  UNION ALL
   SELECT 'mentoring_meeting', '커리어', '완료된 백엔드 커리어 간담회', '<!--MENTORING_MEETING
  type=ONLINE
  topic=커리어
@@ -681,7 +698,6 @@ JOIN (
  location=서울 캠퍼스
  -->
  포트폴리오 화면 구성과 배포 경험 정리 방법을 나눕니다.', FALSE, 5
-  UNION ALL
   UNION ALL
   SELECT 'external_service', '링크', 'JOB SSAFY', '<!--EXTERNAL_SERVICE
  code=JOB_SSAFY

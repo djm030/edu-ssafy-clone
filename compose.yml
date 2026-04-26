@@ -16,7 +16,7 @@ services:
       - ./docs/revised_schema_mysql8.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
       - ./scripts/mysql/20-board-list-seed.sql:/docker-entrypoint-initdb.d/20-board-list-seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "MYSQL_PWD=\"$${MYSQL_ROOT_PASSWORD}\" mysql -N -uroot -e 'SELECT @@port' | grep -qx 3306"]
+      test: ["CMD-SHELL", "mysqladmin ping --protocol=tcp -h 127.0.0.1 --silent"]
       interval: 5s
       timeout: 5s
       retries: 20

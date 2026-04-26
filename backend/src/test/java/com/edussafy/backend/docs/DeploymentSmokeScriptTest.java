@@ -11,6 +11,7 @@ class DeploymentSmokeScriptTest {
 
     private static final Path POWERSHELL_SMOKE_SCRIPT = Path.of("..", "scripts", "dev", "smoke.ps1");
     private static final Path POSIX_SMOKE_SCRIPT = Path.of("..", "scripts", "dev", "smoke.sh");
+    private static final Path BOARD_SEED_SCRIPT = Path.of("..", "scripts", "mysql", "20-board-list-seed.sql");
 
     @Test
     void powershellSmokeScriptChecksReadinessThroughBackendAndNginx() throws IOException {
@@ -40,6 +41,17 @@ class DeploymentSmokeScriptTest {
         assertThat(script).contains("-b \"$cookie_file\" -c \"$cookie_file\"");
         assertThat(script).contains("request POST \"$BACKEND_URL/api/auth/login\"");
         assertThat(script).contains("request GET \"$BACKEND_URL/api/me\"");
+    }
+
+    @Test
+    void boardSeedProvidesAllSmokeBoardGroups() throws IOException {
+        String seed = Files.readString(BOARD_SEED_SCRIPT);
+
+        assertThat(seed)
+                .contains("('BOARD_GROUP', 'help'")
+                .contains("('BOARD_GROUP', 'mentoring'")
+                .contains("('BOARD_GROUP', 'external'")
+                .doesNotContain("UNION ALL\n  UNION ALL");
     }
 
 }

@@ -1,5 +1,20 @@
 # Test Report
 
+## App Profile Runtime Smoke Stabilization (2026-04-27 KST)
+- Re-ran `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`; the child TTY became stuck around a background test terminal, so the verification/fix loop was completed directly with local commands.
+- Fixed runtime-only Spring startup failures by marking the production constructors in external-service and mentoring services with `@Autowired` while preserving their test constructors.
+- Hardened MySQL compose healthcheck so container health no longer depends on mutable root credentials stored in an existing local volume.
+- Fixed the POSIX smoke route static guard to read the frontend route manifest, and repaired board seed data so mentoring/external board smoke endpoints have required board-group codes on fresh initialization.
+- `bash -n scripts/dev/smoke.sh` -> PASS.
+- `SKIP_HTTP=true scripts/dev/smoke.sh` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=DockerComposeRuntimeHardeningTest,ExternalServiceServiceTest,MentoringMeetingServiceTest,MentoringMeetingResultServiceTest test` -> PASS, 15 tests.
+- `docker compose --profile app up -d --build backend frontend nginx` -> PASS for image rebuild; on this existing local volume the app start required `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password` because MySQL was initialized by an older run with that root password.
+- `scripts/dev/smoke.sh` -> PASS after refreshing board seed rows for the existing local volume; all required Nginx/backend/auth/domain endpoints returned the expected success responses.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B test` -> PASS, 290 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `git diff --check` -> PASS.
+
 ## CI Production Hardening Gates (2026-04-26 KST)
 - Added CI workflow gates for POSIX smoke script syntax, static smoke wiring, frontend route smoke manifest, and Spring REST Docs snippet verification.
 - Added `CiWorkflowHardeningTest` so backend tests fail if the CI workflow stops running the production hardening smoke/documentation guards.

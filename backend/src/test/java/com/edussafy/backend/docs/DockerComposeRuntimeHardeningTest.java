@@ -29,6 +29,17 @@ class DockerComposeRuntimeHardeningTest {
         assertServiceContains(compose, "backend", "curl -fsS http://localhost:8080/api/readiness >/dev/null");
     }
 
+    @Test
+    void mysqlHealthcheckDoesNotDependOnMutableRootPassword() throws IOException {
+        String compose = Files.readString(COMPOSE);
+
+        String mysql = serviceBlock(compose, "mysql");
+        assertThat(mysql)
+                .contains("mysqladmin ping --protocol=tcp -h 127.0.0.1 --silent")
+                .doesNotContain("MYSQL_PWD")
+                .doesNotContain("-uroot");
+    }
+
     private static void assertServiceContains(String compose, String serviceName, String expected) {
         String serviceBlock = serviceBlock(compose, serviceName);
         assertThat(serviceBlock).contains(expected);

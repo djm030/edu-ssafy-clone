@@ -74,7 +74,7 @@ for route in \
   /survey \
   /ops/readiness \
   /external-services; do
-  require_file_contains frontend/src/App.tsx "$route"
+  require_any_file_contains "$route" frontend/src/App.tsx frontend/src/routes.ts
 done
 
 for api_path in \
