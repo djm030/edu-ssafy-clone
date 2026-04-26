@@ -1400,6 +1400,80 @@ h2 {
 }
 
 
+.support-ticket-status-panel {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+}
+
+.support-ticket-status-panel > div:first-child {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.support-ticket-status-panel p {
+  color: #475467;
+  margin: 0;
+}
+
+.support-ticket-status-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.support-ticket-status-grid span {
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 999px;
+  color: #17458d;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.support-thread-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.support-thread-item {
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.support-thread-item.admin {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.support-thread-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.support-thread-item p {
+  color: #344054;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .anonymous-display-policy,
 .anonymous-blocked-content,
 .anonymous-restricted-actions {

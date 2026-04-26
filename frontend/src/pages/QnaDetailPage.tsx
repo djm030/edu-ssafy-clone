@@ -109,6 +109,7 @@ function TicketContent({
         <span>문의 #{ticket.id}</span>
       </div>
       <h2>{ticket.title}</h2>
+      <SupportTicketStatusPanel ticket={ticket} canAnswerSupport={canAnswerSupport} />
       <dl className="info-list detail-info">
         <div>
           <dt>등록일</dt>
@@ -156,6 +157,26 @@ function TicketContent({
   );
 }
 
+function SupportTicketStatusPanel({ canAnswerSupport, ticket }: { canAnswerSupport: boolean; ticket: SupportTicketDetail }) {
+  const attachmentCount = ticket.messages.reduce((total, item) => total + (item.attachments?.length || 0), 0);
+  const adminReplyCount = ticket.messages.filter((item) => item.type === 'admin_reply').length;
+
+  return (
+    <section className="support-ticket-status-panel" aria-label="1:1 문의 답변 및 첨부 상태">
+      <div>
+        <StatusPill tone={statusTone(ticket.status)}>{supportStatusLabel(ticket.status)}</StatusPill>
+        <strong>{ticket.status === 'closed' ? '종료된 문의' : canAnswerSupport ? '운영 답변 가능' : '추가 문의 가능'}</strong>
+      </div>
+      <p>{supportTicketPolicyText(ticket.status, canAnswerSupport)}</p>
+      <div className="support-ticket-status-grid">
+        <span>메시지 {ticket.messages.length || ticket.messageCount || 0}건</span>
+        <span>운영 답변 {adminReplyCount}건</span>
+        <span>첨부 {attachmentCount}개</span>
+      </div>
+    </section>
+  );
+}
+
 function MessageThread({
   canAnswerSupport,
   messages,
@@ -176,20 +197,23 @@ function MessageThread({
   return (
     <section aria-label="문의 메시지 스레드">
       <h3>메시지 스레드</h3>
-      <ul className="info-list">
+      <ol className="support-thread-list">
         {messages.map((item) => (
-          <li key={item.id}>
-            <strong>{item.senderName || messageTypeLabel(item.type)}</strong>
-            <StatusPill tone={item.type === 'admin_reply' ? 'green' : 'blue'}>{messageTypeLabel(item.type)}</StatusPill>
-            <span>{item.content}</span>
-            <small>{formatDate(item.createdAt)}</small>
+          <li className={item.type === 'admin_reply' ? 'support-thread-item admin' : 'support-thread-item'} key={item.id}>
+            <div className="support-thread-heading">
+              <strong>{item.senderName || messageTypeLabel(item.type)}</strong>
+              <StatusPill tone={item.type === 'admin_reply' ? 'green' : 'blue'}>{messageTypeLabel(item.type)}</StatusPill>
+              <small>{formatDate(item.createdAt)}</small>
+            </div>
+            <p>{item.content}</p>
             <AttachmentList attachments={item.attachments ?? []} messageId={item.id} ticketId={ticketId} />
             {ticketStatus === 'closed' || (!canAnswerSupport && item.type !== 'user_message') ? null : (
               <AttachmentUploader message={item} onUploaded={onMessageChange} ticketId={ticketId} />
             )}
           </li>
         ))}
-      </ul>
+      </ol>
+      {ticketStatus === 'closed' ? <p className="form-message">닫힘 상태에서는 답변, 추가 문의, 첨부 저장이 비활성화됩니다.</p> : null}
     </section>
   );
 }
@@ -293,6 +317,13 @@ function supportStatusLabel(status: string): string {
   if (status === 'answered') return '답변 완료';
   if (status === 'closed') return '종료';
   return status;
+}
+
+function supportTicketPolicyText(status: string, canAnswerSupport: boolean): string {
+  if (status === 'closed') return '문의가 종료되어 새 메시지와 첨부파일을 추가할 수 없습니다.';
+  if (status === 'answered') return canAnswerSupport ? '답변 완료 상태이며 필요 시 후속 운영 답변을 남길 수 있습니다.' : '운영 답변을 확인하고 추가 문의가 필요하면 메시지를 남길 수 있습니다.';
+  if (status === 'waiting_user') return '사용자 추가 확인이 필요한 상태입니다.';
+  return canAnswerSupport ? '접수된 문의에 운영 답변을 등록할 수 있습니다.' : '접수된 문의는 운영 답변을 기다리는 상태입니다.';
 }
 
 function messageTypeLabel(type: string): string {

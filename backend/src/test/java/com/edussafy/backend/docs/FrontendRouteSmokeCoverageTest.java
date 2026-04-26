@@ -344,6 +344,24 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("anonymous-restricted-actions");
     }
 
+    @Test
+    void qnaDetailPageExposesThreadAttachmentAndClosedPolicies() throws IOException {
+        String qnaDetail = Files.readString(Path.of("..", "frontend", "src", "pages", "QnaDetailPage.tsx"));
+        String styles = Files.readString(Path.of("..", "frontend", "src", "styles.css"));
+
+        assertThat(qnaDetail)
+                .contains("SupportTicketStatusPanel")
+                .contains("1:1 문의 답변 및 첨부 상태")
+                .contains("supportTicketPolicyText")
+                .contains("support-thread-list")
+                .contains("support-thread-item admin")
+                .contains("닫힘 상태에서는 답변, 추가 문의, 첨부 저장이 비활성화됩니다");
+        assertThat(styles)
+                .contains("support-ticket-status-panel")
+                .contains("support-ticket-status-grid")
+                .contains("support-thread-item.admin");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {
