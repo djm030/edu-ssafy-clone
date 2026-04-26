@@ -361,8 +361,10 @@ try {
   }
 
   Test-HttpEndpoint "$BaseUrl/nginx-health"
+  Test-HttpEndpoint "$BaseUrl/api/readiness"
   Test-HttpEndpoint "$BackendUrl/actuator/health"
   Test-HttpEndpoint "$BackendUrl/api/health"
+  Test-HttpEndpoint "$BackendUrl/api/readiness"
   Test-AuthJsonShape $BackendUrl
   Test-ProfileJsonShape $BackendUrl
   Test-HttpEndpoint "$BackendUrl/api/profile/password-check" "POST" '{"password":"password"}'

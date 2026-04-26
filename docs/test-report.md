@@ -1,5 +1,14 @@
 # Test Report
 
+## Deployment Readiness Smoke Script (2026-04-26 KST)
+- Added `/api/readiness` to `scripts/dev/smoke.ps1` through both Nginx (`$BaseUrl`) and direct backend (`$BackendUrl`) URLs so smoke checks fail on required dependency readiness failures.
+- Added `DeploymentSmokeScriptTest` to guard the production smoke script coverage.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=DeploymentSmokeScriptTest,NginxReverseProxyConfigTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 178 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Backend Readiness HTTP Status Endpoint (2026-04-26 KST)
 - Added `GET /api/readiness` so production smoke can receive HTTP 503 when a required health probe is down instead of relying only on a JSON `DOWN` status.
 - Updated the frontend `/ops/readiness` backend check to call `/api/readiness`.

@@ -54,9 +54,9 @@ docker compose --profile app up -d --build
 | Frontend lint | PASS | `npm run lint` completed without errors. |
 | Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx. |
 | Running Compose health | PASS | `docker compose --profile app ps`: backend/frontend/mysql/nginx/rabbitmq/redis all `healthy`. |
-| Backend health/readiness | PASS | `http://localhost:18080/actuator/health` -> HTTP 200, `{"status":"UP"}`; `/api/health` exposes required database/temp-storage probes and `/api/readiness` returns HTTP 503 if a required probe is down. |
+| Backend health/readiness | PASS | `http://localhost:18080/actuator/health` -> HTTP 200, `{"status":"UP"}`; `/api/health` exposes required database/temp-storage probes and `/api/readiness` returns HTTP 503 if a required probe is down; deployment smoke covers both direct backend and Nginx readiness URLs. |
 | Nginx/frontend | PASS | `http://localhost:18000/` -> HTTP 200 via Nginx. |
-| Nginx API proxy | PASS | `http://localhost:18000/api/health` -> HTTP 200, backend health payload. |
+| Nginx API proxy | PASS | `http://localhost:18000/api/health` -> HTTP 200, backend health payload; deployment smoke now also guards `http://localhost:18000/api/readiness`. |
 | Auth/session smoke | PASS | login with seeded `student@ssafy.com` / `password` returned session cookie and `/api/me` returned the current user. |
 | Domain read smoke | PASS | attendance, notifications, learning materials/replays, board, survey, quest, support list endpoints are covered by the `/ops/readiness` smoke runner. |
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
