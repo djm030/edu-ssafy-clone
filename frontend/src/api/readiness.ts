@@ -33,6 +33,18 @@ function hasStatusUp(value: unknown): boolean {
   return isRecord(value) && value.status === 'UP';
 }
 
+function isRequiredCheckUp(value: unknown): boolean {
+  return isRecord(value) && value.required !== false && value.status === 'UP';
+}
+
+function hasOperationalHealth(value: unknown): boolean {
+  if (!hasStatusUp(value) || !Array.isArray((value as JsonRecord).checks)) {
+    return false;
+  }
+  const requiredChecks = ((value as JsonRecord).checks as unknown[]).filter((check) => isRecord(check) && check.required !== false);
+  return requiredChecks.length > 0 && requiredChecks.every(isRequiredCheckUp);
+}
+
 function hasUserProfile(value: unknown): boolean {
   return isRecord(value) && isRecord(value.user) && typeof value.user.email === 'string';
 }
@@ -61,6 +73,15 @@ async function expectText(endpoint: string, expected: string, passMessage: strin
   return passMessage;
 }
 
+async function expectBackendHealth(): Promise<string> {
+  const payload = await fetchJson<unknown>('/api/health');
+  if (!hasOperationalHealth(payload)) {
+    throw new Error('Backend health 필수 의존성 점검이 UP이 아닙니다.');
+  }
+  const checks = isRecord(payload) && Array.isArray(payload.checks) ? payload.checks : [];
+  return `Backend API health payload가 UP입니다. 필수 점검 ${checks.length}개를 확인했습니다.`;
+}
+
 export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
   {
     id: 'nginx-health',
@@ -72,7 +93,7 @@ export const READINESS_CHECKS: ReadinessCheckDefinition[] = [
     id: 'backend-health',
     label: 'Backend API health',
     target: '/api/health',
-    run: () => expectJson('/api/health', hasStatusUp, 'Backend API health payload가 UP입니다.'),
+    run: expectBackendHealth,
   },
   {
     id: 'actuator-health',

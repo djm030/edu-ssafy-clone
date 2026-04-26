@@ -17,9 +17,10 @@ import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostDeleteResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardPostUpdateResponse;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateRequest;
 import com.edussafy.backend.board.dto.BoardWriteDtos.BoardReactionCreateResponse;
-import com.edussafy.backend.board.dto.HealthResponse;
 import com.edussafy.backend.board.service.BoardQuery;
 import com.edussafy.backend.board.service.BoardService;
+import com.edussafy.backend.health.dto.HealthResponse;
+import com.edussafy.backend.health.service.HealthService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -47,14 +48,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class BoardController {
 
     private final BoardService boardService;
+    private final HealthService healthService;
 
-    public BoardController(BoardService boardService) {
+    public BoardController(BoardService boardService, HealthService healthService) {
         this.boardService = boardService;
+        this.healthService = healthService;
     }
 
     @GetMapping("/health")
     public HealthResponse health() {
-        return new HealthResponse("UP");
+        return healthService.getHealth();
     }
 
     @GetMapping("/boards/{boardCode}/categories")

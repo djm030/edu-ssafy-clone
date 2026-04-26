@@ -1,5 +1,6 @@
 package com.edussafy.backend.docs;
 
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -7,6 +8,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.edussafy.backend.board.api.BoardController;
 import com.edussafy.backend.board.service.BoardService;
 import com.edussafy.backend.config.SecurityHeadersFilter;
+import com.edussafy.backend.health.dto.HealthResponse;
+import com.edussafy.backend.health.dto.HealthResponse.HealthCheckItem;
+import com.edussafy.backend.health.service.HealthService;
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,8 +30,19 @@ class SecurityHeadersFilterTest {
     @MockBean
     private BoardService boardService;
 
+    @MockBean
+    private HealthService healthService;
+
     @Test
     void apiResponsesIncludeProductionSecurityHeaders() throws Exception {
+        given(healthService.getHealth()).willReturn(new HealthResponse(
+                "UP",
+                OffsetDateTime.parse("2026-04-26T03:30:00Z"),
+                "edussafy-backend",
+                "test",
+                List.of(new HealthCheckItem("database", "UP", true, "MySQL connectivity check passed."))
+        ));
+
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))

@@ -59,10 +59,11 @@
 | `/api/boards/{boardCode}/posts/{postId}/reactions` | POST | path `boardCode`, `postId`, body reaction type | created reaction `{ item }` | Yes (demo) | board detail screens |
 | `/api/support/tickets` | GET | `page`, `size`, status filters optional | `{ items, page }` support tickets | Yes (demo) | `/help/qna` |
 | `/api/support/tickets` | POST | body `{ title, content, category }` | created support ticket `{ item }` | Yes (demo) | `/help/qna/new` |
-| `/api/health` | GET | none | `{ status: "UP" }` | No | smoke/ops only |
+| `/api/health` | GET | none | `{ status, checkedAt, service, profile, checks[] }` including DB/temp-storage readiness | No | smoke/ops only |
 | `/actuator/health` | GET | none | Spring actuator health | No | smoke/ops only |
 
 ## Spring REST Docs Coverage (2026-04-26 KST)
+- `health-check`: documents `GET /api/health` overall status plus database and temporary storage readiness probes for production smoke checks.
 - `survey-create`: documents `POST /api/surveys` request fields for survey metadata, first question, and choice options plus the persisted `{ item }` response shape.
 - `survey-update`: documents `PUT /api/surveys/{id}` replacement semantics, including response reset when questions are replaced.
 - `survey-delete`: documents `DELETE /api/surveys/{id}` deleted marker response.

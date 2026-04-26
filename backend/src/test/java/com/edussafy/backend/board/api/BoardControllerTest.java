@@ -42,6 +42,9 @@ import com.edussafy.backend.board.dto.PageMeta;
 import com.edussafy.backend.board.error.BoardNotFoundException;
 import com.edussafy.backend.board.error.BoardPostNotFoundException;
 import com.edussafy.backend.board.service.BoardService;
+import com.edussafy.backend.health.dto.HealthResponse;
+import com.edussafy.backend.health.dto.HealthResponse.HealthCheckItem;
+import com.edussafy.backend.health.service.HealthService;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -60,11 +63,24 @@ class BoardControllerTest {
     @MockBean
     private BoardService boardService;
 
+    @MockBean
+    private HealthService healthService;
+
     @Test
     void healthReturnsUp() throws Exception {
+        given(healthService.getHealth()).willReturn(new HealthResponse(
+                "UP",
+                OffsetDateTime.parse("2026-04-26T00:00:00Z"),
+                "edussafy-backend",
+                "test",
+                List.of(new HealthCheckItem("database", "UP", true, "MySQL connectivity check passed."))
+        ));
+
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UP"));
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.profile").value("test"))
+                .andExpect(jsonPath("$.checks[0].name").value("database"));
     }
 
     @Test

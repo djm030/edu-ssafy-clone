@@ -1,5 +1,13 @@
 # Test Report
 
+## Backend Health Readiness Probe (2026-04-26 KST)
+- Expanded `GET /api/health` from a static status payload to production smoke probes for database connectivity, writable temporary attachment storage, service id, active profile, and checked timestamp.
+- Frontend operations readiness now requires all required backend health checks to be `UP` instead of only checking the top-level status field.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=HealthServiceTest,BoardControllerTest,ApiRestDocsTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 170 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
 ## Survey REST Docs Mutation Coverage (2026-04-26 KST)
 - Added Spring REST Docs snippets for `PUT /api/surveys/{id}` and `DELETE /api/surveys/{id}` to complement the existing survey creation documentation.
 - `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=SurveyRestDocsTest test` -> PASS.
