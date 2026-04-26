@@ -31,6 +31,7 @@ import type {
   DocumentRequestItem,
   DocumentSubmissionDraft,
   DocumentSubmissionResult,
+  EducationStatusSummary,
   ElearningProgressDetail,
   ElearningProgressItem,
   ElearningResumeResult,
@@ -598,6 +599,10 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
   return fetchJson<BackendDashboardSummary>('/api/dashboard/summary', {
     fallback: () => mockDashboard,
   }).then(toDashboardSummary);
+}
+
+export function getEducationStatus(): Promise<EducationStatusSummary> {
+  return fetchJson<EducationStatusSummary>('/api/mycampus/education-status');
 }
 
 export function getAttendanceRecords(filters: AttendanceRecordFilters = {}): Promise<{ items: AttendanceRecord[] }> {

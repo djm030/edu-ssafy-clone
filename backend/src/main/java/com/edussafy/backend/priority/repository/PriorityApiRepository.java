@@ -9,6 +9,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
@@ -121,6 +125,107 @@ public class PriorityApiRepository {
                             nullableInt(rs, "rank_no")
                     );
                 })
+                .optional();
+    }
+
+    public EducationAttendanceSummary findEducationAttendanceSummary(long userId, LocalDate today) {
+        LocalDate monthStart = today.withDayOfMonth(1);
+        LocalDate nextMonthStart = monthStart.plusMonths(1);
+        return jdbcClient.sql("""
+                SELECT
+                    SUM(CASE WHEN ar.attendance_status_code = 'present' THEN 1 ELSE 0 END) AS present_days,
+                    SUM(CASE WHEN ar.attendance_status_code = 'late' THEN 1 ELSE 0 END) AS late_days,
+                    SUM(CASE WHEN ar.attendance_status_code = 'absent' THEN 1 ELSE 0 END) AS absent_days,
+                    (
+                        SELECT COUNT(*)
+                        FROM attendance_appeals aa
+                        JOIN attendance_records aar ON aar.attendance_record_id = aa.attendance_record_id
+                        WHERE aar.user_id = :userId
+                          AND aa.approval_status_code = 'requested'
+                    ) AS appeal_pending_count
+                FROM attendance_records ar
+                WHERE ar.user_id = :userId
+                  AND ar.attendance_date >= :monthStart
+                  AND ar.attendance_date < :nextMonthStart
+                """)
+                .param("userId", userId)
+                .param("monthStart", monthStart)
+                .param("nextMonthStart", nextMonthStart)
+                .query((rs, rowNum) -> new EducationAttendanceSummary(
+                        monthStart.toString().substring(0, 7),
+                        rs.getInt("present_days"),
+                        rs.getInt("late_days"),
+                        rs.getInt("absent_days"),
+                        rs.getLong("appeal_pending_count")
+                ))
+                .single();
+    }
+
+    public EducationLearningSummary findEducationLearningSummary(long userId) {
+        return jdbcClient.sql("""
+                SELECT
+                    SUM(CASE WHEN lep.status_code = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_elearning_count,
+                    SUM(CASE WHEN lep.status_code = 'completed' THEN 1 ELSE 0 END) AS completed_required_study_count,
+                    COUNT(ec.elearning_course_id) AS total_required_study_count,
+                    COALESCE(SUM(CASE WHEN lep.status_code IN ('in_progress', 'completed')
+                        THEN COALESCE(ec.total_duration_seconds, 0) * COALESCE(lep.progress_percent, 0) / 100
+                        ELSE 0 END), 0) DIV 60 AS replay_watch_minutes
+                FROM learner_elearning_progress lep
+                JOIN elearning_courses ec ON ec.elearning_course_id = lep.elearning_course_id
+                WHERE lep.user_id = :userId
+                  AND ec.active_yn = TRUE
+                """)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new EducationLearningSummary(
+                        rs.getLong("in_progress_elearning_count"),
+                        rs.getLong("completed_required_study_count"),
+                        rs.getLong("total_required_study_count"),
+                        rs.getLong("replay_watch_minutes")
+                ))
+                .single();
+    }
+
+    public EducationQuestSummary findEducationQuestSummary(long userId) {
+        return jdbcClient.sql("""
+                SELECT
+                    SUM(CASE WHEN qe.progress_status_code IN ('scheduled', 'in_progress') THEN 1 ELSE 0 END) AS open_count,
+                    SUM(CASE WHEN qs.submit_status_code IN ('submitted', 'done') THEN 1 ELSE 0 END) AS submitted_count,
+                    SUM(CASE
+                        WHEN COALESCE(qs.submit_status_code, 'not_submitted') NOT IN ('submitted', 'done')
+                         AND qe.end_at IS NOT NULL
+                         AND qe.end_at < CURRENT_TIMESTAMP THEN 1
+                        ELSE 0
+                    END) AS late_count
+                FROM quest_evaluations qe
+                LEFT JOIN quest_submissions qs ON qs.quest_evaluation_id = qe.quest_evaluation_id
+                    AND qs.user_id = :userId
+                """)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new EducationQuestSummary(
+                        rs.getLong("open_count"),
+                        rs.getLong("submitted_count"),
+                        rs.getLong("late_count")
+                ))
+                .single();
+    }
+
+    public Optional<EducationPointSummary> findEducationPointSummary(long userId) {
+        return jdbcClient.sql("""
+                SELECT
+                    COALESCE(level_name, CONCAT('Lv.', COALESCE(level_no, 1))) AS level_name,
+                    COALESCE(level_no, 1) AS level_no,
+                    COALESCE(exp, 0) AS exp,
+                    COALESCE(scholarship_point, 0) AS scholarship_point
+                FROM user_level_statuses
+                WHERE user_id = :userId
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new EducationPointSummary(
+                        rs.getInt("scholarship_point"),
+                        rs.getInt("exp"),
+                        rs.getString("level_name")
+                ))
                 .optional();
     }
 

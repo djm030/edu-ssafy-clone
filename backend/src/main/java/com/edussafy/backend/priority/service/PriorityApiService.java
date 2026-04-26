@@ -25,6 +25,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationStatusResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
@@ -391,6 +396,27 @@ public class PriorityApiService {
                 new NotificationsSummary(unreadCount, latest),
                 safe(() -> repository.findTodaySummary(user.id()), EMPTY_TODAY)
         );
+    }
+
+    public EducationStatusResponse educationStatus() {
+        UserProfile user = currentUser();
+        EducationAttendanceSummary attendance = safe(
+                () -> repository.findEducationAttendanceSummary(user.id(), LocalDate.now()),
+                new EducationAttendanceSummary(LocalDate.now().toString().substring(0, 7), 0, 0, 0, 0)
+        );
+        EducationLearningSummary learning = safe(
+                () -> repository.findEducationLearningSummary(user.id()),
+                new EducationLearningSummary(0, 0, 0, 0)
+        );
+        EducationQuestSummary quests = safe(
+                () -> repository.findEducationQuestSummary(user.id()),
+                new EducationQuestSummary(0, 0, 0)
+        );
+        EducationPointSummary points = safe(
+                () -> repository.findEducationPointSummary(user.id()).orElseGet(() -> educationPointFallback(DEMO_LEVEL)),
+                educationPointFallback(DEMO_LEVEL)
+        );
+        return new EducationStatusResponse(attendance, learning, quests, points);
     }
 
     public AttendanceRecordsResponse attendanceRecords() {
@@ -1884,6 +1910,14 @@ public class PriorityApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported material reaction type.");
         }
         return normalizedType;
+    }
+
+    private EducationPointSummary educationPointFallback(LevelSummary level) {
+        return new EducationPointSummary(
+                level.scholarshipPoints(),
+                level.exp(),
+                "Lv." + level.level()
+        );
     }
 
     private QuestItem fallbackQuest(long id) {

@@ -97,6 +97,37 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record EducationStatusResponse(
+            EducationAttendanceSummary attendance,
+            EducationLearningSummary learning,
+            EducationQuestSummary quests,
+            EducationPointSummary points
+    ) {
+    }
+
+    public record EducationAttendanceSummary(
+            String month,
+            int presentDays,
+            int lateDays,
+            int absentDays,
+            long appealPendingCount
+    ) {
+    }
+
+    public record EducationLearningSummary(
+            long inProgressElearningCount,
+            long completedRequiredStudyCount,
+            long totalRequiredStudyCount,
+            long replayWatchMinutes
+    ) {
+    }
+
+    public record EducationQuestSummary(long openCount, long submittedCount, long lateCount) {
+    }
+
+    public record EducationPointSummary(int scholarshipPoint, int experiencePoint, String levelName) {
+    }
+
     public record AttendanceRecordsResponse(AttendanceSummary summary, List<AttendanceRecordItem> items) {
     }
 

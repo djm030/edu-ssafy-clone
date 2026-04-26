@@ -2,6 +2,7 @@ package com.edussafy.backend.priority.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +39,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentSubmissionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationStatusResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
@@ -240,6 +246,47 @@ class PriorityApiServiceTest {
                 .filteredOn(item -> item.id().equals("support-answer"))
                 .singleElement()
                 .satisfies(item -> assertThat(item.allowedRoles()).containsExactly("coach", "admin"));
+    }
+
+    @Test
+    void educationStatusAggregatesCurrentUserMetrics() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        EducationAttendanceSummary attendance = new EducationAttendanceSummary("2026-04", 18, 1, 0, 1);
+        EducationLearningSummary learning = new EducationLearningSummary(3, 5, 8, 320);
+        EducationQuestSummary quests = new EducationQuestSummary(2, 5, 0);
+        EducationPointSummary points = new EducationPointSummary(0, 1153, "Bronze Lv.3");
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findEducationAttendanceSummary(eq(USER.id()), any())).willReturn(attendance);
+        given(repository.findEducationLearningSummary(USER.id())).willReturn(learning);
+        given(repository.findEducationQuestSummary(USER.id())).willReturn(quests);
+        given(repository.findEducationPointSummary(USER.id())).willReturn(Optional.of(points));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        EducationStatusResponse response = service.educationStatus();
+
+        assertThat(response.attendance()).isEqualTo(attendance);
+        assertThat(response.learning().replayWatchMinutes()).isEqualTo(320);
+        assertThat(response.quests().openCount()).isEqualTo(2);
+        assertThat(response.points().levelName()).isEqualTo("Bronze Lv.3");
+        verify(repository).findEducationAttendanceSummary(eq(USER.id()), any());
+    }
+
+    @Test
+    void educationStatusUsesZeroDefaultsWhenMetricQueriesFail() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findEducationAttendanceSummary(eq(USER.id()), any())).willThrow(new org.springframework.dao.TransientDataAccessResourceException("db offline"));
+        given(repository.findEducationLearningSummary(USER.id())).willThrow(new org.springframework.dao.TransientDataAccessResourceException("db offline"));
+        given(repository.findEducationQuestSummary(USER.id())).willThrow(new org.springframework.dao.TransientDataAccessResourceException("db offline"));
+        given(repository.findEducationPointSummary(USER.id())).willThrow(new org.springframework.dao.TransientDataAccessResourceException("db offline"));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        EducationStatusResponse response = service.educationStatus();
+
+        assertThat(response.attendance().presentDays()).isZero();
+        assertThat(response.learning().totalRequiredStudyCount()).isZero();
+        assertThat(response.quests().lateCount()).isZero();
+        assertThat(response.points().levelName()).isEqualTo("Lv.1");
     }
 
     @Test

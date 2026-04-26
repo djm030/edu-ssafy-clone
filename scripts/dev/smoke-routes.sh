@@ -17,6 +17,7 @@ routes=(
   "/mycampus/documents"
   "/mycampus/pledges"
   "/mycampus/pledges/1"
+  "/mycampus/education-status"
   "/mycampus/level"
   "/community/free"
   "/community/free/1"

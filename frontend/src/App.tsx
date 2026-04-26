@@ -16,6 +16,7 @@ import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import ElearningDetailPage from './pages/ElearningDetailPage';
 import ElearningPage from './pages/ElearningPage';
+import EducationStatusPage from './pages/EducationStatusPage';
 import LevelPage from './pages/LevelPage';
 import LoginPage from './pages/LoginPage';
 import MaterialDetailPage from './pages/MaterialDetailPage';
@@ -254,6 +255,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/level') return <LevelPage />;
   if (path === '/mycampus/notifications') return <NotificationsPage />;
   if (path === '/mycampus/elearning') return <ElearningPage />;
+  if (path === '/mycampus/education-status') return <EducationStatusPage />;
   if (path === '/mycampus/bookmarks') return <BookmarksPage />;
   if (path === '/mycampus/documents') return <DocumentsPage />;
   if (path === '/mycampus/pledges') return <PledgesPage />;

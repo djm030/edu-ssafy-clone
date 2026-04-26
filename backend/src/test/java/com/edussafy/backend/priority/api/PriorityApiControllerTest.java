@@ -33,6 +33,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRespo
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DashboardSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationAttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationLearningSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationPointSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationQuestSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.EducationStatusResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentDownload;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.DocumentRequestDetail;
@@ -133,6 +138,7 @@ import org.springframework.web.context.WebApplicationContext;
 @WebMvcTest({
         AuthController.class,
         DashboardController.class,
+        EducationStatusController.class,
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
@@ -373,6 +379,24 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.level.nextLevelExp").value(1000))
                 .andExpect(jsonPath("$.attendance.appealAvailable").value(true))
                 .andExpect(jsonPath("$.notifications.latest").isArray());
+    }
+
+    @Test
+    void educationStatusReturnsAggregatedMyCampusShape() throws Exception {
+        given(priorityApiService.educationStatus()).willReturn(new EducationStatusResponse(
+                new EducationAttendanceSummary("2026-04", 18, 1, 0, 1),
+                new EducationLearningSummary(3, 5, 8, 320),
+                new EducationQuestSummary(2, 5, 0),
+                new EducationPointSummary(0, 1153, "Bronze Lv.3")
+        ));
+
+        mockMvc.perform(get("/api/mycampus/education-status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attendance.month").value("2026-04"))
+                .andExpect(jsonPath("$.attendance.appealPendingCount").value(1))
+                .andExpect(jsonPath("$.learning.inProgressElearningCount").value(3))
+                .andExpect(jsonPath("$.quests.submittedCount").value(5))
+                .andExpect(jsonPath("$.points.levelName").value("Bronze Lv.3"));
     }
 
     @Test

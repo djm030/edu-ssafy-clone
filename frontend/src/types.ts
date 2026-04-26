@@ -90,6 +90,32 @@ export interface DashboardSummary {
   };
 }
 
+export interface EducationStatusSummary {
+  attendance: {
+    month: string;
+    presentDays: number;
+    lateDays: number;
+    absentDays: number;
+    appealPendingCount: number;
+  };
+  learning: {
+    inProgressElearningCount: number;
+    completedRequiredStudyCount: number;
+    totalRequiredStudyCount: number;
+    replayWatchMinutes: number;
+  };
+  quests: {
+    openCount: number;
+    submittedCount: number;
+    lateCount: number;
+  };
+  points: {
+    scholarshipPoint: number;
+    experiencePoint: number;
+    levelName: string;
+  };
+}
+
 export interface AttendanceRecord {
   id: number;
   date: string;
