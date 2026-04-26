@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,18 +37,25 @@ public class ExternalServiceService {
     private static final String META_START = "<!--EXTERNAL_SERVICE";
     private static final String META_END = "-->";
     private static final String ACCESS_MARKER = "<!--EXTERNAL_SERVICE_ACCESS";
+    private static final String CONFIG_PREFIX = "edussafy.external-services.";
 
     private final BoardRepository boardRepository;
     private final Clock clock;
+    private final Environment environment;
 
     @Autowired
-    public ExternalServiceService(BoardRepository boardRepository) {
-        this(boardRepository, Clock.systemDefaultZone());
+    public ExternalServiceService(BoardRepository boardRepository, Environment environment) {
+        this(boardRepository, Clock.systemDefaultZone(), environment);
     }
 
     ExternalServiceService(BoardRepository boardRepository, Clock clock) {
+        this(boardRepository, clock, null);
+    }
+
+    ExternalServiceService(BoardRepository boardRepository, Clock clock, Environment environment) {
         this.boardRepository = boardRepository;
         this.clock = clock;
+        this.environment = environment;
     }
 
     public ExternalServicesResponse services() {
@@ -65,16 +73,25 @@ public class ExternalServiceService {
         long boardId = requireBoardId();
         BoardPostDetail detail = findByCode(boardId, code);
         ExternalMeta meta = parseMeta(detail.content(), detail.title());
-        if (!meta.enabled()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비활성화된 외부 서비스입니다.");
+        LaunchPolicy policy = launchPolicy(meta);
+        if (!policy.launchable()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, policy.disabledReason());
         }
         OffsetDateTime accessedAt = OffsetDateTime.now(clock);
-        boardRepository.createComment(detail.id(), userId, null, ACCESS_MARKER + " code=" + meta.code() + " -->");
-        return new ExternalServiceAccessResponse(new ExternalServiceAccessItem(meta.code(), detail.title(), meta.url(), accessedAt));
+        boardRepository.createComment(detail.id(), userId, null, ACCESS_MARKER + " code=" + meta.code() + " launchType=" + policy.launchType() + " -->");
+        return new ExternalServiceAccessResponse(new ExternalServiceAccessItem(
+                meta.code(),
+                detail.title(),
+                policy.url(),
+                policy.launchType(),
+                policy.openInNewWindow(),
+                accessedAt
+        ));
     }
 
     private ExternalServiceItem toItem(BoardPostDetail detail) {
         ExternalMeta meta = parseMeta(detail.content(), detail.title());
+        LaunchPolicy policy = launchPolicy(meta);
         List<BoardCommentItem> accesses = accessLogs(detail.id());
         OffsetDateTime lastAccessedAt = accesses.stream()
                 .map(BoardCommentItem::createdAt)
@@ -83,9 +100,15 @@ public class ExternalServiceService {
         return new ExternalServiceItem(
                 meta.code(),
                 detail.title(),
-                meta.url(),
+                policy.url(),
                 displayDescription(detail.content()),
-                meta.enabled(),
+                policy.enabled(),
+                policy.launchable(),
+                policy.launchType(),
+                policy.policyLabel(),
+                policy.disabledReason(),
+                policy.requiresAuth(),
+                policy.openInNewWindow(),
                 lastAccessedAt,
                 accesses.size()
         );
@@ -128,8 +151,65 @@ public class ExternalServiceService {
         return new ExternalMeta(
                 values.getOrDefault("code", normalizeCode(fallbackName)),
                 values.getOrDefault("url", "#"),
-                Boolean.parseBoolean(values.getOrDefault("enabled", "true"))
+                Boolean.parseBoolean(values.getOrDefault("enabled", "true")),
+                values.getOrDefault("launchType", "EXTERNAL_LINK"),
+                values.getOrDefault("policyLabel", "외부 링크"),
+                values.getOrDefault("disabledReason", ""),
+                Boolean.parseBoolean(values.getOrDefault("requiresAuth", "true")),
+                Boolean.parseBoolean(values.getOrDefault("openInNewWindow", "true"))
         );
+    }
+
+    private LaunchPolicy launchPolicy(ExternalMeta meta) {
+        String propertyKey = propertyKey(meta.code());
+        String configuredUrl = property(CONFIG_PREFIX + propertyKey + ".url");
+        String url = StringUtils.hasText(configuredUrl) ? configuredUrl.trim() : meta.url();
+        boolean enabled = meta.enabled();
+        String configuredEnabled = property(CONFIG_PREFIX + propertyKey + ".enabled");
+        if (StringUtils.hasText(configuredEnabled)) {
+            enabled = Boolean.parseBoolean(configuredEnabled);
+        }
+        String configuredReason = property(CONFIG_PREFIX + propertyKey + ".disabled-reason");
+        String disabledReason = StringUtils.hasText(configuredReason) ? configuredReason.trim() : meta.disabledReason();
+        boolean launchable = enabled && isLaunchUrl(url);
+        if (!launchable && !StringUtils.hasText(disabledReason)) {
+            disabledReason = enabled
+                    ? "외부 서비스 URL이 아직 운영 설정으로 연결되지 않았습니다."
+                    : "현재 계정 또는 운영 정책상 외부 서비스가 비활성화되어 있습니다.";
+        }
+        return new LaunchPolicy(
+                url,
+                enabled,
+                launchable,
+                normalizeLaunchType(meta.launchType()),
+                meta.policyLabel(),
+                disabledReason,
+                meta.requiresAuth(),
+                meta.openInNewWindow()
+        );
+    }
+
+    private boolean isLaunchUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return false;
+        }
+        String normalized = url.trim();
+        if (normalized.equals("#") || normalized.equalsIgnoreCase("#none") || normalized.equalsIgnoreCase("#none;")) {
+            return false;
+        }
+        return normalized.startsWith("https://") || normalized.startsWith("http://");
+    }
+
+    private String property(String key) {
+        return environment == null ? null : environment.getProperty(key);
+    }
+
+    private String propertyKey(String code) {
+        return normalizeCode(code).toLowerCase().replace('_', '-');
+    }
+
+    private String normalizeLaunchType(String launchType) {
+        return StringUtils.hasText(launchType) ? launchType.trim().toUpperCase().replace('-', '_') : "EXTERNAL_LINK";
     }
 
     private String displayDescription(String content) {
@@ -168,6 +248,27 @@ public class ExternalServiceService {
         return userId;
     }
 
-    private record ExternalMeta(String code, String url, boolean enabled) {
+    private record ExternalMeta(
+            String code,
+            String url,
+            boolean enabled,
+            String launchType,
+            String policyLabel,
+            String disabledReason,
+            boolean requiresAuth,
+            boolean openInNewWindow
+    ) {
+    }
+
+    private record LaunchPolicy(
+            String url,
+            boolean enabled,
+            boolean launchable,
+            String launchType,
+            String policyLabel,
+            String disabledReason,
+            boolean requiresAuth,
+            boolean openInNewWindow
+    ) {
     }
 }

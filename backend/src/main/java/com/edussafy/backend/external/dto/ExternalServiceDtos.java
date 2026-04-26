@@ -20,6 +20,12 @@ public final class ExternalServiceDtos {
             String url,
             String description,
             boolean enabled,
+            boolean launchable,
+            String launchType,
+            String policyLabel,
+            String disabledReason,
+            boolean requiresAuth,
+            boolean openInNewWindow,
             OffsetDateTime lastAccessedAt,
             long accessCount
     ) {
@@ -29,6 +35,8 @@ public final class ExternalServiceDtos {
             String code,
             String name,
             String url,
+            String launchType,
+            boolean openInNewWindow,
             OffsetDateTime accessedAt
     ) {
     }

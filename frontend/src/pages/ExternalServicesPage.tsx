@@ -30,13 +30,19 @@ function ExternalServicesPage() {
   }, []);
 
   const openService = (item: ExternalServiceItem) => {
-    if (!item.enabled) {
-      setActionMessage(`${item.name}은 현재 비활성화되어 있습니다.`);
+    if (!isLaunchable(item)) {
+      setActionMessage(item.disabledReason || `${item.name}은 현재 비활성화되어 있습니다.`);
       return;
     }
     setActionMessage('');
     logExternalServiceAccess(item.code)
-      .then(() => window.open(item.url, '_blank', 'noopener,noreferrer'))
+      .then((access) => {
+        if (access.openInNewWindow ?? item.openInNewWindow ?? true) {
+          window.open(access.url || item.url, '_blank', 'noopener,noreferrer');
+          return;
+        }
+        window.location.assign(access.url || item.url);
+      })
       .catch((error) => setActionMessage(getErrorMessage(error)));
   };
 
@@ -51,17 +57,45 @@ function ExternalServicesPage() {
         <section className="grid-list">
           {items.map((item) => (
             <article className="panel card" key={item.code}>
-              <StatusPill tone={item.enabled ? 'green' : 'gray'}>{item.enabled ? '사용 가능' : '비활성'}</StatusPill>
+              <StatusPill tone={isLaunchable(item) ? 'green' : 'gray'}>{isLaunchable(item) ? '사용 가능' : '비활성'}</StatusPill>
+              <StatusPill tone={item.launchType === 'SSO_FORM' ? 'yellow' : 'blue'}>{launchLabel(item.launchType)}</StatusPill>
               <h2>{item.name}</h2>
               <p>{item.description}</p>
+              <dl className="info-list">
+                <div>
+                  <dt>정책</dt>
+                  <dd>{item.policyLabel || '외부 링크'}</dd>
+                </div>
+                <div>
+                  <dt>인증</dt>
+                  <dd>{item.requiresAuth === false ? '공개 링크' : '로그인 사용자 기준 접근 로그'}</dd>
+                </div>
+                <div>
+                  <dt>열기 방식</dt>
+                  <dd>{item.openInNewWindow === false ? '현재 창 이동' : '새 창 열기'}</dd>
+                </div>
+              </dl>
+              {!isLaunchable(item) ? <p className="form-message">{item.disabledReason || '운영 설정 전까지 열 수 없습니다.'}</p> : null}
               <span className="muted">접근 {item.accessCount}회 · 최근 {formatDateTime(item.lastAccessedAt)}</span>
-              <button className="primary-action" disabled={!item.enabled} onClick={() => openService(item)} type="button">새 창으로 열기</button>
+              <button className="primary-action" disabled={!isLaunchable(item)} onClick={() => openService(item)} type="button">
+                {item.openInNewWindow === false ? '현재 창에서 열기' : '새 창으로 열기'}
+              </button>
             </article>
           ))}
         </section>
       ) : null}
     </section>
   );
+}
+
+function isLaunchable(item: ExternalServiceItem): boolean {
+  return item.launchable ?? item.enabled;
+}
+
+function launchLabel(value?: string): string {
+  if (value === 'SSO_FORM') return 'SSO Launch';
+  if (value === 'MEETING_LINK') return 'Meeting Link';
+  return 'External Link';
 }
 
 function formatDateTime(value?: string | null): string {

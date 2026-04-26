@@ -23,6 +23,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
@@ -51,8 +52,12 @@ class ExternalServiceServiceTest {
 
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().code()).isEqualTo("JOB_SSAFY");
+        assertThat(response.items().getFirst().launchType()).isEqualTo("SSO_FORM");
+        assertThat(response.items().getFirst().launchable()).isTrue();
         assertThat(response.items().getFirst().accessCount()).isEqualTo(1);
         assertThat(response.items().get(1).enabled()).isFalse();
+        assertThat(response.items().get(1).launchable()).isFalse();
+        assertThat(response.items().get(1).disabledReason()).contains("운영 연결 전");
     }
 
     @Test
@@ -67,7 +72,9 @@ class ExternalServiceServiceTest {
         var response = service.logAccess("job-ssafy");
 
         assertThat(response.item().code()).isEqualTo("JOB_SSAFY");
-        verify(repository).createComment(1L, 3L, null, "<!--EXTERNAL_SERVICE_ACCESS code=JOB_SSAFY -->");
+        assertThat(response.item().launchType()).isEqualTo("SSO_FORM");
+        assertThat(response.item().openInNewWindow()).isTrue();
+        verify(repository).createComment(1L, 3L, null, "<!--EXTERNAL_SERVICE_ACCESS code=JOB_SSAFY launchType=SSO_FORM -->");
     }
 
     @Test
@@ -82,6 +89,39 @@ class ExternalServiceServiceTest {
         assertThatThrownBy(() -> service.logAccess("MEETING_SSAFY"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400 BAD_REQUEST");
+    }
+
+    @Test
+    void placeholderUrlIsDisabledUntilConfigured() {
+        BoardRepository repository = baseRepository();
+        BoardQuery query = new BoardQuery(null, null, 1, 100, "createdAt,asc");
+        given(repository.findPosts(81L, query, BoardSort.parse("createdAt,asc"))).willReturn(List.of(listItem(3L, "SSAFY GIT")));
+        given(repository.findPostDetail(81L, 3L)).willReturn(Optional.of(detail(3L, "SSAFY GIT", "SSAFY_GIT", true, "#none;")));
+        ExternalServiceService service = new ExternalServiceService(repository, NOW);
+
+        var response = service.services();
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().enabled()).isTrue();
+        assertThat(response.items().getFirst().launchable()).isFalse();
+        assertThat(response.items().getFirst().disabledReason()).contains("URL");
+    }
+
+    @Test
+    void environmentOverrideCanEnableConfiguredLaunchUrl() {
+        BoardRepository repository = baseRepository();
+        BoardQuery query = new BoardQuery(null, null, 1, 100, "createdAt,asc");
+        given(repository.findPosts(81L, query, BoardSort.parse("createdAt,asc"))).willReturn(List.of(listItem(3L, "SSAFY GIT")));
+        given(repository.findPostDetail(81L, 3L)).willReturn(Optional.of(detail(3L, "SSAFY GIT", "SSAFY_GIT", true, "#none;")));
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty("edussafy.external-services.ssafy-git.url", "https://project.example.test")
+                .withProperty("edussafy.external-services.ssafy-git.enabled", "true");
+        ExternalServiceService service = new ExternalServiceService(repository, NOW, environment);
+
+        var response = service.services();
+
+        assertThat(response.items().getFirst().url()).isEqualTo("https://project.example.test");
+        assertThat(response.items().getFirst().launchable()).isTrue();
     }
 
     private BoardRepository baseRepository() {
@@ -102,14 +142,30 @@ class ExternalServiceServiceTest {
     }
 
     private BoardPostDetail detail(long id, String title, String code, boolean enabled) {
+        return detail(id, title, code, enabled, "https://%s.local".formatted(code.toLowerCase().replace('_', '-')));
+    }
+
+    private BoardPostDetail detail(long id, String title, String code, boolean enabled, String url) {
         return new BoardPostDetail(id, "external_service", new CategorySummary(801L, "링크"), title, """
                 <!--EXTERNAL_SERVICE
                 code=%s
-                url=https://%s.local
+                url=%s
                 enabled=%s
+                launchType=%s
+                policyLabel=%s
+                disabledReason=%s
+                requiresAuth=true
+                openInNewWindow=true
                 -->
                 외부 서비스 링크입니다.
-                """.formatted(code, code.toLowerCase().replace('_', '-'), enabled), 2L, "Demo Manager", OffsetDateTime.now(), OffsetDateTime.now(), 0, new EngagementSummary(0, 0, 0), List.of(), List.of(), false, false);
+                """.formatted(
+                        code,
+                        url,
+                        enabled,
+                        code.equals("JOB_SSAFY") ? "SSO_FORM" : "EXTERNAL_LINK",
+                        code.equals("JOB_SSAFY") ? "SSO launch" : "새 창 외부 링크",
+                        enabled ? "" : "운영 연결 전까지 비활성화합니다."
+                ), 2L, "Demo Manager", OffsetDateTime.now(), OffsetDateTime.now(), 0, new EngagementSummary(0, 0, 0), List.of(), List.of(), false, false);
     }
 
     private BoardCommentItem accessLog(long postId) {

@@ -1342,6 +1342,19 @@ export function getExternalServices(): Promise<ExternalServiceItem[]> {
 export function logExternalServiceAccess(code: string): Promise<ExternalServiceAccessItem> {
   return fetchJson<{ item: ExternalServiceAccessItem }>(`/api/external-services/${encodeURIComponent(code)}/access-log`, {
     method: 'POST',
+    fallback: () => {
+      const item = mockExternalServices.find((service) => service.code === code);
+      return {
+        item: {
+          code,
+          name: item?.name || code,
+          url: item?.url || '#',
+          launchType: item?.launchType,
+          openInNewWindow: item?.openInNewWindow ?? true,
+          accessedAt: new Date().toISOString(),
+        },
+      };
+    },
   }).then((response) => response.item);
 }
 

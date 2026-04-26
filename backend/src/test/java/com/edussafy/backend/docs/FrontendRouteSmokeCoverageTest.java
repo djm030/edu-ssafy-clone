@@ -290,6 +290,32 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("searchMatched?: boolean");
     }
 
+    @Test
+    void externalServicesPageExposesLaunchPolicies() throws IOException {
+        String externalPage = Files.readString(Path.of("..", "frontend", "src", "pages", "ExternalServicesPage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String mockData = Files.readString(Path.of("..", "frontend", "src", "data", "mockData.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(externalPage)
+                .contains("isLaunchable")
+                .contains("policyLabel")
+                .contains("disabledReason")
+                .contains("SSO Launch")
+                .contains("새 창 열기");
+        assertThat(appApi)
+                .contains("openInNewWindow")
+                .contains("mockExternalServices.find");
+        assertThat(mockData)
+                .contains("launchType: 'SSO_FORM'")
+                .contains("launchable: false")
+                .contains("disabledReason");
+        assertThat(types)
+                .contains("launchable?: boolean")
+                .contains("policyLabel?: string")
+                .contains("openInNewWindow?: boolean");
+    }
+
 
 
     @Test

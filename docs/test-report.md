@@ -536,3 +536,12 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## External Service SSO Launch Policies (2026-04-27 KST)
+- Added backend launch policy metadata for external services: launchable state, launch type, policy label, disabled reason, auth requirement, and new-window policy.
+- Added environment overrides for `edussafy.external-services.<code>.url`, `.enabled`, and `.disabled-reason` so production URLs can be injected without storing SSO credentials or real account data.
+- Updated `/external-services` to distinguish SSO launch, external link, and Meeting link states, show disabled reasons, and open according to the server-provided launch policy.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=ExternalServiceServiceTest,FrontendRouteSmokeCoverageTest test` -> PASS, 22 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

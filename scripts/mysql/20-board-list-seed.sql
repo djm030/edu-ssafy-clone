@@ -703,20 +703,34 @@ JOIN (
  code=JOB_SSAFY
  url=https://job.ssafy.local
  enabled=true
+ launchType=SSO_FORM
+ policyLabel=SSO launch 로그
+ requiresAuth=true
+ openInNewWindow=true
  -->
  채용 공고와 취업 지원 프로그램으로 이동합니다.', FALSE, 0
   UNION ALL
   SELECT 'external_service', '링크', 'SSAFY GIT', '<!--EXTERNAL_SERVICE
  code=SSAFY_GIT
- url=https://git.ssafy.local
+ url=#none;
  enabled=true
+ launchType=EXTERNAL_LINK
+ policyLabel=운영 URL 설정 필요
+ disabledReason=운영 환경에서 edussafy.external-services.ssafy-git.url 설정 후 활성화됩니다.
+ requiresAuth=true
+ openInNewWindow=true
  -->
  프로젝트 저장소와 코드 리뷰 시스템으로 이동합니다.', FALSE, 0
   UNION ALL
   SELECT 'external_service', '링크', 'Meeting! SSAFY', '<!--EXTERNAL_SERVICE
  code=MEETING_SSAFY
- url=https://meeting.ssafy.local
+ url=#none
  enabled=false
+ launchType=MEETING_LINK
+ policyLabel=세션별 Meeting 입장 로그
+ disabledReason=라이브 세션이 입장 가능 상태일 때 세션 상세에서 열립니다.
+ requiresAuth=true
+ openInNewWindow=true
  -->
  라이브 세션과 간담회 회의실 링크입니다. 운영 연결 전까지 비활성화합니다.', FALSE, 0
   UNION ALL

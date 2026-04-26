@@ -1276,6 +1276,12 @@ export interface ExternalServiceItem {
   url: string;
   description: string;
   enabled: boolean;
+  launchable?: boolean;
+  launchType?: string;
+  policyLabel?: string;
+  disabledReason?: string | null;
+  requiresAuth?: boolean;
+  openInNewWindow?: boolean;
   lastAccessedAt?: string | null;
   accessCount: number;
 }
@@ -1284,5 +1290,7 @@ export interface ExternalServiceAccessItem {
   code: string;
   name: string;
   url: string;
+  launchType?: string;
+  openInNewWindow?: boolean;
   accessedAt?: string | null;
 }
