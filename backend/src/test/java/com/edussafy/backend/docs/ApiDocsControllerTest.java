@@ -29,6 +29,11 @@ class ApiDocsControllerTest {
 
         assertThat(html).contains("eduSSAFY Clone API Docs");
         assertThat(html).contains("Spring REST Docs");
+        assertThat(html).contains("Complete Implemented Endpoint Catalog");
+        assertThat(html).contains("Implemented backend API endpoints (141)");
         assertThat(html).contains("/api/auth/login");
+        assertThat(html).contains("/api/attendance/check");
+        assertThat(html).contains("/api/surveys/{id}/responses");
+        assertThat(html).contains("/api/support/tickets/{ticketId}/answers");
     }
 }

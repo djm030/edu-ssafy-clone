@@ -123,6 +123,7 @@ RUN_TESTS=false scripts/dev/verify-restdocs.sh
 ```
 
 The generated Spring REST Docs HTML is also exposed by the backend at:
+The generated Spring REST Docs HTML includes a complete implemented endpoint catalog for every current backend controller route. It is exposed by the backend at:
 
 ```text
 http://localhost/api/docs

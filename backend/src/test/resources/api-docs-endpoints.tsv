@@ -1,0 +1,142 @@
+# domain	method	path	handler	access
+API Docs	GET	/api/docs	ApiDocsController.showApiDocs	Public
+API Docs	GET	/api/docs/	ApiDocsController.showApiDocs	Public
+Admin	GET	/api/admin/campus-structure	AdminCampusController.structure	Admin only
+Admin	POST	/api/admin/campus-structure/campuses	AdminCampusController.createCampus	Admin only
+Admin	POST	/api/admin/campus-structure/classes	AdminCampusController.createClassGroup	Admin only
+Admin	POST	/api/admin/campus-structure/cohorts	AdminCampusController.createCohort	Admin only
+Admin	POST	/api/admin/campus-structure/tracks	AdminCampusController.createTrack	Admin only
+Attendance	GET	/api/attendance/appeals	AttendanceController.appeals	Authenticated session
+Attendance	POST	/api/attendance/appeals	AttendanceController.appeal	Authenticated session
+Attendance	GET	/api/attendance/appeals/pending	AttendanceController.pendingAppeals	Coach/Admin
+Attendance	PATCH	/api/attendance/appeals/{appealId}/cancel	AttendanceController.cancelAppeal	Authenticated session
+Attendance	PATCH	/api/attendance/appeals/{appealId}/resolve	AttendanceController.resolveAppeal	Coach/Admin
+Attendance	POST	/api/attendance/check	AttendanceController.check	Authenticated session
+Attendance	GET	/api/attendance/records	AttendanceController.records	Authenticated session
+Auth/Profile	GET	/api/auth/access-policy	AuthController.accessPolicy	Authenticated session
+Auth/Profile	POST	/api/auth/login	AuthController.login	Public
+Auth/Profile	POST	/api/auth/logout	AuthController.logout	Authenticated session
+Auth/Profile	GET	/api/auth/roles/current	AuthController.currentRoleAccess	Authenticated session
+Auth/Profile	GET	/api/auth/session	AuthController.authSession	Authenticated session
+Auth/Profile	GET	/api/me	AuthController.me	Authenticated session
+Auth/Profile	GET	/api/profile	ProfileController.profile	Authenticated session
+Auth/Profile	PUT	/api/profile	ProfileController.updateProfile	Authenticated session
+Auth/Profile	GET	/api/profile/edit-authorization	AuthController.profileEditAuthorization	Authenticated session
+Auth/Profile	PATCH	/api/profile/password	ProfileController.changePassword	Authenticated session
+Auth/Profile	POST	/api/profile/password-check	AuthController.passwordCheck	Authenticated session
+Board	GET	/api/boards/{boardCode}/categories	BoardController.categories	Authenticated session
+Board	GET	/api/boards/{boardCode}/posts	BoardController.posts	Authenticated session
+Board	POST	/api/boards/{boardCode}/posts	BoardController.createPost	Authenticated session
+Board	DELETE	/api/boards/{boardCode}/posts/{postId}	BoardController.deletePost	Authenticated session
+Board	GET	/api/boards/{boardCode}/posts/{postId}	BoardController.post	Authenticated session
+Board	PUT	/api/boards/{boardCode}/posts/{postId}	BoardController.updatePost	Authenticated session
+Board	POST	/api/boards/{boardCode}/posts/{postId}/attachments	BoardController.createAttachment	Authenticated session
+Board	DELETE	/api/boards/{boardCode}/posts/{postId}/attachments/{attachmentId}	BoardController.deleteAttachment	Authenticated session
+Board	GET	/api/boards/{boardCode}/posts/{postId}/attachments/{attachmentId}	BoardController.downloadAttachment	Authenticated session
+Board	POST	/api/boards/{boardCode}/posts/{postId}/comments	BoardController.createComment	Authenticated session
+Board	DELETE	/api/boards/{boardCode}/posts/{postId}/comments/{commentId}	BoardController.deleteComment	Authenticated session
+Board	PUT	/api/boards/{boardCode}/posts/{postId}/comments/{commentId}	BoardController.updateComment	Authenticated session
+Board	POST	/api/boards/{boardCode}/posts/{postId}/reactions	BoardController.createReaction	Authenticated session
+Board	DELETE	/api/boards/{boardCode}/posts/{postId}/reactions/{type}	BoardController.deleteReaction	Authenticated session
+External Service	GET	/api/external-services	ExternalServiceController.services	Authenticated session
+External Service	POST	/api/external-services/{code}/access-log	ExternalServiceController.logAccess	Authenticated session
+Learning	GET	/api/curriculum/weeks	CurriculumController.weeks	Authenticated session
+Learning	GET	/api/curriculum/weeks/{weekId}	CurriculumController.week	Authenticated session
+Learning	GET	/api/documents/requests	DocumentController.requests	Authenticated session
+Learning	GET	/api/documents/requests/{requestId}	DocumentController.detail	Authenticated session
+Learning	POST	/api/documents/requests/{requestId}/submissions	DocumentController.submit	Authenticated session
+Learning	DELETE	/api/documents/requests/{requestId}/submissions/{submissionId}	DocumentController.cancel	Authenticated session
+Learning	GET	/api/documents/submissions/{submissionId}/attachments/{attachmentId}	DocumentController.downloadAttachment	Authenticated session
+Learning	GET	/api/ebooks	EbookController.ebooks	Authenticated session
+Learning	GET	/api/ebooks/{ebookId}	EbookController.ebook	Authenticated session
+Learning	POST	/api/ebooks/{ebookId}/access-log	EbookController.accessLog	Authenticated session
+Learning	GET	/api/elearning/in-progress	ElearningController.inProgress	Authenticated session
+Learning	GET	/api/elearning/in-progress/{courseId}	ElearningController.detail	Authenticated session
+Learning	POST	/api/elearning/in-progress/{courseId}/resume	ElearningController.resume	Authenticated session
+Learning	GET	/api/learning/curriculum	LearningController.curriculum	Authenticated session
+Learning	GET	/api/learning/materials	LearningController.materials	Authenticated session
+Learning	GET	/api/learning/materials/{id}	LearningController.material	Authenticated session
+Learning	DELETE	/api/learning/materials/{id}/reactions/{type}	LearningController.deleteMaterialReaction	Authenticated session
+Learning	POST	/api/learning/materials/{id}/reactions/{type}	LearningController.createMaterialReaction	Authenticated session
+Learning	GET	/api/learning/materials/{id}/resources	LearningController.materialResources	Authenticated session
+Learning	POST	/api/learning/materials/{id}/resources/{resourceId}/attachments	LearningController.createMaterialResourceAttachment	Coach/Admin
+Learning	GET	/api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}	LearningController.downloadMaterialResourceAttachment	Authenticated session
+Learning	POST	/api/learning/materials/{id}/views	LearningController.recordMaterialView	Authenticated session
+Learning	GET	/api/learning/replays	LearningController.replays	Authenticated session
+Learning	GET	/api/live-sessions/current	LiveSessionController.current	Authenticated session
+Learning	GET	/api/live-sessions/today	LiveSessionController.today	Authenticated session
+Learning	POST	/api/live-sessions/{sessionId}/join	LiveSessionController.join	Authenticated session
+Learning	GET	/api/replays/all	ReplayController.allReplays	Authenticated session
+Learning	GET	/api/replays/my	ReplayController.myReplays	Authenticated session
+Learning	GET	/api/replays/{replayId}	ReplayController.replay	Authenticated session
+Learning	POST	/api/replays/{replayId}/watch-log	ReplayController.watch	Authenticated session
+Learning	GET	/api/required-studies	RequiredStudyController.requiredStudies	Authenticated session
+Learning	GET	/api/required-studies/{studyId}	RequiredStudyController.requiredStudy	Authenticated session
+Learning	POST	/api/required-studies/{studyId}/complete	RequiredStudyController.completeRequiredStudy	Authenticated session
+MyCampus/Community	GET	/api/community/classmates	CommunityController.classmates	Authenticated session
+MyCampus/Community	POST	/api/community/classmates/{userId}/notifications	CommunityController.createClassmateNotification	Coach/Admin
+MyCampus/Community	GET	/api/dashboard/summary	DashboardController.summary	Authenticated session
+MyCampus/Community	GET	/api/me/bookmarks	BookmarkController.bookmarks	Authenticated session
+MyCampus/Community	POST	/api/me/bookmarks	BookmarkController.create	Authenticated session
+MyCampus/Community	DELETE	/api/me/bookmarks/{bookmarkId}	BookmarkController.delete	Authenticated session
+MyCampus/Community	GET	/api/mycampus/education-status	EducationStatusController.educationStatus	Authenticated session
+MyCampus/Community	GET	/api/mycampus/level	DashboardController.level	Authenticated session
+Notification	GET	/api/notifications	NotificationController.notifications	Authenticated session
+Notification	PATCH	/api/notifications/read-all	NotificationController.markAllRead	Authenticated session
+Notification	DELETE	/api/notifications/{notificationId}	NotificationController.deleteNotification	Authenticated session
+Notification	PATCH	/api/notifications/{notificationId}/read	NotificationController.markRead	Authenticated session
+Operations	GET	/actuator/health	Spring Boot Actuator	Public
+Operations	GET	/api/health	BoardController.health	Public
+Operations	GET	/api/readiness	BoardController.readiness	Public
+Quest/Evaluation	GET	/api/pledges	PledgeController.pledges	Authenticated session
+Quest/Evaluation	GET	/api/pledges/{pledgeId}	PledgeController.pledge	Authenticated session
+Quest/Evaluation	POST	/api/pledges/{pledgeId}/agreements	PledgeController.agree	Authenticated session
+Quest/Evaluation	GET	/api/quests	QuestSurveyController.quests	Authenticated session
+Quest/Evaluation	GET	/api/quests/{id}	QuestSurveyController.quest	Authenticated session
+Quest/Evaluation	GET	/api/quests/{id}/submission	QuestSurveyController.questSubmission	Authenticated session
+Quest/Evaluation	POST	/api/quests/{id}/submissions	QuestSurveyController.submitQuest	Authenticated session
+Quest/Evaluation	POST	/api/quests/{id}/submissions/{submissionId}/attachments	QuestSurveyController.createQuestSubmissionAttachment	Authenticated session
+Quest/Evaluation	GET	/api/quests/{id}/submissions/{submissionId}/attachments/{attachmentId}	QuestSurveyController.downloadQuestSubmissionAttachment	Authenticated session
+Support/Help/Mentoring	GET	/api/help/academic-rules	AcademicRuleController.rules	Authenticated session
+Support/Help/Mentoring	GET	/api/help/academic-rules/{ruleId}	AcademicRuleController.rule	Authenticated session
+Support/Help/Mentoring	GET	/api/help/faqs	HelpDeskBoardController.faqs	Authenticated session
+Support/Help/Mentoring	GET	/api/help/faqs/categories	HelpDeskBoardController.faqCategories	Authenticated session
+Support/Help/Mentoring	GET	/api/help/faqs/{faqId}	HelpDeskBoardController.faq	Authenticated session
+Support/Help/Mentoring	GET	/api/help/notices	HelpDeskBoardController.notices	Authenticated session
+Support/Help/Mentoring	GET	/api/help/notices/categories	HelpDeskBoardController.noticeCategories	Authenticated session
+Support/Help/Mentoring	GET	/api/help/notices/{noticeId}	HelpDeskBoardController.notice	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meeting-results	MentoringMeetingResultController.results	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meeting-results/{meetingId}	MentoringMeetingResultController.result	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meeting-reviews	MentoringMeetingResultController.reviews	Authenticated session
+Support/Help/Mentoring	POST	/api/mentoring/meeting-reviews	MentoringMeetingResultController.createReview	Authenticated session
+Support/Help/Mentoring	DELETE	/api/mentoring/meeting-reviews/{reviewId}	MentoringMeetingResultController.deleteReview	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meeting-reviews/{reviewId}	MentoringMeetingResultController.review	Authenticated session
+Support/Help/Mentoring	PUT	/api/mentoring/meeting-reviews/{reviewId}	MentoringMeetingResultController.updateReview	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meetings	MentoringMeetingController.meetings	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meetings/applications/me	MentoringMeetingController.myApplications	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/meetings/{meetingId}	MentoringMeetingController.meeting	Authenticated session
+Support/Help/Mentoring	POST	/api/mentoring/meetings/{meetingId}/applications	MentoringMeetingController.apply	Authenticated session
+Support/Help/Mentoring	DELETE	/api/mentoring/meetings/{meetingId}/applications/me	MentoringMeetingController.cancel	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/notices	MentoringNoticeController.notices	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/notices/{noticeId}	MentoringNoticeController.notice	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/questions	MentoringQuestionController.questions	Authenticated session
+Support/Help/Mentoring	POST	/api/mentoring/questions	MentoringQuestionController.createQuestion	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/questions/{questionId}	MentoringQuestionController.question	Authenticated session
+Support/Help/Mentoring	POST	/api/mentoring/questions/{questionId}/answers	MentoringQuestionController.answer	Coach/Admin
+Support/Help/Mentoring	PATCH	/api/mentoring/questions/{questionId}/close	MentoringQuestionController.close	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/stories	MentorStoryController.stories	Authenticated session
+Support/Help/Mentoring	GET	/api/mentoring/stories/{storyId}	MentorStoryController.story	Authenticated session
+Support/Help/Mentoring	GET	/api/support/tickets	SupportController.tickets	Authenticated session
+Support/Help/Mentoring	POST	/api/support/tickets	SupportController.createTicket	Authenticated session
+Support/Help/Mentoring	GET	/api/support/tickets/{ticketId}	SupportController.ticket	Authenticated session
+Support/Help/Mentoring	POST	/api/support/tickets/{ticketId}/answers	SupportController.createTicketAnswer	Coach/Admin
+Support/Help/Mentoring	POST	/api/support/tickets/{ticketId}/messages	SupportController.createTicketMessage	Authenticated session
+Support/Help/Mentoring	POST	/api/support/tickets/{ticketId}/messages/{messageId}/attachments	SupportController.createTicketMessageAttachment	Authenticated session
+Support/Help/Mentoring	GET	/api/support/tickets/{ticketId}/messages/{messageId}/attachments/{attachmentId}	SupportController.downloadTicketMessageAttachment	Authenticated session
+Survey	GET	/api/surveys	QuestSurveyController.surveys	Authenticated session
+Survey	POST	/api/surveys	QuestSurveyController.createSurvey	Coach/Admin
+Survey	DELETE	/api/surveys/{id}	QuestSurveyController.deleteSurvey	Coach/Admin
+Survey	GET	/api/surveys/{id}	QuestSurveyController.survey	Authenticated session
+Survey	PUT	/api/surveys/{id}	QuestSurveyController.updateSurvey	Coach/Admin
+Survey	POST	/api/surveys/{id}/responses	QuestSurveyController.submitSurvey	Authenticated session
+Survey	GET	/api/surveys/{id}/responses/current	QuestSurveyController.surveyResponse	Authenticated session
