@@ -81,3 +81,6 @@ jobs:
 
       - name: Browser E2E core flows
         run: npm --prefix frontend run e2e -- --project=chromium e2e/core-flows.spec.ts
+
+      - name: Browser visual baseline
+        run: npm --prefix frontend run e2e -- --project=chromium e2e/visual-baseline.spec.ts

@@ -12,6 +12,7 @@ class VisualBaselineCoverageTest {
 
     private static final Path VISUAL_SPEC = Path.of("..", "frontend", "e2e", "visual-baseline.spec.ts");
     private static final Path SNAPSHOT_DIR = Path.of("..", "frontend", "e2e", "visual-baseline.spec.ts-snapshots");
+    private static final Path CI_WORKFLOW = Path.of("..", ".github", "workflows", "ci.yml");
 
     private static final List<String> REQUIRED_TARGETS = List.of(
             "login",
@@ -68,5 +69,14 @@ class VisualBaselineCoverageTest {
                     .as(target + " mobile baseline")
                     .isTrue();
         }
+    }
+
+    @Test
+    void ciRunsCommittedVisualBaselineSuite() throws IOException {
+        String workflow = Files.readString(CI_WORKFLOW);
+
+        assertThat(workflow)
+                .contains("Browser visual baseline")
+                .contains("e2e/visual-baseline.spec.ts");
     }
 }
