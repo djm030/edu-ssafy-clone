@@ -154,6 +154,7 @@
   }
 
   .level-kpi-row,
+  .pledge-version-summary,
   .tier-roadmap {
     grid-template-columns: 1fr;
   }

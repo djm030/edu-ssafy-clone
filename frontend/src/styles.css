@@ -1345,6 +1345,48 @@ h2 {
   gap: 16px;
 }
 
+
+.pledge-content-disclosure {
+  display: grid;
+  gap: 12px;
+}
+
+.pledge-content-box.expanded {
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.pledge-version-summary {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0 0;
+  padding: 12px;
+}
+
+.pledge-version-summary dt {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pledge-version-summary dd {
+  color: #1f2933;
+  font-weight: 800;
+  margin: 0;
+}
+
+.pledge-disabled-reason {
+  color: #b42318;
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .pledge-content-box {
   background: #f8fafc;
   border: 1px solid #d8dee8;

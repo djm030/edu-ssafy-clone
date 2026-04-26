@@ -428,9 +428,16 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("PledgeDetailView")
                 .contains("서약서 원문 재열람")
                 .contains("PledgeAgreementEvidencePanel")
+                .contains("PledgeContentDisclosure")
+                .contains("PledgeVersionSummary")
+                .contains("원문 펼치기")
+                .contains("원문 접기")
+                .contains("pledge-version-summary")
                 .contains("동의 이력")
                 .contains("동의 버전 스냅샷")
                 .contains("versionSnapshot")
+                .contains("이미 동의한 서약서는 재동의할 수 없습니다")
+                .contains("pendingPledgeId")
                 .contains("excerpt(item.content)");
     }
 
