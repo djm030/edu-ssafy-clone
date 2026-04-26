@@ -734,6 +734,30 @@ h2 {
 
 
 
+
+.elearning-action-row,
+.elearning-resume-panel {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.elearning-resume-panel {
+  background: #f8fbff;
+  border: 1px solid #d8e7ff;
+  border-radius: 12px;
+  margin: 14px 0;
+  padding: 12px;
+}
+
+.elearning-unavailable-reason {
+  color: #667085;
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .bookmark-summary-grid {
   display: grid;
   gap: 12px;

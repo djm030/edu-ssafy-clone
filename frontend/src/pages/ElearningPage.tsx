@@ -27,6 +27,7 @@ function ElearningPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [resumeMessage, setResumeMessage] = useState('');
+  const [resumingCourseId, setResumingCourseId] = useState<number>();
   const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ function ElearningPage() {
   };
 
   const handleResume = (courseId: number) => {
+    setResumingCourseId(courseId);
     setResumeMessage('이어보기 이력을 저장하는 중입니다.');
     resumeElearning(courseId)
       .then((response) => {
@@ -65,7 +67,8 @@ function ElearningPage() {
         window.history.pushState({}, '', resumeUrl);
         window.dispatchEvent(new PopStateEvent('popstate'));
       })
-      .catch((error) => setResumeMessage(getErrorMessage(error)));
+      .catch((error) => setResumeMessage(getErrorMessage(error)))
+      .finally(() => setResumingCourseId(undefined));
   };
 
   return (
@@ -96,7 +99,7 @@ function ElearningPage() {
         />
       ) : null}
       {loadState === 'empty' ? <DataState title="학습중인 이러닝이 없습니다." message="상태 필터 또는 검색어를 바꿔 보세요." /> : null}
-      {loadState === 'loaded' ? <ElearningList items={items} onResume={handleResume} /> : null}
+      {loadState === 'loaded' ? <ElearningList items={items} onResume={handleResume} resumingCourseId={resumingCourseId} /> : null}
     </section>
   );
 }
@@ -123,11 +126,13 @@ function SummaryCard({ title, value }: { title: string; value: string }) {
   );
 }
 
-function ElearningList({ items, onResume }: { items: ElearningProgressItem[]; onResume: (courseId: number) => void }) {
+function ElearningList({ items, onResume, resumingCourseId }: { items: ElearningProgressItem[]; onResume: (courseId: number) => void; resumingCourseId?: number }) {
   return (
     <div className="card-list" aria-label="학습중 이러닝 목록">
       {items.map((item) => {
         const status = statusLabels[item.status];
+        const canResume = Boolean(item.resumeUrl) && item.status !== 'completed';
+        const resuming = resumingCourseId === item.courseId;
         return (
           <article className="list-card" key={item.courseId}>
             <div>
@@ -147,9 +152,12 @@ function ElearningList({ items, onResume }: { items: ElearningProgressItem[]; on
               </p>
             </div>
             <StatusPill tone={status.tone}>{status.label}</StatusPill>
-            <div className="action-row">
+            <div className="action-row elearning-action-row">
               <a className="ghost-button" href={`/mycampus/elearning/${item.courseId}`}>상세</a>
-              <button className="primary-action" onClick={() => onResume(item.courseId)} type="button">이어보기</button>
+              <button className="primary-action" disabled={!canResume || resuming} onClick={() => onResume(item.courseId)} type="button">
+                {resuming ? '이어보기 준비 중' : '이어보기'}
+              </button>
+              {!canResume ? <small className="elearning-unavailable-reason">{item.status === 'completed' ? '완료 과정은 상세에서 복습하세요.' : '외부 플레이어 준비중'}</small> : null}
             </div>
           </article>
         );

@@ -17,6 +17,7 @@ function ElearningDetailPage({ courseId }: { courseId: number }) {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [resumeMessage, setResumeMessage] = useState('');
+  const [resumePending, setResumePending] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -38,10 +39,12 @@ function ElearningDetailPage({ courseId }: { courseId: number }) {
   }, [courseId]);
 
   const handleResume = () => {
+    setResumePending(true);
     setResumeMessage('이어보기 이력을 저장하는 중입니다.');
     resumeElearning(courseId)
       .then((response) => setResumeMessage(`이어보기 준비 완료: ${response.item.resumeUrl || `/mycampus/elearning/${courseId}`}`))
-      .catch((error) => setResumeMessage(getErrorMessage(error)));
+      .catch((error) => setResumeMessage(getErrorMessage(error)))
+      .finally(() => setResumePending(false));
   };
 
   return (
@@ -50,13 +53,14 @@ function ElearningDetailPage({ courseId }: { courseId: number }) {
       {loadState === 'loading' ? <LoadingRows /> : null}
       {loadState === 'error' ? <DataState title="이러닝 상세를 불러오지 못했습니다." message={errorMessage} /> : null}
       {loadState === 'empty' ? <DataState title="이러닝 진행 정보를 찾을 수 없습니다." message="본인에게 배정된 과정인지 확인해 주세요." /> : null}
-      {loadState === 'loaded' && item ? <ElearningDetail item={item} onResume={handleResume} resumeMessage={resumeMessage} /> : null}
+      {loadState === 'loaded' && item ? <ElearningDetail item={item} onResume={handleResume} resumeMessage={resumeMessage} resumePending={resumePending} /> : null}
     </section>
   );
 }
 
-function ElearningDetail({ item, onResume, resumeMessage }: { item: ElearningProgressDetail; onResume: () => void; resumeMessage: string }) {
+function ElearningDetail({ item, onResume, resumeMessage, resumePending }: { item: ElearningProgressDetail; onResume: () => void; resumeMessage: string; resumePending: boolean }) {
   const status = statusLabels[item.status];
+  const canResume = Boolean(item.resumeUrl) && item.status !== 'completed';
 
   return (
     <div className="content-card">
@@ -72,8 +76,13 @@ function ElearningDetail({ item, onResume, resumeMessage }: { item: ElearningPro
         <span style={{ width: `${item.progressPercent}%` }} />
       </div>
       <p>{item.completedLessons}/{item.totalLessons}차시 완료 · 총 {Math.round(item.totalDurationSeconds / 60).toLocaleString('ko-KR')}분</p>
-      <button className="primary-action" onClick={onResume} type="button">이어보기 이력 저장</button>
-      {resumeMessage ? <p className="helper-text" role="status">{resumeMessage}</p> : null}
+      <div className="elearning-resume-panel">
+        <button className="primary-action" disabled={!canResume || resumePending} onClick={onResume} type="button">
+          {resumePending ? '이어보기 준비 중' : '이어보기 이력 저장'}
+        </button>
+        {!canResume ? <span className="elearning-unavailable-reason">{item.status === 'completed' ? '완료 과정은 차시 목록에서 복습 상태만 확인할 수 있습니다.' : '외부 플레이어 준비중'}</span> : null}
+        {resumeMessage ? <p className="helper-text" role="status">{resumeMessage}</p> : null}
+      </div>
       <div className="simple-table" role="table" aria-label="이러닝 차시 목록">
         <div className="simple-row table-head" role="row">
           <span role="columnheader">차시</span>

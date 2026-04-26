@@ -454,6 +454,9 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("학습중 이러닝 운영 요약")
                 .contains("elearning-meta-row")
                 .contains("남은 차시")
+                .contains("resumingCourseId")
+                .contains("이어보기 준비 중")
+                .contains("외부 플레이어 준비중")
                 .contains("다시 불러오기")
                 .contains("setRetryToken");
         assertThat(appApi)
