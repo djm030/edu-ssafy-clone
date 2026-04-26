@@ -1,52 +1,78 @@
 # Next Plan: EduSSAFY Full Clone Production Gap Plan
 
 작성일: 2026-04-26 KST
+최근 실서비스 재점검: 2026-04-26 KST, 실제 EduSSAFY 계정으로 읽기 전용 로그인 확인. 계정/비밀번호/쿠키/원본 HTML은 저장하지 않음.
 작성 목적: 실제 EduSSAFY 로그인 후 확인된 메뉴/화면과 현재 클론 구현 범위를 비교해, 다음 개발 라운드에서 바로 실행 가능한 수준의 세부 백로그를 정의한다.
 
 > 주의: 실제 서비스 계정/비밀번호/세션 쿠키/원본 HTML은 이 문서와 저장소에 저장하지 않는다. 실제 서비스 확인은 읽기 전용 비교 근거로만 사용하고, 자동 테스트에는 실제 계정을 넣지 않는다.
 
 ---
 
-## 0. 현재 결론
+## 0. 현재 결론 — 2026-04-26 실서비스 재점검 반영
 
-현재 저장소는 기존 우선순위 1~9 기준의 핵심 MVP는 대부분 PASS 상태다. 그러나 실제 EduSSAFY 전체 메뉴 기준으로 보면 아직 **프로덕션 레벨 전체 클론**이라고 보기 어려운 기능 영역이 남아 있다.
+2026-04-26 KST에 실제 EduSSAFY에 읽기 전용으로 로그인해 상단 메뉴, 홈 대시보드 노출 영역, 주요 외부 링크 텍스트/href를 다시 확인했다. 개인 식별자, 계정, 비밀번호, 세션 쿠키, 원본 HTML은 저장하지 않았다.
 
-가장 큰 미구현 축은 다음이다.
+냉정한 판정은 다음과 같다.
 
-1. 마이캠퍼스 부가 기능
-   - 학습중 이러닝
-   - 찜한 목록
-   - 서류제출
-   - 교육생 서약서
-   - SSAFY e-book
-   - 교육현황
-2. 강의실 기능 심화
-   - 라이브 바로가기
-   - 내강의 다시보기 / 전체강의 다시보기 분리
-   - 필수학습
-   - 주차별 커리큘럼 상세도 강화
-   - Quest/평가 상세 상태 강화
-3. 커뮤니티/HELP DESK 확장
-   - 익명 게시판
-   - 학사규정
-   - 실제 공지/FAQ/게시판 UX fidelity 강화
-4. 멘토링/간담회 영역
-   - 멘토 스토리
-   - 멘토링 Q&A
-   - 멘토링 공지사항
-   - 간담회 신청
-   - 간담회 정보
-   - 간담회 후기
-5. 외부 연동
-   - JOB SSAFY
-   - SSAFY GIT
-   - Meeting! SSAFY
-6. 프로덕션 검증
-   - 브라우저 E2E
-   - visual baseline
-   - 운영 secret-store 배포 검증
-   - 외부 환경 CI/CD sign-off
-   - observability 실제 연동
+1. **상단 대메뉴/하위메뉴 기준으로 “아예 route가 없는” 메뉴 GAP는 현재 없다.**
+   - 마이캠퍼스, 강의실, 커뮤니티, HELP DESK, 멘토링 게시판, 외부 링크로 확인된 모든 메뉴는 현재 클론에 대응 route 또는 기능 흐름이 있다.
+   - 이전 문서의 `없음/GAP` 표기는 과거 상태이며, 현재 코드 기준으로는 대부분 `PASS/PARTIAL`로 재분류한다.
+2. 그러나 **프로덕션 레벨 전체 클론이라고 말하기에는 아직 이르다.**
+   - 메뉴 존재 여부는 PASS에 가깝지만, 실제 홈 화면의 정보 밀도/위젯 구성/상세 UX/권한별 빈 상태/외부 SSO 동작은 여전히 PARTIAL이다.
+3. 다음 개발은 “새 메뉴 추가”보다 **실서비스 fidelity 보강**을 우선한다.
+   - 최우선은 실제 홈 대시보드 parity다. 현재 클론 홈은 요약 카드 중심이고, 실제 EduSSAFY 홈은 출석체크, 장학포인트/레벨, 알림, 주차별 커리큘럼, Quest/평가, 학습자료 캐러셀, 학습중 이러닝, 자유게시판, e-book, 공지사항을 한 화면에 배치한다.
+   - 이후 각 상세 화면의 검색/필터/카운트/상세 이동/권한별 액션/빈 상태를 실제 서비스와 더 맞춘다.
+
+### 0.1 실서비스에서 확인된 상단 메뉴와 현재 클론 판정
+
+| 실서비스 메뉴 | 실서비스 href/동작 관찰 | 현재 클론 대응 | 냉정 판정 | 남은 작업 |
+|---|---|---|---:|---|
+| 마이캠퍼스 > 레벨&장학포인트 | `/edu/mycampus/mylvlmlg/myLvlMlgView.do` | `/mycampus/level` | PARTIAL | 실제 Bronze/Silver 단계 표시, 장학포인트/EXP 카드 시각 구조 추가 |
+| 마이캠퍼스 > 출석현황 | `/edu/mycampus/attendance/attendanceClassList.do` | `/mycampus/attendance`, `/mycampus/attendance/appeals/new` | PASS/PARTIAL | 홈 출석체크 위젯과 주말/평일 입퇴실 가능 상태 parity |
+| 마이캠퍼스 > 학습중 이러닝 | `/edu/mycampus/myknowledgecont/myKnowledgeContList.do` | `/mycampus/elearning`, `/mycampus/elearning/1` | PASS/PARTIAL | 홈 이러닝 목록 카드와 운영자/콘텐츠 메타 fidelity |
+| 마이캠퍼스 > 찜한 목록 | `/edu/mycampus/selectedcont/selectedContList.do` | `/mycampus/bookmarks` | PASS/PARTIAL | 실제 콘텐츠 유형별 탭/해제 UX 비교 보강 |
+| 마이캠퍼스 > 서류제출 | `/edu/board/docReq/list.do` | `/mycampus/documents` | PASS/PARTIAL | 제출 파일 이력/상태/보완 요청 상세 fidelity |
+| 마이캠퍼스 > 교육생 서약서 | `/edu/mycampus/pledgedoc/pledgeDocApplyList.do` | `/mycampus/pledges`, `/mycampus/pledges/1` | PASS/PARTIAL | 서약서 원문/동의 이력/재열람 UX 보강 |
+| 마이캠퍼스 > SSAFY e-book | 계정 기준 상단 href는 `#none;`, 홈에 e-book 영역 노출 | `/mycampus/ebooks`, `/mycampus/ebooks/1` | PARTIAL | disabled/권한 없음 상태와 홈 e-book 영역 처리 추가 |
+| 마이캠퍼스 > 교육현황 | `/edu/mycampus/gradestatus/gradeStatusList.do` | `/mycampus/education-status` | PASS/PARTIAL | 실제 교육현황의 학기/트랙/성취 지표 구조 비교 보강 |
+| 강의실 > 라이브 바로가기 | 계정 기준 href는 `#none` | `/learning/live` | PARTIAL | 비활성/오픈 전/입장 가능 상태 구분 및 Meeting 연동 로그 보강 |
+| 강의실 > 내강의 다시보기 | `/edu/lectureroom/lecturereplay/lectureReplayNMyList.do` | `/learning/replays/my` | PASS/PARTIAL | 실제 내강의 필터/시청 이력/재생 가능 상태 비교 |
+| 강의실 > 전체강의 다시보기 | `/edu/lectureroom/lecturereplay/lectureReplayAllList.do` | `/learning/replays/all` | PASS/PARTIAL | 공개 범위/트랙/검색 필터 fidelity |
+| 강의실 > 주차별 커리큘럼 | `/edu/lectureroom/curriculumn/curriculumnWeeklyList.do` | `/learning/curriculum`, `/learning/curriculum/1` | PASS/PARTIAL | 홈 주차 테이블, 교재 링크, 시간표 다중 세션 레이아웃 보강 |
+| 강의실 > Quest/평가 | `/edu/lectureroom/questevaluation/questEvaluationList.do` | `/quest`, `/quest/1`, `/quest/1/submit` | PASS/PARTIAL | 홈 예정/완료 카드, 평가/Quest 타입별 결과/기간 표시 보강 |
+| 강의실 > 필수학습 | `/edu/lectureroom/essentialstudy/essentialStudyList.do` | `/learning/required-studies`, `/learning/required-studies/1` | PASS/PARTIAL | 실제 필수학습 이수 조건/만료/재학습 상태 보강 |
+| 강의실 > 학습자료 | `/edu/lectureroom/openlearning/openLearningList.do` | `/learning/materials`, `/learning/materials/1`, `/learning/materials/1/viewer` | PASS/PARTIAL | 홈 캐러셀, 재생수/좋아요/찜 수, 카테고리 breadcrumb fidelity |
+| 커뮤니티 > 설문조사 | `/edu/lectureroom/survey/surveyList.do` | `/survey`, `/survey/1`, `/survey/1/respond` | PASS/PARTIAL | 실제 설문 기간/응답 여부/결과 공개 상태 보강 |
+| 커뮤니티 > 열린 게시판 | `/edu/board/free/list.do` | `/community/free`, `/community/free/1`, `/community/free/write` | PASS/PARTIAL | 게시판 카테고리, 홈 탭, 작성자/기수/반 표시 fidelity |
+| 커뮤니티 > 익명 게시판 | `/edu/board/anonymity/list.do` | `/community/anonymous`, `/community/anonymous/1`, `/community/anonymous/write` | PASS/PARTIAL | 실제 익명 표기 규칙과 신고/블라인드 정책 보강 |
+| 커뮤니티 > 우리반 보기 | `/edu/community/search/searchStudentList.do` | `/community/classmates` | PASS/PARTIAL | 실제 검색 조건, 프로필 공개 범위, 알림 권한 UX 보강 |
+| HELP DESK > 공지사항 | `/edu/board/notice/list.do` | `/help/notice`, `/help/notice/1` | PASS/PARTIAL | 홈 공지 리스트, 필독/일자/pinned 표시 fidelity |
+| HELP DESK > FAQ | `/edu/board/faq/list.do` | `/help/faq`, `/help/faq/1` | PASS/PARTIAL | FAQ 카테고리 count와 accordion/search parity |
+| HELP DESK > 1:1 문의 | `/edu/board/qna/list.do` | `/help/qna`, `/help/qna/new`, `/help/qna/tickets/1` | PASS/PARTIAL | 문의 thread/첨부/답변 상태 세부 UI 보강 |
+| HELP DESK > 학사규정 | `/edu/board/rule/list.do` | `/help/academic-rules`, `/help/rules` | PASS/PARTIAL | 실제 규정 카테고리/검색/상세 앵커 구조 보강 |
+| 멘토링 게시판 > 멘토 스토리 | `/edu/board/mentoState/list.do` | `/mentoring/stories`, `/mentoring/stories/1` | PASS/PARTIAL | 홈 알림 연계, 필독/공지성 스토리 표시 보강 |
+| 멘토링 게시판 > 멘토링 | `/edu/board/mentoQna/list.do` | `/mentoring/questions`, `/mentoring/questions/new`, `/mentoring/questions/1` | PASS/PARTIAL | 멘토 답변 권한, 상태, 공개/익명 정책 세부 보강 |
+| 멘토링 게시판 > 멘토링 공지사항 | `/edu/board/mentoNotice/list.do` | `/mentoring/notices`, `/mentoring/notices/1` | PASS/PARTIAL | 필독/카테고리/검색/상세 이동 fidelity |
+| 멘토링 게시판 > 간담회 신청 | `/edu/community/meeting/menti/applyList.do` | `/mentoring/meetings`, `/mentoring/meetings/1`, `/mentoring/meetings/my-applications` | PASS/PARTIAL | 모집 기간/정원/중복 신청/취소 UX 세부 비교 |
+| 멘토링 게시판 > 간담회 정보 | `/edu/community/meeting/menti/result.do` | `/mentoring/meeting-results`, `/mentoring/meeting-results/993` | PASS/PARTIAL | 선정/참석 결과, 종료 상태, 자료 링크 fidelity |
+| 멘토링 게시판 > 간담회 후기 | `/edu/board/mentoReview/list.do` | `/mentoring/meeting-reviews`, `/mentoring/meeting-reviews/write`, `/mentoring/meeting-reviews/1301` | PASS/PARTIAL | 후기 작성 가능 조건, 평점/수정/삭제 권한 세부 보강 |
+| 외부 링크 > JOB SSAFY | `/comm/login/SecurityJobLoginSSOForm.do` | `/external-services` 카드/로그 | PARTIAL/EXTERNAL | 실제 SSO는 미구현. launch link, disabled 상태, audit log까지만 clone |
+| 외부 링크 > SSAFY GIT | `https://project.ssafy.com` | `/external-services` 카드/로그 | PARTIAL/EXTERNAL | 역할별 접근 가능/disabled/새 창 열기 세부 보강 |
+| 외부 링크 > Meeting! SSAFY | `https://meeting.ssafy.com` | `/external-services`, `/learning/live` | PARTIAL/EXTERNAL | 라이브 세션 join URL과 Meeting access log 연동 강화 |
+
+### 0.2 냉정한 남은 우선순위
+
+현재 다음 라운드에서 가장 가치가 큰 작업은 아래 순서다.
+
+1. **P0 홈 대시보드 실서비스 fidelity**
+   - 실제 홈에 있는 출석체크 & 현황, 장학포인트/레벨, 알림, 주차별 커리큘럼 표, Quest/평가 카드, 학습자료 캐러셀, 학습중 이러닝, 자유게시판 탭, e-book, 공지사항을 clone 홈에 통합한다.
+   - 현재 `DashboardPage`는 요약 카드/주요 서비스 링크 중심이라 실서비스 홈과 정보 구조가 가장 크게 다르다.
+2. **P1 학습자료/커리큘럼/Quest 홈 위젯 parity**
+   - 메인 홈에서 바로 보여지는 세 영역의 시각 구조, 더보기 링크, `상세보기`, `More`, 재생수/좋아요/찜 수를 보강한다.
+3. **P2 외부 링크/SSO 현실화**
+   - JOB SSAFY는 실제 SSO 경로, SSAFY GIT/Meeting은 외부 URL이다. 실제 SSO 토큰 발급은 clone 범위 밖으로 두되, 설정 기반 URL, disabled 상태, access log, 새 창 정책을 명확히 한다.
+4. **P3 시각 회귀 확대**
+   - 현재 기능 route는 많지만 실제 EduSSAFY 홈과 상세 화면의 픽셀/구조 fidelity를 계속 검증해야 한다. 홈 대시보드가 추가되면 visual baseline을 반드시 갱신한다.
 
 ---
 
@@ -58,36 +84,36 @@
 |---|---|---:|---:|
 | 마이캠퍼스 | 레벨&장학포인트 | `/mycampus/level` 존재 | PARTIAL |
 | 마이캠퍼스 | 출석현황 | `/mycampus/attendance` 존재 | PASS/PARTIAL |
-| 마이캠퍼스 | 학습중 이러닝 | 없음 | GAP |
-| 마이캠퍼스 | 찜한 목록 | 없음 | GAP |
-| 마이캠퍼스 | 서류제출 | 없음 | GAP |
-| 마이캠퍼스 | 교육생 서약서 | 없음 | GAP |
-| 마이캠퍼스 | SSAFY e-book | 없음 | GAP |
-| 마이캠퍼스 | 교육현황 | 없음 | GAP |
-| 강의실 | 라이브 바로가기 | 없음 | GAP |
-| 강의실 | 내강의 다시보기 | `/learning/replays`와 통합 | PARTIAL |
-| 강의실 | 전체강의 다시보기 | `/learning/replays`와 통합 | PARTIAL |
-| 강의실 | 주차별 커리큘럼 | `/learning/curriculum` 존재 | PARTIAL |
+| 마이캠퍼스 | 학습중 이러닝 | `/mycampus/elearning`, `/mycampus/elearning/1` 존재 | PASS/PARTIAL |
+| 마이캠퍼스 | 찜한 목록 | `/mycampus/bookmarks` 존재 | PASS/PARTIAL |
+| 마이캠퍼스 | 서류제출 | `/mycampus/documents` 존재 | PASS/PARTIAL |
+| 마이캠퍼스 | 교육생 서약서 | `/mycampus/pledges`, `/mycampus/pledges/1` 존재 | PASS/PARTIAL |
+| 마이캠퍼스 | SSAFY e-book | `/mycampus/ebooks`, `/mycampus/ebooks/1` 존재 | PARTIAL |
+| 마이캠퍼스 | 교육현황 | `/mycampus/education-status` 존재 | PASS/PARTIAL |
+| 강의실 | 라이브 바로가기 | `/learning/live` 존재 | PARTIAL |
+| 강의실 | 내강의 다시보기 | `/learning/replays/my` 존재 | PASS/PARTIAL |
+| 강의실 | 전체강의 다시보기 | `/learning/replays/all` 존재 | PASS/PARTIAL |
+| 강의실 | 주차별 커리큘럼 | `/learning/curriculum`, `/learning/curriculum/1` 존재 | PASS/PARTIAL |
 | 강의실 | Quest/평가 | `/quest` 존재 | PARTIAL |
-| 강의실 | 필수학습 | 없음 | GAP |
+| 강의실 | 필수학습 | `/learning/required-studies`, `/learning/required-studies/1` 존재 | PASS/PARTIAL |
 | 강의실 | 학습자료 | `/learning/materials` 존재 | PASS/PARTIAL |
 | 커뮤니티 | 설문조사 | `/survey` 존재 | PASS/PARTIAL |
 | 커뮤니티 | 열린 게시판 | `/community/free` 존재 | PASS/PARTIAL |
-| 커뮤니티 | 익명 게시판 | 없음 | GAP |
+| 커뮤니티 | 익명 게시판 | `/community/anonymous`, `/community/anonymous/1`, `/community/anonymous/write` 존재 | PASS/PARTIAL |
 | 커뮤니티 | 우리반 보기 | `/community/classmates` 존재 | PARTIAL |
-| HELP DESK | 공지사항 | `/help/notice` 존재 | PARTIAL |
-| HELP DESK | FAQ | `/help/faq` 존재 | PARTIAL |
+| HELP DESK | 공지사항 | `/help/notice`, `/help/notice/1` 존재 | PASS/PARTIAL |
+| HELP DESK | FAQ | `/help/faq`, `/help/faq/1` 존재 | PASS/PARTIAL |
 | HELP DESK | 1:1 문의 | `/help/qna` 존재 | PASS/PARTIAL |
-| HELP DESK | 학사규정 | 없음 | GAP |
-| 멘토링 게시판 | 멘토 스토리 | 없음 | GAP |
-| 멘토링 게시판 | 멘토링 | 없음 | GAP |
-| 멘토링 게시판 | 멘토링 공지사항 | 없음 | GAP |
-| 멘토링 게시판 | 간담회 신청 | 없음 | GAP |
-| 멘토링 게시판 | 간담회 정보 | 없음 | GAP |
-| 멘토링 게시판 | 간담회 후기 | 없음 | GAP |
-| 외부 링크 | JOB SSAFY | 없음 | GAP/EXTERNAL |
-| 외부 링크 | SSAFY GIT | 없음 | GAP/EXTERNAL |
-| 외부 링크 | Meeting! SSAFY | 없음 | GAP/EXTERNAL |
+| HELP DESK | 학사규정 | `/help/academic-rules`, `/help/rules` 존재 | PASS/PARTIAL |
+| 멘토링 게시판 | 멘토 스토리 | `/mentoring/stories`, `/mentoring/stories/1` 존재 | PASS/PARTIAL |
+| 멘토링 게시판 | 멘토링 | `/mentoring/questions`, `/mentoring/questions/new`, `/mentoring/questions/1` 존재 | PASS/PARTIAL |
+| 멘토링 게시판 | 멘토링 공지사항 | `/mentoring/notices`, `/mentoring/notices/1` 존재 | PASS/PARTIAL |
+| 멘토링 게시판 | 간담회 신청 | `/mentoring/meetings`, `/mentoring/meetings/1`, `/mentoring/meetings/my-applications` 존재 | PASS/PARTIAL |
+| 멘토링 게시판 | 간담회 정보 | `/mentoring/meeting-results`, `/mentoring/meeting-results/993` 존재 | PASS/PARTIAL |
+| 멘토링 게시판 | 간담회 후기 | `/mentoring/meeting-reviews`, `/mentoring/meeting-reviews/write`, `/mentoring/meeting-reviews/1301` 존재 | PASS/PARTIAL |
+| 외부 링크 | JOB SSAFY | `/external-services`에서 launch link/audit log 제공 | PARTIAL/EXTERNAL |
+| 외부 링크 | SSAFY GIT | `/external-services`에서 launch link/audit log 제공 | PARTIAL/EXTERNAL |
+| 외부 링크 | Meeting! SSAFY | `/external-services`, `/learning/live`와 연결 | PARTIAL/EXTERNAL |
 
 ### 1.2 현재 클론에 이미 존재하는 주요 라우트
 
@@ -194,7 +220,7 @@
 
 ### Priority A: 실제 EduSSAFY 주요 메뉴 GAP 해소
 
-실제 화면에서 메뉴가 보이지만 현재 클론에 아예 없는 기능을 먼저 만든다.
+2026-04-26 재점검 기준, 실제 화면에서 보이는 상단 메뉴는 모두 클론 route가 생겼다. 이 섹션은 “미구현 메뉴 추가”가 아니라 “해당 메뉴의 실서비스 fidelity를 PASS 수준으로 올리는 보강 backlog”로 해석한다.
 
 1. 학습중 이러닝
 2. 찜한 목록
@@ -1617,329 +1643,102 @@ observability compose 파일은 존재하지만 실제 운영 지표/로그/trac
 
 ---
 
-## 5. 다음 실행 순서 추천
+## 5. 다음 실행 순서 추천 — 2026-04-26 재점검 후
 
-### Round 1: 마이캠퍼스 GAP 1차
+이제 상단 메뉴 route 추가는 1차로 완료된 상태다. 다음 라운드는 “없는 메뉴 만들기”가 아니라 실제 EduSSAFY 홈/상세 화면과의 차이를 줄이는 fidelity 보강으로 진행한다.
 
-1. `feat(elearning): implement in-progress e-learning flow`
-2. `feat(bookmark): implement learner bookmarked content list`
-3. `feat(document): implement learner document submission flow`
-4. `feat(pledge): implement learner pledge agreement flow`
-5. `feat(mycampus): implement education status summary`
+### Round 1: 홈 대시보드 parity
 
-### Round 2: 강의실 GAP 1차
+1. `feat(dashboard): implement EduSSAFY home widgets`
+   - 출석체크 & 현황 카드
+   - 장학포인트/레벨&경험치 카드
+   - 알림 필독 리스트
+   - 주차별 커리큘럼 표
+   - Quest/평가 예정/완료 카드
+   - 학습자료 캐러셀/리스트
+   - 학습중 이러닝 미니 리스트
+   - 자유게시판 탭/미니 리스트
+   - e-book 영역
+   - 공지사항 리스트
+2. `test(e2e): cover dashboard live-fidelity widgets`
+3. `test(visual): refresh dashboard visual baseline`
 
-1. `feat(learning): implement required study flow`
-2. `feat(learning): implement live session entry flow`
-3. `feat(replay): split my and all replay flows`
-4. `feat(curriculum): deepen weekly curriculum schedule`
+### Round 2: 홈 위젯과 상세 화면 연결 강화
 
-### Round 3: 커뮤니티/HELP DESK GAP
+1. `feat(curriculum): align dashboard weekly timetable`
+2. `feat(materials): add dashboard material carousel metrics`
+3. `feat(quest): expose dashboard quest evaluation cards`
+4. `feat(notice): add dashboard notice and mandatory alerts`
 
-1. `feat(board): implement anonymous board flow`
-2. `feat(helpdesk): implement academic rules flow`
-3. `feat(helpdesk): deepen notice and faq categories`
+### Round 3: 상세 화면 fidelity 보강
 
-### Round 4: 멘토링/간담회
+1. `feat(level): align level scholarship visual states`
+2. `feat(learning): refine live disabled and join states`
+3. `feat(ebook): support disabled and home ebook states`
+4. `feat(board): align anonymous board safety states`
+5. `feat(helpdesk): align academic rules anchors and search`
 
-1. `feat(mentoring): implement mentor story board`
-2. `feat(mentoring): implement mentoring question flow`
-3. `feat(mentoring): implement mentoring notices`
-4. `feat(meeting): implement mentoring meeting applications`
-5. `feat(meeting): implement meeting results and reviews`
+### Round 4: 외부 서비스/운영 검증
 
-### Round 5: 외부 연동/운영 검증
-
-1. `feat(external): expose external service launch links`
-2. `test(e2e): add browser smoke for core flows`
-3. `test(visual): add visual baseline smoke`
-4. `chore(ops): harden production secret validation`
-5. `chore(obs): add observability smoke gates`
+1. `feat(external): refine SSO launch and disabled policies`
+2. `chore(obs): add live observability smoke evidence hooks`
+3. `chore(ci): record hosted CI sign-off checklist`
 
 ---
 
 ## 6. 첫 번째로 바로 구현할 기능 추천
 
-### 추천 1순위: 학습중 이러닝
+### 추천 1순위: 홈 대시보드 실서비스 fidelity
 
 이유:
 
-- 실제 EduSSAFY 주요 메뉴에 존재한다.
-- 현재 클론에 완전히 없다.
-- 마이캠퍼스 핵심 사용자 체류 기능이다.
-- 학습자료/다시보기/필수학습과 재사용 가능한 도메인 모델을 만든다.
-- 파일 업로드나 외부 SSO보다 위험도가 낮다.
+- 실제 EduSSAFY 로그인 직후 가장 먼저 보이는 화면이며, 현재 클론과 정보 구조 차이가 가장 크다.
+- 상단 메뉴는 모두 대응 route가 생겼으므로, 이제 “메뉴 존재”보다 “홈에서 실제처럼 요약/진입/상태를 보여주는가”가 프로덕션 레벨 판단 기준이다.
+- 이미 구현된 attendance, level, notification, curriculum, quest, materials, elearning, board, ebook, notice API/화면을 재사용할 수 있어 새 도메인보다 리스크가 낮다.
+- 이 작업이 끝나야 visual baseline과 실제 서비스 비교가 의미 있게 작동한다.
+
+### Acceptance Criteria
+
+Backend/API:
+
+- `GET /api/dashboard` 또는 기존 dashboard summary가 실제 홈 위젯에 필요한 데이터를 제공한다.
+- 출석체크 상태, 레벨/포인트, 알림, 주차별 커리큘럼, Quest/평가, 학습자료, 학습중 이러닝, 게시판, e-book, 공지사항 요약이 DB 조회 기반으로 반환된다.
+- 빈 데이터/권한 없음/외부 링크 비활성 상태를 명확하게 표현한다.
+
+Frontend:
+
+- `/` DashboardPage가 실제 EduSSAFY 홈에 가까운 섹션 구조를 가진다.
+- 각 위젯은 loading/error/empty 상태를 갖는다.
+- `더보기`, `More`, `상세보기`, 외부 링크 진입이 현재 클론 route 또는 설정 기반 외부 URL로 연결된다.
+- 개인정보/실제 계정 식별자는 화면 fixture나 테스트에 저장하지 않는다.
+
+Test/Verification:
+
+- dashboard API 또는 service/controller test가 추가된다.
+- Playwright core flow에 홈 위젯 smoke가 추가된다.
+- visual baseline 대상에 홈 대시보드가 포함된다.
+- `git diff --check`, backend targeted/full test, frontend build/lint, docker compose config를 통과한다.
 
 예상 변경 파일:
 
 Backend:
 
-- `backend/src/main/java/com/edussafy/backend/priority/domain/ElearningCourse.java` 또는 별도 `elearning/domain`
-- `backend/src/main/java/com/edussafy/backend/priority/domain/LearnerElearningProgress.java`
-- `backend/src/main/java/com/edussafy/backend/priority/repository/...`
-- `backend/src/main/java/com/edussafy/backend/priority/service/...`
-- `backend/src/main/java/com/edussafy/backend/priority/api/...`
-- DTO classes
+- `backend/src/main/java/com/edussafy/backend/priority/api/PriorityApiController.java` 또는 dashboard controller
+- `backend/src/main/java/com/edussafy/backend/priority/service/PriorityApiService.java`
+- `backend/src/main/java/com/edussafy/backend/priority/repository/PriorityApiRepository.java`
+- `backend/src/main/java/com/edussafy/backend/priority/dto/PriorityDtos.java`
+- dashboard 관련 test
 
 Frontend:
 
-- `frontend/src/pages/ElearningPage.tsx`
-- `frontend/src/pages/ElearningDetailPage.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
 - `frontend/src/api/app.ts`
-- `frontend/src/routes.ts`
-- `frontend/src/App.tsx`
-
-Tests:
-
-- `backend/src/test/java/com/edussafy/backend/priority/service/PriorityApiServiceTest.java` 또는 신규 test
-- `backend/src/test/java/com/edussafy/backend/priority/api/PriorityApiControllerTest.java` 또는 신규 test
-- `backend/src/test/java/com/edussafy/backend/docs/FrontendRouteSmokeCoverageTest.java`
-
-Verification:
-
-```bash
-git diff --check
-git diff --stat
-docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=PriorityApiServiceTest,PriorityApiControllerTest,FrontendRouteSmokeCoverageTest test
-cd frontend && npm run build && npm run lint
-docker compose --profile app config >/tmp/compose-app-config.yml
-```
-
-Commit:
-
-```text
-feat(elearning): implement in-progress learning flow
-```
-
----
-
-## 7. 기능별 상세 Acceptance Checklist
-
-각 기능 구현 후 아래 체크리스트를 반드시 확인한다.
-
-### 공통 Backend Checklist
-
-- [ ] Controller endpoint가 있다.
-- [ ] Service에서 비즈니스 로직을 처리한다.
-- [ ] Repository/DB 조회 흐름이 있다.
-- [ ] DTO가 Entity를 직접 노출하지 않는다.
-- [ ] 로그인 사용자 기준 필터링이 있다.
-- [ ] 본인/역할 권한 검증이 있다.
-- [ ] 빈 데이터 응답이 정상 shape로 반환된다.
-- [ ] 잘못된 요청은 400/404/403 중 적절한 오류를 반환한다.
-- [ ] requestId가 오류 응답에 포함된다.
-- [ ] 테스트가 정상/오류/권한 케이스를 포함한다.
-
-### 공통 Frontend Checklist
-
-- [ ] route 등록.
-- [ ] navigation 등록.
-- [ ] API client 함수 추가.
-- [ ] loading 상태.
-- [ ] empty 상태.
-- [ ] error 상태.
-- [ ] requestId 표시.
-- [ ] mutation 성공/실패 메시지.
-- [ ] 모바일에서 깨지지 않는 Tailwind layout.
-- [ ] smoke route manifest에 포함.
-
-### 공통 Docs/Test Checklist
-
-- [ ] `docs/api-summary.md`는 필요한 경우만 짧게 갱신.
-- [ ] `docs/test-report.md`에는 검증 결과 추가.
-- [ ] REST Docs가 필요한 API면 snippet 추가.
-- [ ] `scripts/dev/smoke.sh` 또는 `smoke-routes.sh`가 필요한 경우 확장.
-- [ ] CI guard가 깨지지 않는다.
-
----
-
-## 8. 데이터 모델 통합 주의점
-
-### 8.1 User 기준
-
-모든 learner 개인화 기능은 반드시 현재 로그인 사용자 id를 기준으로 필터링한다.
-
-적용 대상:
-
-- 학습중 이러닝
-- 찜한 목록
-- 서류제출
-- 서약서 동의
-- 교육현황
-- 필수학습 진행률
-- 라이브 입장 로그
-- 다시보기 시청 로그
-- 간담회 신청
-
-### 8.2 Attachment 재사용
-
-이미 support/material/quest/board 쪽 attachment 흐름이 있다. 서류제출에서도 새 storage 방식을 만들기 전에 기존 byte storage/download pattern을 재사용한다.
-
-재사용 기준:
-
-- original filename
-- content type
-- size
-- storage key 또는 bytes
-- owner authorization
-- download endpoint
-
-### 8.3 Board 재사용과 분리
-
-익명 게시판은 기존 board domain을 재사용하는 것이 좋지만, response privacy 정책이 다르다.
+- `frontend/src/types.ts`
+- `frontend/e2e/core-flows.spec.ts`
+- visual baseline spec/snapshots if layout changes
 
 주의:
 
-- 일반 board DTO를 그대로 쓰면 author name/email이 노출될 수 있다.
-- anonymous board 전용 response mapper를 두는 것이 안전하다.
-
-### 8.4 Mentoring 분리
-
-멘토링은 일반 board와 다르게 다음 개념이 필요하다.
-
-- mentor role
-- answer status
-- meeting application
-- selected/rejected state
-- review eligibility
-
-따라서 장기적으로는 `mentoring` 별도 도메인 패키지를 권장한다.
-
----
-
-## 9. 실제 서비스 fidelity에서 중요한 UI 패턴
-
-실제 EduSSAFY에서 반복적으로 보이는 UI 패턴:
-
-- 좌측/상단 대분류 네비게이션
-- 현재 메뉴 title + breadcrumb
-- 카테고리 탭
-- 목록 count 표시
-- 검색/필터 영역
-- 목록 table/card
-- empty message
-- 더보기/상세 이동
-- 알림함/회원정보/로그아웃 user menu
-- 외부 링크 quick access
-
-클론 화면을 추가할 때 위 패턴을 재사용해야 화면 일관성이 높아진다.
-
----
-
-## 10. 보안/개인정보 주의사항
-
-1. 실제 EduSSAFY 계정 정보를 코드/문서/test에 넣지 않는다.
-2. 실제 서비스 HTML 원문을 저장소에 커밋하지 않는다.
-3. 실제 교육생 이름/학번/알림 내용은 문서화하지 않는다.
-4. 익명 게시판은 서버 내부 권한 판단용 authorId와 API response 익명 표시를 분리한다.
-5. 파일 업로드는 확장자/크기/content type 검증을 한다.
-6. 외부 링크/SSO는 token 없이 launch link부터 구현한다.
-7. 운영 profile에서는 secret fallback을 허용하지 않는다.
-
----
-
-## 11. 다음 플래닝 때 결정해야 할 질문
-
-### 기능 범위 질문
-
-1. 다음 라운드는 실제 메뉴 GAP를 우선할 것인가, 기존 기능 fidelity를 우선할 것인가?
-2. 마이캠퍼스 GAP를 한 라운드에 몇 개까지 처리할 것인가?
-3. 멘토링을 일반 board 확장으로 볼 것인가, 별도 domain으로 분리할 것인가?
-4. 외부 SSO는 launch link까지만 할 것인가, 실제 token handoff까지 설계할 것인가?
-5. visual fidelity 목표는 pixel-perfect인가, 구조/동선 유사성인가?
-
-### 기술 결정 질문
-
-1. E2E 도구는 Playwright로 확정할 것인가?
-2. 파일 저장소는 DB byte, local volume, S3-compatible 중 무엇으로 갈 것인가?
-3. 운영 배포 target은 Docker Compose, VM, Kubernetes 중 무엇인가?
-4. observability는 Prometheus/Grafana/ELK를 실제로 띄울 것인가?
-
----
-
-## 12. 추천 최종 로드맵
-
-### Milestone 1: 실제 메뉴 GAP 해소
-
-목표: 실제 EduSSAFY 네비게이션에서 보이는 내부 메뉴를 대부분 route/API로 제공.
-
-완료 조건:
-
-- 마이캠퍼스 GAP 6개 중 5개 이상 구현
-- 강의실 GAP 3개 이상 구현
-- 익명 게시판/학사규정 구현
-- screen smoke routes 45개 이상
-
-### Milestone 2: 멘토링/간담회 구현
-
-목표: 실제 서비스의 멘토링 게시판 섹션 제공.
-
-완료 조건:
-
-- 멘토 스토리
-- 멘토링 Q&A
-- 멘토링 공지
-- 간담회 신청
-- 간담회 정보/후기
-
-### Milestone 3: 프로덕션 검증
-
-목표: “로컬에서 돌아감”을 넘어 “릴리즈 후보 검증 가능” 상태로 만든다.
-
-완료 조건:
-
-- Playwright E2E 8개 이상
-- visual baseline 10개 이상
-- CI에서 backend/frontend/E2E 실행
-- app profile fresh volume smoke
-- prod profile secret fail-fast test
-- observability smoke
-
-### Milestone 4: 외부 연동
-
-목표: JOB/GIT/Meeting 외부 서비스 접근점을 안전하게 제공.
-
-완료 조건:
-
-- 외부 service link API
-- role-based visibility
-- access log
-- disabled/maintenance state
-- 실제 SSO는 별도 승인 후 진행
-
----
-
-## 13. 다음 작업자가 바로 시작할 명령형 지시 예시
-
-다음 실행 프롬프트는 아래처럼 주면 된다.
-
-```text
-현재 저장소에서 docs/next_plan.md를 기준으로 다음 기능을 하나 구현하라.
-우선순위는 A1 학습중 이러닝이다.
-한 번에 하나의 기능만 구현하고, backend/frontend/test를 모두 연결하라.
-실제 코드 변경 후 검증하고 관련 파일만 commit하라.
-push는 하지 마라.
-```
-
-또는 특정 기능을 지정할 수 있다.
-
-```text
-docs/next_plan.md의 C1 익명 게시판을 구현하라.
-기존 board domain을 재사용하되 API response에서 작성자 식별 정보가 노출되지 않게 하라.
-권한 테스트와 frontend route smoke를 추가하고 커밋하라.
-```
-
----
-
-## 14. 최종 요약
-
-현재 클론은 핵심 MVP는 통과했지만 실제 EduSSAFY 전체 서비스 기준으로는 다음이 가장 중요하게 남아 있다.
-
-1. 마이캠퍼스 부가 메뉴 구현
-2. 강의실 학습 흐름 심화
-3. 익명 게시판/학사규정 구현
-4. 멘토링/간담회 섹션 구현
-5. 외부 서비스 링크/SSO 정책 구현
-6. 브라우저 E2E/visual/운영 배포 검증
-
-다음 개발은 `학습중 이러닝`부터 시작하는 것이 가장 안전하고 효과적이다.
+- 실제 EduSSAFY 계정/쿠키/HTML을 test fixture나 문서에 저장하지 않는다.
+- 실서비스 텍스트는 구조 판별용으로만 요약하고, 원본 콘텐츠 복제는 하지 않는다.
+- 새 대형 도메인을 만들기보다 기존 API를 조합해 홈 fidelity를 높인다.
