@@ -52,7 +52,7 @@ docker compose --profile app up -d --build
 | Backend test | PASS | Dockerized Maven Java 21: `Tests run: 111, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`. |
 | Frontend build | PASS | `tsc -b && vite build`, 69 modules transformed, build completed. |
 | Frontend lint | PASS | `npm run lint` completed without errors. |
-| Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx. |
+| Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx; backend container healthcheck uses dependency-aware `/api/readiness`. |
 | Running Compose health | PASS | `docker compose --profile app ps`: backend/frontend/mysql/nginx/rabbitmq/redis all `healthy`. |
 | Backend health/readiness | PASS | `http://localhost:18080/actuator/health` -> HTTP 200, `{"status":"UP"}`; `/api/health` exposes required database/temp-storage probes and public `/api/readiness` returns HTTP 503 if a required probe is down; deployment smoke covers both direct backend and Nginx readiness URLs before login. |
 | Nginx/frontend | PASS | `http://localhost:18000/` -> HTTP 200 via Nginx. |

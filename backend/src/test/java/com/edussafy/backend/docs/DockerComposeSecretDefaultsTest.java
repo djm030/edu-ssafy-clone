@@ -21,4 +21,12 @@ class DockerComposeSecretDefaultsTest {
         assertThat(compose).contains("change-me-rabbit-password");
         assertThat(mysqlOnlyCompose).contains("change-me-root-password");
     }
+    @Test
+    void backendHealthcheckUsesDependencyAwareReadinessEndpoint() throws IOException {
+        String compose = Files.readString(Path.of("..", "compose.yml"));
+
+        assertThat(compose).contains("curl -fsS http://localhost:8080/api/readiness >/dev/null");
+        assertThat(compose).doesNotContain("curl -fsS http://localhost:8080/actuator/health >/dev/null");
+    }
+
 }
