@@ -1,5 +1,19 @@
 # Test Report
 
+## CI Production Hardening Gates (2026-04-26 KST)
+- Added CI workflow gates for POSIX smoke script syntax, static smoke wiring, frontend route smoke manifest, and Spring REST Docs snippet verification.
+- Added `CiWorkflowHardeningTest` so backend tests fail if the CI workflow stops running the production hardening smoke/documentation guards.
+- Updated README verification guidance to match the POSIX/CI parity commands and current PASS status.
+- `bash -n scripts/dev/smoke.sh && bash -n scripts/dev/smoke-routes.sh && bash -n scripts/dev/verify-restdocs.sh` -> PASS.
+- `SKIP_HTTP=true scripts/dev/smoke.sh` -> PASS.
+- `SKIP_HTTP=true scripts/dev/smoke-routes.sh` -> PASS, 30 routes listed.
+- `RUN_TESTS=false scripts/dev/verify-restdocs.sh` -> PASS, 10 snippets verified.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=CiWorkflowHardeningTest,RestDocsVerificationScriptTest,FrontendScreenSmokeScriptTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 199 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## App Profile Rebuild and Runtime Smoke Recovery (2026-04-26 KST)
 - Re-ran the previously blocked Docker image build; Docker Hub metadata eventually resolved and backend/frontend images built successfully.
 - Fixed backend runtime startup by marking the two-argument `HealthService` constructor as the Spring injection constructor.

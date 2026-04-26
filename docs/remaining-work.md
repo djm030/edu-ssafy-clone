@@ -15,7 +15,7 @@
 
 ## Final Verification Remaining Work (2026-04-26 KST)
 - Overall status: **PASS for requested priority 1~9 gates** after app profile rebuild/startup/smoke recheck.
-- Remaining improvements are non-blocking hardening follow-ups: browser visual baseline automation and external CI repetition.
+- Remaining improvements are non-blocking hardening follow-ups: browser visual baseline automation and external deployment repetition. CI workflow now guards POSIX smoke, route smoke manifest, backend tests, REST Docs snippets, and frontend build/lint.
 
 
 ## Final Verification Recheck (2026-04-24)

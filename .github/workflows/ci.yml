@@ -46,9 +46,20 @@ jobs:
           grep -F 'Assert-JsonProperty' scripts/dev/smoke.ps1
           grep -F 'Invoke-SmokeJson' scripts/dev/smoke.ps1
 
+      - name: Validate POSIX production smoke scripts
+        run: |
+          bash -n scripts/dev/smoke.sh
+          bash -n scripts/dev/smoke-routes.sh
+          bash -n scripts/dev/verify-restdocs.sh
+          SKIP_HTTP=true scripts/dev/smoke.sh
+          SKIP_HTTP=true scripts/dev/smoke-routes.sh
+
       - name: Backend tests
         working-directory: backend
         run: mvn -B test
+
+      - name: Verify Spring REST Docs snippets
+        run: RUN_TESTS=false scripts/dev/verify-restdocs.sh
 
       - name: Frontend dependencies
         run: npm --prefix frontend ci

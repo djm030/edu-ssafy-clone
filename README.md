@@ -4,10 +4,10 @@ SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 
 
 ## Current project status (2026-04-26)
 
-- Overall readiness: **PASS for the implemented local full-stack clone surface; production launch still requires live environment verification**.
+- Overall readiness: **PASS for the implemented local full-stack clone surface; production launch still requires environment-specific deployment sign-off**.
 - Passing verification checks: Dockerized backend Maven tests on Java 21, frontend `npm run lint`, frontend `npm run build`, Docker Compose config rendering, Nginx/backend smoke contracts, Spring REST Docs snippets, and the `/ops/readiness` frontend smoke runner.
-- Blocked/unknown checks: browser E2E/visual fidelity, live CI evidence, and a latest-image rebuild against Docker Hub can still be environment-dependent.
-- Major remaining production gaps: real deployment secret management, browser E2E/visual verification, external observability wiring, and final live all-PASS evidence.
+- Blocked/unknown checks: browser E2E/visual fidelity and external deployment sign-off remain environment-dependent; local Docker image rebuild/app-profile smoke and CI contract guards are now covered.
+- Major remaining production follow-ups: real deployment secret management, browser E2E/visual verification, external observability wiring, and repeated live environment evidence.
 - Source of truth for readiness: `docs/final-verification.md` and `docs/remaining-work.md`.
 
 ## Quick Start: localhost 전체 확인
@@ -111,6 +111,17 @@ cd ..\backend
 docker run --rm -v "${PWD}:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B test
 ```
 
+POSIX/CI parity checks:
+
+```bash
+bash -n scripts/dev/smoke.sh
+bash -n scripts/dev/smoke-routes.sh
+bash -n scripts/dev/verify-restdocs.sh
+SKIP_HTTP=true scripts/dev/smoke.sh
+SKIP_HTTP=true scripts/dev/smoke-routes.sh
+RUN_TESTS=false scripts/dev/verify-restdocs.sh
+```
+
 If `mvn` is installed locally, `mvn -B test` from `backend/` is also valid.
 
 
@@ -122,11 +133,11 @@ Required project documents are maintained under `docs/`:
 - `docs/architecture.md` — stack, runtime boundaries, domain modules, and architectural gaps.
 - `docs/api-summary.md` — implemented API surface and contract guardrails.
 - `docs/test-report.md` — verification evidence, blocked checks, and retest commands.
-- `docs/remaining-work.md` — required work that prevents final PASS.
-- `docs/final-verification.md` — final readiness gate; currently **NOT READY** until remaining implementation and verification blockers close.
+- `docs/remaining-work.md` — current blockers plus non-blocking production follow-ups.
+- `docs/final-verification.md` — final readiness gate; currently **PASS** for the requested local full-stack clone gates.
 
 ## Known current caveats
 
-- R6 source includes `POST /api/community/classmates/{userId}/notifications`; if live smoke returns 404 for that optional check, rebuild the backend image with `scripts\dev\localhost.ps1 -Smoke` or `scripts\dev\up.ps1 -App`.
-- Material reaction API is intentionally still future work and is optional in smoke.
+- Browser E2E/visual baseline automation is still a production follow-up; current coverage is backend tests, frontend build/lint, POSIX smoke contracts, app-profile Docker smoke, and SPA route smoke.
+- Shared or hosted deployments must replace all `change-me-*` values with secret-store values and re-run the same CI/local verification gates in that environment.
 - Git commit from Codex may require `.git` ACL recovery; see `scripts/dev/README.md`.

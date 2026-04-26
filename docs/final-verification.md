@@ -49,7 +49,7 @@ docker compose --profile app up -d --build
 | Gate | Result | Evidence |
 |---|---:|---|
 | 저장소/최근 커밋 확인 | PASS | 최근 커밋은 auth 세션/비밀번호, board 작성자 권한, 보안 헤더, REST Docs, cookie hardening을 포함한다. |
-| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 198, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; POSIX REST Docs verifier covers 10 required snippets. |
+| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 199, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; POSIX REST Docs verifier covers 10 required snippets and CI workflow guards. |
 | Frontend build | PASS | `tsc -b && vite build`, 72 modules transformed, build completed. |
 | Frontend lint | PASS | `npm run lint` completed without errors. |
 | Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx; backend container healthcheck uses dependency-aware `/api/readiness`; app-profile services use `no-new-privileges:true` and backend drops Linux capabilities. |
@@ -62,6 +62,7 @@ docker compose --profile app up -d --build
 | Env example hardening | PASS | `.env.example` now uses `change-me-*` placeholders, documents prod cookie/secret requirements, and is guarded by `EnvironmentExampleConfigTest`. |
 | Docker image rebuild | PASS | `docker compose --profile app build --progress=plain backend frontend nginx` completed after Docker Hub metadata eventually resolved; `MYSQL_ROOT_PASSWORD=ssafy_dev_root_password docker compose --profile app up -d` started mysql/redis/rabbitmq/backend/frontend/nginx healthy on the existing local volume. Backend runtime Dockerfile drops root privileges, app-profile services set `no-new-privileges:true`, backend drops Linux capabilities, and these are guarded by `DockerImageHardeningTest` plus `DockerComposeRuntimeHardeningTest`. |
 | Screen route smoke | PASS | `/ops/readiness` renders the priority 1~9 screen smoke manifest and backend access-policy matrix, `FrontendRouteSmokeCoverageTest` guards route/access-policy coverage, `scripts/dev/smoke.sh` covers API/Nginx smoke, and `scripts/dev/smoke-routes.sh` curls all 30 declared SPA routes against the built Vite preview. |
+| CI production hardening gates | PASS | `.github/workflows/ci.yml` validates Compose rendering, POSIX smoke script syntax/static wiring, frontend route smoke manifest, backend tests, REST Docs snippets, frontend lint/build; `CiWorkflowHardeningTest` prevents this gate from being removed silently. |
 
 ## 4. 기능별 PASS/PARTIAL/FAIL/UNKNOWN 표
 
