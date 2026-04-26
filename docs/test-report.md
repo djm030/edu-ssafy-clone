@@ -1,5 +1,13 @@
 # Test Report
 
+## Public Readiness Auth Bypass (2026-04-26 KST)
+- Added `/api/readiness` to the public API path allow-list so Docker/Nginx smoke checks can run before login and still receive dependency-aware HTTP readiness status.
+- Added `RoleAccessInterceptorTest.publicReadinessEndpointSkipsSessionLookup` to ensure readiness probes do not require a session or repository lookup.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=RoleAccessInterceptorTest,BoardControllerTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 179 tests, 0 failures, 0 errors.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Deployment Readiness Smoke Script (2026-04-26 KST)
 - Added `/api/readiness` to `scripts/dev/smoke.ps1` through both Nginx (`$BaseUrl`) and direct backend (`$BackendUrl`) URLs so smoke checks fail on required dependency readiness failures.
 - Added `DeploymentSmokeScriptTest` to guard the production smoke script coverage.

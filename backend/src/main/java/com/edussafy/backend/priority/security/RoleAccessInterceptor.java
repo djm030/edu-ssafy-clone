@@ -28,6 +28,7 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
 
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/api/health",
+            "/api/readiness",
             "/api/auth/login"
     );
     private static final List<AccessRule> ACCESS_RULES = List.of(
