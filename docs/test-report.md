@@ -1,5 +1,15 @@
 # Test Report
 
+## Compose Runtime Privilege Hardening (2026-04-26 KST)
+- Added `no-new-privileges:true` to app-profile backend, frontend, and Nginx services.
+- Added backend `cap_drop: [ALL]` because the Spring service does not need Linux capabilities or privileged ports.
+- Added `DockerComposeRuntimeHardeningTest` to guard the app-profile runtime hardening contract.
+- `docker compose --profile app config` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=DockerComposeRuntimeHardeningTest,DockerComposeSecretDefaultsTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 195 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Frontend SPA Route Smoke Runner (2026-04-26 KST)
 - Added `scripts/dev/smoke-routes.sh` to curl every declared SPA route against the built Vite preview and assert the production SPA shell is returned.
 - Added `FrontendScreenSmokeScriptTest` so the smoke runner stays aligned with `frontend/src/routes.ts`.

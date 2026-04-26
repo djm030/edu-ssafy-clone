@@ -98,6 +98,10 @@ services:
       timeout: 5s
       retries: 30
       start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
 
   frontend:
@@ -117,6 +121,8 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   nginx:
@@ -138,6 +144,8 @@ services:
       timeout: 3s
       retries: 12
       start_period: 5s
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
 volumes:
