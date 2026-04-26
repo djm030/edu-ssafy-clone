@@ -31,6 +31,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumScheduleRow;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeekDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumWeeksResponse;
@@ -652,6 +653,39 @@ class PriorityApiServiceTest {
         assertThat(response.learning().totalRequiredStudyCount()).isZero();
         assertThat(response.quests().lateCount()).isZero();
         assertThat(response.points().levelName()).isEqualTo("Lv.1");
+    }
+
+    @Test
+    void classmatesReturnFilteredSummaryForCurrentClass() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        ClassmateItem coach = new ClassmateItem(
+                7L,
+                "Kim Coach",
+                "coach@ssafy.com",
+                "coach",
+                "coach",
+                "Seoul",
+                "12th",
+                "Java",
+                "Seoul Java 1"
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p2Repository.findClassmates(USER.id(), "kim", "coach")).willReturn(List.of(coach));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                p2Repository,
+                mock(PriorityP3Repository.class)
+        );
+
+        ClassmatesResponse response = service.classmates(" kim ", "coach");
+
+        assertThat(response.items()).containsExactly(coach);
+        assertThat(response.summary().coachCount()).isEqualTo(1);
+        assertThat(response.summary().learnerCount()).isZero();
+        assertThat(response.filters().keyword()).isEqualTo("kim");
+        assertThat(response.filters().memberRole()).isEqualTo("coach");
+        verify(p2Repository).findClassmates(USER.id(), "kim", "coach");
     }
 
     @Test

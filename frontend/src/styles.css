@@ -533,3 +533,20 @@ h2 {
 .form-hint {
   color: #667085;
 }
+
+.field-group {
+  color: #344054;
+  display: grid;
+  font-size: 0.92rem;
+  font-weight: 700;
+  gap: 8px;
+}
+
+.field-group textarea {
+  border: 1px solid #c7d0dd;
+  border-radius: 6px;
+  font: inherit;
+  min-height: 72px;
+  padding: 11px 12px;
+  resize: vertical;
+}

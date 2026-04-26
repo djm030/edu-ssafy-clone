@@ -459,10 +459,32 @@ export interface PledgeAgreementResult {
   };
 }
 
+export interface ClassmateSummary {
+  totalCount: number;
+  learnerCount: number;
+  coachCount: number;
+  staffCount: number;
+}
+
+export interface ClassmateFilters {
+  keyword?: string | null;
+  memberRole?: string | null;
+}
+
+export interface ClassmatesResponse {
+  items: Classmate[];
+  summary: ClassmateSummary;
+  filters?: ClassmateFilters;
+}
+
 export interface Classmate {
   id: number;
   name: string;
+  email?: string;
+  role?: string;
+  memberRole?: string;
   campusName: string;
+  cohortName?: string;
   trackName: string;
   teamName?: string;
   statusMessage?: string;

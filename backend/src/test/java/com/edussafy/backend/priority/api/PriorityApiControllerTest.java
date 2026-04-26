@@ -33,6 +33,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateFilters;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumSessionItem;
@@ -1527,7 +1529,10 @@ class PriorityApiControllerTest {
 
     @Test
     void communityAndProfileReturnP2Shapes() throws Exception {
-        given(priorityApiService.classmates()).willReturn(new ClassmatesResponse(List.of()));
+        given(priorityApiService.classmates(isNull(), isNull()))
+                .willReturn(new ClassmatesResponse(List.of(), new ClassmateSummary(0, 0, 0, 0), new ClassmateFilters(null, null)));
+        given(priorityApiService.classmates(eq("kim"), eq("coach")))
+                .willReturn(new ClassmatesResponse(List.of(), new ClassmateSummary(1, 0, 1, 0), new ClassmateFilters("kim", "coach")));
         given(priorityApiService.createClassmateNotification(eq(7L), any()))
                 .willReturn(new ClassmateNotificationResponse(new ClassmateNotificationItem(
                         900_007L,
@@ -1546,7 +1551,13 @@ class PriorityApiControllerTest {
 
         mockMvc.perform(get("/api/community/classmates"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items").isArray());
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.summary.totalCount").value(0));
+        mockMvc.perform(get("/api/community/classmates?keyword=kim&memberRole=coach"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filters.keyword").value("kim"))
+                .andExpect(jsonPath("$.filters.memberRole").value("coach"))
+                .andExpect(jsonPath("$.summary.coachCount").value(1));
         mockMvc.perform(post("/api/community/classmates/7/notifications")
                         .session(sessionFor(2L))
                         .contentType(MediaType.APPLICATION_JSON)

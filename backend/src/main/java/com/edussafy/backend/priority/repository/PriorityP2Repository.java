@@ -12,12 +12,14 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 @Repository
 public class PriorityP2Repository {
@@ -368,6 +370,27 @@ public class PriorityP2Repository {
     }
 
     public List<ClassmateItem> findClassmates(long userId) {
+        return findClassmates(userId, null, null);
+    }
+
+    public List<ClassmateItem> findClassmates(long userId, String keyword, String memberRole) {
+        StringBuilder where = new StringBuilder();
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("userId", userId);
+        if (StringUtils.hasText(keyword)) {
+            where.append("""
+                 AND (LOWER(u.name) LIKE :keyword
+                   OR LOWER(u.email) LIKE :keyword
+                   OR LOWER(c.campus_name) LIKE :keyword
+                   OR LOWER(t.track_name) LIKE :keyword
+                   OR LOWER(cg.class_name) LIKE :keyword)
+                """);
+            params.put("keyword", "%" + keyword.trim().toLowerCase() + "%");
+        }
+        if (StringUtils.hasText(memberRole)) {
+            where.append(" AND (LOWER(uce.member_role_code) = :memberRole OR LOWER(u.role_code) = :memberRole)");
+            params.put("memberRole", memberRole.trim().toLowerCase());
+        }
         return jdbcClient.sql("""
                 SELECT u.user_id, u.name, u.email, u.role_code, uce.member_role_code,
                        c.campus_name, co.cohort_name, t.track_name, cg.class_name
@@ -384,9 +407,10 @@ public class PriorityP2Repository {
                 JOIN campuses c ON c.campus_id = cg.campus_id
                 JOIN cohorts co ON co.cohort_id = cg.cohort_id
                 JOIN tracks t ON t.track_id = cg.track_id
+                """ + where + """
                 ORDER BY u.name ASC, u.user_id ASC
                 """)
-                .param("userId", userId)
+                .params(params)
                 .query(this::mapClassmate)
                 .list();
     }

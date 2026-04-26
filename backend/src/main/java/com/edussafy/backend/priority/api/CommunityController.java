@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,8 +29,11 @@ public class CommunityController {
     }
 
     @GetMapping("/classmates")
-    public ClassmatesResponse classmates() {
-        return priorityApiService.classmates();
+    public ClassmatesResponse classmates(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String memberRole
+    ) {
+        return priorityApiService.classmates(keyword, memberRole);
     }
 
     @PostMapping("/classmates/{userId}/notifications")

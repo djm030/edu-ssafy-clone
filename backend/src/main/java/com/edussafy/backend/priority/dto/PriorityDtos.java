@@ -1090,7 +1090,22 @@ public final class PriorityDtos {
     ) {
     }
 
-    public record ClassmatesResponse(List<ClassmateItem> items) {
+    public record ClassmatesResponse(
+            List<ClassmateItem> items,
+            ClassmateSummary summary,
+            ClassmateFilters filters
+    ) {
+    }
+
+    public record ClassmateSummary(
+            long totalCount,
+            long learnerCount,
+            long coachCount,
+            long staffCount
+    ) {
+    }
+
+    public record ClassmateFilters(String keyword, String memberRole) {
     }
 
     public record ClassmateNotificationRequest(

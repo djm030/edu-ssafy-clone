@@ -24,6 +24,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateFilters;
+import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumScheduleRow;
@@ -1529,9 +1531,18 @@ public class PriorityApiService {
     }
 
     public ClassmatesResponse classmates() {
+        return classmates(null, null);
+    }
+
+    public ClassmatesResponse classmates(String keyword, String memberRole) {
         UserProfile user = currentUser();
-        List<ClassmateItem> items = safe(() -> p2Repository.findClassmates(user.id()), List.of());
-        return new ClassmatesResponse(items);
+        String normalizedKeyword = normalizeNullable(keyword);
+        String normalizedRole = normalizeClassmateRole(memberRole);
+        List<ClassmateItem> items = safe(
+                () -> p2Repository.findClassmates(user.id(), normalizedKeyword, normalizedRole),
+                List.of()
+        );
+        return new ClassmatesResponse(items, summarizeClassmates(items), new ClassmateFilters(normalizedKeyword, normalizedRole));
     }
 
     public ClassmateNotificationResponse createClassmateNotification(
@@ -1717,6 +1728,32 @@ public class PriorityApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported bookmark target type.");
         }
         return normalized;
+    }
+
+    private String normalizeClassmateRole(String memberRole) {
+        if (!StringUtils.hasText(memberRole)) {
+            return null;
+        }
+        String normalized = memberRole.trim().toLowerCase(Locale.ROOT);
+        if ("all".equals(normalized)) {
+            return null;
+        }
+        if (!Set.of("learner", "student", "member", "coach", "assistant", "admin").contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported classmate role filter.");
+        }
+        return normalized;
+    }
+
+    private ClassmateSummary summarizeClassmates(List<ClassmateItem> items) {
+        long coachCount = items.stream()
+                .filter(item -> "coach".equalsIgnoreCase(item.memberRole()) || "coach".equalsIgnoreCase(item.role()))
+                .count();
+        long staffCount = items.stream()
+                .filter(item -> !"coach".equalsIgnoreCase(item.memberRole())
+                        && ("admin".equalsIgnoreCase(item.role()) || "assistant".equalsIgnoreCase(item.memberRole())))
+                .count();
+        long learnerCount = Math.max(0, items.size() - coachCount - staffCount);
+        return new ClassmateSummary(items.size(), learnerCount, coachCount, staffCount);
     }
 
     private String normalizeQuestListStatus(String status) {

@@ -38,6 +38,8 @@ import type {
   BookmarkItem,
   BoardPostDraft,
   Classmate,
+  ClassmatesResponse,
+  ClassmateSummary,
   CurriculumWeek,
   DashboardSummary,
   LevelDetailResponse,
@@ -260,6 +262,11 @@ type BackendSurveySavedResponse = Partial<SurveySavedResponse> & {
 
 type BackendClassmate = Partial<Classmate> & {
   className?: string | null;
+  campusName?: string | null;
+  cohortName?: string | null;
+  trackName?: string | null;
+  memberRole?: string | null;
+  role?: string | null;
 };
 
 function toDateText(value?: string | null): string {
@@ -718,10 +725,25 @@ function toClassmate(item: BackendClassmate): Classmate {
   return {
     id: Number(item.id),
     name: item.name || 'Learner',
+    email: item.email,
+    role: item.role || undefined,
+    memberRole: item.memberRole || undefined,
     campusName: item.campusName || '-',
+    cohortName: item.cohortName || undefined,
     trackName: item.trackName || '-',
     teamName: item.teamName || item.className || undefined,
     statusMessage: item.statusMessage,
+  };
+}
+
+function toClassmateSummary(summary: Partial<ClassmateSummary> | undefined, items: Classmate[]): ClassmateSummary {
+  const coachCount = items.filter((item) => item.memberRole === 'coach' || item.role === 'coach').length;
+  const staffCount = items.filter((item) => item.role === 'admin' || item.memberRole === 'assistant').length;
+  return {
+    totalCount: Number(summary?.totalCount ?? items.length),
+    learnerCount: Number(summary?.learnerCount ?? Math.max(0, items.length - coachCount - staffCount)),
+    coachCount: Number(summary?.coachCount ?? coachCount),
+    staffCount: Number(summary?.staffCount ?? staffCount),
   };
 }
 
@@ -1579,10 +1601,17 @@ export function changeProfilePassword(draft: ProfilePasswordChangeDraft): Promis
   });
 }
 
-export function getClassmates(): Promise<{ items: Classmate[] }> {
-  return fetchJson<{ items: BackendClassmate[] }>('/api/community/classmates', {
+export function getClassmates(query: { keyword?: string; memberRole?: string } = {}): Promise<ClassmatesResponse> {
+  const params = buildQuery({
+    keyword: query.keyword?.trim(),
+    memberRole: query.memberRole && query.memberRole !== 'all' ? query.memberRole : undefined,
+  });
+  return fetchJson<{ items: BackendClassmate[]; summary?: ClassmateSummary; filters?: { keyword?: string | null; memberRole?: string | null } }>(`/api/community/classmates${params}`, {
     fallback: () => ({ items: mockClassmates }),
-  }).then((response) => ({ items: response.items.map(toClassmate) }));
+  }).then((response) => {
+    const items = response.items.map(toClassmate);
+    return { items, summary: toClassmateSummary(response.summary, items), filters: response.filters };
+  });
 }
 
 export function createQna(draft: QnaDraft): Promise<{ id: number; title: string }> {
@@ -1849,9 +1878,9 @@ export function updateProfile(draft: ProfileEditDraft): Promise<{ profile: Profi
   });
 }
 
-export function sendClassmateNotification(userId: number): Promise<{ id?: number; status: string }> {
+export function sendClassmateNotification(userId: number, message?: string): Promise<{ id?: number; status: string }> {
   return fetchJson<{ status?: string; item?: { id?: number; status?: string } }>(`/api/community/classmates/${userId}/notifications`, {
-    body: JSON.stringify({}),
+    body: JSON.stringify({ message: message?.trim() || undefined }),
     fallback: () => ({ status: 'sent' }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
