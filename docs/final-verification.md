@@ -49,7 +49,7 @@ docker compose --profile app up -d --build
 | Gate | Result | Evidence |
 |---|---:|---|
 | 저장소/최근 커밋 확인 | PASS | 최근 커밋은 auth 세션/비밀번호, board 작성자 권한, 보안 헤더, REST Docs, cookie hardening을 포함한다. |
-| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 195, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`. |
+| Backend test | PASS | Dockerized Maven Java 21: `Tests run: 196, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`; POSIX REST Docs verifier covers 10 required snippets. |
 | Frontend build | PASS | `tsc -b && vite build`, 72 modules transformed, build completed. |
 | Frontend lint | PASS | `npm run lint` completed without errors. |
 | Compose config | PASS | default services: mysql/rabbitmq/redis; app profile services: mysql/rabbitmq/redis/backend/frontend/nginx; backend container healthcheck uses dependency-aware `/api/readiness`; app-profile services use `no-new-privileges:true` and backend drops Linux capabilities. |

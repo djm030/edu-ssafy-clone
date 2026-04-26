@@ -1,5 +1,17 @@
 # Test Report
 
+## POSIX Spring REST Docs Verification (2026-04-26 KST)
+- Added `scripts/dev/verify-restdocs.sh` so macOS/Linux CI can generate and verify required Spring REST Docs snippets without relying on PowerShell.
+- The script runs `ApiRestDocsTest`, `AuthRestDocsTest`, and `SurveyRestDocsTest`, then asserts required health/readiness/auth/survey snippet files exist.
+- Added `RestDocsVerificationScriptTest` to keep the verifier aligned with the documented snippet set.
+- `bash -n scripts/dev/verify-restdocs.sh` -> PASS.
+- `RUN_TESTS=true scripts/dev/verify-restdocs.sh` -> PASS, 10 snippets verified.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=RestDocsVerificationScriptTest test` -> PASS.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 196 tests, 0 failures, 0 errors.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose --profile app config` -> PASS.
+- `git diff --check` -> PASS.
+
 ## Compose Runtime Privilege Hardening (2026-04-26 KST)
 - Added `no-new-privileges:true` to app-profile backend, frontend, and Nginx services.
 - Added backend `cap_drop: [ALL]` because the Spring service does not need Linux capabilities or privileged ports.

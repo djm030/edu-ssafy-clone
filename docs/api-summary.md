@@ -72,6 +72,7 @@
 - `survey-create`: documents `POST /api/surveys` request fields for survey metadata, first question, and choice options plus the persisted `{ item }` response shape.
 - `survey-update`: documents `PUT /api/surveys/{id}` replacement semantics, including response reset when questions are replaced.
 - `survey-delete`: documents `DELETE /api/surveys/{id}` deleted marker response.
+- `scripts/dev/verify-restdocs.sh`: POSIX guard that regenerates and verifies the required Spring REST Docs snippets for health/readiness/auth/survey documentation.
 
 ## Task 66 API Documentation Status (2026-04-24)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
