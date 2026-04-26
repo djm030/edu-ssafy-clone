@@ -359,6 +359,15 @@ export interface AttendanceRecord {
   appealRequestedAt?: string;
 }
 
+export type AttendanceCheckAction = 'check_in' | 'check_out';
+
+export interface AttendanceCheckResponse {
+  item: AttendanceRecord;
+  message: string;
+  checkInAvailable: boolean;
+  checkOutAvailable: boolean;
+}
+
 export interface AttendanceSummary {
   present: number;
   late: number;

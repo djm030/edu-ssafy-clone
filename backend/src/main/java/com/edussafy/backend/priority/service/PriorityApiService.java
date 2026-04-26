@@ -5,6 +5,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRange;
@@ -763,6 +765,22 @@ public class PriorityApiService {
                 records.stream().map(this::toAttendanceDaySummary).toList(),
                 records
         );
+    }
+
+    public AttendanceCheckResponse attendanceCheck(AttendanceCheckRequest request) {
+        UserProfile user = currentUser();
+        String action = normalizeAttendanceCheckAction(request.action());
+        LocalDate today = LocalDate.now(ZoneOffset.ofHours(9));
+        if (today.getDayOfWeek().getValue() >= 6) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Attendance check is disabled on weekends.");
+        }
+        LocalTime now = LocalTime.now(ZoneOffset.ofHours(9)).withNano(0);
+        AttendanceRecordItem item = repository.upsertTodayAttendanceCheck(user.id(), today, now, action)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Attendance check could not be recorded."));
+        boolean checkInAvailable = item.checkInAt() == null;
+        boolean checkOutAvailable = item.checkInAt() != null && item.checkOutAt() == null;
+        String message = "check_in".equals(action) ? "입실 체크가 저장되었습니다." : "퇴실 체크가 저장되었습니다.";
+        return new AttendanceCheckResponse(item, message, checkInAvailable, checkOutAvailable);
     }
 
     public AttendanceAppealsResponse attendanceAppeals() {
@@ -2345,6 +2363,14 @@ public class PriorityApiService {
         String normalized = normalizeWithDefault(value, defaultStatus).toLowerCase(Locale.ROOT);
         if (!ATTENDANCE_STATUSES.contains(normalized)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported requested attendance status.");
+        }
+        return normalized;
+    }
+
+    private String normalizeAttendanceCheckAction(String value) {
+        String normalized = normalizeWithDefault(value, "check_in").toLowerCase(Locale.ROOT);
+        if (!Set.of("check_in", "check_out").contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported attendance check action.");
         }
         return normalized;
     }

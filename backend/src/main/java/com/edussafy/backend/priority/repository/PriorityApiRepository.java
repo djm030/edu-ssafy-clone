@@ -510,6 +510,71 @@ public class PriorityApiRepository {
                 .optional();
     }
 
+    public Optional<AttendanceRecordItem> findAttendanceRecord(long userId, LocalDate attendanceDate) {
+        return jdbcClient.sql(attendanceRecordSelect("WHERE ar.user_id = :userId AND ar.attendance_date = :attendanceDate LIMIT 1"))
+                .param("userId", userId)
+                .param("attendanceDate", attendanceDate)
+                .query(this::mapAttendanceRecord)
+                .optional();
+    }
+
+    public Optional<AttendanceRecordItem> upsertTodayAttendanceCheck(long userId, LocalDate attendanceDate, LocalTime checkedAt, String action) {
+        if ("check_out".equals(action)) {
+            jdbcClient.sql("""
+                    INSERT INTO attendance_records (
+                        user_id,
+                        attendance_date,
+                        check_out_at,
+                        attendance_status_code,
+                        approval_type_code
+                    )
+                    VALUES (
+                        :userId,
+                        :attendanceDate,
+                        :checkedAt,
+                        'present',
+                        'self_check'
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        check_out_at = VALUES(check_out_at),
+                        approval_type_code = 'self_check'
+                    """)
+                    .param("userId", userId)
+                    .param("attendanceDate", attendanceDate)
+                    .param("checkedAt", checkedAt)
+                    .update();
+        } else {
+            jdbcClient.sql("""
+                    INSERT INTO attendance_records (
+                        user_id,
+                        attendance_date,
+                        check_in_at,
+                        attendance_status_code,
+                        approval_type_code
+                    )
+                    VALUES (
+                        :userId,
+                        :attendanceDate,
+                        :checkedAt,
+                        CASE WHEN :checkedAt > TIME '09:00:00' THEN 'late' ELSE 'present' END,
+                        'self_check'
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        check_in_at = COALESCE(check_in_at, VALUES(check_in_at)),
+                        attendance_status_code = CASE
+                            WHEN COALESCE(check_in_at, VALUES(check_in_at)) > TIME '09:00:00' THEN 'late'
+                            ELSE 'present'
+                        END,
+                        approval_type_code = 'self_check'
+                    """)
+                    .param("userId", userId)
+                    .param("attendanceDate", attendanceDate)
+                    .param("checkedAt", checkedAt)
+                    .update();
+        }
+        return findAttendanceRecord(userId, attendanceDate);
+    }
+
     public AttendanceAppealItem createAttendanceAppeal(
             long attendanceRecordId,
             String type,

@@ -28,6 +28,8 @@ import type {
   AdminClassGroupItem,
   AccessPolicyResponse,
   AttendanceAppeal,
+  AttendanceCheckAction,
+  AttendanceCheckResponse,
   AttendanceRecord,
   AttendanceDaySummary,
   AttendanceMonthSummary,
@@ -934,6 +936,32 @@ export function getAttendanceRecords(filters: AttendanceRecordFilters = {}): Pro
       };
     },
   }).then((response) => toAttendanceRecordsResponse(response, filters));
+}
+
+export function submitAttendanceCheck(action: AttendanceCheckAction): Promise<AttendanceCheckResponse> {
+  return fetchJson<{ item: BackendAttendanceRecord; message: string; checkInAvailable: boolean; checkOutAvailable: boolean }>('/api/attendance/check', {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+    fallback: () => {
+      const now = new Date();
+      const date = now.toISOString().slice(0, 10);
+      const time = now.toTimeString().slice(0, 5);
+      const existing = mockAttendanceRecords.find((record) => record.date === date);
+      return {
+        item: {
+          ...(existing || { id: Date.now(), date, status: 'present' as const }),
+          checkIn: action === 'check_in' ? (existing?.checkIn || time) : existing?.checkIn,
+          checkOut: action === 'check_out' ? time : existing?.checkOut,
+        },
+        message: action === 'check_in' ? '입실 체크가 저장되었습니다.' : '퇴실 체크가 저장되었습니다.',
+        checkInAvailable: action !== 'check_in',
+        checkOutAvailable: action !== 'check_out',
+      };
+    },
+  }).then((response) => ({
+    ...response,
+    item: toAttendanceRecord(response.item),
+  }));
 }
 
 export function getNotifications(): Promise<{ items: NotificationItem[] }> {

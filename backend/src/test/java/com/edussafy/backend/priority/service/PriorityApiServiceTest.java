@@ -16,6 +16,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
@@ -149,6 +151,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -2131,6 +2134,40 @@ class PriorityApiServiceTest {
         ))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
+    }
+
+    @Test
+    void attendanceCheckStoresCurrentUserTodayRecord() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        LocalDate today = LocalDate.now(ZoneOffset.ofHours(9));
+        AttendanceRecordItem checked = new AttendanceRecordItem(
+                77L,
+                today,
+                LocalTime.of(8, 55),
+                null,
+                "present",
+                "self_check",
+                true,
+                null,
+                null,
+                null
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.upsertTodayAttendanceCheck(eq(USER.id()), eq(today), any(LocalTime.class), eq("check_in")))
+                .willReturn(Optional.of(checked));
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        AttendanceCheckResponse response = service.attendanceCheck(new AttendanceCheckRequest("check_in"));
+
+        assertThat(response.item()).isEqualTo(checked);
+        assertThat(response.message()).contains("입실");
+        assertThat(response.checkInAvailable()).isFalse();
+        assertThat(response.checkOutAvailable()).isTrue();
+        verify(repository).upsertTodayAttendanceCheck(eq(USER.id()), eq(today), any(LocalTime.class), eq("check_in"));
     }
 
     @Test

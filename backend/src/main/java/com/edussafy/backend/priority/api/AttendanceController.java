@@ -4,6 +4,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordsResponse;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import jakarta.validation.Valid;
@@ -40,6 +42,11 @@ public class AttendanceController {
             @RequestParam(required = false) String status
     ) {
         return priorityApiService.attendanceRecords(dateFrom, dateTo, status);
+    }
+
+    @PostMapping("/attendance/check")
+    public AttendanceCheckResponse check(@Valid @RequestBody AttendanceCheckRequest request) {
+        return priorityApiService.attendanceCheck(request);
     }
 
     @GetMapping("/attendance/appeals")

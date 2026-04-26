@@ -26,6 +26,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceCheckResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
@@ -167,6 +169,7 @@ import com.edussafy.backend.priority.security.RoleAccessWebConfig;
 import com.edussafy.backend.priority.service.PriorityApiService;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -849,6 +852,33 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/support/tickets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page.totalItems").value(0));
+    }
+
+    @Test
+    void attendanceCheckEndpointReturnsPersistedTodayRecord() throws Exception {
+        AttendanceRecordItem checked = new AttendanceRecordItem(
+                77L,
+                LocalDate.of(2026, 4, 27),
+                LocalTime.of(8, 55),
+                null,
+                "present",
+                "self_check",
+                true,
+                null,
+                null,
+                null
+        );
+        given(priorityApiService.attendanceCheck(any()))
+                .willReturn(new AttendanceCheckResponse(checked, "입실 체크가 저장되었습니다.", false, true));
+
+        mockMvc.perform(post("/api/attendance/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"action\":\"check_in\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("입실 체크가 저장되었습니다."))
+                .andExpect(jsonPath("$.item.id").value(77))
+                .andExpect(jsonPath("$.item.checkInAt").value("08:55:00"))
+                .andExpect(jsonPath("$.checkOutAvailable").value(true));
     }
 
     @Test

@@ -124,6 +124,17 @@ public final class PriorityDtos {
     public record AttendanceSummary(int present, int late, int absent, boolean appealAvailable) {
     }
 
+    public record AttendanceCheckRequest(@NotBlank String action) {
+    }
+
+    public record AttendanceCheckResponse(
+            AttendanceRecordItem item,
+            String message,
+            boolean checkInAvailable,
+            boolean checkOutAvailable
+    ) {
+    }
+
     public record NotificationsSummary(long unreadCount, List<NotificationItem> latest) {
     }
 

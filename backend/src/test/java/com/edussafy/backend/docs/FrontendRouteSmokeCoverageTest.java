@@ -452,6 +452,9 @@ class FrontendRouteSmokeCoverageTest {
 
         assertThat(dashboard)
                 .contains("출석체크 & 현황")
+                .contains("submitAttendanceCheck")
+                .contains("입실 체크")
+                .contains("퇴실 체크")
                 .contains("장학포인트")
                 .contains("레벨&경험치")
                 .contains("필독 알림")

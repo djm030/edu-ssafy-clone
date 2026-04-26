@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { getDashboardSummary } from '../api/app';
+import { getDashboardSummary, submitAttendanceCheck } from '../api/app';
 import { getErrorMessage } from '../api/client';
 import DataState, { LoadingRows } from '../components/DataState';
 import PageHeader from '../components/PageHeader';
@@ -48,14 +48,30 @@ function DashboardPage() {
       {loadState === 'error' ? (
         <DataState title="대시보드를 불러오지 못했습니다." message={errorMessage} onAction={() => setRetryToken((value) => value + 1)} />
       ) : null}
-      {summary ? <DashboardContent summary={summary} /> : null}
+      {summary ? <DashboardContent summary={summary} onRefresh={() => setRetryToken((value) => value + 1)} /> : null}
     </section>
   );
 }
 
-function DashboardContent({ summary }: { summary: DashboardSummary }) {
+function DashboardContent({ summary, onRefresh }: { summary: DashboardSummary; onRefresh: () => void }) {
   const expPercent = summary.level.nextLevelExp > 0 ? Math.min(100, Math.round((summary.level.exp / summary.level.nextLevelExp) * 100)) : 0;
   const rankText = summary.level.rank == null ? '집계 대기' : `${summary.level.rank}위`;
+  const [attendanceMessage, setAttendanceMessage] = useState('');
+  const [attendanceAction, setAttendanceAction] = useState<'check_in' | 'check_out' | ''>('');
+
+  const handleAttendanceCheck = async (action: 'check_in' | 'check_out') => {
+    setAttendanceAction(action);
+    setAttendanceMessage('');
+    try {
+      const response = await submitAttendanceCheck(action);
+      setAttendanceMessage(response.message);
+      onRefresh();
+    } catch (error) {
+      setAttendanceMessage(getErrorMessage(error));
+    } finally {
+      setAttendanceAction('');
+    }
+  };
 
   return (
     <>
@@ -73,6 +89,15 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
             <span className={`status-pill ${summary.home.attendanceCheck.checkInAvailable ? 'green' : 'gray'}`}>{summary.home.attendanceCheck.statusText}</span>
             <strong>{summary.home.attendanceCheck.todayLabel}</strong>
             <p>{summary.home.attendanceCheck.message}</p>
+            <div className="button-row">
+              <button className="primary-action" type="button" disabled={!summary.home.attendanceCheck.checkInAvailable || attendanceAction !== ''} onClick={() => handleAttendanceCheck('check_in')}>
+                {attendanceAction === 'check_in' ? '입실 저장 중' : '입실 체크'}
+              </button>
+              <button className="ghost-button" type="button" disabled={!summary.home.attendanceCheck.checkOutAvailable || attendanceAction !== ''} onClick={() => handleAttendanceCheck('check_out')}>
+                {attendanceAction === 'check_out' ? '퇴실 저장 중' : '퇴실 체크'}
+              </button>
+            </div>
+            {attendanceMessage ? <p className="form-hint" role="status">{attendanceMessage}</p> : null}
             <a className="primary-action" href={summary.home.attendanceCheck.detailPath}>출석현황 보기</a>
           </div>
         </section>
