@@ -55,6 +55,13 @@ export const navSections: NavSection[] = [
       { path: '/community/classmates', label: '우리반 보기' },
     ],
   },
+
+  {
+    title: '멘토링',
+    items: [
+      { path: '/mentoring/stories', label: '멘토 스토리' },
+    ],
+  },
   {
     title: '도움말',
     items: [
@@ -83,6 +90,8 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'survey-detail', priority: 4, feature: '설문 문항', path: '/survey/1', label: '설문 상세' },
   { id: 'survey-respond', priority: 4, feature: '설문 응답', path: '/survey/1/respond', label: '설문 응답' },
   { id: 'academic-rules', priority: 20, feature: '학사규정', path: '/help/rules', label: '학사규정' },
+  { id: 'mentor-stories', priority: 21, feature: '멘토 스토리', path: '/mentoring/stories', label: '멘토 스토리 목록' },
+  { id: 'mentor-story-detail', priority: 21, feature: '멘토 스토리', path: '/mentoring/stories/1', label: '멘토 스토리 상세' },
   { id: 'support-list', priority: 5, feature: '1:1 문의', path: '/help/qna', label: '문의 목록' },
   { id: 'support-new', priority: 5, feature: '1:1 문의', path: '/help/qna/new', label: '문의 작성' },
   { id: 'support-detail', priority: 5, feature: '1:1 문의 답변', path: '/help/qna/tickets/1', label: '문의 상세' },

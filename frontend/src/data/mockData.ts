@@ -8,6 +8,7 @@ import type {
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
+  MentorStoryItem,
   NotificationItem,
   QuestItem,
   ReplayItem,
@@ -90,6 +91,32 @@ export const mockPosts: BoardPostListItem[] = [
   { id: 402, boardCode: 'qna', category: { id: 10, name: '학습' }, title: '프로젝트 제출 파일 형식 문의', authorName: '박싸피', createdAt: '2026-04-23T16:40:00+09:00', viewCount: 19, commentCount: 2, content: '프로젝트 제출 시 압축 파일명 규칙과 포함해야 할 파일을 문의드립니다.' },
 ];
 
+
+
+export const mockMentorStories: MentorStoryItem[] = [
+  {
+    id: 901,
+    title: '비전공자에서 백엔드 개발자로 성장한 기록',
+    summary: '꾸준한 학습 루틴과 코드 리뷰로 취업 준비 방향을 잡은 멘토 스토리입니다.',
+    content: '매일 작은 기능을 끝까지 구현하고 회고를 남긴 경험이 실무 적응에 큰 도움이 되었습니다.',
+    mentorName: '김멘토',
+    mentorCompany: '네이버',
+    mentorRole: '백엔드',
+    viewCount: 42,
+    publishedAt: '2026-04-24T09:00:00+09:00',
+  },
+  {
+    id: 902,
+    title: '프론트엔드 포트폴리오를 서비스처럼 만드는 법',
+    summary: 'UI 완성도와 배포 경험을 중심으로 포트폴리오를 개선한 사례입니다.',
+    content: '사용자 흐름, 접근성, 에러 상태를 함께 보여주면 단순 화면 과제보다 강한 인상을 남길 수 있습니다.',
+    mentorName: '이멘토',
+    mentorCompany: '카카오',
+    mentorRole: '프론트엔드',
+    viewCount: 31,
+    publishedAt: '2026-04-23T10:30:00+09:00',
+  },
+];
 
 export const mockAcademicRuleCategories: AcademicRuleCategory[] = [
   {

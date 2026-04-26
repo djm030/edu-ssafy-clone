@@ -41,6 +41,8 @@ class FrontendRouteSmokeCoverageTest {
             "/survey/1",
             "/survey/1/respond",
             "/help/rules",
+            "/mentoring/stories",
+            "/mentoring/stories/1",
             "/help/qna",
             "/help/qna/new",
             "/help/qna/tickets/1",
@@ -89,6 +91,8 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/learning/replays' || path === '/learning/replays/my')");
         assertThat(app).contains("if (path === '/learning/replays/all')");
         assertThat(app).contains("if (path === '/help/rules')");
+        assertThat(app).contains("if (path === '/mentoring/stories')");
+        assertThat(app).contains("match(/^\\/mentoring\\/stories\\/(\\d+)$/)");
         assertThat(app).contains("if (path === '/community/anonymous/write' || path === '/community/anonymous/new')");
         assertThat(app).contains("match(/^\\/community\\/anonymous\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
@@ -123,7 +127,8 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("replays", Path.of("..", "frontend", "src", "pages", "ReplaysPage.tsx")),
                 Map.entry("quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx")),
                 Map.entry("support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx")),
-                Map.entry("academic-rules", Path.of("..", "frontend", "src", "pages", "AcademicRulesPage.tsx"))
+                Map.entry("academic-rules", Path.of("..", "frontend", "src", "pages", "AcademicRulesPage.tsx")),
+                Map.entry("mentor-stories", Path.of("..", "frontend", "src", "pages", "MentorStoriesPage.tsx"))
         );
 
         for (Map.Entry<String, Path> entry : pages.entrySet()) {

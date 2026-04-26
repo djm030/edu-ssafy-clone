@@ -727,6 +727,25 @@ export interface ProfilePasswordChangeDraft {
 }
 
 
+
+export interface MentorStoriesResponse {
+  items: MentorStoryItem[];
+  page: PageMeta;
+}
+
+export interface MentorStoryItem {
+  id: number;
+  title: string;
+  summary?: string | null;
+  content?: string | null;
+  mentorName: string;
+  mentorCompany: string;
+  mentorRole: string;
+  thumbnailUrl?: string | null;
+  viewCount: number;
+  publishedAt?: string | null;
+}
+
 export interface AcademicRulesResponse {
   categories: AcademicRuleCategory[];
   keyword?: string | null;

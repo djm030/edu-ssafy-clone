@@ -529,6 +529,7 @@ VALUES
   ('anonymous', 'Anonymous Board', 'community', 'authenticated'),
   ('faq', 'FAQ', 'faq', 'public'),
   ('academic_rules', 'Academic Rules', 'help', 'public'),
+  ('mentor_story', 'Mentor Story', 'mentoring', 'public'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -554,6 +555,10 @@ JOIN (
   SELECT 'academic_rules', '평가', 2
   UNION ALL
   SELECT 'academic_rules', '수료/포인트', 3
+  UNION ALL
+  SELECT 'mentor_story', '네이버 · 백엔드', 1
+  UNION ALL
+  SELECT 'mentor_story', '카카오 · 프론트엔드', 2
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -588,6 +593,10 @@ JOIN (
   SELECT 'academic_rules', '평가', 'Quest/평가 미제출은 어떻게 처리되나요?', '제출 기간 종료 후 미제출 상태로 집계되며 운영 정책에 따라 보완 제출 또는 감점이 적용될 수 있습니다.', FALSE, 0
   UNION ALL
   SELECT 'academic_rules', '수료/포인트', '장학 포인트는 어디에서 확인하나요?', '마이캠퍼스의 레벨&장학포인트 및 교육현황 화면에서 현재 포인트와 최근 반영 상태를 확인합니다.', FALSE, 0
+  UNION ALL
+  SELECT 'mentor_story', '네이버 · 백엔드', '비전공자에서 백엔드 개발자로 성장한 기록', '꾸준한 학습 기록과 코드 리뷰가 성장의 기준이 되었습니다.', FALSE, 15
+  UNION ALL
+  SELECT 'mentor_story', '카카오 · 프론트엔드', '프론트엔드 포트폴리오를 서비스처럼 만드는 법', '사용자 흐름과 에러 상태를 함께 구현하면 포트폴리오가 실제 서비스처럼 보입니다.', FALSE, 9
   UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
 ) seed ON seed.board_code = b.board_code

@@ -6,6 +6,7 @@ import {
   mockCurriculumWeeks,
   mockDashboard,
   mockMaterials,
+  mockMentorStories,
   mockNotifications,
   mockQuests,
   mockReplays,
@@ -45,6 +46,8 @@ import type {
   LiveSessionItem,
   LiveSessionJoinResult,
   LoginResponse,
+  MentorStoriesResponse,
+  MentorStoryItem,
   MaterialResourceAttachmentDraft,
   MaterialResourceAttachmentResult,
   PledgeAgreementResult,
@@ -901,6 +904,33 @@ export function agreePledge(pledgeId: number): Promise<PledgeAgreementResult> {
   }).then((response) => ({ item: toPledgeItem(response.item), agreement: response.agreement }));
 }
 
+
+
+export function getMentorStories(query: { keyword?: string; page?: number; size?: number } = {}): Promise<MentorStoriesResponse> {
+  const keyword = query.keyword?.trim();
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ keyword, page, size });
+  return fetchJson<MentorStoriesResponse>(`/api/mentoring/stories${params}`, {
+    fallback: () => {
+      const filtered = mockMentorStories.filter((story) => {
+        if (!keyword) return true;
+        const lower = keyword.toLowerCase();
+        return story.title.toLowerCase().includes(lower) || (story.summary || '').toLowerCase().includes(lower);
+      });
+      return {
+        items: filtered.slice((page - 1) * size, page * size),
+        page: { page, size, totalItems: filtered.length, totalPages: Math.ceil(filtered.length / size) },
+      };
+    },
+  });
+}
+
+export function getMentorStory(storyId: number): Promise<MentorStoryItem> {
+  return fetchJson<{ item: MentorStoryItem }>(`/api/mentoring/stories/${storyId}`, {
+    fallback: () => ({ item: mockMentorStories.find((story) => story.id === storyId) || mockMentorStories[0] }),
+  }).then((response) => response.item);
+}
 
 export function getAcademicRules(query: { categoryId?: number; keyword?: string } = {}): Promise<AcademicRulesResponse> {
   const normalizedKeyword = query.keyword?.trim();

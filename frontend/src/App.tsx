@@ -25,6 +25,7 @@ import LoginPage from './pages/LoginPage';
 import MaterialDetailPage from './pages/MaterialDetailPage';
 import MaterialViewerPage from './pages/MaterialViewerPage';
 import MaterialsPage from './pages/MaterialsPage';
+import MentorStoriesPage from './pages/MentorStoriesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import OpsReadinessPage from './pages/OpsReadinessPage';
 import PledgesPage from './pages/PledgesPage';
@@ -266,6 +267,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   const surveyRespondMatch = match(/^\/survey\/(\d+)\/respond$/);
   const surveyMatch = match(/^\/survey\/(\d+)$/);
   const qnaTicketMatch = match(/^\/help\/qna\/tickets\/(\d+)$/);
+  const mentorStoryMatch = match(/^\/mentoring\/stories\/(\d+)$/);
   const anonymousPostMatch = match(/^\/community\/anonymous\/(\d+)$/);
 
   if (path === '/') return <DashboardPage />;
@@ -295,10 +297,12 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
     return <BoardPostWritePage boardCode="anonymous" detailPathBase="/community/anonymous" title="익명 게시판 글쓰기" />;
   }
   if (path === '/help/rules') return <AcademicRulesPage />;
+  if (path === '/mentoring/stories') return <MentorStoriesPage />;
   if (path === '/help/qna') return <QnaListPage canAnswerSupport={canAnswerSupport(roleAccess)} />;
   if (path === '/quest') return <QuestPage />;
   if (path === '/survey') return <SurveyPage canManageSurveys={canManageSurveys(roleAccess)} />;
   if (path === '/help/qna/new') return <QnaNewPage />;
+  if (mentorStoryMatch) return <MentorStoriesPage storyId={Number(mentorStoryMatch[1])} />;
   if (qnaTicketMatch) return <QnaDetailPage canAnswerSupport={canAnswerSupport(roleAccess)} ticketId={Number(qnaTicketMatch[1])} />;
   if (elearningMatch) return <ElearningDetailPage courseId={Number(elearningMatch[1])} />;
   if (pledgeMatch) return <PledgesPage pledgeId={Number(pledgeMatch[1])} />;

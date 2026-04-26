@@ -37,6 +37,8 @@ routes=(
   "/help/notice"
   "/help/faq"
   "/help/rules"
+  "/mentoring/stories"
+  "/mentoring/stories/1"
   "/mycampus/notifications"
   "/learning/live"
   "/learning/curriculum"
