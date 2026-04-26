@@ -126,6 +126,7 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'ebook-detail', priority: 15, feature: 'SSAFY e-book', path: '/mycampus/ebooks/1', label: 'SSAFY e-book 상세' },
   { id: 'live-sessions', priority: 17, feature: '라이브 바로가기', path: '/learning/live', label: '라이브 바로가기' },
   { id: 'curriculum', priority: 7, feature: '커리큘럼', path: '/learning/curriculum', label: '커리큘럼' },
+  { id: 'curriculum-detail', priority: 7, feature: '커리큘럼 상세', path: '/learning/curriculum/1', label: '커리큘럼 상세' },
   { id: 'materials', priority: 7, feature: '학습자료', path: '/learning/materials', label: '학습자료 목록' },
   { id: 'material-detail', priority: 7, feature: '학습자료', path: '/learning/materials/1', label: '학습자료 상세' },
   { id: 'material-viewer', priority: 7, feature: '학습자료 다시보기', path: '/learning/materials/1/viewer', label: '자료 뷰어' },

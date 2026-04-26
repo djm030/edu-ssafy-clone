@@ -910,6 +910,12 @@ export function getCurriculumWeeks(query: { semester?: string; track?: string; s
   }).then((response) => ({ items: response.items.map(toCurriculumWeek) }));
 }
 
+export function getCurriculumWeek(weekId: number): Promise<CurriculumWeek> {
+  return fetchJson<{ item: BackendCurriculumItem }>(`/api/curriculum/weeks/${weekId}`, {
+    fallback: () => ({ item: mockCurriculumWeeks.find((week) => week.id === weekId) || mockCurriculumWeeks[0] }),
+  }).then((response) => toCurriculumWeek(response.item));
+}
+
 export function getReplays(query: { keyword?: string }): Promise<{ items: ReplayItem[] }> {
   return getMyReplays(query);
 }

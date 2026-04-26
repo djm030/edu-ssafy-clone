@@ -56,6 +56,7 @@ routes=(
   "/mycampus/notifications"
   "/learning/live"
   "/learning/curriculum"
+  "/learning/curriculum/1"
   "/learning/materials"
   "/learning/materials/1"
   "/learning/materials/1/viewer"

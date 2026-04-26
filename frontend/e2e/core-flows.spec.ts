@@ -11,6 +11,7 @@ test('demo learner can log in and navigate priority screens', async ({ page }) =
     ['1:1 문의', '/help/qna', /문의/],
     ['FAQ', '/help/faq', /FAQ/],
     ['학습자료', '/learning/materials', /학습자료/],
+    ['커리큘럼 상세', '/learning/curriculum/1', /주차별 커리큘럼|일자별 시간표/],
     ['Quest', '/quest', /Quest|퀘스트/],
     ['운영 readiness', '/ops/readiness', /운영/],
     ['간담회 신청', '/mentoring/meetings', /간담회 신청/],

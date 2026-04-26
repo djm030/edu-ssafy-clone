@@ -264,6 +264,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   const materialViewerMatch = match(/^\/learning\/materials\/(\d+)\/viewer$/);
   const materialMatch = match(/^\/learning\/materials\/(\d+)$/);
   const requiredStudyMatch = match(/^\/learning\/required-studies\/(\d+)$/);
+  const curriculumMatch = match(/^\/learning\/curriculum\/(\d+)$/);
   const freePostMatch = match(/^\/community\/free\/(\d+)$/);
   const noticePostMatch = match(/^\/help\/notice\/(\d+)$/);
   const faqPostMatch = match(/^\/help\/faq\/(\d+)$/);
@@ -336,6 +337,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (materialViewerMatch) return <MaterialViewerPage materialId={Number(materialViewerMatch[1])} />;
   if (materialMatch) return <MaterialDetailPage materialId={Number(materialMatch[1])} />;
   if (requiredStudyMatch) return <RequiredStudiesPage studyId={Number(requiredStudyMatch[1])} />;
+  if (curriculumMatch) return <CurriculumPage weekId={Number(curriculumMatch[1])} />;
   if (anonymousPostMatch) return <BoardDetailPage boardCode="anonymous" postId={Number(anonymousPostMatch[1])} title="익명 게시판 상세" listPath="/community/anonymous" />;
   if (freePostMatch) return <BoardDetailPage boardCode="free" postId={Number(freePostMatch[1])} title="자유게시판 상세" listPath="/community/free" />;
   if (noticePostMatch) return <BoardDetailPage boardCode="notice" readOnly postId={Number(noticePostMatch[1])} title="공지 상세" listPath="/help/notice" />;

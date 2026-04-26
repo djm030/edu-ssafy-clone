@@ -63,6 +63,7 @@ class FrontendRouteSmokeCoverageTest {
             "/mycampus/notifications",
             "/learning/live",
             "/learning/curriculum",
+            "/learning/curriculum/1",
             "/learning/materials",
             "/learning/materials/1",
             "/learning/materials/1/viewer",
@@ -129,6 +130,7 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("match(/^\\/mycampus\\/elearning\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/learning\\/materials\\/(\\d+)\\/viewer$/)");
         assertThat(app).contains("match(/^\\/learning\\/required-studies\\/(\\d+)$/)");
+        assertThat(app).contains("match(/^\\/learning\\/curriculum\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/quest\\/(\\d+)\\/submit$/)");
         assertThat(app).contains("match(/^\\/survey\\/(\\d+)\\/respond$/)");
         assertThat(app).contains("match(/^\\/help\\/qna\\/tickets\\/(\\d+)$/)");
@@ -164,6 +166,7 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("survey", Path.of("..", "frontend", "src", "pages", "SurveyPage.tsx")),
                 Map.entry("notifications", Path.of("..", "frontend", "src", "pages", "NotificationsPage.tsx")),
                 Map.entry("learning", Path.of("..", "frontend", "src", "pages", "MaterialsPage.tsx")),
+                Map.entry("curriculum", Path.of("..", "frontend", "src", "pages", "CurriculumPage.tsx")),
                 Map.entry("elearning", Path.of("..", "frontend", "src", "pages", "ElearningPage.tsx")),
                 Map.entry("bookmarks", Path.of("..", "frontend", "src", "pages", "BookmarksPage.tsx")),
                 Map.entry("documents", Path.of("..", "frontend", "src", "pages", "DocumentsPage.tsx")),
