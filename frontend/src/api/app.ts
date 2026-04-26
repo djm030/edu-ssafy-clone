@@ -6,6 +6,7 @@ import {
   mockCurriculumWeeks,
   mockDashboard,
   mockMaterials,
+  mockMentoringQuestions,
   mockMentorStories,
   mockNotifications,
   mockQuests,
@@ -46,6 +47,9 @@ import type {
   LiveSessionItem,
   LiveSessionJoinResult,
   LoginResponse,
+  MentoringQuestionDraft,
+  MentoringQuestionItem,
+  MentoringQuestionsResponse,
   MentorStoriesResponse,
   MentorStoryItem,
   MaterialResourceAttachmentDraft,
@@ -929,6 +933,56 @@ export function getMentorStories(query: { keyword?: string; page?: number; size?
 export function getMentorStory(storyId: number): Promise<MentorStoryItem> {
   return fetchJson<{ item: MentorStoryItem }>(`/api/mentoring/stories/${storyId}`, {
     fallback: () => ({ item: mockMentorStories.find((story) => story.id === storyId) || mockMentorStories[0] }),
+  }).then((response) => response.item);
+}
+
+export function getMentoringQuestions(query: { keyword?: string; page?: number; size?: number } = {}): Promise<MentoringQuestionsResponse> {
+  const keyword = query.keyword?.trim();
+  const page = query.page || 1;
+  const size = query.size || 20;
+  const params = buildQuery({ keyword, page, size });
+  return fetchJson<MentoringQuestionsResponse>(`/api/mentoring/questions${params}`, {
+    fallback: () => {
+      const filtered = mockMentoringQuestions.filter((question) => {
+        if (!keyword) return true;
+        const lower = keyword.toLowerCase();
+        return question.title.toLowerCase().includes(lower)
+          || (question.summary || '').toLowerCase().includes(lower)
+          || (question.content || '').toLowerCase().includes(lower);
+      });
+      return {
+        items: filtered.slice((page - 1) * size, page * size),
+        page: { page, size, totalItems: filtered.length, totalPages: Math.ceil(filtered.length / size) },
+      };
+    },
+  });
+}
+
+export function getMentoringQuestion(questionId: number): Promise<MentoringQuestionItem> {
+  return fetchJson<{ item: MentoringQuestionItem }>(`/api/mentoring/questions/${questionId}`, {
+    fallback: () => ({ item: mockMentoringQuestions.find((question) => question.id === questionId) || mockMentoringQuestions[0] }),
+  }).then((response) => response.item);
+}
+
+export function createMentoringQuestion(draft: MentoringQuestionDraft): Promise<MentoringQuestionItem> {
+  return fetchJson<{ item: MentoringQuestionItem }>('/api/mentoring/questions', {
+    body: JSON.stringify(draft),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function answerMentoringQuestion(questionId: number, content: string): Promise<MentoringQuestionItem> {
+  return fetchJson<{ item: MentoringQuestionItem }>(`/api/mentoring/questions/${questionId}/answers`, {
+    body: JSON.stringify({ content }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => response.item);
+}
+
+export function closeMentoringQuestion(questionId: number): Promise<MentoringQuestionItem> {
+  return fetchJson<{ item: MentoringQuestionItem }>(`/api/mentoring/questions/${questionId}/close`, {
+    method: 'PATCH',
   }).then((response) => response.item);
 }
 

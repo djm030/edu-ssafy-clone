@@ -38,6 +38,7 @@ public class RoleAccessInterceptor implements HandlerInterceptor {
             new AccessRule("PATCH", "/api/attendance/appeals/", "/resolve", Set.of("coach", "admin")),
             new AccessRule("POST", "/api/community/classmates/", "/notifications", Set.of("coach", "admin")),
             new AccessRule("POST", "/api/learning/materials/", "/attachments", Set.of("coach", "admin")),
+            new AccessRule("POST", "/api/mentoring/questions/", "/answers", Set.of("coach", "admin")),
             new AccessRule("POST", "/api/support/tickets/", "/answers", Set.of("coach", "admin"))
     );
 

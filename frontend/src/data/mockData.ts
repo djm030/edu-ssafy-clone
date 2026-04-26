@@ -8,6 +8,7 @@ import type {
   CurriculumWeek,
   DashboardSummary,
   LearningMaterial,
+  MentoringQuestionItem,
   MentorStoryItem,
   NotificationItem,
   QuestItem,
@@ -115,6 +116,42 @@ export const mockMentorStories: MentorStoryItem[] = [
     mentorRole: '프론트엔드',
     viewCount: 31,
     publishedAt: '2026-04-23T10:30:00+09:00',
+  },
+];
+
+export const mockMentoringQuestions: MentoringQuestionItem[] = [
+  {
+    id: 951,
+    title: '백엔드 프로젝트 경험을 어떻게 포트폴리오로 정리할까요?',
+    summary: '프로젝트 경험 정리 방향을 묻는 멘토링 질문입니다.',
+    content: '팀 프로젝트에서 맡은 API와 장애 대응 경험을 어떤 구조로 정리하면 좋을지 궁금합니다.',
+    category: '커리어',
+    status: 'ANSWERED',
+    anonymous: false,
+    authorName: '김싸피',
+    answerCount: 1,
+    createdAt: '2026-04-24T12:00:00+09:00',
+    answers: [
+      {
+        id: 95101,
+        content: '문제 상황, 본인 의사결정, 검증 결과를 한 흐름으로 정리하면 실무 역량이 잘 드러납니다.',
+        mentorName: 'Demo Mentor',
+        createdAt: '2026-04-24T14:20:00+09:00',
+      },
+    ],
+  },
+  {
+    id: 952,
+    title: '프론트엔드 면접에서 상태 관리를 어떻게 설명하나요?',
+    summary: '면접 답변 프레임을 묻는 열린 질문입니다.',
+    content: 'React 프로젝트에서 서버 상태와 UI 상태를 분리했던 경험을 어떻게 말하면 좋을까요?',
+    category: '면접',
+    status: 'OPEN',
+    anonymous: true,
+    authorName: '익명 질문자',
+    answerCount: 0,
+    createdAt: '2026-04-23T16:30:00+09:00',
+    answers: [],
   },
 ];
 

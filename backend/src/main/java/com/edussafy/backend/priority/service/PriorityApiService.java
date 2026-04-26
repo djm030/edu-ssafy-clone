@@ -239,6 +239,7 @@ public class PriorityApiService {
                     "quest:review",
                     "survey:manage",
                     "board:moderate",
+                    "mentoring:answer",
                     "support:answer",
                     "profile:update"
             ),
@@ -289,6 +290,14 @@ public class PriorityApiService {
                     List.of("coach", "admin"),
                     "학습자료",
                     "학습자료 첨부파일 업로드는 콘텐츠 운영 권한이 있는 coach/admin만 가능하다."
+            ),
+            new AccessPolicyItem(
+                    "mentoring-answer",
+                    "POST",
+                    "/api/mentoring/questions/{questionId}/answers",
+                    List.of("coach", "admin"),
+                    "멘토링 Q&A",
+                    "멘토링 질문 답변 등록은 현업 멘토 또는 운영자 역할로 제한한다."
             ),
             new AccessPolicyItem(
                     "support-answer",

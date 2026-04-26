@@ -746,6 +746,41 @@ export interface MentorStoryItem {
   publishedAt?: string | null;
 }
 
+export type MentoringQuestionStatus = 'OPEN' | 'ANSWERED' | 'CLOSED';
+
+export interface MentoringQuestionsResponse {
+  items: MentoringQuestionItem[];
+  page: PageMeta;
+}
+
+export interface MentoringQuestionItem {
+  id: number;
+  title: string;
+  summary?: string | null;
+  content?: string | null;
+  category: string;
+  status: MentoringQuestionStatus;
+  anonymous: boolean;
+  authorName: string;
+  answerCount: number;
+  createdAt?: string | null;
+  answers?: MentoringAnswerItem[];
+}
+
+export interface MentoringAnswerItem {
+  id: number;
+  content: string;
+  mentorName: string;
+  createdAt?: string | null;
+}
+
+export interface MentoringQuestionDraft {
+  categoryId?: number;
+  title: string;
+  content: string;
+  anonymousAllowed: boolean;
+}
+
 export interface AcademicRulesResponse {
   categories: AcademicRuleCategory[];
   keyword?: string | null;

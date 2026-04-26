@@ -530,6 +530,7 @@ VALUES
   ('faq', 'FAQ', 'faq', 'public'),
   ('academic_rules', 'Academic Rules', 'help', 'public'),
   ('mentor_story', 'Mentor Story', 'mentoring', 'public'),
+  ('mentoring_qna', 'Mentoring Q&A', 'mentoring', 'authenticated'),
   ('qna', 'Q&A', 'qna', 'authenticated')
 ON DUPLICATE KEY UPDATE
   board_name = VALUES(board_name),
@@ -559,6 +560,10 @@ JOIN (
   SELECT 'mentor_story', '네이버 · 백엔드', 1
   UNION ALL
   SELECT 'mentor_story', '카카오 · 프론트엔드', 2
+  UNION ALL
+  SELECT 'mentoring_qna', '커리어', 1
+  UNION ALL
+  SELECT 'mentoring_qna', '면접', 2
   UNION ALL
   SELECT 'qna', 'General', 1
 ) seed ON seed.board_code = b.board_code
@@ -598,6 +603,10 @@ JOIN (
   UNION ALL
   SELECT 'mentor_story', '카카오 · 프론트엔드', '프론트엔드 포트폴리오를 서비스처럼 만드는 법', '사용자 흐름과 에러 상태를 함께 구현하면 포트폴리오가 실제 서비스처럼 보입니다.', FALSE, 9
   UNION ALL
+  SELECT 'mentoring_qna', '커리어', '백엔드 프로젝트 경험을 어떻게 포트폴리오로 정리할까요?', '팀 프로젝트에서 맡은 API와 장애 대응 경험을 어떤 구조로 정리하면 좋을지 궁금합니다.', FALSE, 6
+  UNION ALL
+  SELECT 'mentoring_qna', '면접', '프론트엔드 면접에서 상태 관리를 어떻게 설명하나요?', '<!--MENTORING_QNA:anonymous=true-->\nReact 프로젝트에서 서버 상태와 UI 상태를 분리했던 경험을 어떻게 말하면 좋을까요?', FALSE, 4
+  UNION ALL
   SELECT 'qna', 'General', 'Attendance appeal question', 'Seed Q&A post for common board API coverage.', FALSE, 2
 ) seed ON seed.board_code = b.board_code
 JOIN board_categories c
@@ -616,6 +625,7 @@ ON DUPLICATE KEY UPDATE original_filename = VALUES(original_filename);
 
 SET @free_post_id := (SELECT board_post_id FROM board_posts WHERE title = 'REST API study notes' LIMIT 1);
 SET @anonymous_post_id := (SELECT board_post_id FROM board_posts WHERE title = '익명 학습 고민 공유' LIMIT 1);
+SET @mentoring_qna_post_id := (SELECT board_post_id FROM board_posts WHERE title = '백엔드 프로젝트 경험을 어떻게 포트폴리오로 정리할까요?' LIMIT 1);
 SET @attachment_id := (SELECT attachment_id FROM attachments WHERE checksum_sha256 = SHA2('rest-api-study.pdf', 256) LIMIT 1);
 
 INSERT IGNORE INTO board_post_attachments (board_post_id, attachment_id)
@@ -628,6 +638,10 @@ WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @free_post_
 INSERT INTO board_comments (board_post_id, author_user_id, content)
 SELECT @anonymous_post_id, @classmate_id, '익명 댓글도 작성자 식별자 없이 표시됩니다.'
 WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @anonymous_post_id);
+
+INSERT INTO board_comments (board_post_id, author_user_id, content)
+SELECT @mentoring_qna_post_id, @manager_id, '문제 상황, 본인 의사결정, 검증 결과를 한 흐름으로 정리하면 실무 역량이 잘 드러납니다.'
+WHERE NOT EXISTS (SELECT 1 FROM board_comments WHERE board_post_id = @mentoring_qna_post_id);
 
 INSERT IGNORE INTO board_post_reactions (board_post_id, user_id, reaction_type_code)
 VALUES

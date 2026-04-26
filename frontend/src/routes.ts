@@ -60,6 +60,7 @@ export const navSections: NavSection[] = [
     title: '멘토링',
     items: [
       { path: '/mentoring/stories', label: '멘토 스토리' },
+      { path: '/mentoring/questions', label: '멘토링 Q&A' },
     ],
   },
   {
@@ -92,6 +93,9 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'academic-rules', priority: 20, feature: '학사규정', path: '/help/rules', label: '학사규정' },
   { id: 'mentor-stories', priority: 21, feature: '멘토 스토리', path: '/mentoring/stories', label: '멘토 스토리 목록' },
   { id: 'mentor-story-detail', priority: 21, feature: '멘토 스토리', path: '/mentoring/stories/1', label: '멘토 스토리 상세' },
+  { id: 'mentoring-questions', priority: 22, feature: '멘토링 Q&A', path: '/mentoring/questions', label: '멘토링 Q&A 목록' },
+  { id: 'mentoring-question-new', priority: 22, feature: '멘토링 Q&A', path: '/mentoring/questions/new', label: '멘토링 질문 작성' },
+  { id: 'mentoring-question-detail', priority: 22, feature: '멘토링 Q&A', path: '/mentoring/questions/1', label: '멘토링 Q&A 상세' },
   { id: 'support-list', priority: 5, feature: '1:1 문의', path: '/help/qna', label: '문의 목록' },
   { id: 'support-new', priority: 5, feature: '1:1 문의', path: '/help/qna/new', label: '문의 작성' },
   { id: 'support-detail', priority: 5, feature: '1:1 문의 답변', path: '/help/qna/tickets/1', label: '문의 상세' },
