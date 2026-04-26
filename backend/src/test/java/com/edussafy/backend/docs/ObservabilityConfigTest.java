@@ -54,4 +54,18 @@ class ObservabilityConfigTest {
         assertThat(dashboard).contains("http_server_requests_seconds_count");
         assertThat(dashboard).contains("jvm_memory_used_bytes");
     }
+    @Test
+    void observabilitySmokeScriptChecksBackendPrometheusAndGrafanaEndpoints() throws IOException {
+        String script = Files.readString(Path.of("..", "scripts", "dev", "smoke-observability.sh"));
+
+        assertThat(script).startsWith("#!/usr/bin/env bash");
+        assertThat(script).contains("$BACKEND_URL/actuator/health");
+        assertThat(script).contains("$BACKEND_URL/actuator/metrics");
+        assertThat(script).contains("$BACKEND_URL/actuator/prometheus");
+        assertThat(script).contains("$PROMETHEUS_URL/-/healthy");
+        assertThat(script).contains("$PROMETHEUS_URL/api/v1/targets?state=active");
+        assertThat(script).contains("$GRAFANA_URL/api/health");
+        assertThat(script).contains("SKIP_HTTP=true");
+    }
+
 }

@@ -51,8 +51,10 @@ jobs:
           bash -n scripts/dev/smoke.sh
           bash -n scripts/dev/smoke-routes.sh
           bash -n scripts/dev/verify-restdocs.sh
+          bash -n scripts/dev/smoke-observability.sh
           SKIP_HTTP=true scripts/dev/smoke.sh
           SKIP_HTTP=true scripts/dev/smoke-routes.sh
+          SKIP_HTTP=true scripts/dev/smoke-observability.sh
 
       - name: Backend tests
         working-directory: backend
