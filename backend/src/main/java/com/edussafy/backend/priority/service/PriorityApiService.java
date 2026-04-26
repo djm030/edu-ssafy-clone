@@ -507,6 +507,7 @@ public class PriorityApiService {
                         item.viewCount(),
                         item.likeCount(),
                         item.bookmarkCount(),
+                        item.resources().size(),
                         "/learning/materials/" + item.id()
                 ))
                 .toList();
@@ -518,6 +519,7 @@ public class PriorityApiService {
                         item.category(),
                         item.lastLessonTitle(),
                         item.progressPercent(),
+                        0,
                         0,
                         0,
                         0,

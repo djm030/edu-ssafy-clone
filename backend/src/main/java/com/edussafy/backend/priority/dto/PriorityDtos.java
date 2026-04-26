@@ -173,6 +173,7 @@ public final class PriorityDtos {
             long viewCount,
             long likeCount,
             long bookmarkCount,
+            int resourceCount,
             String detailPath
     ) {
     }

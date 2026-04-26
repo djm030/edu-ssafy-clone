@@ -68,11 +68,11 @@ export const mockDashboard: DashboardSummary = {
       { id: 2, title: 'React 목록 화면 평가', type: 'evaluation', status: 'submitted', startAt: '2026-04-23T09:00:00+09:00', endAt: '2026-04-24T18:00:00+09:00', detailPath: '/quest/2' },
     ],
     materials: [
-      { id: 1, title: 'Spring Boot REST API', category: 'Backend', description: 'Controller/Service/Repository 계층 실습 자료', progressPercent: 0, viewCount: 142, likeCount: 24, bookmarkCount: 11, detailPath: '/learning/materials/1' },
-      { id: 2, title: 'React 상태 관리', category: 'Frontend', description: '컴포넌트 상태와 API 로딩 처리 패턴', progressPercent: 0, viewCount: 98, likeCount: 18, bookmarkCount: 7, detailPath: '/learning/materials/2' },
+      { id: 1, title: 'Spring Boot REST API', category: 'Backend', description: 'Controller/Service/Repository 계층 실습 자료', progressPercent: 0, viewCount: 142, likeCount: 24, bookmarkCount: 11, resourceCount: 3, detailPath: '/learning/materials/1' },
+      { id: 2, title: 'React 상태 관리', category: 'Frontend', description: '컴포넌트 상태와 API 로딩 처리 패턴', progressPercent: 0, viewCount: 98, likeCount: 18, bookmarkCount: 7, resourceCount: 2, detailPath: '/learning/materials/2' },
     ],
     elearnings: [
-      { id: 1, title: 'Java 기초 이러닝', category: 'Java', description: '객체지향 핵심', progressPercent: 42, viewCount: 0, likeCount: 0, bookmarkCount: 0, detailPath: '/mycampus/elearning/1' },
+      { id: 1, title: 'Java 기초 이러닝', category: 'Java', description: '객체지향 핵심', progressPercent: 42, viewCount: 0, likeCount: 0, bookmarkCount: 0, resourceCount: 0, detailPath: '/mycampus/elearning/1' },
     ],
     freePosts: [
       { id: 201, boardCode: 'free', title: '알고리즘 스터디 같이 하실 분 모집합니다', authorLabel: '박싸피', createdAt: '2026-04-24T13:40:00+09:00', pinned: false, detailPath: '/community/free/201' },

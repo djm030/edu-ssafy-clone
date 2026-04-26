@@ -749,6 +749,15 @@ h2 {
   gap: 6px;
 }
 
+.dashboard-material-carousel {
+  display: grid;
+  gap: 12px;
+  grid-auto-columns: minmax(240px, 1fr);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
 .dashboard-widget-card strong,
 .dashboard-table strong {
   color: #1f2933;

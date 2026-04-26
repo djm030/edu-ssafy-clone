@@ -341,6 +341,8 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("주차별 커리큘럼")
                 .contains("Quest/평가")
                 .contains("학습자료")
+                .contains("자료")
+                .contains("상세보기")
                 .contains("학습중 이러닝")
                 .contains("자유게시판")
                 .contains("e-book")

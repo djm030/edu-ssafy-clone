@@ -159,6 +159,7 @@ export interface DashboardLearningCard {
   viewCount: number;
   likeCount: number;
   bookmarkCount: number;
+  resourceCount?: number;
   detailPath: string;
 }
 

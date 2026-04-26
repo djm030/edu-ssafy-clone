@@ -114,7 +114,7 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
         </section>
 
         <DashboardCardList title="Quest/평가" moreHref="/quest" items={summary.home.quests} emptyTitle="진행 중인 Quest/평가가 없습니다." renderItem={(item) => <QuestCard key={item.id} item={item} />} />
-        <DashboardCardList title="학습자료" moreHref="/learning/materials" items={summary.home.materials} emptyTitle="등록된 학습자료가 없습니다." renderItem={(item) => <LearningCard key={item.id} item={item} />} />
+        <DashboardCardList title="학습자료" moreHref="/learning/materials" items={summary.home.materials} emptyTitle="등록된 학습자료가 없습니다." listClassName="dashboard-material-carousel" renderItem={(item) => <LearningCard key={item.id} item={item} showResourceMetric />} />
         <DashboardCardList title="학습중 이러닝" moreHref="/mycampus/elearning" items={summary.home.elearnings} emptyTitle="학습중인 이러닝이 없습니다." renderItem={(item) => <LearningCard key={item.id} item={item} showProgress />} />
         <DashboardCardList title="자유게시판" moreHref="/community/free" items={summary.home.freePosts} emptyTitle="최근 자유게시글이 없습니다." renderItem={(item) => <BoardPostCard key={item.id} item={item} />} />
         <DashboardCardList title="e-book" moreHref="/mycampus/ebooks" items={summary.home.ebooks} emptyTitle="표시할 e-book이 없습니다." renderItem={(item) => <EbookCard key={item.id} item={item} />} />
@@ -139,12 +139,14 @@ function DashboardCardList<T>({
   items,
   emptyTitle,
   renderItem,
+  listClassName = 'card-list compact-list',
 }: {
   title: string;
   moreHref: string;
   items: T[];
   emptyTitle: string;
   renderItem: (item: T) => ReactNode;
+  listClassName?: string;
 }) {
   return (
     <section className="panel">
@@ -152,7 +154,7 @@ function DashboardCardList<T>({
       {items.length === 0 ? (
         <DataState title={emptyTitle} message="데이터가 등록되면 홈 위젯에서 바로 확인할 수 있습니다." />
       ) : (
-        <div className="card-list compact-list">{items.map(renderItem)}</div>
+        <div className={listClassName}>{items.map(renderItem)}</div>
       )}
     </section>
   );
@@ -179,13 +181,15 @@ function QuestCard({ item }: { item: DashboardQuestCard }) {
   );
 }
 
-function LearningCard({ item, showProgress = false }: { item: DashboardLearningCard; showProgress?: boolean }) {
+function LearningCard({ item, showProgress = false, showResourceMetric = false }: { item: DashboardLearningCard; showProgress?: boolean; showResourceMetric?: boolean }) {
   return (
     <a className="dashboard-widget-card" href={item.detailPath}>
       <strong>{item.title}</strong>
       <p>{item.category || '학습'}{item.description ? ` · ${item.description}` : ''}</p>
       {showProgress ? (
         <div className="progress-track" aria-label={`${item.title} 진행률 ${item.progressPercent}%`}><span style={{ width: `${item.progressPercent}%` }} /></div>
+      ) : showResourceMetric ? (
+        <small>자료 {item.resourceCount ?? 0}개 · 조회 {item.viewCount} · 좋아요 {item.likeCount} · 찜 {item.bookmarkCount} · 상세보기</small>
       ) : (
         <small>조회 {item.viewCount} · 좋아요 {item.likeCount} · 찜 {item.bookmarkCount}</small>
       )}
