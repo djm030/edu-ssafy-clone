@@ -42,18 +42,15 @@ jobs:
 
       - name: Verify OpenAPI smoke contract markers
         run: |
-          grep -F '/api/auth/login' docs/openapi.yaml
-          grep -F '/api/me' docs/openapi.yaml
-          grep -F '/api/profile' docs/openapi.yaml
-          grep -F '/api/boards/{boardCode}/posts' docs/openapi.yaml
-          grep -F 'Assert-JsonProperty' scripts/dev/smoke.ps1
-          grep -F 'Invoke-SmokeJson' scripts/dev/smoke.ps1
+          bash -n scripts/dev/verify-openapi.sh
+          scripts/dev/verify-openapi.sh
 
       - name: Validate POSIX production smoke scripts
         run: |
           bash -n scripts/dev/smoke.sh
           bash -n scripts/dev/smoke-routes.sh
           bash -n scripts/dev/verify-restdocs.sh
+          bash -n scripts/dev/verify-openapi.sh
           bash -n scripts/dev/smoke-observability.sh
           SKIP_HTTP=true scripts/dev/smoke.sh
           SKIP_HTTP=true scripts/dev/smoke-routes.sh
