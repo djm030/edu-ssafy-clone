@@ -297,10 +297,37 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record QuestSubmissionAttachmentRequest(
+            @NotBlank @Size(max = 255) String filename,
+            @Size(max = 100) String mimeType,
+            @NotBlank @Size(max = 3_000_000) String contentBase64
+    ) {
+    }
+
     public record QuestSubmissionResponse(QuestSubmissionItem item) {
     }
 
     public record QuestSubmissionDetailResponse(QuestSubmissionItem item) {
+    }
+
+    public record QuestSubmissionAttachmentCreateResponse(QuestSubmissionAttachmentItem item, QuestSubmissionItem submission) {
+    }
+
+    public record QuestSubmissionAttachmentDownload(QuestSubmissionAttachmentItem item, byte[] content) {
+    }
+
+    public record QuestSubmissionAttachmentItem(
+            long id,
+            long questId,
+            long submissionId,
+            String filename,
+            String storageKey,
+            String storedPath,
+            String mimeType,
+            long fileSize,
+            String checksumSha256,
+            OffsetDateTime createdAt
+    ) {
     }
 
     public record QuestSubmissionItem(

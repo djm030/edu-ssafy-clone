@@ -4,6 +4,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.SurveyOptionItem;
@@ -271,6 +272,36 @@ public class PriorityP3Repository {
                         nullableDouble(rs, "score"),
                         toOffset(rs.getTimestamp("graded_at")),
                         false
+                ))
+                .optional();
+    }
+
+    public Optional<QuestSubmissionAttachmentItem> findQuestSubmissionAttachment(
+            long questId,
+            long submissionId,
+            long attachmentId
+    ) {
+        String storagePrefix = "quests/%d/submissions/%d/".formatted(questId, submissionId);
+        return jdbcClient.sql("""
+                SELECT attachment_id, original_filename, storage_key, stored_path, mime_type,
+                       file_size, checksum_sha256, created_at
+                FROM attachments
+                WHERE attachment_id = :attachmentId
+                  AND storage_key LIKE :storagePrefix
+                """)
+                .param("attachmentId", attachmentId)
+                .param("storagePrefix", storagePrefix + "%")
+                .query((rs, rowNum) -> new QuestSubmissionAttachmentItem(
+                        rs.getLong("attachment_id"),
+                        questId,
+                        submissionId,
+                        rs.getString("original_filename"),
+                        rs.getString("storage_key"),
+                        rs.getString("stored_path"),
+                        rs.getString("mime_type"),
+                        rs.getLong("file_size"),
+                        rs.getString("checksum_sha256"),
+                        toOffset(rs.getTimestamp("created_at"))
                 ))
                 .optional();
     }

@@ -37,6 +37,8 @@ import type {
   NotificationsReadAllResult,
   QnaDraft,
   QuestItem,
+  QuestSubmissionAttachmentDraft,
+  QuestSubmissionAttachmentResult,
   QuestSubmissionDraft,
   QuestSubmissionResult,
   ReplayItem,
@@ -935,7 +937,34 @@ export function submitQuest(draft: QuestSubmissionDraft): Promise<QuestSubmissio
     fallback: () => ({ item: { id: Date.now(), questId: draft.questId, status: 'submitted', demo: true } }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
-  }).then((response) => response.item);
+  }).then(async (response) => {
+    if (!draft.attachment || response.item.demo) return response.item;
+    await createQuestSubmissionAttachment(draft.questId, response.item.id, draft.attachment);
+    return response.item;
+  });
+}
+
+export function createQuestSubmissionAttachment(
+  questId: number,
+  submissionId: number,
+  draft: QuestSubmissionAttachmentDraft,
+): Promise<QuestSubmissionAttachmentResult> {
+  return fetchJson<QuestSubmissionAttachmentResult>(
+    `/api/quests/${questId}/submissions/${submissionId}/attachments`,
+    {
+      body: JSON.stringify(draft),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    },
+  );
+}
+
+export function questSubmissionAttachmentUrl(
+  questId: number,
+  submissionId: number,
+  attachmentId: number,
+): string {
+  return `/api/quests/${questId}/submissions/${submissionId}/attachments/${attachmentId}`;
 }
 
 export function respondSurvey(draft: SurveyResponseDraft): Promise<{ id: number; completed: boolean; answerCount: number }> {

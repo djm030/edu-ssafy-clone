@@ -44,6 +44,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeReque
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
@@ -597,6 +601,138 @@ class PriorityApiServiceTest {
         assertThat(response.item().score()).isEqualTo(95.0);
         assertThat(response.item().gradedAt()).isNotNull();
         verify(p3Repository).findQuestSubmission(1L, 5L);
+    }
+
+    @Test
+    void createsQuestSubmissionAttachmentForOwnerSubmission() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        QuestItem quest = new QuestItem(
+                5L,
+                "Algorithm Quest",
+                "assignment",
+                "required",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-25T18:00:00+09:00"),
+                100,
+                "in_progress",
+                "submitted",
+                "pending"
+        );
+        QuestSubmissionItem submission = new QuestSubmissionItem(
+                77L,
+                5L,
+                "submitted",
+                OffsetDateTime.parse("2026-04-25T12:00:00+09:00"),
+                "pending",
+                null,
+                null,
+                false
+        );
+        QuestSubmissionAttachmentItem attachment = new QuestSubmissionAttachmentItem(
+                88L,
+                5L,
+                77L,
+                "solution.zip",
+                "quests/5/submissions/77/checksum-solution.zip",
+                "/quests/5/submissions/77/attachments/checksum",
+                "application/zip",
+                5L,
+                "checksum",
+                OffsetDateTime.parse("2026-04-25T12:01:00+09:00")
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findQuest(USER.id(), 5L)).willReturn(Optional.of(quest));
+        given(p3Repository.findQuestSubmission(USER.id(), 5L)).willReturn(Optional.of(submission));
+        given(p2Repository.createOrFindAttachment(
+                eq("solution.zip"),
+                anyString(),
+                anyString(),
+                eq("application/zip"),
+                eq(5L),
+                anyString()
+        )).willReturn(88L);
+        given(p3Repository.findQuestSubmissionAttachment(5L, 77L, 88L)).willReturn(Optional.of(attachment));
+        PriorityApiService service = new PriorityApiService(repository, p2Repository, p3Repository);
+
+        QuestSubmissionAttachmentCreateResponse response = service.createQuestSubmissionAttachment(
+                5L,
+                77L,
+                new QuestSubmissionAttachmentRequest("solution.zip", "application/zip", "aGVsbG8=")
+        );
+
+        assertThat(response.item().id()).isEqualTo(88L);
+        assertThat(response.submission()).isEqualTo(submission);
+    }
+
+    @Test
+    void rejectsQuestSubmissionAttachmentForDifferentSubmission() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP2Repository p2Repository = mock(PriorityP2Repository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        QuestItem quest = new QuestItem(
+                5L,
+                "Algorithm Quest",
+                "assignment",
+                "required",
+                null,
+                null,
+                null,
+                "in_progress",
+                "submitted",
+                "pending"
+        );
+        QuestSubmissionItem submission = new QuestSubmissionItem(77L, 5L, "submitted", null, "pending", null, null, false);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findQuest(USER.id(), 5L)).willReturn(Optional.of(quest));
+        given(p3Repository.findQuestSubmission(USER.id(), 5L)).willReturn(Optional.of(submission));
+        PriorityApiService service = new PriorityApiService(repository, p2Repository, p3Repository);
+
+        assertThatThrownBy(() -> service.createQuestSubmissionAttachment(
+                5L,
+                78L,
+                new QuestSubmissionAttachmentRequest("solution.zip", "application/zip", "aGVsbG8=")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+
+        verify(p2Repository, never()).createOrFindAttachment(anyString(), anyString(), anyString(), anyString(), anyLong(), anyString());
+    }
+
+    @Test
+    void downloadsQuestSubmissionAttachmentForOwnerSubmission() throws Exception {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        PriorityP3Repository p3Repository = mock(PriorityP3Repository.class);
+        QuestItem quest = new QuestItem(5L, "Algorithm Quest", "assignment", "required", null, null, null, "in_progress", "submitted", "pending");
+        QuestSubmissionItem submission = new QuestSubmissionItem(77L, 5L, "submitted", null, "pending", null, null, false);
+        QuestSubmissionAttachmentItem attachment = new QuestSubmissionAttachmentItem(
+                88L,
+                5L,
+                77L,
+                "solution.zip",
+                "quests/5/submissions/77/test-download-solution.zip",
+                "/quests/5/submissions/77/attachments/test-download",
+                "application/zip",
+                5L,
+                "test-download",
+                null
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(p3Repository.findQuest(USER.id(), 5L)).willReturn(Optional.of(quest));
+        given(p3Repository.findQuestSubmission(USER.id(), 5L)).willReturn(Optional.of(submission));
+        given(p3Repository.findQuestSubmissionAttachment(5L, 77L, 88L)).willReturn(Optional.of(attachment));
+        Path storedFile = Path.of(System.getProperty("java.io.tmpdir"), "edussafy-attachments")
+                .resolve(attachment.storageKey())
+                .normalize();
+        Files.createDirectories(storedFile.getParent());
+        Files.writeString(storedFile, "hello", StandardCharsets.UTF_8);
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), p3Repository);
+
+        QuestSubmissionAttachmentDownload response = service.downloadQuestSubmissionAttachment(5L, 77L, 88L);
+
+        assertThat(response.item()).isEqualTo(attachment);
+        assertThat(response.content()).isEqualTo("hello".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test

@@ -52,6 +52,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfilePasswordChangeReque
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ReplayResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
@@ -591,6 +595,60 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.item.id").value(8))
                 .andExpect(jsonPath("$.item.questionCount").value(0))
                 .andExpect(jsonPath("$.item.questions").isArray());
+    }
+
+    @Test
+    void questSubmissionAttachmentCreateReturnsPersistedMetadata() throws Exception {
+        QuestSubmissionItem submission = new QuestSubmissionItem(77L, 7L, "submitted", null, "pending", null, null, false);
+        QuestSubmissionAttachmentItem attachment = new QuestSubmissionAttachmentItem(
+                88L,
+                7L,
+                77L,
+                "solution.zip",
+                "quests/7/submissions/77/abc-solution.zip",
+                "/quests/7/submissions/77/attachments/abc",
+                "application/zip",
+                5L,
+                "abc",
+                null
+        );
+        given(priorityApiService.createQuestSubmissionAttachment(eq(7L), eq(77L), any()))
+                .willReturn(new QuestSubmissionAttachmentCreateResponse(attachment, submission));
+
+        mockMvc.perform(post("/api/quests/7/submissions/77/attachments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"filename\":\"solution.zip\",\"mimeType\":\"application/zip\",\"contentBase64\":\"aGVsbG8=\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(88))
+                .andExpect(jsonPath("$.item.filename").value("solution.zip"))
+                .andExpect(jsonPath("$.submission.id").value(77));
+    }
+
+    @Test
+    void questSubmissionAttachmentDownloadReturnsStoredBytes() throws Exception {
+        QuestSubmissionAttachmentItem attachment = new QuestSubmissionAttachmentItem(
+                88L,
+                7L,
+                77L,
+                "solution.zip",
+                "quests/7/submissions/77/abc-solution.zip",
+                "/quests/7/submissions/77/attachments/abc",
+                "application/zip",
+                5L,
+                "abc",
+                null
+        );
+        given(priorityApiService.downloadQuestSubmissionAttachment(7L, 77L, 88L))
+                .willReturn(new QuestSubmissionAttachmentDownload(attachment, "hello".getBytes(StandardCharsets.UTF_8)));
+
+        mockMvc.perform(get("/api/quests/7/submissions/77/attachments/88"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/zip"))
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        "attachment; filename=\"=?UTF-8?Q?solution.zip?=\"; filename*=UTF-8''solution.zip"
+                ))
+                .andExpect(content().bytes("hello".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test

@@ -378,6 +378,7 @@ export interface QuestSubmissionDraft {
   questId: number;
   repositoryUrl?: string;
   content: string;
+  attachment?: QuestSubmissionAttachmentDraft;
 }
 
 export interface QuestSubmissionResult {
@@ -389,6 +390,30 @@ export interface QuestSubmissionResult {
   score?: number | null;
   gradedAt?: string | null;
   demo?: boolean;
+}
+
+export interface QuestSubmissionAttachmentDraft {
+  filename: string;
+  mimeType?: string;
+  contentBase64: string;
+}
+
+export interface QuestSubmissionAttachmentItem {
+  id: number;
+  questId: number;
+  submissionId: number;
+  filename: string;
+  storageKey?: string;
+  storedPath?: string;
+  mimeType?: string;
+  fileSize: number;
+  checksumSha256?: string;
+  createdAt?: string;
+}
+
+export interface QuestSubmissionAttachmentResult {
+  item: QuestSubmissionAttachmentItem;
+  submission: QuestSubmissionResult;
 }
 
 export interface SurveyResponseDraft {

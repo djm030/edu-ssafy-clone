@@ -3,7 +3,7 @@
 ## Final Verification Remaining Work (2026-04-26 KST)
 - Overall status: **PARTIAL**, not final complete.
 - PASS evidence now exists for auth/profile, attendance/appeals, board/post/comment/reaction, notifications, learning materials/resources/reactions, quests/submissions, support tickets/answers/attachments, local compose health, backend tests, frontend lint/build.
-- Still PARTIAL: survey edit/delete admin CRUD, board/quest binary attachment parity, full role-matrix coverage, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
+- Still PARTIAL: survey edit/delete admin CRUD, board binary attachment parity, full role-matrix coverage, mutation/error E2E coverage, browser visual/E2E verification, latest image rebuild verification after Docker metadata stall.
 - Rebuild blocker: `docker compose --profile app up -d --build` stalled while resolving Docker Hub metadata for base images and was cancelled; rerun on a stable Docker network/cache before final release.
 - Do not declare all-PASS until the PARTIAL rows in `docs/final-verification.md` are implemented and reverified.
 
@@ -52,7 +52,7 @@ Decision: keep this file non-empty and continue implementation tasks. Do not del
 | Notifications | partial | List exists and R6 source adds classmate send API; add durable send/read/delete persistence and live rebuild verification. |
 | Curriculum/replays | partial | Lists exist and frontend adapters now map backend DTOs; add richer filters, replay authorization and progress state. |
 | Materials/resources | partial | List/detail/resources, like/bookmark, and material resource byte attachments exist; add richer viewer fidelity/favorite semantics. |
-| Quest/evaluation | partial | List/detail/submit exists; add result detail, file attachments, grading status. |
+| Quest/evaluation | partial | List/detail/submit, result detail, grading status, and owner submission file attachments exist; add richer evaluator review workflow. |
 | Survey | partial | List/detail/respond exists with DTO-aligned frontend payload; add full questions/options DTOs and persisted responses. |
 | Board/community | partial | List/detail/write/comment/reaction exists; add attachments, edit/delete, permissions. |
 | 1:1 inquiry | partial | Ticket list/create exists and QNA new page uses support tickets; add thread messages, answers, status transitions, attachments. |
@@ -106,7 +106,7 @@ At the end of every round, re-check this file against `docs/collaboration/API_CA
 1. Java 21 CI/runtime 고정 또는 Mockito/Byte Buddy 테스트 도구 업그레이드로 backend test unblock.
 2. Server-side RBAC guard를 controller/service 레벨에 적용하고 learner/operator/admin 권한 test 추가.
 3. Admin campus/cohort/track/class demo flow를 persisted CRUD/edit/delete로 확장.
-3. 첨부파일 업로드/다운로드 API의 board byte download와 quest submission 연결.
+3. 첨부파일 업로드/다운로드 API의 board byte download 연결.
 4. 설문 질문/선택지/응답 저장 depth 구현.
 5. 지원 티켓 thread/answer/status transition 구현.
 6. Browser E2E smoke와 GitHub Actions CI 추가.

@@ -5,11 +5,11 @@
 - Attendance appeals now include list, pending staff list, create, cancel, and resolve endpoints.
 - Notifications include list, read one, read all, delete, plus classmate notification send.
 - Learning materials include list/detail/resources/view-count, staff resource attachment upload/download, and like/bookmark reaction create/delete.
-- Quests include list/detail/current submission/submission upsert.
+- Quests include list/detail/current submission/submission upsert plus owner-scoped submission attachment upload/download.
 - Surveys include list/detail/create/current response/response submit; edit/delete admin CRUD remains future work.
 - Board endpoints include post create/update/delete, attachment metadata create/delete, comment create/update/delete, and reaction create/delete.
 - Support endpoints include ticket list/detail/create, user message create, staff answer create, support attachment metadata create, and attachment byte download.
-- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, quest/board binary download parity, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
+- Remaining API gaps before final service readiness: survey edit/delete admin CRUD, board binary download parity, full role-matrix documentation/tests, and broader Spring REST Docs/OpenAPI coverage beyond the documented survey creation mutation.
 
 
 ## Task 69 Endpoint Matrix (worker-4, 2026-04-24)
@@ -41,6 +41,8 @@
 | `/api/quests` | GET | `page`, `size` optional | `{ items, page }` quest list | Yes (demo) | `/quest` |
 | `/api/quests/{id}` | GET | path `id` | `{ item/quest }` quest detail | Yes (demo) | `/quest/:id`, `/quest/:id/submit` |
 | `/api/quests/{id}/submissions` | POST | path `id`, body `{ content, attachmentUrl? }` | created submission `{ item }` | Yes (demo) | `/quest/:id/submit` |
+| `/api/quests/{id}/submissions/{submissionId}/attachments` | POST | owner path ids, body `{ filename, mimeType?, contentBase64 }` | created attachment `{ item, submission }` | Yes (demo) | `/quest/:id/submit` |
+| `/api/quests/{id}/submissions/{submissionId}/attachments/{attachmentId}` | GET | owner path ids | attachment bytes with content disposition | Yes (demo) | frontend API helper |
 | `/api/surveys` | GET | `page`, `size` optional | `{ items, page }` survey list | Yes (demo) | `/survey` |
 | `/api/surveys` | POST | body `{ title, category, required, status, startAt, endAt, questions[] }` | created survey `{ item }` | Coach/Admin | `/survey` manager form |
 | `/api/surveys/{id}` | GET | path `id` | `{ item/survey }` survey detail | Yes (demo) | `/survey/:id`, `/survey/:id/respond` |
@@ -87,6 +89,7 @@
 - `GET /api/learning/materials`, `GET /api/learning/materials/{id}`, `GET /api/learning/materials/{id}/resources`
 - `POST /api/learning/materials/{id}/resources/{resourceId}/attachments`, `GET /api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}`
 - `GET /api/quests`, `GET /api/quests/{id}`, `POST /api/quests/{id}/submissions`
+- `POST /api/quests/{id}/submissions/{submissionId}/attachments`, `GET /api/quests/{id}/submissions/{submissionId}/attachments/{attachmentId}`
 - `GET /api/surveys`, `POST /api/surveys`, `GET /api/surveys/{id}`, `POST /api/surveys/{id}/responses`
 - `GET /api/boards/{boardCode}/categories`, `GET /api/boards/{boardCode}/posts`, `GET /api/boards/{boardCode}/posts/{postId}`
 - `POST /api/boards/{boardCode}/posts`, `POST /api/boards/{boardCode}/posts/{postId}/comments`, `POST /api/boards/{boardCode}/posts/{postId}/reactions`
@@ -118,7 +121,7 @@
 - Password recovery/session expiry endpoints.
 - Durable notification mark-read/delete/send persistence and recipient targeting.
 - Material like/bookmark/favorite reactions.
-- Attachment upload/download APIs remain for quest submissions and board byte downloads; material resource and support ticket byte flows now exist.
+- Attachment upload/download APIs remain for board byte downloads; material resource, support ticket, and quest submission byte flows now exist.
 - Full survey question/option detail and persisted responses.
 - Support ticket thread messages, answers, status transitions, internal memo/admin response.
 - RBAC-protected endpoints for learner/operator/admin roles.

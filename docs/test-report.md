@@ -1,5 +1,15 @@
 # Test Report
 
+## Quest Submission Attachment Verification (2026-04-26 KST)
+- Implemented owner-scoped quest submission attachment upload/download endpoints backed by the shared `attachments` table and local byte storage.
+- Connected `/quest/:id/submit` to read an optional file, submit the quest, and then upload the attachment against the persisted submission id.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q -Dtest=PriorityApiServiceTest,PriorityApiControllerTest test` -> PASS.
+- `cd frontend && npm run build` -> PASS, Vite transformed 71 modules.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -q test` -> PASS, surefire reports 158 tests, 0 failures, 0 errors.
+- `cd frontend && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+
+
 ## Learning Material Resource Attachment Verification (2026-04-26 KST)
 - Implemented coach/admin `POST /api/learning/materials/{id}/resources/{resourceId}/attachments` using the shared `attachments` table plus `learning_material_resource_attachments` link table and local byte storage.
 - Implemented authenticated `GET /api/learning/materials/{id}/resources/{resourceId}/attachments/{attachmentId}` byte download with `Content-Disposition`.

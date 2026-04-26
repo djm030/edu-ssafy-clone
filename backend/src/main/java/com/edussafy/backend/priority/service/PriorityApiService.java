@@ -46,6 +46,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ProfileResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ProfileUpdateRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.RoleAccessResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionItem;
@@ -635,6 +639,51 @@ public class PriorityApiService {
         return new QuestSubmissionResponse(item);
     }
 
+    @Transactional
+    public QuestSubmissionAttachmentCreateResponse createQuestSubmissionAttachment(
+            long questId,
+            long submissionId,
+            QuestSubmissionAttachmentRequest request
+    ) {
+        UserProfile user = currentUser();
+        QuestSubmissionItem submission = currentUserQuestSubmission(user.id(), questId, submissionId);
+        byte[] fileBytes = decodeAttachment(request.contentBase64(), "Quest submission attachment");
+        String filename = sanitizeAttachmentFilename(request.filename(), "Quest submission attachment");
+        String mimeType = normalizeWithDefault(request.mimeType(), "application/octet-stream");
+        String checksum = sha256Hex(fileBytes);
+        String storageKey = "quests/%d/submissions/%d/%s-%s".formatted(
+                questId,
+                submissionId,
+                checksum.substring(0, 12),
+                filename
+        );
+        String storedPath = "/quests/%d/submissions/%d/attachments/%s".formatted(questId, submissionId, checksum);
+        long attachmentId = p2Repository.createOrFindAttachment(
+                filename,
+                storageKey,
+                storedPath,
+                mimeType,
+                fileBytes.length,
+                checksum
+        );
+        QuestSubmissionAttachmentItem attachment = p3Repository.findQuestSubmissionAttachment(questId, submissionId, attachmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest submission attachment not found."));
+        storeQuestSubmissionAttachment(attachment, fileBytes);
+        return new QuestSubmissionAttachmentCreateResponse(attachment, submission);
+    }
+
+    public QuestSubmissionAttachmentDownload downloadQuestSubmissionAttachment(
+            long questId,
+            long submissionId,
+            long attachmentId
+    ) {
+        UserProfile user = currentUser();
+        currentUserQuestSubmission(user.id(), questId, submissionId);
+        QuestSubmissionAttachmentItem attachment = p3Repository.findQuestSubmissionAttachment(questId, submissionId, attachmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest submission attachment not found."));
+        return new QuestSubmissionAttachmentDownload(attachment, readQuestSubmissionAttachment(attachment));
+    }
+
     public SurveysResponse surveys(int page, int size) {
         UserProfile user = currentUser();
         long total = safe(() -> repository.countSurveys(user.id()), 0L);
@@ -1206,6 +1255,42 @@ public class PriorityApiService {
     private Path materialResourceAttachmentPath(MaterialResourceAttachmentItem attachment) {
         String storageKey = normalizeWithDefault(attachment.storageKey(), "learning/materials/resources/attachments/%d".formatted(attachment.id()));
         return safeAttachmentPath(storageKey, "Learning material attachment");
+    }
+
+    private QuestSubmissionItem currentUserQuestSubmission(long userId, long questId, long submissionId) {
+        p3Repository.findQuest(userId, questId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest not found."));
+        QuestSubmissionItem submission = p3Repository.findQuestSubmission(userId, questId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest submission not found."));
+        if (submission.id() != submissionId) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest submission not found.");
+        }
+        return submission;
+    }
+
+    private void storeQuestSubmissionAttachment(QuestSubmissionAttachmentItem attachment, byte[] content) {
+        Path path = questSubmissionAttachmentPath(attachment);
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Quest submission attachment could not be stored.", exception);
+        }
+    }
+
+    private byte[] readQuestSubmissionAttachment(QuestSubmissionAttachmentItem attachment) {
+        try {
+            return Files.readAllBytes(questSubmissionAttachmentPath(attachment));
+        } catch (NoSuchFileException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Quest submission attachment file was not found.", exception);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Quest submission attachment could not be read.", exception);
+        }
+    }
+
+    private Path questSubmissionAttachmentPath(QuestSubmissionAttachmentItem attachment) {
+        String storageKey = normalizeWithDefault(attachment.storageKey(), "quests/submissions/attachments/%d".formatted(attachment.id()));
+        return safeAttachmentPath(storageKey, "Quest submission attachment");
     }
 
     private Path safeAttachmentPath(String storageKey, String label) {

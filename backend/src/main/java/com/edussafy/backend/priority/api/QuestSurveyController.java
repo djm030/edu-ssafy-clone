@@ -1,6 +1,9 @@
 package com.edussafy.backend.priority.api;
 
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestDetailResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentCreateResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentDownload;
+import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionAttachmentRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.QuestSubmissionResponse;
@@ -15,7 +18,12 @@ import com.edussafy.backend.priority.service.PriorityApiService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.nio.charset.StandardCharsets;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -62,6 +70,39 @@ public class QuestSurveyController {
             @Valid @RequestBody QuestSubmissionRequest request
     ) {
         return priorityApiService.submitQuest(id, request);
+    }
+
+    @PostMapping("/quests/{id}/submissions/{submissionId}/attachments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public QuestSubmissionAttachmentCreateResponse createQuestSubmissionAttachment(
+            @PathVariable @Min(1) long id,
+            @PathVariable @Min(1) long submissionId,
+            @Valid @RequestBody QuestSubmissionAttachmentRequest request
+    ) {
+        return priorityApiService.createQuestSubmissionAttachment(id, submissionId, request);
+    }
+
+    @GetMapping("/quests/{id}/submissions/{submissionId}/attachments/{attachmentId}")
+    public ResponseEntity<byte[]> downloadQuestSubmissionAttachment(
+            @PathVariable @Min(1) long id,
+            @PathVariable @Min(1) long submissionId,
+            @PathVariable @Min(1) long attachmentId
+    ) {
+        QuestSubmissionAttachmentDownload download = priorityApiService.downloadQuestSubmissionAttachment(
+                id,
+                submissionId,
+                attachmentId
+        );
+        String mimeType = download.item().mimeType() == null || download.item().mimeType().isBlank()
+                ? MediaType.APPLICATION_OCTET_STREAM_VALUE
+                : download.item().mimeType();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(mimeType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(download.item().filename(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .body(download.content());
     }
 
     @GetMapping("/surveys")
