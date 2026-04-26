@@ -37,6 +37,9 @@ jobs:
           docker compose -f compose.yml --profile app config >/tmp/compose-app.yml
           docker compose -f compose.observability.yml config >/tmp/compose-observability.yml
 
+      - name: Scan for forbidden credential markers
+        run: scripts/dev/scan-secrets.sh
+
       - name: Verify OpenAPI smoke contract markers
         run: |
           grep -F '/api/auth/login' docs/openapi.yaml

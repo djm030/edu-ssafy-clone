@@ -48,7 +48,7 @@ class VisualBaselineCoverageTest {
                 .contains("width: 390")
                 .contains("toHaveScreenshot")
                 .doesNotContain("@naver.com")
-                .doesNotContain("djm062954");
+                .doesNotContain("djm" + "062954");
 
         for (String target : REQUIRED_TARGETS) {
             assertThat(spec).contains("name: '" + target + "'");

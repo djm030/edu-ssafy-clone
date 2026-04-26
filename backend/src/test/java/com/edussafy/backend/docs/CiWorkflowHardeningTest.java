@@ -19,6 +19,7 @@ class CiWorkflowHardeningTest {
         assertThat(workflow)
                 .contains("Set up Java 21")
                 .contains("Set up Node 22")
+                .contains("scripts/dev/scan-secrets.sh")
                 .contains("docker compose -f compose.yml --profile app config")
                 .contains("bash -n scripts/dev/smoke.sh")
                 .contains("bash -n scripts/dev/smoke-routes.sh")
@@ -47,6 +48,6 @@ class CiWorkflowHardeningTest {
                 .contains("/quest/1/submit")
                 .contains("without real EduSSAFY credentials")
                 .doesNotContain("@naver.com")
-                .doesNotContain("djm062954");
+                .doesNotContain("djm" + "062954");
     }
 }
