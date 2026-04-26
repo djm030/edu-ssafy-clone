@@ -40,6 +40,8 @@ import type {
   LearningMaterial,
   LearningMaterialResource,
   LearningMaterialViewResult,
+  LiveSessionItem,
+  LiveSessionJoinResult,
   LoginResponse,
   MaterialResourceAttachmentDraft,
   MaterialResourceAttachmentResult,
@@ -159,6 +161,14 @@ type BackendEbookItem = Partial<EbookItem> & {
 type BackendRequiredStudyItem = Partial<RequiredStudyItem> & {
   dueAt?: string | null;
   completedAt?: string | null;
+};
+
+type BackendLiveSessionItem = Partial<LiveSessionItem> & {
+  startsAt?: string | null;
+  endsAt?: string | null;
+  createdAt?: string | null;
+  lastJoinedAt?: string | null;
+  joinCount?: number | null;
 };
 
 type BackendMaterialResource = {
@@ -454,6 +464,28 @@ function toRequiredStudyItem(item: BackendRequiredStudyItem): RequiredStudyItem 
     status: toRequiredStudyStatus(item.status),
     progressPercent: Number(item.progressPercent ?? 0),
     completedAt: item.completedAt || undefined,
+  };
+}
+
+function toLiveSessionStatus(value?: string | null): LiveSessionItem['status'] {
+  if (value === 'scheduled' || value === 'ended') return value;
+  return 'live';
+}
+
+function toLiveSessionItem(item: BackendLiveSessionItem): LiveSessionItem {
+  return {
+    id: Number(item.id),
+    title: item.title || '라이브 강의',
+    track: item.track || undefined,
+    cohort: item.cohort || undefined,
+    classRoom: item.classRoom || undefined,
+    startsAt: item.startsAt || '',
+    endsAt: item.endsAt || '',
+    joinUrl: item.joinUrl || '#',
+    status: toLiveSessionStatus(item.status),
+    createdAt: item.createdAt || undefined,
+    lastJoinedAt: item.lastJoinedAt || undefined,
+    joinCount: Number(item.joinCount ?? 0),
   };
 }
 
@@ -831,6 +863,22 @@ export function getRequiredStudy(studyId: number): Promise<RequiredStudyItem> {
 export function completeRequiredStudy(studyId: number): Promise<RequiredStudyCompleteResult> {
   return fetchJson<{ item: BackendRequiredStudyItem }>(`/api/required-studies/${studyId}/complete`, { method: 'POST' })
     .then((response) => ({ item: toRequiredStudyItem(response.item) }));
+}
+
+export function getTodayLiveSessions(): Promise<{ items: LiveSessionItem[] }> {
+  return fetchJson<{ items: BackendLiveSessionItem[] }>('/api/live-sessions/today')
+    .then((response) => ({ items: response.items.map(toLiveSessionItem) }));
+}
+
+export function getCurrentLiveSession(): Promise<LiveSessionItem | undefined> {
+  return fetchJson<{ item?: BackendLiveSessionItem | null }>('/api/live-sessions/current')
+    .then((response) => (response.item ? toLiveSessionItem(response.item) : undefined));
+}
+
+export function joinLiveSession(sessionId: number): Promise<LiveSessionJoinResult> {
+  return fetchJson<{ item: BackendLiveSessionItem; joinLog: LiveSessionJoinResult['joinLog'] }>(`/api/live-sessions/${sessionId}/join`, {
+    method: 'POST',
+  }).then((response) => ({ item: toLiveSessionItem(response.item), joinLog: response.joinLog }));
 }
 
 export function getElearningProgress(query: {

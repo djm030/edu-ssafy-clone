@@ -19,6 +19,7 @@ import ElearningPage from './pages/ElearningPage';
 import EducationStatusPage from './pages/EducationStatusPage';
 import EbooksPage from './pages/EbooksPage';
 import LevelPage from './pages/LevelPage';
+import LiveSessionsPage from './pages/LiveSessionsPage';
 import LoginPage from './pages/LoginPage';
 import MaterialDetailPage from './pages/MaterialDetailPage';
 import MaterialViewerPage from './pages/MaterialViewerPage';
@@ -266,6 +267,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/pledges') return <PledgesPage />;
   if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
+  if (path === '/learning/live') return <LiveSessionsPage />;
   if (path === '/learning/materials') return <MaterialsPage />;
   if (path === '/learning/required-studies') return <RequiredStudiesPage />;
   if (path === '/learning/replays') return <ReplaysPage />;

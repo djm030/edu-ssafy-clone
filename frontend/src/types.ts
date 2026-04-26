@@ -155,6 +155,30 @@ export interface RequiredStudyCompleteResult {
   item: RequiredStudyItem;
 }
 
+export interface LiveSessionItem {
+  id: number;
+  title: string;
+  track?: string | null;
+  cohort?: string | null;
+  classRoom?: string | null;
+  startsAt: string;
+  endsAt: string;
+  joinUrl: string;
+  status: 'scheduled' | 'live' | 'ended';
+  createdAt?: string | null;
+  lastJoinedAt?: string | null;
+  joinCount: number;
+}
+
+export interface LiveSessionJoinResult {
+  item: LiveSessionItem;
+  joinLog: {
+    id: number;
+    sessionId: number;
+    joinedAt: string;
+  };
+}
+
 export interface AttendanceRecord {
   id: number;
   date: string;

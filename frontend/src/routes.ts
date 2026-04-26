@@ -37,6 +37,7 @@ export const navSections: NavSection[] = [
   {
     title: '학습',
     items: [
+      { path: '/learning/live', label: '라이브 바로가기' },
       { path: '/learning/curriculum', label: '커리큘럼' },
       { path: '/learning/materials', label: '학습자료' },
       { path: '/learning/required-studies', label: '필수학습' },
@@ -88,6 +89,7 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'education-status', priority: 14, feature: '교육현황', path: '/mycampus/education-status', label: '교육현황' },
   { id: 'ebooks', priority: 15, feature: 'SSAFY e-book', path: '/mycampus/ebooks', label: 'SSAFY e-book' },
   { id: 'ebook-detail', priority: 15, feature: 'SSAFY e-book', path: '/mycampus/ebooks/1', label: 'SSAFY e-book 상세' },
+  { id: 'live-sessions', priority: 17, feature: '라이브 바로가기', path: '/learning/live', label: '라이브 바로가기' },
   { id: 'curriculum', priority: 7, feature: '커리큘럼', path: '/learning/curriculum', label: '커리큘럼' },
   { id: 'materials', priority: 7, feature: '학습자료', path: '/learning/materials', label: '학습자료 목록' },
   { id: 'material-detail', priority: 7, feature: '학습자료', path: '/learning/materials/1', label: '학습자료 상세' },

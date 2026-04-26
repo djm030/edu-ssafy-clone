@@ -19,6 +19,8 @@ import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialResourceItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
@@ -362,6 +364,72 @@ public class PriorityApiRepository {
                 .update();
     }
 
+    public List<LiveSessionItem> findTodayLiveSessions(long userId) {
+        return jdbcClient.sql(liveSessionSelect(liveSessionVisibilityWhere() + """
+                AND DATE(ls.starts_at) = CURRENT_DATE
+                ORDER BY ls.starts_at ASC, ls.live_session_id ASC
+                """))
+                .param("userId", userId)
+                .query(this::mapLiveSession)
+                .list();
+    }
+
+    public Optional<LiveSessionItem> findCurrentLiveSession(long userId) {
+        return jdbcClient.sql(liveSessionSelect(liveSessionVisibilityWhere() + """
+                AND ls.starts_at <= CURRENT_TIMESTAMP
+                AND ls.ends_at > CURRENT_TIMESTAMP
+                ORDER BY ls.starts_at DESC, ls.live_session_id DESC
+                LIMIT 1
+                """))
+                .param("userId", userId)
+                .query(this::mapLiveSession)
+                .optional();
+    }
+
+    public Optional<LiveSessionItem> findLiveSession(long userId, long sessionId) {
+        return jdbcClient.sql(liveSessionSelect(liveSessionVisibilityWhere() + """
+                AND ls.live_session_id = :sessionId
+                LIMIT 1
+                """))
+                .param("userId", userId)
+                .param("sessionId", sessionId)
+                .query(this::mapLiveSession)
+                .optional();
+    }
+
+    public long createLiveSessionJoinLog(long userId, long sessionId) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO live_session_join_logs (live_session_id, user_id)
+                VALUES (:sessionId, :userId)
+                """)
+                .param("sessionId", sessionId)
+                .param("userId", userId)
+                .update(keyHolder, "live_session_join_log_id");
+        Number key = keyHolder.getKey();
+        return key == null ? 0L : key.longValue();
+    }
+
+    public Optional<LiveSessionJoinLogItem> findLiveSessionJoinLog(long userId, long sessionId, long joinLogId) {
+        return jdbcClient.sql("""
+                SELECT live_session_join_log_id, live_session_id, joined_at
+                FROM live_session_join_logs
+                WHERE live_session_join_log_id = :joinLogId
+                  AND live_session_id = :sessionId
+                  AND user_id = :userId
+                LIMIT 1
+                """)
+                .param("joinLogId", joinLogId)
+                .param("sessionId", sessionId)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new LiveSessionJoinLogItem(
+                        rs.getLong("live_session_join_log_id"),
+                        rs.getLong("live_session_id"),
+                        toOffset(rs.getTimestamp("joined_at"))
+                ))
+                .optional();
+    }
+
     public AttendanceSummary findAttendanceSummary(long userId) {
         return findAttendanceSummary(userId, null, null, null);
     }
@@ -678,6 +746,94 @@ public class PriorityApiRepository {
                 rs.getString("effective_status"),
                 rs.getInt("progress_percent"),
                 toOffset(rs.getTimestamp("completed_at"))
+        );
+    }
+
+    private String liveSessionVisibilityWhere() {
+        return """
+                WHERE ls.active_yn = TRUE
+                  AND (
+                      ls.track IS NULL
+                      OR EXISTS (
+                          SELECT 1
+                          FROM user_track_enrollments ute
+                          JOIN tracks t ON t.track_id = ute.track_id
+                          WHERE ute.user_id = :userId
+                            AND t.track_name = ls.track
+                      )
+                  )
+                  AND (
+                      ls.cohort IS NULL
+                      OR EXISTS (
+                          SELECT 1
+                          FROM user_track_enrollments ute
+                          JOIN cohorts c ON c.cohort_id = ute.cohort_id
+                          WHERE ute.user_id = :userId
+                            AND c.cohort_name = ls.cohort
+                      )
+                  )
+                  AND (
+                      ls.class_room IS NULL
+                      OR EXISTS (
+                          SELECT 1
+                          FROM user_class_enrollments uce
+                          JOIN class_groups cg ON cg.class_group_id = uce.class_group_id
+                          WHERE uce.user_id = :userId
+                            AND cg.class_name = ls.class_room
+                      )
+                  )
+                """;
+    }
+
+    private String liveSessionSelect(String suffix) {
+        return """
+                SELECT
+                    ls.live_session_id,
+                    ls.title,
+                    ls.track,
+                    ls.cohort,
+                    ls.class_room,
+                    ls.starts_at,
+                    ls.ends_at,
+                    ls.join_url,
+                    CASE
+                        WHEN CURRENT_TIMESTAMP < ls.starts_at THEN 'scheduled'
+                        WHEN CURRENT_TIMESTAMP >= ls.starts_at AND CURRENT_TIMESTAMP < ls.ends_at THEN 'live'
+                        ELSE 'ended'
+                    END AS effective_status,
+                    ls.created_at,
+                    latest_join.last_joined_at,
+                    COALESCE(join_counts.join_count, 0) AS join_count
+                FROM live_sessions ls
+                LEFT JOIN (
+                    SELECT live_session_id, MAX(joined_at) AS last_joined_at
+                    FROM live_session_join_logs
+                    WHERE user_id = :userId
+                    GROUP BY live_session_id
+                ) latest_join ON latest_join.live_session_id = ls.live_session_id
+                LEFT JOIN (
+                    SELECT live_session_id, COUNT(*) AS join_count
+                    FROM live_session_join_logs
+                    WHERE user_id = :userId
+                    GROUP BY live_session_id
+                ) join_counts ON join_counts.live_session_id = ls.live_session_id
+                """ + suffix;
+    }
+
+    private LiveSessionItem mapLiveSession(ResultSet rs, int rowNum) throws SQLException {
+        return new LiveSessionItem(
+                rs.getLong("live_session_id"),
+                rs.getString("title"),
+                rs.getString("track"),
+                rs.getString("cohort"),
+                rs.getString("class_room"),
+                toOffset(rs.getTimestamp("starts_at")),
+                toOffset(rs.getTimestamp("ends_at")),
+                rs.getString("join_url"),
+                rs.getString("effective_status"),
+                toOffset(rs.getTimestamp("created_at")),
+                toOffset(rs.getTimestamp("last_joined_at")),
+                rs.getLong("join_count")
         );
     }
 

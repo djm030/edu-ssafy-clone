@@ -52,6 +52,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EbookDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialDetailResponse;
@@ -822,6 +827,35 @@ public class PriorityApiService {
         RequiredStudyItem item = repository.findRequiredStudy(user.id(), studyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Required study not found."));
         return new RequiredStudyCompleteResponse(item);
+    }
+
+    public LiveSessionsResponse todayLiveSessions() {
+        UserProfile user = currentUser();
+        List<LiveSessionItem> items = safe(() -> repository.findTodayLiveSessions(user.id()), List.of());
+        return new LiveSessionsResponse(items);
+    }
+
+    public CurrentLiveSessionResponse currentLiveSession() {
+        UserProfile user = currentUser();
+        LiveSessionItem item = safe(() -> repository.findCurrentLiveSession(user.id()), Optional.<LiveSessionItem>empty())
+                .orElse(null);
+        return new CurrentLiveSessionResponse(item);
+    }
+
+    @Transactional
+    public LiveSessionJoinResponse joinLiveSession(long sessionId) {
+        UserProfile user = currentUser();
+        LiveSessionItem session = repository.findLiveSession(user.id(), sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Live session not found."));
+        if ("ended".equals(session.status())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ended live session cannot be joined.");
+        }
+        long joinLogId = repository.createLiveSessionJoinLog(user.id(), sessionId);
+        LiveSessionJoinLogItem joinLog = repository.findLiveSessionJoinLog(user.id(), sessionId, joinLogId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Live session join log was not saved."));
+        LiveSessionItem updated = repository.findLiveSession(user.id(), sessionId)
+                .orElse(session);
+        return new LiveSessionJoinResponse(updated, joinLog);
     }
 
     public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {

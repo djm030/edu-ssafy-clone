@@ -60,6 +60,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EbookDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationDeleteResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.NotificationReadResponse;
@@ -150,6 +155,7 @@ import org.springframework.web.context.WebApplicationContext;
         EducationStatusController.class,
         EbookController.class,
         RequiredStudyController.class,
+        LiveSessionController.class,
         AttendanceController.class,
         NotificationController.class,
         LearningController.class,
@@ -482,6 +488,55 @@ class PriorityApiControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.status").value("completed"))
                 .andExpect(jsonPath("$.item.progressPercent").value(100));
+    }
+
+    @Test
+    void liveSessionEndpointsReturnTodayCurrentAndJoinLog() throws Exception {
+        LiveSessionItem live = new LiveSessionItem(
+                11L,
+                "Java 라이브 알고리즘 코칭",
+                "Java",
+                "12th",
+                "Seoul Java 1",
+                OffsetDateTime.parse("2026-04-26T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-26T11:00:00+09:00"),
+                "https://edu.ssafy.local/live/java-algorithm",
+                "live",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                null,
+                0
+        );
+        LiveSessionItem joined = new LiveSessionItem(
+                11L,
+                "Java 라이브 알고리즘 코칭",
+                "Java",
+                "12th",
+                "Seoul Java 1",
+                OffsetDateTime.parse("2026-04-26T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-26T11:00:00+09:00"),
+                "https://edu.ssafy.local/live/java-algorithm",
+                "live",
+                OffsetDateTime.parse("2026-04-25T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
+                1
+        );
+        given(priorityApiService.todayLiveSessions()).willReturn(new LiveSessionsResponse(List.of(live)));
+        given(priorityApiService.currentLiveSession()).willReturn(new CurrentLiveSessionResponse(live));
+        given(priorityApiService.joinLiveSession(11L)).willReturn(new LiveSessionJoinResponse(
+                joined,
+                new LiveSessionJoinLogItem(88L, 11L, OffsetDateTime.parse("2026-04-26T10:00:00+09:00"))
+        ));
+
+        mockMvc.perform(get("/api/live-sessions/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("live"));
+        mockMvc.perform(get("/api/live-sessions/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.item.id").value(11));
+        mockMvc.perform(post("/api/live-sessions/11/join"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.joinCount").value(1))
+                .andExpect(jsonPath("$.joinLog.sessionId").value(11));
     }
 
     @Test

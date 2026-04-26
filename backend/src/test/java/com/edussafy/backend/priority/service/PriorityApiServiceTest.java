@@ -53,6 +53,11 @@ import com.edussafy.backend.priority.dto.PriorityDtos.EbookAccessLogResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbookItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.EbooksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningResumeResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinLogItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionJoinResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionsResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LoginRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.MaterialReactionResponse;
@@ -367,6 +372,88 @@ class PriorityApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
         verify(repository, never()).completeRequiredStudy(anyLong(), anyLong());
+    }
+
+    @Test
+    void liveSessionsListCurrentAndJoinUseCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        LiveSessionItem live = new LiveSessionItem(
+                11L,
+                "Java 라이브 알고리즘 코칭",
+                "Java",
+                "12th",
+                "Seoul Java 1",
+                OffsetDateTime.now().minusMinutes(30),
+                OffsetDateTime.now().plusMinutes(90),
+                "https://edu.ssafy.local/live/java-algorithm",
+                "live",
+                OffsetDateTime.now().minusDays(1),
+                null,
+                0
+        );
+        LiveSessionItem joined = new LiveSessionItem(
+                11L,
+                "Java 라이브 알고리즘 코칭",
+                "Java",
+                "12th",
+                "Seoul Java 1",
+                live.startsAt(),
+                live.endsAt(),
+                "https://edu.ssafy.local/live/java-algorithm",
+                "live",
+                live.createdAt(),
+                OffsetDateTime.now(),
+                1
+        );
+        LiveSessionJoinLogItem joinLog = new LiveSessionJoinLogItem(88L, 11L, OffsetDateTime.now());
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findTodayLiveSessions(USER.id())).willReturn(List.of(live));
+        given(repository.findCurrentLiveSession(USER.id())).willReturn(Optional.of(live));
+        given(repository.findLiveSession(USER.id(), 11L)).willReturn(Optional.of(live), Optional.of(joined));
+        given(repository.createLiveSessionJoinLog(USER.id(), 11L)).willReturn(88L);
+        given(repository.findLiveSessionJoinLog(USER.id(), 11L, 88L)).willReturn(Optional.of(joinLog));
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        LiveSessionsResponse today = service.todayLiveSessions();
+        CurrentLiveSessionResponse current = service.currentLiveSession();
+        LiveSessionJoinResponse joinedResponse = service.joinLiveSession(11L);
+
+        assertThat(today.items()).containsExactly(live);
+        assertThat(current.item()).isEqualTo(live);
+        assertThat(joinedResponse.item().joinCount()).isEqualTo(1);
+        assertThat(joinedResponse.joinLog()).isEqualTo(joinLog);
+        verify(repository).createLiveSessionJoinLog(USER.id(), 11L);
+    }
+
+    @Test
+    void liveSessionJoinRejectsEndedOrInvisibleSession() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        LiveSessionItem ended = new LiveSessionItem(
+                12L,
+                "종료된 라이브",
+                "Java",
+                "12th",
+                "Seoul Java 1",
+                OffsetDateTime.now().minusHours(3),
+                OffsetDateTime.now().minusHours(1),
+                "https://edu.ssafy.local/live/ended",
+                "ended",
+                OffsetDateTime.now().minusDays(1),
+                null,
+                0
+        );
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findLiveSession(USER.id(), 12L)).willReturn(Optional.of(ended));
+        given(repository.findLiveSession(USER.id(), 99L)).willReturn(Optional.empty());
+        PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
+
+        assertThatThrownBy(() -> service.joinLiveSession(12L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+        assertThatThrownBy(() -> service.joinLiveSession(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+        verify(repository, never()).createLiveSessionJoinLog(anyLong(), anyLong());
     }
 
     @Test

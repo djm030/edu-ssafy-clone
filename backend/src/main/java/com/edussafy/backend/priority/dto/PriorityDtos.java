@@ -177,6 +177,34 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record LiveSessionsResponse(List<LiveSessionItem> items) {
+    }
+
+    public record CurrentLiveSessionResponse(LiveSessionItem item) {
+    }
+
+    public record LiveSessionJoinResponse(LiveSessionItem item, LiveSessionJoinLogItem joinLog) {
+    }
+
+    public record LiveSessionItem(
+            long id,
+            String title,
+            String track,
+            String cohort,
+            String classRoom,
+            OffsetDateTime startsAt,
+            OffsetDateTime endsAt,
+            String joinUrl,
+            String status,
+            OffsetDateTime createdAt,
+            OffsetDateTime lastJoinedAt,
+            long joinCount
+    ) {
+    }
+
+    public record LiveSessionJoinLogItem(long id, long sessionId, OffsetDateTime joinedAt) {
+    }
+
     public record AttendanceRecordsResponse(AttendanceSummary summary, List<AttendanceRecordItem> items) {
     }
 

@@ -41,6 +41,7 @@ class FrontendRouteSmokeCoverageTest {
             "/help/qna/new",
             "/help/qna/tickets/1",
             "/mycampus/notifications",
+            "/learning/live",
             "/learning/curriculum",
             "/learning/materials",
             "/learning/materials/1",
@@ -78,6 +79,7 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(app).contains("if (path === '/mycampus/pledges')");
         assertThat(app).contains("if (path === '/mycampus/ebooks')");
         assertThat(app).contains("if (path === '/learning/required-studies')");
+        assertThat(app).contains("if (path === '/learning/live')");
         assertThat(app).contains("match(/^\\/mycampus\\/pledges\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/ebooks\\/(\\d+)$/)");
         assertThat(app).contains("match(/^\\/mycampus\\/elearning\\/(\\d+)$/)");
@@ -106,6 +108,7 @@ class FrontendRouteSmokeCoverageTest {
                 Map.entry("pledges", Path.of("..", "frontend", "src", "pages", "PledgesPage.tsx")),
                 Map.entry("ebooks", Path.of("..", "frontend", "src", "pages", "EbooksPage.tsx")),
                 Map.entry("required-studies", Path.of("..", "frontend", "src", "pages", "RequiredStudiesPage.tsx")),
+                Map.entry("live-sessions", Path.of("..", "frontend", "src", "pages", "LiveSessionsPage.tsx")),
                 Map.entry("quest", Path.of("..", "frontend", "src", "pages", "QuestPage.tsx")),
                 Map.entry("support", Path.of("..", "frontend", "src", "pages", "QnaListPage.tsx"))
         );

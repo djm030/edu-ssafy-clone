@@ -659,3 +659,56 @@ ON DUPLICATE KEY UPDATE
   status_code = VALUES(status_code),
   progress_percent = VALUES(progress_percent),
   completed_at = VALUES(completed_at);
+
+-- Live session demo data for classroom live shortcut flow.
+INSERT INTO live_sessions (title, track, cohort, class_room, starts_at, ends_at, join_url, active_yn)
+SELECT seed.title, seed.track, seed.cohort, seed.class_room, seed.starts_at, seed.ends_at, seed.join_url, seed.active_yn
+FROM (
+  SELECT 'Java 라이브 알고리즘 코칭' AS title,
+         'Java' AS track,
+         '12th' AS cohort,
+         'Seoul Java 1' AS class_room,
+         CURRENT_TIMESTAMP - INTERVAL 30 MINUTE AS starts_at,
+         CURRENT_TIMESTAMP + INTERVAL 90 MINUTE AS ends_at,
+         'https://edu.ssafy.local/live/java-algorithm' AS join_url,
+         TRUE AS active_yn
+  UNION ALL
+  SELECT 'Spring 프로젝트 라이브 Q&A',
+         'Java',
+         '12th',
+         'Seoul Java 1',
+         CURRENT_TIMESTAMP + INTERVAL 3 HOUR,
+         CURRENT_TIMESTAMP + INTERVAL 5 HOUR,
+         'https://edu.ssafy.local/live/spring-qna',
+         TRUE
+  UNION ALL
+  SELECT '비활성 라이브',
+         'Java',
+         '12th',
+         'Seoul Java 1',
+         CURRENT_TIMESTAMP,
+         CURRENT_TIMESTAMP + INTERVAL 1 HOUR,
+         'https://edu.ssafy.local/live/private',
+         FALSE
+) seed
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM live_sessions ls
+  WHERE ls.title = seed.title
+);
+
+SET @live_algorithm_id := (
+  SELECT live_session_id
+  FROM live_sessions
+  WHERE title = 'Java 라이브 알고리즘 코칭'
+  LIMIT 1
+);
+
+INSERT INTO live_session_join_logs (live_session_id, user_id, joined_at)
+SELECT @live_algorithm_id, @student_id, CURRENT_TIMESTAMP - INTERVAL 10 MINUTE
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM live_session_join_logs
+  WHERE live_session_id = @live_algorithm_id
+    AND user_id = @student_id
+);

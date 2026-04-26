@@ -39,6 +39,8 @@ DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
 DROP TABLE IF EXISTS learner_required_study_progress;
 DROP TABLE IF EXISTS required_studies;
+DROP TABLE IF EXISTS live_session_join_logs;
+DROP TABLE IF EXISTS live_sessions;
 DROP TABLE IF EXISTS ssafy_ebook_access_logs;
 DROP TABLE IF EXISTS ssafy_ebooks;
 DROP TABLE IF EXISTS learner_bookmarks;
@@ -873,6 +875,40 @@ CREATE TABLE learner_required_study_progress (
     ON DELETE CASCADE,
   CONSTRAINT fk_required_study_progress_study
     FOREIGN KEY (required_study_id) REFERENCES required_studies (required_study_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE live_sessions (
+  live_session_id BIGINT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  track VARCHAR(100),
+  cohort VARCHAR(100),
+  class_room VARCHAR(100),
+  starts_at DATETIME NOT NULL,
+  ends_at DATETIME NOT NULL,
+  join_url VARCHAR(500) NOT NULL,
+  active_yn BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (live_session_id),
+  KEY idx_live_sessions_schedule (active_yn, starts_at, ends_at),
+  KEY idx_live_sessions_scope (track, cohort, class_room),
+  CONSTRAINT chk_live_sessions_time_range CHECK (ends_at > starts_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE live_session_join_logs (
+  live_session_join_log_id BIGINT NOT NULL AUTO_INCREMENT,
+  live_session_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (live_session_join_log_id),
+  KEY idx_live_session_join_logs_user_joined (user_id, joined_at),
+  KEY idx_live_session_join_logs_session_user (live_session_id, user_id),
+  CONSTRAINT fk_live_session_join_logs_session
+    FOREIGN KEY (live_session_id) REFERENCES live_sessions (live_session_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_live_session_join_logs_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
