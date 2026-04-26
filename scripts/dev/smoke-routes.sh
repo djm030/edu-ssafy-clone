@@ -13,6 +13,7 @@ routes=(
   "/mycampus/attendance/appeals/new"
   "/mycampus/elearning"
   "/mycampus/elearning/1"
+  "/mycampus/bookmarks"
   "/mycampus/level"
   "/community/free"
   "/community/free/1"

@@ -290,6 +290,43 @@ public final class PriorityDtos {
     ) {
     }
 
+    public record BookmarksResponse(List<BookmarkItem> items, PageMeta page) {
+    }
+
+    public record BookmarkResponse(BookmarkItem item) {
+    }
+
+    public record BookmarkDeleteResponse(long id, boolean deleted) {
+    }
+
+    public record BookmarkRequest(
+            @NotBlank @Size(max = 50) String targetType,
+            @NotNull @Positive Long targetId
+    ) {
+    }
+
+    public record BookmarkItem(
+            long id,
+            String targetType,
+            long targetId,
+            String title,
+            String description,
+            String thumbnailUrl,
+            String targetUrl,
+            OffsetDateTime createdAt
+    ) {
+    }
+
+    public record BookmarkSnapshot(
+            String targetType,
+            long targetId,
+            String title,
+            String description,
+            String thumbnailUrl,
+            String targetUrl
+    ) {
+    }
+
     public record MaterialsResponse(List<MaterialItem> items, PageMeta page) {
     }
 

@@ -282,6 +282,25 @@ FROM elearning_lessons el
 WHERE el.elearning_course_id = @rest_course_id
 ON DUPLICATE KEY UPDATE completed_at = VALUES(completed_at);
 
+INSERT INTO learner_bookmarks (user_id, target_type_code, target_id, title_snapshot, description_snapshot, thumbnail_url, target_url)
+SELECT @student_id, 'material', lm.learning_material_id, lm.title, lm.summary, NULL, CONCAT('/learning/materials/', lm.learning_material_id)
+FROM learning_materials lm
+WHERE lm.content_external_id = 'material-priority1-rest-api-doc'
+ON DUPLICATE KEY UPDATE
+  title_snapshot = VALUES(title_snapshot),
+  description_snapshot = VALUES(description_snapshot),
+  target_url = VALUES(target_url);
+
+INSERT INTO learner_bookmarks (user_id, target_type_code, target_id, title_snapshot, description_snapshot, thumbnail_url, target_url)
+SELECT @student_id, 'elearning', ec.elearning_course_id, ec.title, ec.description, ec.thumbnail_url, CONCAT('/mycampus/elearning/', ec.elearning_course_id)
+FROM elearning_courses ec
+WHERE ec.course_external_id = 'elearning-java-oop'
+ON DUPLICATE KEY UPDATE
+  title_snapshot = VALUES(title_snapshot),
+  description_snapshot = VALUES(description_snapshot),
+  thumbnail_url = VALUES(thumbnail_url),
+  target_url = VALUES(target_url);
+
 INSERT INTO quest_evaluations (content_scope_id, external_task_id, quest_type_code, task_classification_code, title, start_at, end_at, max_exp, progress_status_code)
 VALUES
   (@class_scope_id, 'quest-priority1-board-api', 'assignment', 'required', 'Implement board API', '2026-04-24 09:00:00', '2026-04-25 18:00:00', 100, 'in_progress'),

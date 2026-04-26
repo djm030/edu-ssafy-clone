@@ -194,6 +194,24 @@ export interface ElearningResumeResult {
   };
 }
 
+export type BookmarkTargetType = 'material' | 'elearning' | 'replay';
+
+export interface BookmarkItem {
+  id: number;
+  targetType: BookmarkTargetType;
+  targetId: number;
+  title: string;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  targetUrl?: string | null;
+  createdAt?: string | null;
+}
+
+export interface BookmarkDraft {
+  targetType: BookmarkTargetType;
+  targetId: number;
+}
+
 export interface Classmate {
   id: number;
   name: string;

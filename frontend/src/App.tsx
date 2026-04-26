@@ -9,6 +9,7 @@ import AttendanceAppealPage from './pages/AttendanceAppealPage';
 import AttendancePage from './pages/AttendancePage';
 import BoardDetailPage from './pages/BoardDetailPage';
 import BoardPostWritePage from './pages/BoardPostWritePage';
+import BookmarksPage from './pages/BookmarksPage';
 import ClassmatesPage from './pages/ClassmatesPage';
 import CurriculumPage from './pages/CurriculumPage';
 import DashboardPage from './pages/DashboardPage';
@@ -250,6 +251,7 @@ function renderPage(path: string, roleAccess: RoleAccess | undefined, navigate: 
   if (path === '/mycampus/level') return <LevelPage />;
   if (path === '/mycampus/notifications') return <NotificationsPage />;
   if (path === '/mycampus/elearning') return <ElearningPage />;
+  if (path === '/mycampus/bookmarks') return <BookmarksPage />;
   if (path === '/ops/readiness') return <OpsReadinessPage />;
   if (path === '/learning/curriculum') return <CurriculumPage />;
   if (path === '/learning/materials') return <MaterialsPage />;

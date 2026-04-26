@@ -47,6 +47,7 @@ request() {
 for route in \
   /mycampus/attendance \
   /mycampus/elearning \
+  /mycampus/bookmarks \
   /profile/check \
   /community/free \
   /community/classmates \
@@ -64,6 +65,7 @@ for api_path in \
   /api/notifications \
   /api/learning/materials \
   /api/elearning/in-progress \
+  /api/me/bookmarks \
   /api/quests/ \
   /api/surveys/ \
   /api/support/tickets; do
@@ -86,6 +88,7 @@ request GET "$BACKEND_URL/api/attendance/records"
 request GET "$BACKEND_URL/api/notifications?page=1&size=5"
 request GET "$BACKEND_URL/api/learning/materials?page=1&size=5"
 request GET "$BACKEND_URL/api/elearning/in-progress?page=1&size=5"
+request GET "$BACKEND_URL/api/me/bookmarks?page=1&size=5"
 request GET "$BACKEND_URL/api/quests?page=1&size=5"
 request GET "$BACKEND_URL/api/surveys?page=1&size=5"
 request GET "$BACKEND_URL/api/support/tickets?page=1&size=5"

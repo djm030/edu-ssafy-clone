@@ -3,6 +3,8 @@ package com.edussafy.backend.priority.repository;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceRecordItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurriculumItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningLessonItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ElearningProgressDetail;
@@ -530,6 +532,133 @@ public class PriorityApiRepository {
                 .list();
     }
 
+    public long countBookmarks(long userId, String targetType) {
+        SqlParts parts = bookmarksWhere(userId, targetType);
+        return jdbcClient.sql("SELECT COUNT(*) FROM learner_bookmarks lb " + parts.whereClause())
+                .params(parts.params())
+                .query(Long.class)
+                .single();
+    }
+
+    public List<BookmarkItem> findBookmarks(long userId, String targetType, int limit, int offset) {
+        SqlParts parts = bookmarksWhere(userId, targetType);
+        return jdbcClient.sql("""
+                SELECT bookmark_id, target_type_code, target_id, title_snapshot, description_snapshot,
+                       thumbnail_url, target_url, created_at
+                FROM learner_bookmarks lb
+                """ + parts.whereClause() + """
+                ORDER BY lb.created_at DESC, lb.bookmark_id DESC
+                LIMIT :limit OFFSET :offset
+                """)
+                .params(parts.params())
+                .param("limit", limit)
+                .param("offset", offset)
+                .query(this::mapBookmark)
+                .list();
+    }
+
+    public Optional<BookmarkItem> findBookmark(long userId, long bookmarkId) {
+        return jdbcClient.sql("""
+                SELECT bookmark_id, target_type_code, target_id, title_snapshot, description_snapshot,
+                       thumbnail_url, target_url, created_at
+                FROM learner_bookmarks
+                WHERE user_id = :userId AND bookmark_id = :bookmarkId
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("bookmarkId", bookmarkId)
+                .query(this::mapBookmark)
+                .optional();
+    }
+
+    public Optional<BookmarkSnapshot> findBookmarkSnapshot(String targetType, long targetId) {
+        return switch (targetType) {
+            case "material" -> jdbcClient.sql("""
+                    SELECT 'material' AS target_type, learning_material_id AS target_id, title, summary AS description,
+                           NULL AS thumbnail_url, CONCAT('/learning/materials/', learning_material_id) AS target_url
+                    FROM learning_materials
+                    WHERE learning_material_id = :targetId
+                    LIMIT 1
+                    """)
+                    .param("targetId", targetId)
+                    .query(this::mapBookmarkSnapshot)
+                    .optional();
+            case "elearning" -> jdbcClient.sql("""
+                    SELECT 'elearning' AS target_type, elearning_course_id AS target_id, title, description,
+                           thumbnail_url, CONCAT('/mycampus/elearning/', elearning_course_id) AS target_url
+                    FROM elearning_courses
+                    WHERE elearning_course_id = :targetId AND active_yn = TRUE
+                    LIMIT 1
+                    """)
+                    .param("targetId", targetId)
+                    .query(this::mapBookmarkSnapshot)
+                    .optional();
+            case "replay" -> jdbcClient.sql("""
+                    SELECT 'replay' AS target_type, lecture_replay_id AS target_id, title, replay_group_key AS description,
+                           NULL AS thumbnail_url, '/learning/replays' AS target_url
+                    FROM lecture_replays
+                    WHERE lecture_replay_id = :targetId
+                    LIMIT 1
+                    """)
+                    .param("targetId", targetId)
+                    .query(this::mapBookmarkSnapshot)
+                    .optional();
+            default -> Optional.empty();
+        };
+    }
+
+    public long createOrUpdateBookmark(long userId, BookmarkSnapshot snapshot) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcClient.sql("""
+                INSERT INTO learner_bookmarks (
+                    user_id, target_type_code, target_id, title_snapshot, description_snapshot, thumbnail_url, target_url
+                )
+                VALUES (
+                    :userId, :targetType, :targetId, :title, :description, :thumbnailUrl, :targetUrl
+                )
+                ON DUPLICATE KEY UPDATE
+                    title_snapshot = VALUES(title_snapshot),
+                    description_snapshot = VALUES(description_snapshot),
+                    thumbnail_url = VALUES(thumbnail_url),
+                    target_url = VALUES(target_url)
+                """)
+                .param("userId", userId)
+                .param("targetType", snapshot.targetType())
+                .param("targetId", snapshot.targetId())
+                .param("title", snapshot.title())
+                .param("description", snapshot.description())
+                .param("thumbnailUrl", snapshot.thumbnailUrl())
+                .param("targetUrl", snapshot.targetUrl())
+                .update(keyHolder, "bookmark_id");
+        Number key = keyHolder.getKey();
+        if (key != null) {
+            return key.longValue();
+        }
+        return jdbcClient.sql("""
+                SELECT bookmark_id
+                FROM learner_bookmarks
+                WHERE user_id = :userId
+                  AND target_type_code = :targetType
+                  AND target_id = :targetId
+                LIMIT 1
+                """)
+                .param("userId", userId)
+                .param("targetType", snapshot.targetType())
+                .param("targetId", snapshot.targetId())
+                .query(Long.class)
+                .single();
+    }
+
+    public int deleteBookmark(long userId, long bookmarkId) {
+        return jdbcClient.sql("""
+                DELETE FROM learner_bookmarks
+                WHERE user_id = :userId AND bookmark_id = :bookmarkId
+                """)
+                .param("userId", userId)
+                .param("bookmarkId", bookmarkId)
+                .update();
+    }
+
     public long countElearningProgress(long userId, String status, String keyword) {
         SqlParts parts = elearningProgressWhere(userId, status, keyword);
         return jdbcClient.sql("""
@@ -888,6 +1017,41 @@ public class PriorityApiRepository {
 
     private SqlParts attendanceWhere(long userId, LocalDate dateFrom, LocalDate dateTo, String status) {
         return attendanceWhere(null, userId, dateFrom, dateTo, status);
+    }
+
+    private SqlParts bookmarksWhere(long userId, String targetType) {
+        StringBuilder where = new StringBuilder("WHERE lb.user_id = :userId");
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("userId", userId);
+        if (StringUtils.hasText(targetType)) {
+            where.append(" AND LOWER(lb.target_type_code) = :targetType");
+            params.put("targetType", targetType.trim().toLowerCase());
+        }
+        return new SqlParts(" " + where, params);
+    }
+
+    private BookmarkItem mapBookmark(ResultSet rs, int rowNum) throws SQLException {
+        return new BookmarkItem(
+                rs.getLong("bookmark_id"),
+                rs.getString("target_type_code"),
+                rs.getLong("target_id"),
+                rs.getString("title_snapshot"),
+                rs.getString("description_snapshot"),
+                rs.getString("thumbnail_url"),
+                rs.getString("target_url"),
+                toOffset(rs.getTimestamp("created_at"))
+        );
+    }
+
+    private BookmarkSnapshot mapBookmarkSnapshot(ResultSet rs, int rowNum) throws SQLException {
+        return new BookmarkSnapshot(
+                rs.getString("target_type"),
+                rs.getLong("target_id"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("thumbnail_url"),
+                rs.getString("target_url")
+        );
     }
 
     private SqlParts elearningProgressWhere(long userId, String status, String keyword) {

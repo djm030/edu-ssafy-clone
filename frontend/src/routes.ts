@@ -25,6 +25,7 @@ export const navSections: NavSection[] = [
     items: [
       { path: '/mycampus/attendance', label: '출석현황' },
       { path: '/mycampus/elearning', label: '학습중 이러닝' },
+      { path: '/mycampus/bookmarks', label: '찜한 목록' },
       { path: '/mycampus/level', label: '레벨/포인트' },
       { path: '/mycampus/notifications', label: '알림함' },
     ],
@@ -75,6 +76,7 @@ export const screenSmokeRoutes: ScreenSmokeRoute[] = [
   { id: 'notifications', priority: 6, feature: '알림', path: '/mycampus/notifications', label: '알림함' },
   { id: 'elearning-list', priority: 10, feature: '학습중 이러닝', path: '/mycampus/elearning', label: '학습중 이러닝 목록' },
   { id: 'elearning-detail', priority: 10, feature: '학습중 이러닝', path: '/mycampus/elearning/1', label: '학습중 이러닝 상세' },
+  { id: 'bookmarks', priority: 11, feature: '찜한 목록', path: '/mycampus/bookmarks', label: '찜한 목록' },
   { id: 'curriculum', priority: 7, feature: '커리큘럼', path: '/learning/curriculum', label: '커리큘럼' },
   { id: 'materials', priority: 7, feature: '학습자료', path: '/learning/materials', label: '학습자료 목록' },
   { id: 'material-detail', priority: 7, feature: '학습자료', path: '/learning/materials/1', label: '학습자료 상세' },

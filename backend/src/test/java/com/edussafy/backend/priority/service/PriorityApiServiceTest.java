@@ -21,6 +21,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkDeleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateItem;
@@ -331,6 +337,63 @@ class PriorityApiServiceTest {
         assertThat(response.deleted()).isTrue();
         assertThat(response.unreadCount()).isEqualTo(1L);
         verify(repository).deleteNotification(1L, 8L);
+    }
+
+    @Test
+    void bookmarksListCreateAndDeleteUseCurrentUser() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        BookmarkItem item = new BookmarkItem(
+                90L,
+                "material",
+                5L,
+                "REST API Workbook",
+                "학습자료",
+                null,
+                "/learning/materials/5",
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00")
+        );
+        BookmarkSnapshot snapshot = new BookmarkSnapshot("material", 5L, "REST API Workbook", "학습자료", null, "/learning/materials/5");
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.countBookmarks(USER.id(), "material")).willReturn(1L);
+        given(repository.findBookmarks(USER.id(), "material", 20, 0)).willReturn(List.of(item));
+        given(repository.findBookmarkSnapshot("material", 5L)).willReturn(Optional.of(snapshot));
+        given(repository.createOrUpdateBookmark(USER.id(), snapshot)).willReturn(90L);
+        given(repository.findBookmark(USER.id(), 90L)).willReturn(Optional.of(item));
+        given(repository.deleteBookmark(USER.id(), 90L)).willReturn(1);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        BookmarksResponse list = service.bookmarks("material", 1, 20);
+        BookmarkResponse created = service.createBookmark(new BookmarkRequest("MATERIAL", 5L));
+        BookmarkDeleteResponse deleted = service.deleteBookmark(90L);
+
+        assertThat(list.items()).containsExactly(item);
+        assertThat(created.item()).isEqualTo(item);
+        assertThat(deleted.deleted()).isTrue();
+        verify(repository).deleteBookmark(USER.id(), 90L);
+    }
+
+    @Test
+    void bookmarkCreateRejectsUnknownTargetAndDeleteMissingBookmark() {
+        PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findBookmarkSnapshot("material", 404L)).willReturn(Optional.empty());
+        given(repository.deleteBookmark(USER.id(), 404L)).willReturn(0);
+        PriorityApiService service = new PriorityApiService(
+                repository,
+                mock(PriorityP2Repository.class),
+                mock(PriorityP3Repository.class)
+        );
+
+        assertThatThrownBy(() -> service.createBookmark(new BookmarkRequest("material", 404L)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
+        assertThatThrownBy(() -> service.deleteBookmark(404L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("404");
     }
 
     @Test

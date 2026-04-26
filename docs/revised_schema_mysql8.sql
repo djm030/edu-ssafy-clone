@@ -32,6 +32,7 @@ DROP TABLE IF EXISTS survey_questions;
 DROP TABLE IF EXISTS surveys;
 DROP TABLE IF EXISTS quest_submissions;
 DROP TABLE IF EXISTS quest_evaluations;
+DROP TABLE IF EXISTS learner_bookmarks;
 DROP TABLE IF EXISTS learner_elearning_lesson_progress;
 DROP TABLE IF EXISTS learner_elearning_progress;
 DROP TABLE IF EXISTS elearning_lessons;
@@ -99,6 +100,7 @@ INSERT INTO code_groups (code_group, group_name, description) VALUES
   ('APPROVAL_STATUS', '승인 상태', NULL),
   ('PROGRESS_STATUS', '진행 상태', NULL),
   ('ELEARNING_PROGRESS_STATUS', '이러닝 진행 상태', NULL),
+  ('BOOKMARK_TARGET_TYPE', '찜 대상 유형', NULL),
   ('CURRICULUM_TYPE', '커리큘럼 유형', NULL),
   ('MATERIAL_TYPE', '학습자료 유형', NULL),
   ('RESOURCE_TYPE', '학습자료 리소스 유형', NULL),
@@ -161,6 +163,9 @@ INSERT INTO codes (code_group, code, code_name, sort_order) VALUES
   ('ELEARNING_PROGRESS_STATUS', 'not_started', '미시작', 1),
   ('ELEARNING_PROGRESS_STATUS', 'in_progress', '학습중', 2),
   ('ELEARNING_PROGRESS_STATUS', 'completed', '완료', 3),
+  ('BOOKMARK_TARGET_TYPE', 'material', '학습자료', 1),
+  ('BOOKMARK_TARGET_TYPE', 'elearning', '이러닝', 2),
+  ('BOOKMARK_TARGET_TYPE', 'replay', '강의 다시보기', 3),
   ('CURRICULUM_TYPE', 'lecture', '강의', 1),
   ('CURRICULUM_TYPE', 'practice', '실습', 2),
   ('CURRICULUM_TYPE', 'project', '프로젝트', 3),
@@ -774,6 +779,29 @@ CREATE TABLE learner_elearning_lesson_progress (
     ON DELETE CASCADE,
   CONSTRAINT fk_learner_elearning_lesson_progress_lesson
     FOREIGN KEY (elearning_lesson_id) REFERENCES elearning_lessons (elearning_lesson_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE learner_bookmarks (
+  bookmark_id BIGINT NOT NULL AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  target_type_code_group VARCHAR(50) NOT NULL DEFAULT 'BOOKMARK_TARGET_TYPE',
+  target_type_code VARCHAR(50) NOT NULL,
+  target_id BIGINT NOT NULL,
+  title_snapshot VARCHAR(255) NOT NULL,
+  description_snapshot TEXT,
+  thumbnail_url VARCHAR(500),
+  target_url VARCHAR(500),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (bookmark_id),
+  UNIQUE KEY uk_learner_bookmarks_user_target (user_id, target_type_code, target_id),
+  KEY idx_learner_bookmarks_user_created (user_id, created_at),
+  CONSTRAINT chk_learner_bookmarks_target_type_group CHECK (target_type_code_group = 'BOOKMARK_TARGET_TYPE'),
+  CONSTRAINT fk_learner_bookmarks_target_type
+    FOREIGN KEY (target_type_code_group, target_type_code) REFERENCES codes (code_group, code),
+  CONSTRAINT fk_learner_bookmarks_user
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -21,6 +21,8 @@ import type {
   AttendanceAppealDraft,
   AttendanceAppealResolveDraft,
   AttendanceRecordFilters,
+  BookmarkDraft,
+  BookmarkItem,
   BoardPostDraft,
   Classmate,
   CurriculumWeek,
@@ -107,6 +109,12 @@ type BackendElearningProgressItem = Partial<ElearningProgressItem> & {
   courseId?: number | null;
   id?: number | null;
   lessons?: ElearningProgressDetail['lessons'];
+};
+
+type BackendBookmarkItem = Partial<BookmarkItem> & {
+  targetType?: string | null;
+  targetId?: number | null;
+  createdAt?: string | null;
 };
 
 type BackendMaterialResource = {
@@ -297,6 +305,24 @@ function toElearningProgressDetail(item: BackendElearningProgressItem): Elearnin
       completed: Boolean(lesson.completed),
       completedAt: lesson.completedAt || undefined,
     })),
+  };
+}
+
+function toBookmarkTargetType(value?: string | null): BookmarkItem['targetType'] {
+  if (value === 'elearning' || value === 'replay') return value;
+  return 'material';
+}
+
+function toBookmarkItem(item: BackendBookmarkItem): BookmarkItem {
+  return {
+    id: Number(item.id),
+    targetType: toBookmarkTargetType(item.targetType),
+    targetId: Number(item.targetId),
+    title: item.title || '찜한 콘텐츠',
+    description: item.description || undefined,
+    thumbnailUrl: item.thumbnailUrl || undefined,
+    targetUrl: item.targetUrl || undefined,
+    createdAt: item.createdAt || undefined,
   };
 }
 
@@ -566,6 +592,28 @@ export function getReplays(query: { keyword?: string }): Promise<{ items: Replay
       items: mockReplays.filter((replay) => !keyword || replay.title.toLowerCase().includes(keyword)),
     }),
   }).then((response) => ({ items: response.items.map(toReplayItem) }));
+}
+
+export function getBookmarks(query: { targetType?: string; page?: number; size?: number }): Promise<{ items: BookmarkItem[] }> {
+  const params = buildQuery({
+    page: query.page,
+    size: query.size,
+    targetType: query.targetType && query.targetType !== 'all' ? query.targetType : undefined,
+  });
+  return fetchJson<{ items: BackendBookmarkItem[] }>(`/api/me/bookmarks${params}`)
+    .then((response) => ({ items: response.items.map(toBookmarkItem) }));
+}
+
+export function createBookmark(draft: BookmarkDraft): Promise<{ item: BookmarkItem }> {
+  return fetchJson<ItemResponse<BackendBookmarkItem>>('/api/me/bookmarks', {
+    body: JSON.stringify(draft),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  }).then((response) => ({ item: toBookmarkItem(response.item) }));
+}
+
+export function deleteBookmark(bookmarkId: number): Promise<{ id: number; deleted: boolean }> {
+  return fetchJson<{ id: number; deleted: boolean }>(`/api/me/bookmarks/${bookmarkId}`, { method: 'DELETE' });
 }
 
 export function getElearningProgress(query: {

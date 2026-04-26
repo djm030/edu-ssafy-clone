@@ -24,6 +24,10 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceAppealResolveReq
 import com.edussafy.backend.priority.dto.PriorityDtos.AttendanceSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkDeleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmatesResponse;
@@ -118,6 +122,7 @@ import org.springframework.web.context.WebApplicationContext;
         NotificationController.class,
         LearningController.class,
         ElearningController.class,
+        BookmarkController.class,
         QuestSurveyController.class,
         SupportController.class,
         CommunityController.class,
@@ -503,6 +508,37 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/learning/replays"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void bookmarkEndpointsReturnAndMutateUserScopedBookmarks() throws Exception {
+        PageMeta page = new PageMeta(1, 20, 1, 1);
+        BookmarkItem item = new BookmarkItem(
+                90L,
+                "material",
+                5L,
+                "REST API Workbook",
+                "학습자료",
+                null,
+                "/learning/materials/5",
+                OffsetDateTime.parse("2026-04-25T10:00:00+09:00")
+        );
+        given(priorityApiService.bookmarks(eq("material"), eq(1), eq(20))).willReturn(new BookmarksResponse(List.of(item), page));
+        given(priorityApiService.createBookmark(any())).willReturn(new BookmarkResponse(item));
+        given(priorityApiService.deleteBookmark(90L)).willReturn(new BookmarkDeleteResponse(90L, true));
+
+        mockMvc.perform(get("/api/me/bookmarks?targetType=material"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("REST API Workbook"))
+                .andExpect(jsonPath("$.page.totalItems").value(1));
+        mockMvc.perform(post("/api/me/bookmarks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\":\"material\",\"targetId\":5}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.item.id").value(90));
+        mockMvc.perform(delete("/api/me/bookmarks/90"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deleted").value(true));
     }
 
     @Test

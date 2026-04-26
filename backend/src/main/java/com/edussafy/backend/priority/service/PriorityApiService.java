@@ -12,6 +12,12 @@ import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.AccessPolicyResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthActionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.AuthSessionResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkDeleteResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkRequest;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkResponse;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarkSnapshot;
+import com.edussafy.backend.priority.dto.PriorityDtos.BookmarksResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationRequest;
 import com.edussafy.backend.priority.dto.PriorityDtos.ClassmateNotificationResponse;
@@ -156,6 +162,7 @@ public class PriorityApiService {
     private static final Set<String> SURVEY_CATEGORIES = Set.of("satisfaction", "course", "lecture", "etc");
     private static final Set<String> SURVEY_STATUSES = Set.of("draft", "scheduled", "in_progress", "completed", "closed", "archived");
     private static final Set<String> ELEARNING_PROGRESS_STATUSES = Set.of("not_started", "in_progress", "completed");
+    private static final Set<String> BOOKMARK_TARGET_TYPES = Set.of("material", "elearning", "replay");
     private static final Set<String> SURVEY_QUESTION_TYPES = Set.of(
             "single_choice", "multiple_choice", "short_text", "long_text", "score"
     );
@@ -559,6 +566,41 @@ public class PriorityApiService {
     public ReplayResponse replays() {
         UserProfile user = currentUser();
         return new ReplayResponse(safe(() -> repository.findReplays(user.id()), List.of()));
+    }
+
+    public BookmarksResponse bookmarks(String targetType, int page, int size) {
+        UserProfile user = currentUser();
+        String normalizedTargetType = normalizeBookmarkTargetType(targetType);
+        long total = safe(() -> repository.countBookmarks(user.id(), normalizedTargetType), 0L);
+        List<BookmarkItem> items = total == 0
+                ? List.of()
+                : safe(() -> repository.findBookmarks(user.id(), normalizedTargetType, size, offset(page, size)), List.of());
+        return new BookmarksResponse(items, pageMeta(page, size, total));
+    }
+
+    @Transactional
+    public BookmarkResponse createBookmark(BookmarkRequest request) {
+        UserProfile user = currentUser();
+        String targetType = normalizeBookmarkTargetType(request.targetType());
+        if (targetType == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bookmark target type is required.");
+        }
+        BookmarkSnapshot snapshot = repository.findBookmarkSnapshot(targetType, request.targetId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bookmark target not found."));
+        long bookmarkId = repository.createOrUpdateBookmark(user.id(), snapshot);
+        BookmarkItem item = repository.findBookmark(user.id(), bookmarkId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Bookmark was not saved."));
+        return new BookmarkResponse(item);
+    }
+
+    @Transactional
+    public BookmarkDeleteResponse deleteBookmark(long bookmarkId) {
+        UserProfile user = currentUser();
+        int deleted = repository.deleteBookmark(user.id(), bookmarkId);
+        if (deleted == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bookmark not found.");
+        }
+        return new BookmarkDeleteResponse(bookmarkId, true);
     }
 
     public ElearningProgressResponse elearningInProgress(String status, String keyword, int page, int size) {
@@ -1285,6 +1327,17 @@ public class PriorityApiService {
 
     private boolean hasCurrentRequest() {
         return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes;
+    }
+
+    private String normalizeBookmarkTargetType(String targetType) {
+        if (!StringUtils.hasText(targetType) || "all".equalsIgnoreCase(targetType.trim())) {
+            return null;
+        }
+        String normalized = targetType.trim().toLowerCase(Locale.ROOT);
+        if (!BOOKMARK_TARGET_TYPES.contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported bookmark target type.");
+        }
+        return normalized;
     }
 
     private String normalizeElearningStatus(String status) {
