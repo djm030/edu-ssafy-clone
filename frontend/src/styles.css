@@ -1400,6 +1400,39 @@ h2 {
 }
 
 
+.replay-filter-panel {
+  margin: 16px 0;
+}
+
+.replay-filter-grid {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+
+.replay-filter-grid label {
+  color: #475467;
+  display: grid;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.replay-filter-grid select {
+  background: #fff;
+  border: 1px solid #d8dee8;
+  border-radius: 12px;
+  color: #344054;
+  font: inherit;
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.replay-table .simple-row {
+  grid-template-columns: minmax(220px, 1.4fr) 0.7fr 0.7fr 1fr 1fr 0.7fr 0.8fr;
+}
+
 .live-access-summary-panel {
   margin-bottom: 18px;
 }

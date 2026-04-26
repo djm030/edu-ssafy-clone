@@ -229,6 +229,25 @@ class FrontendRouteSmokeCoverageTest {
                 .contains("disabledReason?: string | null");
     }
 
+    @Test
+    void replayPageExposesOperationalFiltersAndWatchHistory() throws IOException {
+        String replayPage = Files.readString(Path.of("..", "frontend", "src", "pages", "ReplaysPage.tsx"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(replayPage)
+                .contains("다시보기 기간 트랙 강사 필터")
+                .contains("periodFilter")
+                .contains("trackFilter")
+                .contains("instructorFilter")
+                .contains("filterReplayItems")
+                .contains("replay-table")
+                .contains("시청 이력")
+                .contains("조건 초기화");
+        assertThat(types)
+                .contains("watchCount?: number")
+                .contains("lastWatchedAt?: string | null");
+    }
+
 
     @Test
     void ebooksPageExposesAccessAndDisabledStates() throws IOException {
