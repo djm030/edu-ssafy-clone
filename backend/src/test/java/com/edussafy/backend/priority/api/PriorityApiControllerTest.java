@@ -86,6 +86,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelTierItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelTrendSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ScholarshipPointItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
@@ -472,6 +473,7 @@ class PriorityApiControllerTest {
                         new LevelTierItem("Silver", 5, 8, true, 25, "active", "현재 단계", "프로젝트 실습 단계")
                 ),
                 List.of(new LevelHistoryItem(LocalDate.parse("2026-04-24"), 12, 4200, 85)),
+                new LevelTrendSummary(18, 6, 400, 7, "순위 상승"),
                 List.of(new ScholarshipPointItem("누적 장학 포인트", 85, "현재 사용자 기준 누적 장학 포인트입니다."))
         )));
 
@@ -486,6 +488,8 @@ class PriorityApiControllerTest {
                 .andExpect(jsonPath("$.detail.tiers[1].name").value("Silver"))
                 .andExpect(jsonPath("$.detail.tiers[1].current").value(true))
                 .andExpect(jsonPath("$.detail.history[0].rankNo").value(12))
+                .andExpect(jsonPath("$.detail.trend.rankDelta").value(6))
+                .andExpect(jsonPath("$.detail.trend.trendLabel").value("순위 상승"))
                 .andExpect(jsonPath("$.detail.pointBreakdown[0].category").value("누적 장학 포인트"));
     }
 

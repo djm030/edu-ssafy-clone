@@ -428,6 +428,25 @@ h2 {
   margin: 0;
 }
 
+.level-trend-panel {
+  background: #f7f9fc;
+  border: 1px solid #e6ebf2;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+  padding: 12px;
+}
+
+.level-trend-panel strong {
+  font-size: 18px;
+}
+
+.level-trend-panel p {
+  color: #667085;
+  margin: 0;
+}
+
 .quick-links,
 .card-list {
   display: grid;

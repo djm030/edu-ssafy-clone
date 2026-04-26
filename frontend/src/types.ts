@@ -79,6 +79,14 @@ export interface LevelHistoryItem {
   scholarshipPoint: number;
 }
 
+export interface LevelTrendSummary {
+  previousRank: number | null;
+  rankDelta: number | null;
+  expDelta: number;
+  scholarshipPointDelta: number;
+  trendLabel: string;
+}
+
 export interface ScholarshipPointItem {
   category: string;
   points: number;
@@ -103,6 +111,7 @@ export interface LevelDetail {
   expRemaining: number;
   tiers: LevelTierItem[];
   history: LevelHistoryItem[];
+  trend: LevelTrendSummary;
   pointBreakdown: ScholarshipPointItem[];
 }
 

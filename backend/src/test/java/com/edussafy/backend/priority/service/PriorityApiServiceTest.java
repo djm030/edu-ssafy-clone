@@ -672,6 +672,11 @@ class PriorityApiServiceTest {
         assertThat(response.detail().expPercent()).isEqualTo(84);
         assertThat(response.detail().expRemaining()).isEqualTo(800);
         assertThat(response.detail().history()).hasSize(2);
+        assertThat(response.detail().trend().previousRank()).isEqualTo(18);
+        assertThat(response.detail().trend().rankDelta()).isEqualTo(6);
+        assertThat(response.detail().trend().expDelta()).isEqualTo(400);
+        assertThat(response.detail().trend().scholarshipPointDelta()).isEqualTo(7);
+        assertThat(response.detail().trend().trendLabel()).isEqualTo("순위 상승");
         assertThat(response.detail().pointBreakdown())
                 .extracting("category")
                 .contains("누적 장학 포인트", "최근 반영 포인트", "경험치");

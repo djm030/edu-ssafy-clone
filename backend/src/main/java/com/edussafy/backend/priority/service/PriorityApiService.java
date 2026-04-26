@@ -79,6 +79,7 @@ import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetail;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelDetailResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelHistoryItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.LevelTierItem;
+import com.edussafy.backend.priority.dto.PriorityDtos.LevelTrendSummary;
 import com.edussafy.backend.priority.dto.PriorityDtos.ScholarshipPointItem;
 import com.edussafy.backend.priority.dto.PriorityDtos.CurrentLiveSessionResponse;
 import com.edussafy.backend.priority.dto.PriorityDtos.LiveSessionItem;
@@ -699,6 +700,7 @@ public class PriorityApiService {
                 expRemaining,
                 levelTiers(level),
                 history,
+                levelTrend(level, history),
                 scholarshipPointBreakdown(level, history)
         ));
     }
@@ -2556,6 +2558,23 @@ public class PriorityApiService {
                 new ScholarshipPointItem("최근 반영 포인트", recentDelta, "최근 랭킹 스냅샷 대비 증가한 포인트입니다."),
                 new ScholarshipPointItem("경험치", level.exp(), "다음 레벨까지 남은 EXP와 함께 표시되는 현재 경험치입니다.")
         );
+    }
+
+    private LevelTrendSummary levelTrend(LevelSummary level, List<LevelHistoryItem> history) {
+        Integer previousRank = history.stream()
+                .skip(1)
+                .findFirst()
+                .map(LevelHistoryItem::rankNo)
+                .orElse(null);
+        LevelHistoryItem previous = history.stream()
+                .skip(1)
+                .findFirst()
+                .orElse(null);
+        int expDelta = previous == null ? level.exp() : Math.max(0, level.exp() - previous.exp());
+        int scholarshipDelta = previous == null ? level.scholarshipPoints() : Math.max(0, level.scholarshipPoints() - previous.scholarshipPoint());
+        Integer rankDelta = level.rank() == null || previousRank == null ? null : previousRank - level.rank();
+        String trendLabel = rankDelta == null ? "집계 대기" : rankDelta > 0 ? "순위 상승" : rankDelta < 0 ? "순위 하락" : "순위 유지";
+        return new LevelTrendSummary(previousRank, rankDelta, expDelta, scholarshipDelta, trendLabel);
     }
 
     private EducationPointSummary educationPointFallback(LevelSummary level) {

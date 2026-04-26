@@ -50,6 +50,7 @@ function LevelPage() {
 
 function LevelDetailContent({ detail }: { detail: LevelDetail }) {
   const rankText = detail.current.rank ? `${detail.current.rank}위` : '집계 전';
+  const trend = detail.trend;
 
   return (
     <>
@@ -70,6 +71,14 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
           <h2>장학 포인트</h2>
           <div className="level-number">{detail.current.scholarshipPoints.toLocaleString('ko-KR')}점</div>
           <p>현재 순위 {rankText}</p>
+          <div className="level-trend-panel" aria-label="최근 레벨 변동">
+            <span className="status-pill blue">{trend.trendLabel}</span>
+            <strong>{formatRankTrend(trend.rankDelta)}</strong>
+            <p>
+              이전 순위 {trend.previousRank ? `${trend.previousRank}위` : '집계 전'} · EXP {formatSignedNumber(trend.expDelta)} · 장학 포인트{' '}
+              {formatSignedNumber(trend.scholarshipPointDelta)}
+            </p>
+          </div>
           <dl className="info-list">
             {detail.pointBreakdown.map((item) => <PointRow item={item} key={item.category} />)}
           </dl>
@@ -107,6 +116,16 @@ function LevelDetailContent({ detail }: { detail: LevelDetail }) {
   );
 }
 
+function formatRankTrend(rankDelta: number | null) {
+  if (rankDelta == null) return '랭킹 스냅샷 집계 대기';
+  if (rankDelta > 0) return `${rankDelta}계단 상승`;
+  if (rankDelta < 0) return `${Math.abs(rankDelta)}계단 하락`;
+  return '순위 유지';
+}
+
+function formatSignedNumber(value: number) {
+  return `${value > 0 ? '+' : ''}${value.toLocaleString('ko-KR')}`;
+}
 
 function TierCard({ tier }: { tier: LevelTierItem }) {
   const visualState = tier.visualState || (tier.current ? 'active' : tier.progressPercent >= 100 ? 'completed' : 'locked');

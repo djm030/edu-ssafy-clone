@@ -89,6 +89,7 @@ public final class PriorityDtos {
             int expRemaining,
             List<LevelTierItem> tiers,
             List<LevelHistoryItem> history,
+            LevelTrendSummary trend,
             List<ScholarshipPointItem> pointBreakdown
     ) {
     }
@@ -106,6 +107,15 @@ public final class PriorityDtos {
     }
 
     public record LevelHistoryItem(LocalDate snapshotDate, int rankNo, int exp, int scholarshipPoint) {
+    }
+
+    public record LevelTrendSummary(
+            Integer previousRank,
+            Integer rankDelta,
+            int expDelta,
+            int scholarshipPointDelta,
+            String trendLabel
+    ) {
     }
 
     public record ScholarshipPointItem(String category, int points, String description) {

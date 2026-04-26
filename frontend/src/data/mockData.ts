@@ -107,6 +107,13 @@ export const mockLevelDetail: LevelDetailResponse = {
       { snapshotDate: '2026-04-17', rankNo: 18, exp: 3850, scholarshipPoint: 78 },
       { snapshotDate: '2026-04-10', rankNo: 22, exp: 3400, scholarshipPoint: 70 },
     ],
+    trend: {
+      previousRank: 18,
+      rankDelta: 6,
+      expDelta: 350,
+      scholarshipPointDelta: 7,
+      trendLabel: '순위 상승',
+    },
     pointBreakdown: [
       { category: '누적 장학 포인트', points: 85, description: '현재 사용자 기준 누적 장학 포인트입니다.' },
       { category: '최근 반영 포인트', points: 7, description: '최근 랭킹 스냅샷 대비 증가한 포인트입니다.' },

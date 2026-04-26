@@ -345,6 +345,8 @@ class FrontendRouteSmokeCoverageTest {
         assertThat(levelPage)
                 .contains("Bronze/Silver 단계")
                 .contains("tier-roadmap")
+                .contains("최근 레벨 변동")
+                .contains("level-trend-panel")
                 .contains("LevelTierItem")
                 .contains("progressPercent")
                 .contains("visualState")
