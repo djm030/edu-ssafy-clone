@@ -213,6 +213,9 @@ public final class PriorityDtos {
             String title,
             String category,
             String description,
+            boolean accessEnabled,
+            String actionLabel,
+            String disabledReason,
             String detailPath
     ) {
     }
@@ -297,6 +300,9 @@ public final class PriorityDtos {
             String thumbnailUrl,
             String category,
             String externalUrl,
+            boolean accessEnabled,
+            String actionLabel,
+            String disabledReason,
             OffsetDateTime createdAt,
             OffsetDateTime lastAccessedAt,
             long accessCount

@@ -591,17 +591,27 @@ function toPledgeItem(item: BackendPledgeItem): PledgeItem {
 }
 
 function toEbookItem(item: BackendEbookItem): EbookItem {
+  const externalUrl = item.externalUrl || '#';
+  const accessEnabled = Boolean(item.accessEnabled ?? hasLaunchableEbookUrl(externalUrl));
   return {
     id: Number(item.id),
     title: item.title || 'SSAFY e-book',
     description: item.description || undefined,
     thumbnailUrl: item.thumbnailUrl || undefined,
     category: item.category || undefined,
-    externalUrl: item.externalUrl || '#',
+    externalUrl,
+    accessEnabled,
+    actionLabel: item.actionLabel || (accessEnabled ? 'e-book 열람' : '권한 없음'),
+    disabledReason: item.disabledReason || (accessEnabled ? undefined : '계정 또는 기간 조건상 e-book 열람 링크가 비활성화되어 있습니다.'),
     createdAt: item.createdAt || undefined,
     lastAccessedAt: item.lastAccessedAt || undefined,
     accessCount: Number(item.accessCount ?? 0),
   };
+}
+
+function hasLaunchableEbookUrl(externalUrl: string): boolean {
+  const normalized = externalUrl.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== '#' && normalized !== '#none' && normalized !== '#none;';
 }
 
 function toRequiredStudyStatus(value?: string | null): RequiredStudyItem['status'] {

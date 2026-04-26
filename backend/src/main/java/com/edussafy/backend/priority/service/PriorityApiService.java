@@ -539,6 +539,9 @@ public class PriorityApiService {
                         item.title(),
                         item.category(),
                         item.description(),
+                        item.accessEnabled(),
+                        item.actionLabel(),
+                        item.disabledReason(),
                         "/mycampus/ebooks/" + item.id()
                 ))
                 .toList();
@@ -1148,8 +1151,12 @@ public class PriorityApiService {
     @Transactional
     public EbookAccessLogResponse logEbookAccess(long ebookId) {
         UserProfile user = currentUser();
-        repository.findEbook(user.id(), ebookId)
+        EbookItem before = repository.findEbook(user.id(), ebookId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "E-book not found."));
+        if (!before.accessEnabled()) {
+            String reason = before.disabledReason() == null ? "E-book is not accessible." : before.disabledReason();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+        }
         long accessLogId = repository.createEbookAccessLog(user.id(), ebookId);
         EbookAccessLogItem accessLog = repository.findEbookAccessLog(user.id(), ebookId, accessLogId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "E-book access log was not saved."));

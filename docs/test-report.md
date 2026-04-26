@@ -510,3 +510,12 @@ Test Health: partially verified. Frontend/static/live baseline smoke passed; bac
 - `cd frontend && npm run build && npm run lint` -> PASS.
 - `docker compose config` -> PASS.
 - `git diff --check` -> PASS.
+
+## Ebook Disabled and Dashboard States (2026-04-27 KST)
+- Added backend `accessEnabled`, `actionLabel`, and `disabledReason` fields to e-book list/detail/dashboard payloads so `#`, `#none`, and `#none;` entries are represented as disabled account-scoped links.
+- Tightened backend e-book access logging to reject disabled e-book links before writing a learner access log.
+- Updated `/mycampus/ebooks` and dashboard e-book cards to render Korean disabled reasons, disabled styling, and action labels instead of silently treating blocked links as launchable.
+- `docker run --rm -v "$PWD:/workspace" -w /workspace/backend maven:3.9.9-eclipse-temurin-21 mvn -B -Dtest=PriorityApiControllerTest,PriorityApiServiceTest,FrontendRouteSmokeCoverageTest test` -> PASS, 146 tests.
+- `cd frontend && npm run build && npm run lint` -> PASS.
+- `docker compose config` -> PASS.
+- `git diff --check` -> PASS.

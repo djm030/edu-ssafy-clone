@@ -43,6 +43,10 @@ function EbooksPage({ ebookId }: EbooksPageProps) {
   }, [ebookId, retryToken]);
 
   const openEbook = (item: EbookItem) => {
+    if (!item.accessEnabled) {
+      setActionMessage(item.disabledReason || '이 계정으로는 e-book을 열람할 수 없습니다.');
+      return;
+    }
     setActionMessage('');
     recordEbookAccess(item.id)
       .then((response) => {
@@ -68,12 +72,13 @@ function EbooksPage({ ebookId }: EbooksPageProps) {
             <h2>e-book 목록</h2>
             <div className="list-stack">
               {items.map((item) => (
-                <article className="list-card" key={item.id}>
+                <article className={`list-card ${item.accessEnabled ? 'joinable' : 'disabled'}`} key={item.id}>
                   <div>
                     <p className="eyebrow">{item.category || 'E-BOOK'}</p>
                     <h3>{item.title}</h3>
                     <p>{item.description || '설명이 등록되지 않았습니다.'}</p>
                     <p className="muted">열람 {item.accessCount}회 · 최근 열람 {item.lastAccessedAt ? item.lastAccessedAt.slice(0, 16).replace('T', ' ') : '-'}</p>
+                    {!item.accessEnabled && item.disabledReason ? <p className="muted">{item.disabledReason}</p> : null}
                   </div>
                   <a className="text-link" href={`/mycampus/ebooks/${item.id}`}>상세</a>
                 </article>
@@ -92,7 +97,8 @@ function EbooksPage({ ebookId }: EbooksPageProps) {
                   <InfoRow label="열람 횟수" value={`${selected.accessCount}회`} />
                   <InfoRow label="최근 열람" value={selected.lastAccessedAt ? selected.lastAccessedAt.slice(0, 16).replace('T', ' ') : '-'} />
                 </dl>
-                <button className="primary-action" onClick={() => openEbook(selected)} type="button">e-book 열람</button>
+                {!selected.accessEnabled && selected.disabledReason ? <p className="muted">{selected.disabledReason}</p> : null}
+                <button className="primary-action" disabled={!selected.accessEnabled} onClick={() => openEbook(selected)} type="button" title={selected.disabledReason || undefined}>{selected.actionLabel}</button>
                 {actionMessage ? <p className="form-message">{actionMessage}</p> : null}
               </div>
             ) : (

@@ -433,7 +433,7 @@ class PriorityApiControllerTest {
                         List.of(new DashboardBoardPost(9, "free", "자유게시판 글", "Demo", null, false, "일반", "/community/free/9")),
                         List.of(new DashboardMandatoryAlert(10, "notice", "공지사항", "운영자", false, null, "/help/notice/10")),
                         List.of(new DashboardBoardPost(10, "notice", "공지사항", "운영자", null, true, "필독", "/help/notice/10")),
-                        List.of(new DashboardEbookCard(3, "Java e-book", "Java", "전자책", "/mycampus/ebooks/3"))
+                        List.of(new DashboardEbookCard(3, "Java e-book", "Java", "전자책", true, "e-book 열람", null, "/mycampus/ebooks/3"))
                 )
         ));
 
@@ -498,6 +498,9 @@ class PriorityApiControllerTest {
                 null,
                 "Java",
                 "https://edu.ssafy.local/ebooks/java",
+                true,
+                "e-book 열람",
+                null,
                 OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
                 null,
                 0
@@ -509,6 +512,9 @@ class PriorityApiControllerTest {
                 null,
                 "Java",
                 "https://edu.ssafy.local/ebooks/java",
+                true,
+                "e-book 열람",
+                null,
                 OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
                 OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
                 1
@@ -523,6 +529,8 @@ class PriorityApiControllerTest {
         mockMvc.perform(get("/api/ebooks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("SSAFY Java e-book"))
+                .andExpect(jsonPath("$.items[0].accessEnabled").value(true))
+                .andExpect(jsonPath("$.items[0].actionLabel").value("e-book 열람"))
                 .andExpect(jsonPath("$.page.totalItems").value(1));
         mockMvc.perform(get("/api/ebooks/5"))
                 .andExpect(status().isOk())
@@ -530,6 +538,7 @@ class PriorityApiControllerTest {
         mockMvc.perform(post("/api/ebooks/5/access-log"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.item.accessCount").value(1))
+                .andExpect(jsonPath("$.item.accessEnabled").value(true))
                 .andExpect(jsonPath("$.accessLog.ebookId").value(5));
     }
 

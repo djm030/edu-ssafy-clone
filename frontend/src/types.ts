@@ -196,6 +196,9 @@ export interface DashboardEbookCard {
   title: string;
   category?: string | null;
   description?: string | null;
+  accessEnabled?: boolean;
+  actionLabel?: string | null;
+  disabledReason?: string | null;
   detailPath: string;
 }
 
@@ -272,6 +275,9 @@ export interface EbookItem {
   thumbnailUrl?: string | null;
   category?: string | null;
   externalUrl: string;
+  accessEnabled: boolean;
+  actionLabel: string;
+  disabledReason?: string | null;
   createdAt?: string | null;
   lastAccessedAt?: string | null;
   accessCount: number;

@@ -871,17 +871,30 @@ public class PriorityApiRepository {
     }
 
     private EbookItem mapEbook(ResultSet rs, int rowNum) throws SQLException {
+        String externalUrl = rs.getString("external_url");
+        boolean accessEnabled = hasLaunchableEbookUrl(externalUrl);
         return new EbookItem(
                 rs.getLong("ebook_id"),
                 rs.getString("title"),
                 rs.getString("description"),
                 rs.getString("thumbnail_url"),
                 rs.getString("category"),
-                rs.getString("external_url"),
+                externalUrl,
+                accessEnabled,
+                accessEnabled ? "e-book 열람" : "권한 없음",
+                accessEnabled ? null : "계정 또는 기간 조건상 e-book 열람 링크가 비활성화되어 있습니다.",
                 toOffset(rs.getTimestamp("created_at")),
                 toOffset(rs.getTimestamp("last_accessed_at")),
                 rs.getLong("access_count")
         );
+    }
+
+    private boolean hasLaunchableEbookUrl(String externalUrl) {
+        if (externalUrl == null || externalUrl.isBlank()) {
+            return false;
+        }
+        String normalized = externalUrl.trim().toLowerCase();
+        return !("#".equals(normalized) || "#none".equals(normalized) || "#none;".equals(normalized));
     }
 
     private String requiredStudyVisibilityWhere() {

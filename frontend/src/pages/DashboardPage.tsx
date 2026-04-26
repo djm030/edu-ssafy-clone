@@ -226,9 +226,11 @@ function MandatoryAlertCard({ item }: { item: DashboardMandatoryAlert }) {
 
 function EbookCard({ item }: { item: DashboardEbookCard }) {
   return (
-    <a className="dashboard-widget-card" href={item.detailPath}>
+    <a className={`dashboard-widget-card ${item.accessEnabled === false ? 'disabled' : ''}`} href={item.detailPath}>
+      <span className={`status-pill ${item.accessEnabled === false ? 'gray' : 'blue'}`}>{item.actionLabel || 'e-book 열람'}</span>
       <strong>{item.title}</strong>
       <p>{item.category || 'e-book'}{item.description ? ` · ${item.description}` : ''}</p>
+      {item.accessEnabled === false && item.disabledReason ? <small>{item.disabledReason}</small> : null}
     </a>
   );
 }

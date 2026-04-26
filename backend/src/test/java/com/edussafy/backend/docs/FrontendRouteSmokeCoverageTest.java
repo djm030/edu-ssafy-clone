@@ -224,6 +224,32 @@ class FrontendRouteSmokeCoverageTest {
     }
 
 
+    @Test
+    void ebooksPageExposesAccessAndDisabledStates() throws IOException {
+        String ebooksPage = Files.readString(Path.of("..", "frontend", "src", "pages", "EbooksPage.tsx"));
+        String dashboard = Files.readString(Path.of("..", "frontend", "src", "pages", "DashboardPage.tsx"));
+        String appApi = Files.readString(Path.of("..", "frontend", "src", "api", "app.ts"));
+        String types = Files.readString(Path.of("..", "frontend", "src", "types.ts"));
+
+        assertThat(ebooksPage)
+                .contains("accessEnabled")
+                .contains("disabledReason")
+                .contains("actionLabel")
+                .contains("이 계정으로는 e-book을 열람할 수 없습니다.");
+        assertThat(dashboard)
+                .contains("accessEnabled === false")
+                .contains("dashboard-widget-card")
+                .contains("e-book 열람");
+        assertThat(appApi)
+                .contains("hasLaunchableEbookUrl")
+                .contains("#none;")
+                .contains("권한 없음");
+        assertThat(types)
+                .contains("accessEnabled: boolean")
+                .contains("disabledReason?: string | null");
+    }
+
+
 
     @Test
     void attendancePageExposesMonthlyCalendarMatrix() throws IOException {

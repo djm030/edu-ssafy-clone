@@ -85,7 +85,7 @@ export const mockDashboard: DashboardSummary = {
       { id: 101, boardCode: 'notice', title: '4월 공통 프로젝트 일정 안내', authorLabel: '교육지원팀', createdAt: '2026-04-24T09:00:00+09:00', pinned: true, badgeLabel: '필독', detailPath: '/help/notice/101' },
     ],
     ebooks: [
-      { id: 1, title: 'SSAFY Java e-book', category: 'Java', description: 'Java 트랙 실습 전자책', detailPath: '/mycampus/ebooks/1' },
+      { id: 1, title: 'SSAFY Java e-book', category: 'Java', description: 'Java 트랙 실습 전자책', accessEnabled: false, actionLabel: '권한 없음', disabledReason: '계정 또는 기간 조건상 e-book 열람 링크가 비활성화되어 있습니다.', detailPath: '/mycampus/ebooks/1' },
     ],
   },
 };

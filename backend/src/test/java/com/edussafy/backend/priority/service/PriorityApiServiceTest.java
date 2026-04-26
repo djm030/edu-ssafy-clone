@@ -288,6 +288,9 @@ class PriorityApiServiceTest {
                 null,
                 "Java",
                 "https://edu.ssafy.local/ebooks/java",
+                true,
+                "e-book 열람",
+                null,
                 OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
                 null,
                 0
@@ -299,6 +302,9 @@ class PriorityApiServiceTest {
                 null,
                 "Java",
                 "https://edu.ssafy.local/ebooks/java",
+                true,
+                "e-book 열람",
+                null,
                 OffsetDateTime.parse("2026-04-01T09:00:00+09:00"),
                 OffsetDateTime.parse("2026-04-26T10:00:00+09:00"),
                 1
@@ -317,6 +323,8 @@ class PriorityApiServiceTest {
 
         assertThat(list.items()).containsExactly(before);
         assertThat(response.item().accessCount()).isEqualTo(1);
+        assertThat(response.item().accessEnabled()).isTrue();
+        assertThat(response.item().actionLabel()).isEqualTo("e-book 열람");
         assertThat(response.accessLog()).isEqualTo(accessLog);
         verify(repository).createEbookAccessLog(USER.id(), 5L);
     }
@@ -324,10 +332,29 @@ class PriorityApiServiceTest {
     @Test
     void ebookDetailRejectsInactiveOrMissingEbook() {
         PriorityApiRepository repository = mock(PriorityApiRepository.class);
+        EbookItem disabled = new EbookItem(
+                6L,
+                "비활성 e-book",
+                "권한 없음",
+                null,
+                "Java",
+                "#none;",
+                false,
+                "권한 없음",
+                "계정 또는 기간 조건상 e-book 열람 링크가 비활성화되어 있습니다.",
+                OffsetDateTime.parse("2026-04-23T09:00:00+09:00"),
+                null,
+                0
+        );
         given(repository.findDefaultUser()).willReturn(Optional.of(USER));
+        given(repository.findEbook(USER.id(), 6L)).willReturn(Optional.of(disabled));
         given(repository.findEbook(USER.id(), 404L)).willReturn(Optional.empty());
         PriorityApiService service = new PriorityApiService(repository, mock(PriorityP2Repository.class), mock(PriorityP3Repository.class));
 
+        assertThatThrownBy(() -> service.logEbookAccess(6L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400")
+                .hasMessageContaining("비활성화");
         assertThatThrownBy(() -> service.ebook(404L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
