@@ -41,7 +41,11 @@ class VisualBaselineCoverageTest {
             "qna",
             "mentor-stories",
             "mentoring-questions",
-            "mentoring-meetings"
+            "mentoring-notices",
+            "mentoring-meetings",
+            "meeting-results",
+            "meeting-reviews",
+            "external-services"
     );
 
     @Test

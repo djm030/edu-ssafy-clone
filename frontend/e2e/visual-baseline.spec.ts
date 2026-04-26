@@ -35,7 +35,11 @@ const targets: VisualTarget[] = [
   { name: 'qna', path: '/help/qna', text: /1:1 문의/ },
   { name: 'mentor-stories', path: '/mentoring/stories', text: /멘토 스토리/ },
   { name: 'mentoring-questions', path: '/mentoring/questions', text: /멘토링 Q&A/ },
+  { name: 'mentoring-notices', path: '/mentoring/notices', text: /멘토링 공지/ },
   { name: 'mentoring-meetings', path: '/mentoring/meetings', text: /간담회 신청/ },
+  { name: 'meeting-results', path: '/mentoring/meeting-results', text: /간담회 정보/ },
+  { name: 'meeting-reviews', path: '/mentoring/meeting-reviews', text: /간담회 후기/ },
+  { name: 'external-services', path: '/external-services', text: /외부 서비스|JOB SSAFY|SSAFY GIT/ },
 ];
 
 const viewports = [
