@@ -6,7 +6,7 @@ Decision: **PASS / PRODUCTION-HARDENING VERIFIED**
 
 ## 1. 최종 검증 요약
 
-`omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`를 TTY로 실행했지만 Docker/Maven 검증 단계에서 approval 대기와 장시간 `Working` 상태로 멈춰 직접 검증으로 전환했다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, app-profile image rebuild, 실행 중인 컨테이너 health, Nginx reverse proxy smoke가 통과했다. 그 과정에서 Spring 런타임 constructor injection, MySQL healthcheck, smoke route guard, board seed 결함을 코드로 수정했다.
+과거 OMX/Ralph 검증 흐름은 TTY/background terminal hang 때문에 최종 근거로 사용하지 않고, 현재 저장소에서 직접 실행한 명령 결과를 최종 근거로 삼았다. 직접 검증에서는 현재 저장소 코드 기준 backend Maven test, frontend lint/build, Docker Compose 설정 렌더링, app-profile image rebuild, 실행 중인 컨테이너 health, Nginx reverse proxy smoke가 통과했다. 그 과정에서 Spring 런타임 constructor injection, MySQL healthcheck, smoke route guard, board seed 결함을 코드로 수정했다.
 
 프로젝트는 **로컬 Docker Compose 기반으로 실행 가능한 SSAFY 클론**이며, 주요 도메인의 backend API/DB 저장·조회 흐름/frontend 연결/테스트가 존재한다. 최신 이미지 rebuild, app profile 기동, backend/frontend/Nginx smoke, Dockerized full backend test까지 재검증되어 요청된 우선순위 1~9 기능 기준 PASS로 판정한다. 2026-04-27에는 런타임 API 문서를 Spring REST Docs HTML에서 Swagger UI/OpenAPI JSON으로 전환하고 Docker 빌드/기동 smoke를 재검증했다.
 

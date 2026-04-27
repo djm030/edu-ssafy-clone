@@ -12,7 +12,7 @@ SSAFY clone implementation uses a Docker Compose based monorepo with these fixed
 - Observability for operations: ELK stack
 
 ## Rationale
-The project is moving from documentation and schema design into implementation. The stack must be fixed before multi-agent coding starts so Backend, Frontend, and DevOps-QA can work independently without negotiating framework choices during implementation.
+The project is now an implemented local full-stack clone surface. The stack remains fixed so ongoing UI/UX parity, verification, and production-hardening work does not re-open framework choices.
 
 ## Architecture
 ```text
@@ -74,39 +74,22 @@ Operations
 - `kibana`
 - optional log shipper if needed
 
-## Work Ownership
-### PM
-- Maintains stack decision and work contract docs.
-- Resolves cross-lane contract changes.
+## Current Ownership Boundaries
+- Backend/API changes live under `backend/**`.
+- Frontend route/UI/client changes live under `frontend/**`.
+- Runtime, Nginx, compose, smoke, and schema helper changes live under `compose*.yml`, `infra/**`, and `scripts/**`.
+- Stable project facts live under `docs/**`; current UI/UX parity work is tracked in `docs/next_plan.md`.
 
-### Backend Agent
-- Owns `backend/**`.
-- Implements Spring Boot API and backend Dockerfile.
+## Current Functional Surface
+- Auth/session/profile, dashboard, attendance, notifications, learning materials/resources, quests, surveys, boards, support tickets, classmate notifications, health/readiness, and Swagger/OpenAPI routes are implemented in the local clone surface.
+- The generated runtime API inventory is `docs/openapi.json`.
+- The schema source remains `docs/revised_schema_mysql8.sql`.
 
-### Frontend Agent
-- Owns `frontend/**`.
-- Implements React app and frontend Dockerfile.
-
-### DevOps-QA Agent
-- Owns compose files, `infra/**`, and `scripts/**`.
-- Implements Docker Compose, Nginx, MySQL seed/verify, Redis/RabbitMQ/ELK wiring, and QA scripts.
-
-## Initial Functional Pilot
-The first implementation pilot remains the board-list flow:
-
-- `GET /api/boards/{boardCode}/categories`
-- `GET /api/boards/{boardCode}/posts`
-- `/help/notice`
-- `/community/free`
-
-The schema source remains `docs/revised_schema_mysql8.sql`.
-
-## Non-Goals For First Pass
-- Full auth/session implementation
-- Full CRUD for boards
-- Quest/survey submission flows
-- Production-grade secret management
-- External deployment
+## Remaining Non-Goals For Local Clone PASS
+- Pixel-perfect browser visual baseline automation.
+- External deployment sign-off.
+- Production secret-store integration.
+- Real external SSO/JOB/Git/Meeting token issuance.
 
 ## Review Gate
 Before human review, the PM must collect:

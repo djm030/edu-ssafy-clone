@@ -33,7 +33,7 @@
 - `docker compose config` -> PASS.
 
 ## App Profile Runtime Smoke Stabilization (2026-04-27 KST)
-- Re-ran `omx ralph "$(cat prompts/ssafy-full-clone-verify.md)"`; the child TTY became stuck around a background test terminal, so the verification/fix loop was completed directly with local commands.
+- Completed the verification/fix loop directly with local commands after an older TTY-based automation path became stuck around a background test terminal.
 - Fixed runtime-only Spring startup failures by marking the production constructors in external-service and mentoring services with `@Autowired` while preserving their test constructors.
 - Hardened MySQL compose healthcheck so container health no longer depends on mutable root credentials stored in an existing local volume.
 - Fixed the POSIX smoke route static guard to read the frontend route manifest, and repaired board seed data so mentoring/external board smoke endpoints have required board-group codes on fresh initialization.
@@ -341,32 +341,6 @@
 - `pwsh`/`powershell` smoke remains UNKNOWN on this macOS host because PowerShell is not installed.
 
 
-## Team Recovery State (worker-5, 2026-04-24)
-
-### Summary
-The OMX team pipeline is still active in `team-exec`, but worker-5 has no remaining claimable original assignments. Pending work is owned by non-reporting/dead workers, and direct claim attempts on another worker's assigned task return `claim_conflict`.
-
-### Current Team State
-- Team: `ssafy-full-clone-omx-continuou`
-- Task totals from `omx team api get-summary`: total=132, completed=105, pending=22, in_progress=4, failed=1.
-- Dead/non-alive workers reported by summary: worker-1, worker-2, worker-3, worker-4, worker-5.
-- Failed task requiring continuation: task 50 (`인증/인가가 필요한 기능은 권한 검사가 있다.`) failed truthfully because backend authorization enforcement is incomplete.
-- Stale/in-progress continuation risk: task 118 remains in progress under worker-3 while worker-3 is non-alive.
-
-### Recovery Recommendation
-Do not declare terminal success yet. Reassign or clean up stale ownership, then continue tasks 117-128 and 131 until `docs/final-verification.md` can move every core row to PASS. Suggested commands for the leader/host lane:
-
-```bash
-omx team status ssafy-full-clone-omx-continuou
-omx team api cleanup --input '{"team_name":"ssafy-full-clone-omx-continuou","force":true,"confirm_issues":true}' --json
-git worktree prune
-find . -name ".DS_Store" -delete
-git status --short
-```
-
-### Worker-5 Boundary
-Worker-5 documented the recovery state and reported upward instead of force-cleaning the team runtime, matching the worker dead/zombie prevention rule.
-
 ## R10 CI Smoke Workflow (worker-5, 2026-04-24)
 
 ### Summary
@@ -384,43 +358,6 @@ Added `.github/workflows/ci.yml` as a repository-level CI smoke gate. It validat
 ### Not Verified Locally
 - GitHub Actions execution itself was not run from this worker.
 - Backend Maven tests still cannot run locally because `backend/mvnw` is absent and local `mvn` is unavailable; CI uses hosted Maven/Java instead.
-
-## Worker-5 Continuation Verification (2026-04-24)
-
-### Summary
-Verified that the documented API/screen coverage is represented in the frontend route table and API adapters, then refreshed frontend dependency setup so lint/build are not left in a failed state. Backend Maven remains blocked in this worker because no wrapper is present and `mvn` is unavailable.
-
-### Commands Run
-- `omx team api list-tasks --input '{"team_name":"ssafy-full-clone-omx-continuou"}' --json` -> PASS, 130 total tasks after task ids 117-130 were created.
-- `grep`/`sed` inspection of `frontend/src/App.tsx`, `frontend/src/api/app.ts`, `frontend/src/api/boards.ts`, and `frontend/src/api/client.ts` -> PASS, screens/call points and error handling are present for the core documented domains.
-- `npm --prefix frontend ci` -> PASS, dependencies installed with 0 vulnerabilities; Node engine warning only.
-- `git diff --check` -> PASS.
-- `npm --prefix frontend run lint` -> PASS.
-- `npm --prefix frontend run build` -> PASS, Vite built 65 modules.
-- Backend tests -> BLOCKED, `backend/mvnw` is absent and local `mvn` is unavailable.
-
-### Reverification Result
-Frontend lint/build are passing after dependency installation. No Docker execution failure logs were present because no compose services are running in this worker. The project is still not complete while `docs/remaining-work.md` contains partial/gap rows and follow-up tasks 117-130 remain pending.
-
-### Failure/Blocker Cause Classification
-| Item | Classification | Evidence |
-|---|---|---|
-| Initial frontend lint/build failure before `npm ci` | 의존성 문제 | `eslint` and `tsc` binaries were missing because `frontend/node_modules` had not been installed in this worker. |
-| Backend Maven tests not executed | 테스트 하네스 부족 / 의존성 문제 | `backend/mvnw` is absent and local `mvn` is unavailable. |
-| Live Nginx reverse-proxy smoke not executed | worker/runtime 문제 | Compose services are not running in this worker; host/CI compose startup is required. |
-| Live ELK ingestion/log confirmation not executed | worker/runtime 문제 | Observability compose config renders, but live containers/log ingestion require host/CI compose startup. |
-| Remaining full-clone partial/gap rows | 코드 오류 아님 / 문서 불일치 방지 대상 | Missing product depth is tracked in `docs/remaining-work.md` and task ids 117-130 instead of being declared complete. |
-
-### Report Criteria Coverage
-- 실행한 검증 명령: recorded above under Commands Run.
-- 성공/실패 결과: PASS/BLOCKED status is listed per command.
-- 실패 로그 요약: frontend tool-missing state was resolved by `npm ci`; backend Maven is blocked because no wrapper/local Maven exists.
-- Docker compose 검증 결과: `docker compose -f compose.yml config` and `docker compose -f compose.yml --profile app config` pass; compose logs had no failure output because services are not running in this worker.
-- Nginx 검증 결과: Nginx configuration remains part of the existing `compose.yml --profile app config` rendering and `infra/nginx/conf.d/default.conf`; live reverse-proxy smoke still requires host/CI compose startup.
-- ELK 로그 확인 결과: `compose.observability.yml` service configuration is present for Elasticsearch/Logstash/Filebeat/Kibana; live ELK log ingestion still requires host/CI compose startup.
-- 수정 내용: task-backed docs were updated in `docs/progress.md`, `docs/remaining-work.md`, and this report.
-- 재검증 결과: frontend lint/build and compose config pass after docs updates.
-- 검증하지 못한 항목과 이유: backend Maven, live Nginx reverse proxy, and live ELK ingestion are blocked in this worker by missing Maven wrapper/local Maven and absence of running Docker services.
 
 ## R7.0 DevOps/QA Smoke Shape Guardrail (worker-5, 2026-04-24)
 

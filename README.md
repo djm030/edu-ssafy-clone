@@ -2,7 +2,7 @@
 
 SSAFY 교육 플랫폼을 기준으로 구현 중인 full-stack clone입니다. 현재 로컬 Docker Compose app profile을 통해 frontend, backend, MySQL, Redis, RabbitMQ, Nginx를 한 번에 띄워 브라우저에서 확인할 수 있습니다.
 
-## Current project status (2026-04-26)
+## Current Project Status (2026-04-27)
 
 - Overall readiness: **PASS for the implemented local full-stack clone surface; production launch still requires environment-specific deployment sign-off**.
 - Passing verification checks: Dockerized backend Maven tests on Java 21, frontend `npm run lint`, frontend `npm run build`, Docker Compose config rendering, Nginx/backend smoke contracts, Spring REST Docs snippets, and the `/ops/readiness` frontend smoke runner.
@@ -140,16 +140,16 @@ The legacy docs entrypoint `http://localhost/api/docs` redirects to Swagger UI.
 If `mvn` is installed locally, `mvn -B test` from `backend/` is also valid.
 
 
-## Documentation status
+## Documentation Status
 
 Required project documents are maintained under `docs/`:
 
-- `docs/progress.md` — current rounds, worker progress, commits, and changed-file summaries.
 - `docs/architecture.md` — stack, runtime boundaries, domain modules, and architectural gaps.
 - `docs/api-summary.md` — implemented API surface and contract guardrails.
 - `docs/test-report.md` — verification evidence, blocked checks, and retest commands.
 - `docs/remaining-work.md` — current blockers plus non-blocking production follow-ups.
 - `docs/final-verification.md` — final readiness gate; currently **PASS** for the requested local full-stack clone gates.
+- `docs/next_plan.md` — current UI/UX parity backlog and active work plan.
 
 ## Known current caveats
 

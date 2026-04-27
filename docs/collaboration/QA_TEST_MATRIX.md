@@ -7,7 +7,7 @@
 | frontend lint | `npm run lint` in `frontend` | Frontend |
 | frontend build | `npm run build` in `frontend` | Frontend |
 | compose config | `scripts/dev/verify-compose.ps1 -App` | DevOps-QA |
-| encoding scan | PM shell scan over `frontend/src`, `docs/collaboration`, `backend/src` | PM |
+| encoding scan | scan over `frontend/src`, `docs`, `backend/src` | Maintainer |
 
 ## Backend Gates
 | Gate | Command | Owner |
@@ -51,5 +51,4 @@ Status:
 - Compose config validation 통과
 - app profile 컨테이너 기동 또는 환경 권한 차단 사유 명시
 - P1 HTTP smoke 통과
-- 실패 항목이 `WORK_TRACKER.md`에 owner와 다음 조치로 남아 있음
-
+- 실패 항목이 `docs/remaining-work.md` 또는 `docs/next_plan.md`에 다음 조치로 남아 있음

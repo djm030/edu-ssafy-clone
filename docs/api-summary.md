@@ -19,7 +19,7 @@
 
 | API endpoint | HTTP method | Request parameters/body | Response summary | Auth needed | Frontend connected screen |
 |---|---|---|---|---|---|
-| `/api/auth/login` | POST | body `{ email, password }` | `{ user }` demo login profile | No | `/login` |
+| `/api/auth/login` | POST | body `{ email, password }` | `{ user }` session login profile | No | `/login` |
 | `/api/me` | GET | none | `{ user }` current learner profile | Yes (demo) | app shell/session bootstrap, `/` |
 | `/api/auth/roles/current` | GET | none | current role and permission summary | Yes (demo) | app shell authorization state |
 | `/api/auth/access-policy` | GET | none | protected API policy matrix `{ items[] }` with method/path/allowed roles | Yes (demo) | `/ops/readiness` access policy matrix |
@@ -73,9 +73,9 @@
 - Regression guard: `SwaggerOpenApiControllerTest` verifies representative auth/attendance/board/survey/support/learning/quest paths, checks that cataloged backend `/api/**` routes are present in runtime OpenAPI JSON, and compares the committed `docs/openapi.json` snapshot against generated controller path/method keys.
 - Legacy Spring REST Docs snippet tests remain as internal contract examples for health/readiness/auth/survey until fully retired, but runtime API documentation is Swagger/OpenAPI.
 
-## Task 66 API Documentation Status (2026-04-24)
+## API Documentation Status (2026-04-27)
 - Endpoint inventory is current for the implemented Spring controller surface: auth/profile/dashboard/attendance/notifications/learning/quest/survey/board/support/community/health.
-- Most learner-facing endpoints currently use demo-session semantics; final auth requirement is **not complete** until RBAC/session/token enforcement is implemented and documented per endpoint.
+- Learner-facing endpoints use session-backed auth where required, and protected operation policy is exposed through `GET /api/auth/access-policy`.
 - Frontend connection screens are mapped in `frontend/src/App.tsx` and page components; high-level coverage is: dashboard `/`, attendance `/mycampus/attendance`, learning `/learning/**`, quest `/quest/**`, survey `/survey/**`, board/community `/community/**`, help/QNA `/help/**`, and profile `/profile/**`.
 - Runtime Swagger/OpenAPI at `/v3/api-docs` is the source of truth for route inventory; `docs/openapi.json` is the committed generated snapshot for review/offline tooling. Keep this summary aligned whenever request/response wrappers change.
 
